@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# For Vercel/Netlify deployments, you'll store the contents of this JSON file as an environment variable
+firebase-admin-sdk-key.json
+
+/app/_lib/firebase.ts
