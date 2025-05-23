@@ -1,29 +1,76 @@
 "use client"; // using Next.js App Router and framer-motion client features
 
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { getTaskIconByName, CardSpecificIcons } from "../utils";
 import { formatDate, formatDateTime } from "../utils";
 import { Task } from "../_types/types";
 import { isPast } from "date-fns";
+import { useFormStatus } from "react-dom";
+import Button from "./reusable/Button";
+import { useState } from "react";
+import {
+  delayTaskAction,
+  rescheduleTaskAction,
+  togglePriorityAction,
+  updateTaskStatusAction,
+  deleteTaskAction,
+} from "../_lib/actions";
+import { useOutsideClick } from "../hooks/useOutsideClick";
 
-interface TaskCardProps {
-  task: Task;
-  index?: number; // For staggered animation
-  onEdit?: (taskId: string) => void;
-  onDelete?: (taskId: string) => void;
-  onToggleStatus?: (taskId: string) => void; // Example action
+function ActionSubmitButton({
+  children,
+  className,
+  Icon,
+  classNameIcon,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  Icon?: React.ElementType;
+  classNameIcon?: string;
+}) {
+  const { pending } = useFormStatus();
+  return (
+    <Button
+      type="submit"
+      disabled={pending}
+      variant="secondary"
+      className={`w-full text-left px-3 py-2.5 text-sm text-text-gray    ${className} ${
+        pending ? "opacity-50 cursor-not-allowed" : ""
+      }`}
+    >
+      {Icon && (
+        <Icon
+          size={16}
+          className={`mr-2.5 text-text-low group-hover:text-text-high transition-colors ${
+            classNameIcon ? classNameIcon : ""
+          }`}
+        />
+      )}
+      {pending ? "Processing..." : children}
+    </Button>
+  );
 }
 
 // Status colors like 'status-pending-text', 'status-completed-text', 'status-delayed-text'
 
+interface TaskCardProps {
+  task: Task;
+  index?: number;
+  onOpenUpdateModal?: (task: Task) => void;
+}
+
 export default function TaskCard({
   task,
   index = 0,
-  onEdit,
-  onDelete,
-  onToggleStatus,
+  onOpenUpdateModal,
 }: TaskCardProps) {
   const TaskIcon = getTaskIconByName(task.icon);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const statusInfo = getStatusStyles();
+  const StatusIcon = statusInfo.icon;
+  const isPastDue = !task.completedAt && isPast(new Date(task.dueDate));
+  // Crutial callback implementation to avoid too many re-renders
+  const outsideClickRef = useOutsideClick(() => setIsDropdownOpen(false));
 
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -31,14 +78,14 @@ export default function TaskCard({
       opacity: 1,
       y: 0,
       transition: {
-        delay: index * 0.05, // Stagger delay
+        delay: index * 0.05,
         duration: 0.4,
         ease: "easeOut",
       },
     },
   };
 
-  const getStatusStyles = () => {
+  function getStatusStyles() {
     switch (task.status) {
       case "completed":
         return {
@@ -63,10 +110,7 @@ export default function TaskCard({
           bgColorClass: "bg-yellow-500/10",
         };
     }
-  };
-
-  const statusInfo = getStatusStyles();
-  const StatusIcon = statusInfo.icon;
+  }
 
   const getExperienceIcon = () => {
     if (!task.completedAt || !task.experience) return null;
@@ -88,8 +132,7 @@ export default function TaskCard({
     }
   };
 
-  // Determine if a date is in the past (for dueDate)
-  const isPastDue = !task.completedAt && isPast(new Date(task.dueDate));
+  // ---Maybe handlers for server actions (can use useFormState for feedback)
 
   return (
     <motion.div
@@ -98,56 +141,234 @@ export default function TaskCard({
       animate="visible"
       whileHover={{ y: -5, boxShadow: "0px 8px 25px rgba(0,0,0,0.1)" }}
       layout // Animates layout changes (e.g., if content changes)
-      className="bg-background-card rounded-xl shadow-lg overflow-hidden flex flex-col border border-border-card"
-      style={{ "--task-color": task.color } as React.CSSProperties} // For CSS variable usage
+      style={
+        {
+          "--task-color": task.color,
+          border: "1px solid #0c4a6e",
+          borderRadius: "0.5rem",
+        } as React.CSSProperties
+      }
+      ref={outsideClickRef}
     >
-      <div className="p-5 flex items-start space-x-4 border-b border-border-card relative">
+      <div className="p-5 flex items-start space-x-4 border-b border-divider relative">
         <div
           className="p-3 rounded-lg w-12 h-12 flex items-center justify-center"
           style={{ backgroundColor: `${task.color}33` }}
         >
           <TaskIcon size={24} style={{ color: task.color }} />
         </div>
-        <div className="flex-grow">
-          <h3 className="text-lg font-semibold text-text-high break-words text-pretty mb-2">
+        <div className="flex-grow min-w-0">
+          <h3 className="text-lg font-semibold text-text-high break-words text-pretty mb-2 truncate">
             {task.title}
           </h3>
           <p className="text-xs font-semibold  text-text-low uppercase tracking-wider">
             {task.type}
           </p>
         </div>
-        {(onEdit || onDelete) && (
-          <div className="absolute top-3 right-3 group">
-            <CardSpecificIcons.Options
-              size={20}
-              className="text-text-low cursor-pointer hover:text-text-high"
-            />
-            {/* Basic Dropdown (improve with a proper dropdown library or state management) */}
-            <div className="absolute right-0 mt-1 w-32 bg-background-main border border-border-card rounded-md shadow-xl z-10 hidden group-hover:block">
-              {onEdit && (
-                <button
-                  onClick={() => onEdit(task.id)}
-                  className="w-full text-left px-3 py-2 text-sm text-text-medium hover:bg-background-card flex items-center"
-                >
-                  <CardSpecificIcons.Edit size={14} className="mr-2" /> Edit
-                </button>
-              )}
-              {onDelete && (
-                <button
-                  onClick={() => onDelete(task.id)}
-                  className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-background-card flex items-center"
-                >
-                  <CardSpecificIcons.Delete size={14} className="mr-2" /> Delete
-                </button>
-              )}
-            </div>
-          </div>
-        )}
+        <div className="relative shrink-0">
+          <Button
+            variant="secondary"
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            aria-label="Task options"
+          >
+            <CardSpecificIcons.Options size={20} />
+          </Button>
+          <AnimatePresence>
+            {isDropdownOpen && (
+              <motion.ul
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{
+                  opacity: 0,
+                  y: -10,
+                  scale: 0.95,
+                  transition: { duration: 0.15 },
+                }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="absolute right-0 mt-2 w-60 bg-background-600 border border-divider shadow-xl rounded-lg p-1.5 z-50 origin-top-right focus:outline-none"
+              >
+                {/* ---: Action: Mark as Completed/Pending --- */}
+                {task.status !== "completed" && (
+                  <li>
+                    <form
+                      action={updateTaskStatusAction}
+                      onSubmit={() => setIsDropdownOpen(false)}
+                    >
+                      <input type="hidden" name="taskId" value={task.id} />
+                      <input type="hidden" name="newStatus" value="completed" />
+                      <ActionSubmitButton Icon={CardSpecificIcons.MarkComplete}>
+                        Mark as Completed
+                      </ActionSubmitButton>
+                    </form>
+                  </li>
+                )}
+                {task.status === "completed" && (
+                  <li>
+                    <form
+                      action={updateTaskStatusAction}
+                      onSubmit={() => setIsDropdownOpen(false)}
+                    >
+                      <input type="hidden" name="taskId" value={task.id} />
+                      <input type="hidden" name="newStatus" value="pending" />
+                      <ActionSubmitButton
+                        Icon={CardSpecificIcons.StatusPending}
+                      >
+                        Mark as Pending
+                      </ActionSubmitButton>
+                    </form>
+                  </li>
+                )}
+
+                {/* ---: Action: Delay --- */}
+                {task.status !== "completed" && (
+                  <>
+                    <li>
+                      <form
+                        action={delayTaskAction}
+                        onSubmit={() => setIsDropdownOpen(false)}
+                      >
+                        <input type="hidden" name="taskId" value={task.id} />
+                        <input
+                          type="hidden"
+                          name="delayOption"
+                          value="tomorrow"
+                        />
+                        <ActionSubmitButton
+                          Icon={CardSpecificIcons.DelayTomorrow}
+                        >
+                          Delay to Tomorrow
+                        </ActionSubmitButton>
+                      </form>
+                    </li>
+                    <li>
+                      <form
+                        action={delayTaskAction}
+                        onSubmit={() => setIsDropdownOpen(false)}
+                      >
+                        <input type="hidden" name="taskId" value={task.id} />
+                        <input
+                          type="hidden"
+                          name="delayOption"
+                          value="nextWeek"
+                        />
+                        <ActionSubmitButton
+                          Icon={CardSpecificIcons.DelayNextWeek}
+                        >
+                          Delay 1 Week
+                        </ActionSubmitButton>
+                      </form>
+                    </li>
+                  </>
+                )}
+
+                {/* ---: Action: Reschedule (with date input) --- */}
+                {task.status !== "completed" && (
+                  <li className="px-1.5 py-1.5 group">
+                    <form
+                      action={rescheduleTaskAction}
+                      className="space-y-1.5"
+                      onSubmit={() => setIsDropdownOpen(false)}
+                    >
+                      <input type="hidden" name="taskId" value={task.id} />
+                      <label
+                        htmlFor={`reschedule-date-${task.id}`}
+                        className="block text-xs text-text-low px-1.5"
+                      >
+                        Reschedule to:
+                      </label>
+                      <div className="flex items-center space-x-2 px-1.5">
+                        <input
+                          id={`reschedule-date-${task.id}`}
+                          type="date"
+                          name="newDueDate"
+                          defaultValue={
+                            new Date(task.dueDate).toISOString().split("T")[0]
+                          }
+                          className="flex-grow p-1.5 border border-divider rounded-md text-sm bg-background-input text-text-default focus:ring-primary-600 focus:border-primary-600"
+                          required
+                        />
+                        <Button type="submit" aria-label="Confirm reschedule">
+                          Set
+                        </Button>
+                      </div>
+                    </form>
+                  </li>
+                )}
+
+                {/* ---: Action: Toggle Priority --- */}
+                <li>
+                  <form
+                    action={togglePriorityAction}
+                    onSubmit={() => setIsDropdownOpen(false)}
+                  >
+                    <input type="hidden" name="taskId" value={task.id} />
+                    <input
+                      type="hidden"
+                      name="currentIsPriority"
+                      value={task.isPriority.toString()}
+                    />
+                    <ActionSubmitButton
+                      Icon={
+                        task.isPriority
+                          ? CardSpecificIcons.RemovePriority
+                          : CardSpecificIcons.AddPriority
+                      }
+                    >
+                      {task.isPriority ? "Remove Priority" : "Add Priority"}
+                    </ActionSubmitButton>
+                  </form>
+                </li>
+
+                <li className="my-1">
+                  <hr className="border-divider opacity-50" />
+                </li>
+
+                {/* ---: Action: Update (opens modal via prop) --- */}
+                {onOpenUpdateModal && (
+                  <li>
+                    <button
+                      onClick={() => {
+                        onOpenUpdateModal(task);
+                        setIsDropdownOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-2.5 text-sm text-text-medium hover:bg-background-hover flex items-center transition-colors duration-150 rounded-md group"
+                    >
+                      <CardSpecificIcons.Edit
+                        size={16}
+                        className="mr-2.5 text-text-low group-hover:text-text-high transition-colors"
+                      />
+                      Update Task...
+                    </button>
+                  </li>
+                )}
+
+                {/* ---: Action: Delete --- */}
+                <li>
+                  <form
+                    action={deleteTaskAction}
+                    onSubmit={() => setIsDropdownOpen(false)}
+                  >
+                    <input type="hidden" name="taskId" value={task.id} />
+                    <ActionSubmitButton
+                      Icon={CardSpecificIcons.Delete}
+                      className="text-red-500 hover:bg-red-500/10"
+                      classNameIcon="group-hover:bg-red-500"
+                    >
+                      <span className="group-hover:text-red-500">
+                        Delete Task
+                      </span>
+                    </ActionSubmitButton>
+                  </form>
+                </li>
+              </motion.ul>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       <div className="p-5 flex-grow space-y-3">
         {task.description && (
-          <p className="text-sm mb-4 text-text-gray leading-relaxed">
+          <p className="text-sm mb-4 text-text-gray leading-relaxed line-clamp-3">
             {task.description}
           </p>
         )}
@@ -194,16 +415,10 @@ export default function TaskCard({
               <span>Reminder Set</span>
             </div>
           )}
-          {task.points > 0 && (
-            <div className="flex items-center space-x-1 text-xs px-2 py-1 rounded-full bg-teal-500/10 text-teal-400">
-              <CardSpecificIcons.Points size={14} />
-              <span>{task.points} Points</span>
-            </div>
-          )}
         </div>
 
         {task.tags && task.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5 mt-1">
             {task.tags.map((tag) => (
               <span
                 key={tag}
@@ -217,7 +432,7 @@ export default function TaskCard({
         )}
       </div>
 
-      <div className="px-5 py-3 bg-background-main/30 border-t border-border-card text-xs text-text-low space-y-1">
+      <div className="px-5 py-3 bg-background-main/30 border-t border-divider text-xs text-text-low space-y-1">
         <div className="flex justify-between items-center">
           <span>
             Created:{" "}
@@ -231,12 +446,12 @@ export default function TaskCard({
             </span>
           )}
         </div>
-        {task.preconditionTaskIds && task.preconditionTaskIds.length > 0 && (
+        {/* {task.preconditionTaskIds && task.preconditionTaskIds.length > 0 && (
           <div className="flex items-center text-orange-400/80">
             <CardSpecificIcons.PreconditionTasks size={14} className="mr-1.5" />
             <span>Blocked by {task.preconditionTaskIds.length} task(s)</span>
           </div>
-        )}
+        )} */}
         <p className="text-right opacity-60">
           Last updated: {formatDateTime(task.updatedAt)}
         </p>

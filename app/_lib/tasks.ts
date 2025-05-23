@@ -11,7 +11,9 @@ import {
   updateDoc,
   deleteDoc,
   doc, // For referencing a specific document
-  serverTimestamp, // For createdAt, updatedAt
+  serverTimestamp,
+  getDoc,
+  DocumentSnapshot, // For createdAt, updatedAt
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { Task } from "@/app/_types/types";
@@ -55,6 +57,26 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Task => {
   } as Task;
 };
 
+export const getTaskByTaskId = async (taskId: string): Promise<Task | null> => {
+  if (!taskId) {
+    console.warn("getTaskByTaskId called without a taskId.");
+    return null;
+  }
+  try {
+    const taskDocRef = doc(db, TASKS_COLLECTION, taskId);
+    const docSnap = await getDoc(taskDocRef);
+
+    if (!docSnap.exists()) {
+      return null;
+    }
+
+    return fromFirestore(docSnap as QueryDocumentSnapshot<DocumentData>);
+  } catch (error) {
+    console.error("Error fetching tasks by task ID:", error);
+    throw error;
+  }
+};
+
 /**
  * Fetches all tasks for a given user ID.
  * @param {string} userId - The ID of the user whose tasks to fetch.
@@ -84,7 +106,7 @@ export const getTasksByUserId = async (userId: string): Promise<Task[]> => {
     return tasks;
   } catch (error) {
     console.error("Error fetching tasks by user ID:", error);
-    throw error; // Re-throw to be handled by the caller
+    throw error;
   }
 };
 

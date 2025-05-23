@@ -18,7 +18,7 @@ export default function Button({
   type = "button",
 }: ButtonProps) {
   const baseStyles =
-    "px-4 py-1 rounded-md transition-colors flex items-center gap-2 cursor-pointer letter-spacing font-semibold ";
+    "px-4 py-1 rounded-md transition-all duration-150 flex items-center gap-2 cursor-pointer letter-spacing font-semibold ";
 
   const variantStyles = {
     primary:

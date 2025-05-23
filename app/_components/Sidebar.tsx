@@ -11,6 +11,7 @@ import {
   Search,
   Home,
   Inbox,
+  ChartColumn,
 } from "lucide-react";
 import Button from "./reusable/Button";
 import Image from "next/image";
@@ -32,12 +33,12 @@ export default function Sidebar() {
       {
         label: "Calendar",
         href: "/calendar",
-        icon: CalendarArrowUp,
+        icon: Calendar,
       },
       {
-        label: "Today",
-        href: "/today",
-        icon: Calendar,
+        label: "Tasks",
+        href: "/tasks",
+        icon: ChartColumn,
       },
       {
         label: "Completed",
@@ -103,7 +104,7 @@ export default function Sidebar() {
                         } `}
                       >
                         <div className="relative">
-                          {item?.label === "Today" && (
+                          {item?.label === "Calendar" && (
                             <span className="absolute top-[6px] left-[5px] text-[9px] font-bold">
                               {new Date().getDate()}
                             </span>

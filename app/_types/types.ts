@@ -14,7 +14,6 @@ export interface Task {
   delayCount: number;
   points: number;
   tags?: string[]; // For user-defined tags like 'morning routine', 'gym'
-  preconditionTaskIds?: string[]; // IDs of tasks that must be completed first
   createdAt: Date; // Stored as Timestamp in Firestore
   updatedAt: Date; // Stored as Timestamp in Firestore
   completedAt?: Date; // Stored as Timestamp in Firestore, set when status is 'completed'

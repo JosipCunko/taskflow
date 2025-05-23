@@ -17,7 +17,6 @@ import IconPicker from "./IconPicker";
 import DatePicker from "./DatePicker";
 import Input from "./reusable/Input";
 import Modal, { ModalContext } from "./Modal";
-import { format } from "date-fns";
 interface AddTaskProps {
   onCloseModal?: () => void;
 }
