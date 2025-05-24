@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { getTaskIconByName, CardSpecificIcons, handleToast } from "../utils";
 import { formatDate, formatDateTime } from "../utils";
 import { Task } from "../_types/types";
-import { isPast, isSameDay, isToday } from "date-fns";
+import { format, isPast, isSameDay, isToday } from "date-fns";
 import { useFormStatus } from "react-dom";
 import Button from "./reusable/Button";
 import { useState } from "react";
@@ -14,8 +14,10 @@ import {
   togglePriorityAction,
   updateTaskStatusAction,
   deleteTaskAction,
+  updateTaskExperienceAction,
 } from "../_lib/actions";
 import { useOutsideClick } from "../hooks/useOutsideClick";
+import EmojiExperience from "./EmojiExperience";
 
 function ActionSubmitButton({
   children,
@@ -34,7 +36,7 @@ function ActionSubmitButton({
       type="submit"
       disabled={pending}
       variant="secondary"
-      className={`w-full text-left px-3 py-2.5 text-sm text-text-gray    ${className} ${
+      className={`w-full text-left px-2.5 py-2.5 text-sm text-text-gray    ${className} ${
         pending ? "opacity-50 cursor-not-allowed" : ""
       }`}
     >
@@ -124,6 +126,10 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
         return (
           <CardSpecificIcons.ExperienceBad className="w-5 h-5 text-red-400" />
         );
+      case "best":
+        return (
+          <CardSpecificIcons.ExperienceBest className="w-5 h-5 text-yellow-400" />
+        );
       default:
         return null;
     }
@@ -151,11 +157,17 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
         >
           <TaskIcon size={24} style={{ color: task.color }} />
         </div>
-        <div className="flex-grow min-w-0">
-          <h3 className="text-lg font-semibold text-text-high break-words text-pretty mb-2 truncate">
+        <div className="flex-grow min-w-0 flex flex-col gap-2">
+          <h3 className="text-lg font-semibold text-text-high break-words text-pretty truncate">
             {task.title}
           </h3>
+          {task.description && (
+            <p className="text-sm mb-4 text-text-gray leading-relaxed line-clamp-3">
+              {task.description}
+            </p>
+          )}
         </div>
+
         <div className="relative shrink-0">
           <Button
             variant="secondary"
@@ -227,7 +239,8 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
                             const res = await delayTaskAction(
                               formData,
                               hour,
-                              min
+                              min,
+                              task.delayCount
                             );
                             handleToast(res, () => setIsDropdownOpen(false));
                           }}
@@ -275,7 +288,8 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
                                 const res = await delayTaskAction(
                                   formData,
                                   hour,
-                                  min
+                                  min,
+                                  task.delayCount
                                 );
                                 handleToast(res, () =>
                                   setIsDropdownOpen(false)
@@ -373,6 +387,20 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
                     </form>
                   </li>
                 )}
+                {/* Emoji experience */}
+                {task.status === "completed" && (
+                  <li>
+                    <form
+                      action={async (formData: FormData) => {
+                        const res = await updateTaskExperienceAction(formData);
+                        handleToast(res, () => setIsDropdownOpen(false));
+                      }}
+                    >
+                      <input type="hidden" name="taskId" value={task.id} />
+                      <EmojiExperience currentExperience={task.experience} />
+                    </form>
+                  </li>
+                )}
 
                 <li className="my-1">
                   <hr className="border-divider opacity-50" />
@@ -405,18 +433,14 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
       </div>
 
       <div className="p-5 flex-grow space-y-3">
-        {task.description && (
-          <p className="text-sm mb-4 text-text-gray leading-relaxed line-clamp-3">
-            {task.description}
-          </p>
-        )}
-
         <div className="flex flex-wrap gap-3 items-center text-xs">
           <div
             className={`flex items-center space-x-1 px-2 py-1 rounded-full ${statusInfo.bgColorClass}`}
           >
             <StatusIcon size={14} className={statusInfo.colorClass} />
-            <span className={statusInfo.colorClass}>{statusInfo.text}</span>
+            <span className={statusInfo.colorClass}>
+              {task.dueDate < new Date() ? "Missed" : statusInfo.text}
+            </span>
             {task.status === "delayed" && task.delayCount > 0 && (
               <span className={`ml-1 font-semibold ${statusInfo.colorClass}`}>
                 ({task.delayCount})
@@ -433,7 +457,9 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
             <CardSpecificIcons.DueDate size={14} />
             <span>
               Due: {formatDate(task.dueDate)}{" "}
-              {`${hour}:${min}` === "23:59" ? "" : `${hour}:${min}`}
+              {`${hour}:${min}` === "23:59"
+                ? ""
+                : `${format(task.dueDate, "p")}`}
             </span>
             {isToday(task.dueDate) && (
               <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-primary-600 text-white font-semibold">

@@ -1,4 +1,4 @@
-import { Search, ArrowLeft } from "lucide-react";
+import { Search } from "lucide-react";
 import Link from "next/link";
 import Button from "./_components/reusable/Button";
 

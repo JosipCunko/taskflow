@@ -1,17 +1,14 @@
 import { getServerSession } from "next-auth";
-import TaskCard from "../_components/TaskCard";
-import { authOptions } from "../api/auth/[...nextauth]/route";
-import { getTasksByUserId } from "../_lib/tasks";
 import { SquareCheckBig } from "lucide-react";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { getTasksByUserId } from "@/app/_lib/tasks";
+import TaskCard from "@/app/_components/TaskCard";
 
 export default async function CompletedTasksPage() {
   const session = await getServerSession(authOptions);
   if (!session || !session.user || !session.user.id) {
     console.error("User not authenticated or user ID missing from session.");
-    return {
-      success: false,
-      error: "User not authenticated.",
-    };
+    return null;
   }
   const userId = session.user.id;
   const userTasks = await getTasksByUserId(userId);
@@ -36,12 +33,7 @@ export default async function CompletedTasksPage() {
           {userCompletedTasks.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {userCompletedTasks.map((task, idx) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  index={idx}
-                  showCompleted={true}
-                />
+                <TaskCard key={task.id} task={task} index={idx} />
               ))}
             </div>
           ) : (

@@ -3,15 +3,14 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Search as SearchIcon,
-  FileText,
   ChevronRight,
   MessageSquare,
 } from "lucide-react";
-import { errorToast, navItemsToSearch } from "../utils";
+import { errorToast, getTaskIconByName, navItemsToSearch } from "../utils";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
-import { searchUserTasks, SearchedTask } from "../_lib/tasks";
+import { searchUserTasks } from "../_lib/tasks";
 import Loader from "./Loader";
+import { SearchedTask, Task } from "../_types/types";
 
 const debounce = <F extends (...args: any[]) => any>(
   func: F,
@@ -32,25 +31,24 @@ const debounce = <F extends (...args: any[]) => any>(
 
 interface SearchProps {
   onCloseModal?: () => void;
+  tasks: Task[];
 }
 
-export default function Search({ onCloseModal }: SearchProps) {
+export default function Search({ onCloseModal, tasks }: SearchProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchedTask[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const session = useSession();
-  const userId = session.data?.user.id;
 
   const performSearch = useCallback(
     async (query: string) => {
-      if (!userId || !query.trim()) {
+      if (!query.trim()) {
         setSearchResults([]);
         setIsLoading(false);
         return;
       }
       setIsLoading(true);
       try {
-        const results = await searchUserTasks(userId, query);
+        const results = await searchUserTasks(query, tasks);
         setSearchResults(results);
       } catch (error: any) {
         errorToast(error.message);
@@ -59,7 +57,7 @@ export default function Search({ onCloseModal }: SearchProps) {
         setIsLoading(false);
       }
     },
-    [userId]
+    [tasks]
   );
 
   const debouncedSearch = useCallback(debounce(performSearch, 300), [
@@ -89,8 +87,8 @@ export default function Search({ onCloseModal }: SearchProps) {
   return (
     <div className="w-full">
       <div
-        className="flex items-center gap-4 p-2 relative rounded-md 
-           border-background-500 bg-background-700"
+        className={`flex items-center gap-4 p-2 relative rounded-md 
+           border-background-500 bg-background-700 border-1 `}
       >
         <SearchIcon size={18} className="text-text-low flex-shrink-0" />
         <input
@@ -131,41 +129,49 @@ export default function Search({ onCloseModal }: SearchProps) {
               Tasks
             </h3>
             <ul className="space-y-1">
-              {searchResults.map((task) => (
-                <li key={task.id}>
-                  {/*
+              {searchResults.map((task) => {
+                const Icon = getTaskIconByName(task.icon);
+
+                return (
+                  <li key={task.id}>
+                    {/*
                     Ideally, this Link would navigate to a specific task view
                     For now, it's a placeholder. You might also make the whole
                     <li> a button that, onClick, navigates and closes the modal.
                   */}
-                  <Link
-                    href={`/tasks/${task.id}`} // Example link, adjust to your task detail page
-                    onClick={handleItemClick}
-                    className="flex items-center justify-between w-full p-2.5 hover:bg-background-500 rounded-md text-left group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <FileText
-                        size={18}
-                        className="text-text-low group-hover:text-primary-400 flex-shrink-0"
-                      />
-                      <div className="overflow-hidden">
-                        <span className="block text-sm text-text-high truncate group-hover:text-primary-400">
-                          {task.title}
-                        </span>
-                        {task.description && (
-                          <span className="block text-xs text-text-gray truncate">
-                            {task.description}
+                    <Link
+                      href={`/tasks`}
+                      onClick={handleItemClick}
+                      className={`flex items-center justify-between w-full p-2.5 hover:bg-background-500 rounded-md text-left  group border-l-4`}
+                      style={{
+                        borderLeftColor: task.color,
+                        transition: "border-color 0.2s",
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon
+                          size={18}
+                          className="text-text-low group-hover:text-primary-400 flex-shrink-0"
+                        />
+                        <div className="overflow-hidden">
+                          <span className="block text-sm text-text-high truncate group-hover:text-primary-400">
+                            {task.title}
                           </span>
-                        )}
+                          {task.description && (
+                            <span className="block text-xs text-text-gray truncate">
+                              {task.description}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <ChevronRight
-                      size={16}
-                      className="text-text-low group-hover:text-primary-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                    />
-                  </Link>
-                </li>
-              ))}
+                      <ChevronRight
+                        size={16}
+                        className="text-text-low group-hover:text-primary-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                      />
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}

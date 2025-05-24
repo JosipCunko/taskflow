@@ -1,10 +1,10 @@
 "use client";
+import Loader from "@/app/_components/Loader";
+import Button from "@/app/_components/reusable/Button";
+import { signOut } from "@/app/_lib/auth";
 import { User, Award, LogOut } from "lucide-react";
-import Button from "../_components/reusable/Button";
 import { useSession } from "next-auth/react";
-import Loader from "../_components/Loader";
 import Image from "next/image";
-
 export default function ProfilePage() {
   const { data: session, status } = useSession();
 
@@ -50,7 +50,11 @@ export default function ProfilePage() {
                   </span>
                 </div>
 
-                <Button className="mt-6 mx-auto" variant="danger">
+                <Button
+                  className="mt-6 mx-auto"
+                  variant="danger"
+                  onClick={signOut}
+                >
                   <LogOut size={18} />
                   <span>Sign Out</span>
                 </Button>

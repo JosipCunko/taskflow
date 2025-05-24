@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { DayPicker } from "react-day-picker";
-import "react-day-picker/dist/style.css";
 import { format, isSameDay } from "date-fns";
 import {
   CalendarDays,
@@ -12,12 +11,13 @@ import {
 } from "lucide-react";
 
 import { errorToast } from "@/app/utils";
-import { Task } from "../_types/types";
 import { useSession } from "next-auth/react";
-import { getTasksByUserId } from "../_lib/tasks";
-import TaskCardSmall from "../_components/TaskCardSmall";
-import Button from "../_components/reusable/Button";
-import Loader from "../_components/Loader";
+import { Task } from "@/app/_types/types";
+import { getTasksByUserId } from "@/app/_lib/tasks";
+import Button from "@/app/_components/reusable/Button";
+import Checkbox from "@/app/_components/reusable/Checkbox";
+import Loader from "@/app/_components/Loader";
+import TaskCardSmall from "@/app/_components/TaskCardSmall";
 
 export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
@@ -27,18 +27,22 @@ export default function CalendarPage() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const session = useSession();
 
+  const [showCompleted, setShowCompleted] = useState(false);
+
   const fetchTasks = useCallback(async () => {
     setIsLoading(true);
     try {
       const res = await getTasksByUserId(session.data?.user.id);
-      setAllTasks(res);
+      setAllTasks(
+        showCompleted ? res : res.filter((task) => task.status !== "completed")
+      );
     } catch (error: any) {
       setAllTasks([]);
       errorToast(error.message);
     } finally {
       setIsLoading(false);
     }
-  }, [session.data?.user.id]);
+  }, [session.data?.user.id, showCompleted]);
 
   useEffect(
     function () {
@@ -54,10 +58,8 @@ export default function CalendarPage() {
   /** Memoized list of tasks for the selected day */
   const tasksForSelectedDay = useMemo(() => {
     if (!selectedDate) return [];
-    return allTasks.filter(
-      (task) =>
-        isSameDay(new Date(task.dueDate), selectedDate) &&
-        task.type !== "repeating"
+    return allTasks.filter((task) =>
+      isSameDay(new Date(task.dueDate), selectedDate)
     );
   }, [selectedDate, allTasks]);
 
@@ -65,9 +67,7 @@ export default function CalendarPage() {
   const daysWithTasks = useMemo(() => {
     const dates = new Set<string>();
     allTasks.forEach((task) => {
-      if (task.type !== "repeating") {
-        dates.add(format(new Date(task.dueDate), "MMMM do, yyyy"));
-      }
+      dates.add(format(new Date(task.dueDate), "MMMM do, yyyy"));
     });
     return dates;
   }, [allTasks]);
@@ -80,7 +80,7 @@ export default function CalendarPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-background-700 text-text-high p-4 sm:p-6 md:p-8">
+      <div className="max-h-screen  bg-background-700 text-text-high p-4 sm:p-6 md:p-8">
         <div className="mb-6 md:mb-8">
           <h1 className="text-3xl sm:text-4xl font-bold text-primary-400 flex items-center">
             <CalendarDays className="w-8 h-8 mr-3 text-primary-500" />
@@ -113,9 +113,18 @@ export default function CalendarPage() {
                 className={`w-5 h-5 ${isLoading ? "animate-spin" : ""}`}
               />
             </Button>
+
+            <Checkbox
+              id="completed"
+              name="completed"
+              checked={showCompleted}
+              onChange={() => setShowCompleted(!showCompleted)}
+              label="Show completed tasks"
+              className="absolute top-18 right-[7%]"
+            />
           </div>
 
-          <div className="lg:col-span-3 bg-background-600 p-4 sm:p-6 rounded-xl shadow-xl relative">
+          <div className="lg:col-span-3 bg-background-600 p-4 sm:p-6 rounded-xl shadow-xl relative max-h-[370px] overflow-scroll">
             <div className="flex items-center mb-4 sm:mb-6">
               <ListChecks className="w-6 h-6 mr-2 text-primary-400" />
               <h2 className="text-xl sm:text-2xl font-semibold text-text-high">

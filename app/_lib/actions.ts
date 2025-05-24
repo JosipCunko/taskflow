@@ -34,11 +34,35 @@ export async function updateTaskStatusAction(
     };
   }
 }
+export async function updateTaskExperienceAction(
+  formData: FormData
+): Promise<ActionResult> {
+  const taskId = formData.get("taskId") as string;
+  const newExperience = formData.get("experience") as Task["experience"];
+
+  console.log(`ACTION: Mark Task ${taskId} as ${newExperience}`);
+  try {
+    await updateTask(taskId, {
+      experience: newExperience,
+    });
+    revalidatePath("/tasks");
+    return {
+      success: true,
+      message: `Task experience marked as ${newExperience}.`,
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      error: err.message || "Failed to update task experience.",
+    };
+  }
+}
 
 export async function delayTaskAction(
   formData: FormData,
   hour: number,
-  min: number
+  min: number,
+  delayCount: number
 ): Promise<ActionResult> {
   const taskId = formData.get("taskId") as string;
   const delayOption = formData.get("delayOption") as "tomorrow" | "nextWeek";
@@ -54,7 +78,11 @@ export async function delayTaskAction(
     `ACTION: Delay Task ${taskId} to ${delayOption} (${newDueDate.toISOString()})`
   );
   try {
-    await updateTask(taskId, { dueDate: newDueDate, status: "pending" });
+    await updateTask(taskId, {
+      dueDate: newDueDate,
+      status: "delayed",
+      delayCount,
+    });
     revalidatePath("/tasks");
     return {
       success: true,

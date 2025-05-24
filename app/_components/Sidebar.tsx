@@ -16,46 +16,47 @@ import Search from "@/app/_components/Search";
 import Button from "./reusable/Button";
 import Image from "next/image";
 import Modal from "./Modal";
+import { Task } from "../_types/types";
 
-export default function Sidebar() {
+export default function Sidebar({ tasks }: { tasks: Task[] }) {
   const pathname = usePathname();
 
   const navItems = {
     general: [
       {
         label: "Dashboard",
-        href: "/",
+        href: "/webapp/",
         icon: Home,
       },
       { label: "Search", icon: SearchIcon, href: "" },
-      { label: "Inbox", icon: Inbox, href: "/inbox" },
+      { label: "Inbox", icon: Inbox, href: "/webapp/inbox" },
     ],
     tasks: [
       {
         label: "Calendar",
-        href: "/calendar",
+        href: "/webapp/calendar",
         icon: Calendar,
       },
       {
         label: "Tasks",
-        href: "/tasks",
+        href: "/webapp/tasks",
         icon: ChartColumn,
       },
       {
         label: "Completed",
-        href: "/completed",
+        href: "/webapp/completed",
         icon: CheckSquare,
       },
     ],
     me: [
       {
         label: "Profile",
-        href: "/profile",
+        href: "/webapp/profile",
         icon: User,
       },
       {
         label: "Settings",
-        href: "/settings",
+        href: "/webapp/settings",
         icon: Settings2,
       },
     ],
@@ -96,7 +97,7 @@ export default function Sidebar() {
                           </Button>
                         </Modal.Open>
                         <Modal.Window name="search" showButton>
-                          <Search />
+                          <Search tasks={tasks} />
                         </Modal.Window>
                       </Modal>
                     ) : (

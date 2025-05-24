@@ -23,7 +23,6 @@
   --radius-sm: 100px;
   --test: #f87171;
 }
-
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -31,6 +30,10 @@
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+::-webkit-scrollbar-corner {
+  background-color: transparent;
+}
+
 @layer components {
   ::-webkit-scrollbar-thumb {
     @apply bg-divider rounded-md;
@@ -121,4 +124,16 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 .day-with-tasks {
   position: relative;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }

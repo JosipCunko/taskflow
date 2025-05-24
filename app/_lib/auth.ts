@@ -47,7 +47,7 @@ export const signInWithGoogle = async (): Promise<void> => {
       // At this point, the Firestore user document creation/update is handled
       // by the `authorize` callback in your NextAuth configuration.
       // You can redirect or update UI state as needed.
-      // Example: window.location.href = '/dashboard';
+      window.location.href = "/webapp";
     } else {
       throw new Error("No user returned from Firebase sign-in.");
     }

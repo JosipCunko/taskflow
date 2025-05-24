@@ -17,7 +17,7 @@ import {
   // DocumentSnapshot, // For createdAt, updatedAt
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { Task } from "@/app/_types/types";
+import { SearchedTask, Task } from "@/app/_types/types";
 import { isSameDay } from "date-fns";
 
 const TASKS_COLLECTION = "tasks";
@@ -86,7 +86,9 @@ export const getTaskByTaskId = async (taskId: string): Promise<Task | null> => {
  * @param {string} userId - The ID of the user whose tasks to fetch.
  * @returns {Promise<Task[]>} An array of tasks.
  */
-export const getTasksByUserId = async (userId: string): Promise<Task[]> => {
+export const getTasksByUserId = async (
+  userId: string | undefined
+): Promise<Task[]> => {
   if (!userId) {
     console.warn("getTasksByUserId called without a userId.");
     return [];
@@ -329,15 +331,9 @@ export const deleteTask = async (taskId: string): Promise<void> => {
   }
 };
 
-export interface SearchedTask {
-  id: string;
-  title: string;
-  description?: string;
-}
-
 export async function searchUserTasks(
-  userId: string,
-  query: string
+  query: string,
+  tasks: Task[]
 ): Promise<SearchedTask[]> {
   if (!query.trim()) {
     return [];
@@ -345,37 +341,18 @@ export async function searchUserTasks(
 
   await new Promise((resolve) => setTimeout(resolve, 300));
 
-  const mockAllTasks: SearchedTask[] = [
-    {
-      id: "task1",
-      title: "Finalize project proposal",
-      description: "Review feedback and update the document for client A.",
-    },
-    {
-      id: "task2",
-      title: "Schedule team meeting",
-      description: "Discuss Q3 roadmap and resource allocation.",
-    },
-    {
-      id: "task3",
-      title: "Buy groceries",
-      description: "Milk, eggs, bread, and project snacks.",
-    },
-    {
-      id: "task4",
-      title: "Client call: Project Phoenix",
-      description: "Discuss milestone 2 deliverables.",
-    },
-    { id: "task5", title: "Gym session", description: "Leg day, don't skip!" },
-    {
-      id: "task6",
-      title: "Read Next.js documentation",
-      description: "Focus on Server Actions and new router features.",
-    },
-  ];
+  const filteredUserTasks = tasks.filter((task) => {
+    return {
+      id: task.id,
+      title: task.title,
+      description: task.description,
+      icon: task.icon,
+      color: task.color,
+    };
+  });
 
   const lowerCaseQuery = query.toLowerCase();
-  return mockAllTasks.filter(
+  return filteredUserTasks.filter(
     (task) =>
       task.title.toLowerCase().includes(lowerCaseQuery) ||
       (task.description &&

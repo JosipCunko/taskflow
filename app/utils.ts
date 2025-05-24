@@ -1,8 +1,6 @@
 import {
-  Coffee,
   Sunrise,
   AlarmClock,
-  Droplets,
   Dumbbell,
   Timer,
   Activity,
@@ -10,15 +8,10 @@ import {
   User,
   Home,
   Apple,
-  Stethoscope,
-  Pill,
   Briefcase,
   Laptop,
   FileText,
-  CreditCard,
-  DollarSign,
   ShoppingCart,
-  Receipt,
   Inbox,
   Calendar,
   Bell,
@@ -43,132 +36,119 @@ import {
   BellPlus,
   ArrowRightLeft,
   ChartColumn,
+  BellRing,
+  BookOpen,
+  Code,
+  Gamepad2,
+  Phone,
+  Award,
+  BicepsFlexed,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { Task } from "./_types/types";
+import { EmojiOption, Task } from "./_types/types";
 
 /** Possible task icons to set in the IconPicker*/
 export const TASK_ICONS = [
   {
     id: "user",
-    type: "personal",
     icon: User,
     label: "User",
   },
   {
-    id: "coffee",
-    type: "morning routine",
-    icon: Coffee,
-    label: "Coffee",
+    id: "Activity",
+    icon: Activity,
+    label: "Activity",
   },
   {
-    id: "sunrise",
-    type: "morning routine",
-    icon: Sunrise,
-    label: "Sunrise",
-  },
-  {
-    id: "alarm-clock",
-    type: "morning routine",
+    id: "AlarmClock",
     icon: AlarmClock,
     label: "Alarm Clock",
   },
   {
-    id: "droplets",
-    type: "morning routine",
-    icon: Droplets,
-    label: "Water/Shower",
+    id: "Apple",
+    icon: Apple,
+    label: "Apple",
+  },
+  {
+    id: "Award",
+    icon: Award,
+    label: "Award",
   },
   {
     id: "dumbbell",
-    type: "gym",
     icon: Dumbbell,
     label: "Dumbbell",
   },
   {
     id: "timer",
-    type: "gym",
     icon: Timer,
     label: "Timer",
   },
   {
-    id: "activity",
-    type: "gym",
-    icon: Activity,
-    label: "Activity",
+    id: "BellRing",
+    icon: BellRing,
+    label: "BellRing",
   },
   {
     id: "heart",
-    type: "personal",
     icon: Heart,
     label: "Heart",
   },
 
   {
     id: "home",
-    type: "personal",
     icon: Home,
     label: "Home",
   },
   {
-    id: "apple",
-    type: "health",
-    icon: Apple,
-    label: "Apple",
+    id: "BookOpen",
+    icon: BookOpen,
+    label: "Book",
   },
   {
-    id: "stethoscope",
-    type: "health",
-    icon: Stethoscope,
-    label: "Stethoscope",
-  },
-  {
-    id: "pill",
-    type: "health",
-    icon: Pill,
-    label: "Pill",
-  },
-  {
-    id: "briefcase",
-    type: "work",
+    id: "Briefcase",
     icon: Briefcase,
     label: "Briefcase",
   },
   {
+    id: "Star",
+    icon: Star,
+    label: "Star",
+  },
+  {
+    id: "Smile",
+    icon: Smile,
+    label: "Smile",
+  },
+  {
     id: "laptop",
-    type: "work",
     icon: Laptop,
     label: "Laptop",
   },
   {
     id: "file-text",
-    type: "work",
     icon: FileText,
     label: "File",
   },
   {
-    id: "credit-card",
-    type: "expense",
-    icon: CreditCard,
-    label: "Credit Card",
+    id: "Phone",
+    icon: Phone,
+    label: "Phone",
   },
   {
-    id: "dollar-sign",
-    type: "expense",
-    icon: DollarSign,
-    label: "Dollar",
+    id: "Code",
+    icon: Code,
+    label: "Code",
   },
   {
     id: "shopping-cart",
-    type: "expense",
     icon: ShoppingCart,
     label: "Shopping Cart",
   },
   {
-    id: "receipt",
-    type: "expense",
-    icon: Receipt,
-    label: "Receipt",
+    id: "Gamepad",
+    icon: Gamepad2,
+    label: "Gamepad",
   },
 ];
 
@@ -211,26 +191,26 @@ export const FEATURES = [
 
 /* Color picker */
 export const colorsColorPicker = [
-  "#3b82f6",
-  "#64748b",
-  "#f97316",
-  "#ef4444",
-  "#eab308",
-  "#84cc16",
+  "#86efac",
+  "#bae6fd",
+  "#0e7490",
+  "#a3e635",
+  "#14b8a6",
+  "#fbbf24",
   "#10b981",
-  "#06b6d4",
-  "#8b5cf6",
+  "#22d3ee",
+  "#4d7c0f",
+  "#d97706",
+  "#4f46e5",
+  "#f87171",
+  "#3b82f6",
   "#d946ef",
-  "#ec4899",
-  "#4c0519",
-  "#1e1b4b",
-  "#042f2e",
-  "#0c0a09",
-  "#fecaca",
-  "#e2e8f0",
-  "#fef08a",
-  "#bbf7d0",
-  "#bfdbfe",
+  "#fb923c",
+  "#78716c",
+  "#334155",
+  "#b91c1c",
+  "#94a3b8",
+  "#ea580c",
 ];
 
 /** Search feature */
@@ -239,25 +219,25 @@ export const navItemsToSearch = [
     icon: Home,
     label: "Dashboard",
     command: ["Ctrl", "H"],
-    link: "/",
+    link: "/webapp/",
   },
   {
     icon: Inbox,
     label: "Inbox",
     command: ["Ctrl", "I"],
-    link: "/inbox",
+    link: "/webapp/inbox",
   },
   {
     icon: ChartColumn,
     label: "Tasks",
     command: ["Ctrl", "F"],
-    link: "/tasks",
+    link: "/webapp/tasks",
   },
   {
     icon: Calendar,
     label: "Calendar",
     command: ["Ctrl", "U"],
-    link: "/calendar",
+    link: "/webapp/calendar",
   },
 ];
 
@@ -351,6 +331,8 @@ export const CardSpecificIcons = {
   AddPriority: Zap,
   RemovePriority: ZapOff,
   SetReminder: BellPlus,
+  Smile: Smile,
+  ExperienceBest: BicepsFlexed,
 };
 
 /* Toaster */
@@ -419,7 +401,6 @@ export const sampleTasks: Task[] = [
     title: "Grocery Shopping for the Week",
     description:
       "Buy fruits, vegetables, milk, and other essentials for the week. Check pantry for stock.",
-    type: "Personal",
     icon: "ShoppingCart",
     color: "#10B981", // Green
     isPriority: false,
@@ -427,7 +408,6 @@ export const sampleTasks: Task[] = [
     dueDate: new Date(Date.now() + 86400000 * 2), // In 2 days
     status: "pending",
     delayCount: 0,
-    points: 5,
     tags: ["home", "essentials"],
     createdAt: new Date(Date.now() - 86400000 * 3),
     updatedAt: new Date(Date.now() - 86400000 * 3),
@@ -439,7 +419,6 @@ export const sampleTasks: Task[] = [
     title: "Submit Monthly Expense Report",
     description:
       "Compile all receipts and submit the expense report for last month through the company portal.",
-    type: "Admin",
     icon: "ClipboardList",
     color: "#F59E0B", // Amber
     isPriority: false,
@@ -447,11 +426,17 @@ export const sampleTasks: Task[] = [
     dueDate: new Date(Date.now() - 86400000 * 10), // Due 10 days ago
     status: "completed",
     delayCount: 0,
-    points: 3,
     tags: ["finance", "report"],
     createdAt: new Date(Date.now() - 86400000 * 40),
     updatedAt: new Date(Date.now() - 86400000 * 10),
     completedAt: new Date(Date.now() - 86400000 * 9),
     experience: "good",
   },
+];
+
+export const emojiOptions: EmojiOption[] = [
+  { id: "bad", emoji: Frown, label: "Bad", selected: false },
+  { id: "okay", emoji: Meh, label: "Okay", selected: false },
+  { id: "good", emoji: Smile, label: "Good", selected: false },
+  { id: "best", emoji: BicepsFlexed, label: "Best", selected: false },
 ];
