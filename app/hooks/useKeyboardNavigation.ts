@@ -1,6 +1,6 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { navSearchItems } from "../utils";
+import { navItemsToSearch } from "../utils";
 
 export function useKeyboardNavigation() {
   const router = useRouter();
@@ -11,7 +11,7 @@ export function useKeyboardNavigation() {
       if (event.ctrlKey) {
         const key = event.key.toUpperCase();
 
-        const matchingItem = navSearchItems.find(
+        const matchingItem = navItemsToSearch.find(
           (item) => item.command[1] === key
         );
 

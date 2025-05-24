@@ -5,16 +5,17 @@ import { usePathname } from "next/navigation";
 import {
   CheckSquare,
   User,
-  Settings,
-  CalendarArrowUp,
   Calendar,
-  Search,
+  Search as SearchIcon,
   Home,
   Inbox,
   ChartColumn,
+  Settings2,
 } from "lucide-react";
+import Search from "@/app/_components/Search";
 import Button from "./reusable/Button";
 import Image from "next/image";
+import Modal from "./Modal";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -26,7 +27,7 @@ export default function Sidebar() {
         href: "/",
         icon: Home,
       },
-      { label: "Search", icon: Search, href: "" },
+      { label: "Search", icon: SearchIcon, href: "" },
       { label: "Inbox", icon: Inbox, href: "/inbox" },
     ],
     tasks: [
@@ -55,7 +56,7 @@ export default function Sidebar() {
       {
         label: "Settings",
         href: "/settings",
-        icon: Settings,
+        icon: Settings2,
       },
     ],
   };
@@ -64,7 +65,7 @@ export default function Sidebar() {
     <aside className="w-64 h-full bg-background-700 flex flex-col">
       <div className="p-4">
         <div className="grid place-items-center">
-          <Image src="/logo.png" alt="Taskflow" width={200} height={10} />
+          <Image src="/logo.png" alt="Taskflow" width={200} height={200} />
         </div>
       </div>
       <nav className="p-2 flex-1 flex flex-col">
@@ -82,26 +83,31 @@ export default function Sidebar() {
                 return (
                   <li key={item.href}>
                     {item.label === "Search" ? (
-                      <Button
-                        variant="sidebar"
-                        className={`gap-3 py-3 hover:bg-background-500/40
+                      <Modal>
+                        <Modal.Open opens="search">
+                          <Button
+                            variant="sidebar"
+                            className={`gap-3 py-3 hover:bg-background-500/40 text-text-low font-medium hover:text-text-high
                           `}
-                        onClick={() =>
-                          console.log("SEARCH BUTTON NEEDS IMPLEMENTATION")
-                        }
-                      >
-                        <item.icon size={20} />
+                          >
+                            <item.icon size={20} />
 
-                        <span>{item.label}</span>
-                      </Button>
+                            <span>{item.label}</span>
+                          </Button>
+                        </Modal.Open>
+                        <Modal.Window name="search" showButton>
+                          <Search />
+                        </Modal.Window>
+                      </Modal>
                     ) : (
                       <Link
                         href={item.href}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-md transition-colors ${
-                          isActive
-                            ? "bg-inherit text-primary"
-                            : "text-text-low hover:bg-background-500/40 hover:text-text-high"
-                        } `}
+                        className={`
+                          flex items-center gap-3 px-4 py-3 rounded-md transition-colors ${
+                            isActive
+                              ? "bg-background-500 text-primary"
+                              : "text-text-low hover:bg-background-500/40 hover:text-text-high"
+                          } `}
                       >
                         <div className="relative">
                           {item?.label === "Calendar" && (

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
 import Sidebar from "./_components/Sidebar";
-import Search from "./_components/Search";
 import TopSidebar from "./_components/TopSidebar";
 import { Toaster } from "react-hot-toast";
 import AuthProvider from "./_components/auth/AuthProvider";
@@ -35,9 +34,7 @@ export default async function RootLayout({
             <Sidebar />
             <main className="flex-1 overflow-auto bg-background-625 flex flex-col">
               <TopSidebar session={session} />
-              <div className="w-full p-4 border-b border-background-500 ">
-                <Search />
-              </div>
+
               <div className="flex-1 overflow-auto relative">{children}</div>
             </main>
           </div>

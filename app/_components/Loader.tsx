@@ -8,7 +8,7 @@ export default function Loader({ label = undefined }: { label?: string }) {
         <div className="dot"></div>
         <div className="dot"></div>
       </section>
-      {label && <span className="text-lg">{label}</span>}
+      {label && <span className="text-lg text-text-low">{label}</span>}
     </div>
   );
 }

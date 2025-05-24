@@ -1,6 +1,6 @@
 "use client";
 
-import { COLORS } from "../utils";
+import { colorsColorPicker } from "../utils";
 
 export default function ColorPicker({
   selectedColor,
@@ -18,7 +18,7 @@ export default function ColorPicker({
         Tag color
       </label>
       <div className="grid grid-cols-10 gap-2 mb-4">
-        {COLORS.map((color) => (
+        {colorsColorPicker.map((color) => (
           <button
             type="button"
             key={color}

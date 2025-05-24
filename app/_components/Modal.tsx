@@ -72,7 +72,7 @@ function Window({ children, name, showButton = undefined }: WindowProps) {
 
   return createPortal(
     <div
-      className="fixed top-0 left-0 w-full h-[100vh] bg-background-625 backdrop-blur-sm z-[999] p-0" // adjusted backdrop-blur and z-index
+      className="fixed top-0 left-0 w-full h-[100vh] bg-background-625 backdrop-blur-sm z-[999] p-0 " // adjusted backdrop-blur and z-index
     >
       <div
         className="fixed top-[50%] left-[50%] rounded-lg shadow-lg bg-background-700 p-4"

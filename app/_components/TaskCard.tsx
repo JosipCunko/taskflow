@@ -1,10 +1,10 @@
 "use client"; // using Next.js App Router and framer-motion client features
 
 import { AnimatePresence, motion } from "framer-motion";
-import { getTaskIconByName, CardSpecificIcons } from "../utils";
+import { getTaskIconByName, CardSpecificIcons, handleToast } from "../utils";
 import { formatDate, formatDateTime } from "../utils";
 import { Task } from "../_types/types";
-import { isPast } from "date-fns";
+import { isPast, isSameDay, isToday } from "date-fns";
 import { useFormStatus } from "react-dom";
 import Button from "./reusable/Button";
 import { useState } from "react";
@@ -56,14 +56,9 @@ function ActionSubmitButton({
 interface TaskCardProps {
   task: Task;
   index?: number;
-  onOpenUpdateModal?: (task: Task) => void;
 }
 
-export default function TaskCard({
-  task,
-  index = 0,
-  onOpenUpdateModal,
-}: TaskCardProps) {
+export default function TaskCard({ task, index = 0 }: TaskCardProps) {
   const TaskIcon = getTaskIconByName(task.icon);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const statusInfo = getStatusStyles();
@@ -71,6 +66,8 @@ export default function TaskCard({
   const isPastDue = !task.completedAt && isPast(new Date(task.dueDate));
   // Crutial callback implementation to avoid too many re-renders
   const outsideClickRef = useOutsideClick(() => setIsDropdownOpen(false));
+  const hour = task.dueDate.getHours();
+  const min = task.dueDate.getMinutes();
 
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -131,9 +128,6 @@ export default function TaskCard({
         return null;
     }
   };
-
-  // ---Maybe handlers for server actions (can use useFormState for feedback)
-
   return (
     <motion.div
       variants={cardVariants}
@@ -161,9 +155,6 @@ export default function TaskCard({
           <h3 className="text-lg font-semibold text-text-high break-words text-pretty mb-2 truncate">
             {task.title}
           </h3>
-          <p className="text-xs font-semibold  text-text-low uppercase tracking-wider">
-            {task.type}
-          </p>
         </div>
         <div className="relative shrink-0">
           <Button
@@ -191,8 +182,10 @@ export default function TaskCard({
                 {task.status !== "completed" && (
                   <li>
                     <form
-                      action={updateTaskStatusAction}
-                      onSubmit={() => setIsDropdownOpen(false)}
+                      action={async (formData: FormData) => {
+                        const res = await updateTaskStatusAction(formData);
+                        handleToast(res, () => setIsDropdownOpen(false));
+                      }}
                     >
                       <input type="hidden" name="taskId" value={task.id} />
                       <input type="hidden" name="newStatus" value="completed" />
@@ -205,8 +198,10 @@ export default function TaskCard({
                 {task.status === "completed" && (
                   <li>
                     <form
-                      action={updateTaskStatusAction}
-                      onSubmit={() => setIsDropdownOpen(false)}
+                      action={async (formData: FormData) => {
+                        const res = await updateTaskStatusAction(formData);
+                        handleToast(res, () => setIsDropdownOpen(false));
+                      }}
                     >
                       <input type="hidden" name="taskId" value={task.id} />
                       <input type="hidden" name="newStatus" value="pending" />
@@ -222,42 +217,92 @@ export default function TaskCard({
                 {/* ---: Action: Delay --- */}
                 {task.status !== "completed" && (
                   <>
-                    <li>
-                      <form
-                        action={delayTaskAction}
-                        onSubmit={() => setIsDropdownOpen(false)}
-                      >
-                        <input type="hidden" name="taskId" value={task.id} />
-                        <input
-                          type="hidden"
-                          name="delayOption"
-                          value="tomorrow"
-                        />
-                        <ActionSubmitButton
-                          Icon={CardSpecificIcons.DelayTomorrow}
+                    {!isSameDay(
+                      task.dueDate,
+                      new Date(new Date().setDate(new Date().getDate() + 1))
+                    ) && (
+                      <li>
+                        <form
+                          action={async (formData: FormData) => {
+                            const res = await delayTaskAction(
+                              formData,
+                              hour,
+                              min
+                            );
+                            handleToast(res, () => setIsDropdownOpen(false));
+                          }}
+                          onSubmit={() => setIsDropdownOpen(false)}
                         >
-                          Delay to Tomorrow
-                        </ActionSubmitButton>
-                      </form>
-                    </li>
-                    <li>
-                      <form
-                        action={delayTaskAction}
-                        onSubmit={() => setIsDropdownOpen(false)}
-                      >
-                        <input type="hidden" name="taskId" value={task.id} />
-                        <input
-                          type="hidden"
-                          name="delayOption"
-                          value="nextWeek"
-                        />
-                        <ActionSubmitButton
-                          Icon={CardSpecificIcons.DelayNextWeek}
-                        >
-                          Delay 1 Week
-                        </ActionSubmitButton>
-                      </form>
-                    </li>
+                          <input type="hidden" name="taskId" value={task.id} />
+                          <input
+                            type="hidden"
+                            name="delayOption"
+                            value="tomorrow"
+                          />
+                          <ActionSubmitButton
+                            Icon={CardSpecificIcons.DelayTomorrow}
+                          >
+                            Delay to Tomorrow
+                          </ActionSubmitButton>
+                        </form>
+                      </li>
+                    )}
+
+                    {(() => {
+                      // Calculate the start of next week (Monday)
+                      const today = new Date();
+                      const dayOfWeek = today.getDay();
+                      const daysUntilNextMonday = (8 - dayOfWeek) % 7 || 7;
+                      const nextMonday = new Date(today);
+                      nextMonday.setDate(today.getDate() + daysUntilNextMonday);
+                      nextMonday.setHours(0, 0, 0, 0);
+
+                      // Calculate the due date's week start (Monday)
+                      const dueDate = new Date(task.dueDate);
+                      const dueDayOfWeek = dueDate.getDay();
+                      const dueWeekMonday = new Date(dueDate);
+                      dueWeekMonday.setDate(
+                        dueDate.getDate() - ((dueDayOfWeek + 6) % 7)
+                      );
+                      dueWeekMonday.setHours(0, 0, 0, 0);
+
+                      // Only render if due date is not in next week
+                      if (dueWeekMonday.getTime() !== nextMonday.getTime()) {
+                        return (
+                          <li>
+                            <form
+                              action={async (formData: FormData) => {
+                                const res = await delayTaskAction(
+                                  formData,
+                                  hour,
+                                  min
+                                );
+                                handleToast(res, () =>
+                                  setIsDropdownOpen(false)
+                                );
+                              }}
+                            >
+                              <input
+                                type="hidden"
+                                name="taskId"
+                                value={task.id}
+                              />
+                              <input
+                                type="hidden"
+                                name="delayOption"
+                                value="nextWeek"
+                              />
+                              <ActionSubmitButton
+                                Icon={CardSpecificIcons.DelayNextWeek}
+                              >
+                                Delay 1 Week
+                              </ActionSubmitButton>
+                            </form>
+                          </li>
+                        );
+                      }
+                      return null;
+                    })()}
                   </>
                 )}
 
@@ -265,9 +310,15 @@ export default function TaskCard({
                 {task.status !== "completed" && (
                   <li className="px-1.5 py-1.5 group">
                     <form
-                      action={rescheduleTaskAction}
+                      action={async (formData: FormData) => {
+                        const res = await rescheduleTaskAction(
+                          formData,
+                          hour,
+                          min
+                        );
+                        handleToast(res, () => setIsDropdownOpen(false));
+                      }}
                       className="space-y-1.5"
-                      onSubmit={() => setIsDropdownOpen(false)}
                     >
                       <input type="hidden" name="taskId" value={task.id} />
                       <label
@@ -296,57 +347,44 @@ export default function TaskCard({
                 )}
 
                 {/* ---: Action: Toggle Priority --- */}
-                <li>
-                  <form
-                    action={togglePriorityAction}
-                    onSubmit={() => setIsDropdownOpen(false)}
-                  >
-                    <input type="hidden" name="taskId" value={task.id} />
-                    <input
-                      type="hidden"
-                      name="currentIsPriority"
-                      value={task.isPriority.toString()}
-                    />
-                    <ActionSubmitButton
-                      Icon={
-                        task.isPriority
-                          ? CardSpecificIcons.RemovePriority
-                          : CardSpecificIcons.AddPriority
-                      }
+                {task.status !== "completed" && (
+                  <li>
+                    <form
+                      action={async (formData: FormData) => {
+                        const res = await togglePriorityAction(formData);
+                        handleToast(res, () => setIsDropdownOpen(false));
+                      }}
                     >
-                      {task.isPriority ? "Remove Priority" : "Add Priority"}
-                    </ActionSubmitButton>
-                  </form>
-                </li>
+                      <input type="hidden" name="taskId" value={task.id} />
+                      <input
+                        type="hidden"
+                        name="currentIsPriority"
+                        value={task.isPriority.toString()}
+                      />
+                      <ActionSubmitButton
+                        Icon={
+                          task.isPriority
+                            ? CardSpecificIcons.RemovePriority
+                            : CardSpecificIcons.AddPriority
+                        }
+                      >
+                        {task.isPriority ? "Remove Priority" : "Add Priority"}
+                      </ActionSubmitButton>
+                    </form>
+                  </li>
+                )}
 
                 <li className="my-1">
                   <hr className="border-divider opacity-50" />
                 </li>
 
-                {/* ---: Action: Update (opens modal via prop) --- */}
-                {onOpenUpdateModal && (
-                  <li>
-                    <button
-                      onClick={() => {
-                        onOpenUpdateModal(task);
-                        setIsDropdownOpen(false);
-                      }}
-                      className="w-full text-left px-3 py-2.5 text-sm text-text-medium hover:bg-background-hover flex items-center transition-colors duration-150 rounded-md group"
-                    >
-                      <CardSpecificIcons.Edit
-                        size={16}
-                        className="mr-2.5 text-text-low group-hover:text-text-high transition-colors"
-                      />
-                      Update Task...
-                    </button>
-                  </li>
-                )}
-
                 {/* ---: Action: Delete --- */}
                 <li>
                   <form
-                    action={deleteTaskAction}
-                    onSubmit={() => setIsDropdownOpen(false)}
+                    action={async (formData: FormData) => {
+                      const res = await deleteTaskAction(formData);
+                      handleToast(res, () => setIsDropdownOpen(false));
+                    }}
                   >
                     <input type="hidden" name="taskId" value={task.id} />
                     <ActionSubmitButton
@@ -393,8 +431,11 @@ export default function TaskCard({
             }`}
           >
             <CardSpecificIcons.DueDate size={14} />
-            <span>Due: {formatDate(task.dueDate)}</span>
-            {task.isToday && (
+            <span>
+              Due: {formatDate(task.dueDate)}{" "}
+              {`${hour}:${min}` === "23:59" ? "" : `${hour}:${min}`}
+            </span>
+            {isToday(task.dueDate) && (
               <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-primary-600 text-white font-semibold">
                 Today
               </span>
@@ -422,9 +463,9 @@ export default function TaskCard({
             {task.tags.map((tag) => (
               <span
                 key={tag}
-                className="text-xs px-2 py-0.5 bg-tag-bg text-tag-text rounded-full flex items-center"
+                className="text-xs px-2 py-0.5 bg-tag-bg text-tag-text rounded-full flex items-center bg-background-500"
               >
-                <CardSpecificIcons.Tag size={12} className="mr-1 opacity-70" />{" "}
+                <CardSpecificIcons.Tag size={12} className="mr-2 opacity-70" />{" "}
                 {tag}
               </span>
             ))}
@@ -446,12 +487,7 @@ export default function TaskCard({
             </span>
           )}
         </div>
-        {/* {task.preconditionTaskIds && task.preconditionTaskIds.length > 0 && (
-          <div className="flex items-center text-orange-400/80">
-            <CardSpecificIcons.PreconditionTasks size={14} className="mr-1.5" />
-            <span>Blocked by {task.preconditionTaskIds.length} task(s)</span>
-          </div>
-        )} */}
+
         <p className="text-right opacity-60">
           Last updated: {formatDateTime(task.updatedAt)}
         </p>

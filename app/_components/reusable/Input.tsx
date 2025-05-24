@@ -8,14 +8,16 @@ function Input({
   onChange,
   className,
   placeholder,
+  required,
 }: {
   type: string;
   id?: string;
-  value: string | number | undefined;
-  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
+  value?: string | number | undefined;
+  onChange?: (e: ChangeEvent<HTMLInputElement>) => void;
   placeholder: string;
   className?: string;
   name: string;
+  required?: boolean;
 }) {
   return (
     <input
@@ -28,6 +30,7 @@ function Input({
         className ? className : ""
       }`}
       placeholder={placeholder}
+      required={required}
     />
   );
 }

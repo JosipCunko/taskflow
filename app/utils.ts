@@ -21,7 +21,6 @@ import {
   Receipt,
   Inbox,
   Calendar,
-  CalendarArrowUp,
   Bell,
   Link2,
   Star,
@@ -45,7 +44,10 @@ import {
   ArrowRightLeft,
   ChartColumn,
 } from "lucide-react";
+import toast from "react-hot-toast";
+import { Task } from "./_types/types";
 
+/** Possible task icons to set in the IconPicker*/
 export const TASK_ICONS = [
   {
     id: "user",
@@ -170,6 +172,7 @@ export const TASK_ICONS = [
   },
 ];
 
+/**App features showcased in the landing page */
 export const FEATURES = [
   {
     icon: Timer,
@@ -206,7 +209,8 @@ export const FEATURES = [
   },
 ];
 
-export const COLORS = [
+/* Color picker */
+export const colorsColorPicker = [
   "#3b82f6",
   "#64748b",
   "#f97316",
@@ -229,19 +233,11 @@ export const COLORS = [
   "#bfdbfe",
 ];
 
-export const taskTypeOptions = [
-  "morning routine",
-  "gym",
-  "personal",
-  "health",
-  "work",
-  "expense",
-];
-
-export const navSearchItems = [
+/** Search feature */
+export const navItemsToSearch = [
   {
     icon: Home,
-    label: "Home",
+    label: "Dashboard",
     command: ["Ctrl", "H"],
     link: "/",
   },
@@ -265,6 +261,7 @@ export const navSearchItems = [
   },
 ];
 
+/* Date functions */
 export function getPhaseOfTheDay() {
   const date = new Date();
   const hours = date.getHours();
@@ -314,6 +311,8 @@ export const formatDateTime = (date: Date | string | undefined): string => {
   }
 };
 
+/* Task Card */
+
 export interface TaskIconItem {
   name: string;
   icon: LucideIcon;
@@ -323,7 +322,7 @@ export interface TaskIconItem {
 export const getTaskIconByName = (name: string | undefined): LucideIcon => {
   if (!name) return ClipboardList;
   const found = TASK_ICONS.find(
-    (item) => item.label.toLowerCase() === name.toLowerCase()
+    (item) => item.icon.displayName.toLowerCase() === name.toLowerCase()
   );
   return found ? found.icon : ClipboardList;
 };
@@ -353,3 +352,106 @@ export const CardSpecificIcons = {
   RemovePriority: ZapOff,
   SetReminder: BellPlus,
 };
+
+/* Toaster */
+export function successToast(message: string) {
+  toast(message, {
+    style: {
+      backgroundColor: "#0e1a2e",
+      border: "1px solid #0284c7a1",
+      color: "#cbd5e1",
+      overflow: "hidden",
+    },
+    icon: "✅",
+  });
+}
+
+export function errorToast(message: string) {
+  toast(message, {
+    style: {
+      backgroundColor: "#0e1a2e",
+      border: "1px solid #f43f5ea1",
+      color: "#cbd5e1",
+      overflow: "hidden",
+    },
+    icon: "❌",
+  });
+}
+
+export function infoToast(message: string) {
+  toast(message, {
+    style: {
+      backgroundColor: "#0e1a2e",
+      border: "1px solid #0284c7a1",
+      color: "#cbd5e1",
+      overflow: "hidden",
+    },
+    icon: "ℹ️",
+  });
+}
+
+// { success: boolean; message?: string; error?: string }
+export const handleToast = (state: any, handler: () => void) => {
+  if (state.message || state.error) {
+    if (state.success) {
+      successToast(state.message || "Action performed successfully.");
+      handler?.();
+    } else {
+      errorToast(
+        state.error || state.message || "Failed to perform task action."
+      );
+    }
+  }
+};
+
+/**Phone number validation */
+export const phoneNumberRegex =
+  /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/;
+
+// if (!phoneNumberRegex.test(phoneNumber)) {
+//   errorToast("Please enter a valid phone number.");
+// }
+
+export const sampleTasks: Task[] = [
+  {
+    id: "2",
+    userId: "user123",
+    title: "Grocery Shopping for the Week",
+    description:
+      "Buy fruits, vegetables, milk, and other essentials for the week. Check pantry for stock.",
+    type: "Personal",
+    icon: "ShoppingCart",
+    color: "#10B981", // Green
+    isPriority: false,
+    isReminder: false,
+    dueDate: new Date(Date.now() + 86400000 * 2), // In 2 days
+    status: "pending",
+    delayCount: 0,
+    points: 5,
+    tags: ["home", "essentials"],
+    createdAt: new Date(Date.now() - 86400000 * 3),
+    updatedAt: new Date(Date.now() - 86400000 * 3),
+  },
+
+  {
+    id: "4",
+    userId: "user123",
+    title: "Submit Monthly Expense Report",
+    description:
+      "Compile all receipts and submit the expense report for last month through the company portal.",
+    type: "Admin",
+    icon: "ClipboardList",
+    color: "#F59E0B", // Amber
+    isPriority: false,
+    isReminder: false,
+    dueDate: new Date(Date.now() - 86400000 * 10), // Due 10 days ago
+    status: "completed",
+    delayCount: 0,
+    points: 3,
+    tags: ["finance", "report"],
+    createdAt: new Date(Date.now() - 86400000 * 40),
+    updatedAt: new Date(Date.now() - 86400000 * 10),
+    completedAt: new Date(Date.now() - 86400000 * 9),
+    experience: "good",
+  },
+];

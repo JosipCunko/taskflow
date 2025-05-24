@@ -12,10 +12,12 @@ export default function ProfilePage() {
 
   return (
     <div className="p-6">
-      <header className="mb-6">
-        <h1 className="text-3xl font-bold">Profile</h1>
-        <p className="text-text-gray">Manage your account and settings</p>
-      </header>
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-3xl sm:text-4xl font-bold text-primary-400 flex items-center">
+          <User className="w-8 h-8 mr-3 text-primary-500" />
+          My profile
+        </h1>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-1">

@@ -13,7 +13,8 @@ import {
   doc, // For referencing a specific document
   serverTimestamp,
   getDoc,
-  DocumentSnapshot, // For createdAt, updatedAt
+  deleteField,
+  // DocumentSnapshot, // For createdAt, updatedAt
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { Task } from "@/app/_types/types";
@@ -40,16 +41,19 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Task => {
     isToday:
       data.isToday ||
       isSameDay((data.dueDate as Timestamp).toDate(), new Date()),
-    isPriority: data.isPriority,
-    isReminder: data.isReminder,
-    dueDate: (data.dueDate as Timestamp).toDate(),
-    status: data.status,
-    delayCount: data.delayCount,
-    points: data.points,
+    isPriority: data.isPriority || false,
+    isReminder: data.isReminder || false,
+    dueDate: data.dueDate ? (data.dueDate as Timestamp).toDate() : new Date(),
+    status: data.status || "pending",
+    delayCount: data.delayCount || 0,
     tags: data.tags || [],
     preconditionTaskIds: data.preconditionTaskIds || [],
-    createdAt: (data.createdAt as Timestamp).toDate(),
-    updatedAt: (data.updatedAt as Timestamp).toDate(),
+    createdAt: data.createdAt
+      ? (data.createdAt as Timestamp).toDate()
+      : new Date(),
+    updatedAt: data.updatedAt
+      ? (data.updatedAt as Timestamp).toDate()
+      : new Date(),
     completedAt: data.completedAt
       ? (data.completedAt as Timestamp).toDate()
       : undefined,
@@ -253,7 +257,6 @@ export const createTask = async (
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
-    console.log("tasks.ts - new task created", docRef);
     return docRef.id;
   } catch (error) {
     console.error("Error creating task:", error);
@@ -273,13 +276,35 @@ export const updateTask = async (
 ): Promise<void> => {
   try {
     const taskRef = doc(db, TASKS_COLLECTION, taskId);
-    const updateData: any = { ...updates, updatedAt: serverTimestamp() };
-
+    const updateData: { [key: string]: any } = { ...updates };
+    updateData.updatedAt = serverTimestamp();
     if (updates.dueDate && updates.dueDate instanceof Date) {
       updateData.dueDate = Timestamp.fromDate(updates.dueDate);
     }
+
+    // --- If 'completedAt' is explicitly passed as a Date, convert it ---
     if (updates.completedAt && updates.completedAt instanceof Date) {
       updateData.completedAt = Timestamp.fromDate(updates.completedAt);
+    } else if (
+      updates.hasOwnProperty("completedAt") &&
+      updates.completedAt === undefined
+    ) {
+      updateData.completedAt = deleteField();
+    }
+
+    for (const key in updateData) {
+      if (updateData[key] === undefined && key !== "completedAt") {
+        delete updateData[key];
+      } else if (
+        updateData[key] === undefined &&
+        key === "completedAt" &&
+        !(
+          updateData[key] instanceof Object &&
+          updateData[key].constructor.name === "DeleteFieldValue"
+        )
+      ) {
+        delete updateData[key];
+      }
     }
 
     await updateDoc(taskRef, updateData);
@@ -303,3 +328,57 @@ export const deleteTask = async (taskId: string): Promise<void> => {
     throw error;
   }
 };
+
+export interface SearchedTask {
+  id: string;
+  title: string;
+  description?: string;
+}
+
+export async function searchUserTasks(
+  userId: string,
+  query: string
+): Promise<SearchedTask[]> {
+  if (!query.trim()) {
+    return [];
+  }
+
+  await new Promise((resolve) => setTimeout(resolve, 300));
+
+  const mockAllTasks: SearchedTask[] = [
+    {
+      id: "task1",
+      title: "Finalize project proposal",
+      description: "Review feedback and update the document for client A.",
+    },
+    {
+      id: "task2",
+      title: "Schedule team meeting",
+      description: "Discuss Q3 roadmap and resource allocation.",
+    },
+    {
+      id: "task3",
+      title: "Buy groceries",
+      description: "Milk, eggs, bread, and project snacks.",
+    },
+    {
+      id: "task4",
+      title: "Client call: Project Phoenix",
+      description: "Discuss milestone 2 deliverables.",
+    },
+    { id: "task5", title: "Gym session", description: "Leg day, don't skip!" },
+    {
+      id: "task6",
+      title: "Read Next.js documentation",
+      description: "Focus on Server Actions and new router features.",
+    },
+  ];
+
+  const lowerCaseQuery = query.toLowerCase();
+  return mockAllTasks.filter(
+    (task) =>
+      task.title.toLowerCase().includes(lowerCaseQuery) ||
+      (task.description &&
+        task.description.toLowerCase().includes(lowerCaseQuery))
+  );
+}

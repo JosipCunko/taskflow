@@ -1,15 +1,15 @@
-import { BarChart4, Clock, CheckCircle2 } from "lucide-react";
+import { BarChart4, Clock, CheckCircle2, Home } from "lucide-react";
 import { ReactNode } from "react";
 
 export default async function DashboardPage() {
   return (
     <div className="p-6 ">
-      <header className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-primary">Dashboard</h1>
-          <p className="text-text-low">Track your tasks and progress</p>
-        </div>
-      </header>
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-3xl sm:text-4xl font-bold text-primary-400 flex items-center">
+          <Home className="w-8 h-8 mr-3 text-primary-500" />
+          Dashboard
+        </h1>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <DashboardCard
