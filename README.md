@@ -1,46 +1,113 @@
-# TaskFlow - task manager app
+# TaskFlow - Smart Task Management System
 
-- App is mainly about user managing their tasks (daily, weekly, monthly) which will help them achieve their goals with discipline and control.
+TaskFlow is a modern, feature-rich task management application designed to help users achieve their goals through disciplined task organization and tracking. Built with cutting-edge technologies, it offers a seamless experience for managing daily, weekly, and monthly tasks.
 
-## Routes:
+## 🌟 Key Features
 
-Dashboard
-Tasks - task management
-Profile - settings included
+### 1. Smart Task Management
 
-## Features:
+- **Task Organization**: Create and manage tasks with detailed descriptions, due dates, and priorities
+- **Precondition System**: Set task dependencies with "Do X only after Y is done" logic
+- **Auto-rescheduling**: Automatically reschedules missed tasks to the next day
+- **Manual Rescheduling**: Flexible task rescheduling options for better time management
+- **Task Status Tracking**: Monitor tasks as pending, completed, or delayed
+- **Experience Points**: Gamified task completion with a point system
+  - Success formula: (-2)\*n + 10 points (where n is delay count, 0 ≤ n ≤ 5)
+  - Failure penalty: (-2)\*n - 8 points (where n is delay count, 0 ≤ n ≤ 5)
 
-1. Task Management
-   Allow users to set preconditions: “Do X only after Y is done.”
-   Auto-reschedule a missed task (Right now reschedule for the next day)
-   Let user reschedule some task
+### 2. Advanced Tagging System
 
-2. Tags:
-   Users will type in their tasks with tags (optional of course). Ex. morning routine, gym, personal, health, work, looksmaxxing...
-   Custom labels for work/personal/health, with a color palette picker
-   Special tag: focus, that will be displayed first and the most important task to complete that day.
+- **Custom Tags**: Create personalized tags for tasks (e.g., morning routine, gym, personal, health, work)
+- **Color Coding**: Custom color palette for visual task organization
+- **Priority Tags**: Special "focus" tag for highlighting critical tasks
+- **Icon Selection**: Choose from a wide range of task icons for better visual organization
 
-3. Reminders, Snooze & Dismiss:
-   Allow users to snooze reminders (e.g. “Remind me again in 30 minutes”)
+### 3. Smart Reminders & Notifications
 
-4. Streaks & Progress Tracking:
-   Reward users for completing tasks consistently—visualize productivity streaks.
-   User will receive ranked with points called reward points. Each successfull task is rewarded with 10 points, and if not done it is -8 points.
-   Formula for completed task is: (-2)*n + 10 , where n is the number of times task is delayed, 0 <= n <= 5
-   Formula for not completed task is: (-2)*n - 8 , where n is the number of times task is delayed, 0 <= n <= 5
-   Show the reward points in the dashboard and profile page.
+- **Flexible Reminders**: Set up task reminders with customizable timing
+- **Snooze Feature**: "Remind me again in X minutes" functionality
+- **Dismiss Options**: Multiple ways to handle task notifications
 
-5. Dashboard:
-   Switch views: daily, weekly, monthly overviews with smooth transitions.
-   Dashboard will display weekly/monthly reports (feature 6), upcoming tasks for today and tomorrow, missed and delayed tasks progress...
+### 4. Progress Tracking & Analytics
 
-6. Weekly/Monthly Reports
-   Charts of completed vs. planned tasks, delayed tasks, busiest days, time spent
-   We will see what library to use (probably recharts)
+- **Streak System**: Track consistent task completion with visual streak indicators
+- **Points System**: Earn reward points for task completion
+- **Performance Metrics**: View completion rates, delay statistics, and success rates
+- **Dashboard Analytics**: Visual representation of task performance and progress
 
-## Additional information:
+### 5. User Experience
 
-Users will be logged in with their firebase account (google provider).
-Use custom colors
-App will be in dark mode
-Return a skeleton from a component while data is being fetched
+- **Dark Mode**: Modern, eye-friendly dark theme interface
+- **Responsive Design**: Fully responsive layout for all devices
+- **Intuitive Navigation**: Easy-to-use interface with quick access to all features
+- **Loading States**: Smooth loading transitions with skeleton screens
+
+## 🛠️ Technology Stack
+
+### Frontend
+
+- **Next.js 15.3.2**: React framework with App Router for optimal performance
+- **React 19.0.0**: Latest version for modern UI development
+- **TypeScript**: Type-safe development
+- **Tailwind CSS**: Utility-first CSS framework for responsive design
+- **Framer Motion**: Smooth animations and transitions
+- **Lucide React**: Modern icon library
+- **React Hot Toast**: Toast notifications
+- **React Tooltip**: Enhanced tooltip functionality
+
+### Backend & Authentication
+
+- **Firebase**: Backend-as-a-Service
+  - Firestore: NoSQL database for task storage
+  - Authentication: Google Sign-in integration
+- **NextAuth.js**: Authentication framework
+- **Firebase Admin**: Server-side Firebase operations
+
+### Development Tools
+
+- **ESLint**: Code quality and style enforcement
+- **TypeScript**: Static type checking
+- **Turbopack**: Fast development server
+
+## 📱 Application Structure
+
+### Routes
+
+- **Dashboard**: Overview of tasks and performance metrics
+- **Tasks**: Comprehensive task management interface
+- **Profile**: User settings and preferences
+- **Login**: Secure authentication page
+
+### Key Components
+
+- **Task Cards**: Visual representation of tasks with all relevant information
+- **Dashboard Cards**: Quick overview of task statistics and progress
+- **Progress Tracking**: Visual indicators of task completion and streaks
+- **Analytics Panels**: Detailed performance metrics and statistics
+
+## 🔒 Security Features
+
+- Secure Google Authentication
+- Protected API routes
+- Environment variable management
+- Secure session handling
+
+## 🚀 Getting Started
+
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Set up environment variables:
+   ```bash
+   cp .env.example .env.local
+   ```
+4. Run the development server:
+   ```bash
+   npm run dev
+   ```
+
+## 📝 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
