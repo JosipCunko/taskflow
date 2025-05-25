@@ -14,6 +14,8 @@ import {
   serverTimestamp,
   getDoc,
   deleteField,
+  FieldValue,
+  DocumentSnapshot,
   // DocumentSnapshot, // For createdAt, updatedAt
 } from "firebase/firestore";
 import { db } from "./firebase";
@@ -241,14 +243,14 @@ export const getMissedAndDelayedTasksByUserId = async (
 /**
  * Creates a new task in Firestore.
  * @param {Omit<Task, 'id' | 'createdAt' | 'updatedAt'>} taskData - Data for the new task.
- * @returns {Promise<string>} The ID of the newly created task.
+ * @returns {Promise<Task>}
  */
 export const createTask = async (
   taskData: Omit<
     Task,
     "id" | "createdAt" | "updatedAt" | "points" | "delayCount" | "status"
   > & { userId: string }
-): Promise<string> => {
+): Promise<Task> => {
   try {
     const docRef = await addDoc(collection(db, TASKS_COLLECTION), {
       ...taskData,
@@ -259,7 +261,9 @@ export const createTask = async (
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
-    return docRef.id;
+
+    const createdDoc = await getDoc(docRef);
+    return fromFirestore(createdDoc as QueryDocumentSnapshot<DocumentData>);
   } catch (error) {
     console.error("Error creating task:", error);
     throw error;
@@ -270,16 +274,45 @@ export const createTask = async (
  * Updates an existing task in Firestore.
  * @param {string} taskId - The ID of the task to update.
  * @param {Partial<Omit<Task, 'id' | 'userId' | 'createdAt'>>} updates - The fields to update.
- * @returns {Promise<void>}
+ * @returns {Promise<Task>}
  */
 export const updateTask = async (
   taskId: string,
   updates: Partial<Omit<Task, "id" | "userId" | "createdAt">>
-): Promise<void> => {
+): Promise<Task> => {
   try {
     const taskRef = doc(db, TASKS_COLLECTION, taskId);
-    const updateData: { [key: string]: any } = { ...updates };
+    const taskDoc = await getDoc(taskRef);
+
+    if (!taskDoc.exists()) {
+      throw new Error("Task not found");
+    }
+
+    const updateData: {
+      [key: string]:
+        | FieldValue
+        | string
+        | number
+        | boolean
+        | Date
+        | Timestamp
+        | string[]
+        | undefined;
+    } = {};
+
+    // Convert updates to Firestore format
+    Object.entries(updates).forEach(([key, value]) => {
+      if (value !== undefined) {
+        if (value instanceof Date) {
+          updateData[key] = Timestamp.fromDate(value);
+        } else {
+          updateData[key] = value;
+        }
+      }
+    });
+
     updateData.updatedAt = serverTimestamp();
+
     if (updates.dueDate && updates.dueDate instanceof Date) {
       updateData.dueDate = Timestamp.fromDate(updates.dueDate);
     }
@@ -294,22 +327,21 @@ export const updateTask = async (
       updateData.completedAt = deleteField();
     }
 
-    for (const key in updateData) {
+    // Clean up undefined values
+    Object.keys(updateData).forEach((key) => {
       if (updateData[key] === undefined && key !== "completedAt") {
         delete updateData[key];
-      } else if (
-        updateData[key] === undefined &&
-        key === "completedAt" &&
-        !(
-          updateData[key] instanceof Object &&
-          updateData[key].constructor.name === "DeleteFieldValue"
-        )
-      ) {
-        delete updateData[key];
       }
-    }
+    });
 
     await updateDoc(taskRef, updateData);
+
+    const updatedDoc = await getDoc(taskRef);
+    if (!updatedDoc.exists()) {
+      throw new Error("Task not found after update");
+    }
+
+    return fromFirestore(updatedDoc as QueryDocumentSnapshot<DocumentData>);
   } catch (error) {
     console.error("Error updating task:", error);
     throw error;
@@ -321,10 +353,28 @@ export const updateTask = async (
  * @param {string} taskId - The ID of the task to delete.
  * @returns {Promise<void>}
  */
-export const deleteTask = async (taskId: string): Promise<void> => {
+export const deleteTask = async (taskId: string): Promise<Task> => {
   try {
     const taskRef = doc(db, TASKS_COLLECTION, taskId);
+    const taskDoc = await getDoc(taskRef);
+    if (!taskDoc.exists()) {
+      throw new Error("Task not found");
+    }
+
+    const taskData = fromFirestore(taskDoc);
+    if (!taskData) {
+      throw new Error(
+        `Failed to parse task data for task ID ${taskId}, likely missing critical fields like userId.`
+      );
+    }
+    if (!taskData.userId) {
+      console.error(
+        "FATAL: taskData object created by fromClientFirestore is missing userId. This indicates a flaw in fromClientFirestore or source data."
+      );
+      throw new Error(`Task data for ${taskId} parsed without a userId.`);
+    }
     await deleteDoc(taskRef);
+    return taskData;
   } catch (error) {
     console.error("Error deleting task:", error);
     throw error;

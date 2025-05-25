@@ -43,9 +43,29 @@ import {
   Phone,
   Award,
   BicepsFlexed,
+  CircleCheckBig,
+  CircleX,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { EmojiOption, Task } from "./_types/types";
+import {
+  ConsistencyStats,
+  EmojiOption,
+  Task,
+  TimeManagementStats,
+} from "./_types/types";
+import {
+  differenceInCalendarDays,
+  differenceInDays,
+  formatISO,
+  isBefore,
+  isEqual,
+  parseISO,
+  startOfDay,
+} from "date-fns";
+import { isFuture } from "date-fns";
+import { isAfter } from "date-fns";
+import { isPast } from "date-fns";
+import { isToday } from "date-fns";
 
 /** Possible task icons to set in the IconPicker*/
 export const TASK_ICONS = [
@@ -149,6 +169,19 @@ export const TASK_ICONS = [
     id: "Gamepad",
     icon: Gamepad2,
     label: "Gamepad",
+  },
+];
+
+const ACTIVITY_ICONS = [
+  {
+    id: "succuess",
+    icon: CircleCheckBig,
+    label: "success",
+  },
+  {
+    id: "deletion",
+    icon: CircleX,
+    label: "deletion",
   },
 ];
 
@@ -301,9 +334,14 @@ export interface TaskIconItem {
 /*Actually, label === icon, but I will leave it only for ClipboardList*/
 export const getTaskIconByName = (name: string | undefined): LucideIcon => {
   if (!name) return ClipboardList;
-  const found = TASK_ICONS.find(
-    (item) => item.icon.displayName.toLowerCase() === name.toLowerCase()
-  );
+  const found =
+    TASK_ICONS.find(
+      (item) => item.icon.displayName.toLowerCase() === name.toLowerCase()
+    ) ||
+    ACTIVITY_ICONS.find(
+      (item) => item.icon.displayName.toLowerCase() === name.toLowerCase()
+    );
+
   return found ? found.icon : ClipboardList;
 };
 
@@ -440,3 +478,222 @@ export const emojiOptions: EmojiOption[] = [
   { id: "good", emoji: Smile, label: "Good", selected: false },
   { id: "best", emoji: BicepsFlexed, label: "Best", selected: false },
 ];
+
+export interface TaskCategories {
+  todaysTasks: Task[];
+  upcomingTasks: Task[];
+  missedTasks: Task[];
+  delayedTasks: Task[];
+  completedTasks: Task[];
+  completedTodayTasks: Task[];
+  pendingTodayTasks: Task[];
+  pendingTasks: Task[];
+}
+
+export function generateTaskTypes(allTasks: Task[]): TaskCategories {
+  const now = new Date();
+  const todayStart = startOfDay(now);
+
+  const todaysTasks = allTasks.filter((task) => isToday(task.dueDate));
+
+  //Delayed tasks also
+  const upcomingTasks = allTasks.filter(
+    (task) =>
+      isFuture(task.dueDate) &&
+      !isToday(task.dueDate) &&
+      task.status !== "completed"
+  );
+
+  const missedTasks = allTasks.filter(
+    (task) =>
+      isPast(task.dueDate) &&
+      !isToday(task.dueDate) &&
+      task.status === "pending"
+  );
+
+  const delayedTasks = allTasks.filter(
+    (task) =>
+      (task.delayCount || 0) > 0 &&
+      task.status === "delayed" &&
+      isAfter(task.dueDate, todayStart)
+  );
+  const completedTasks = allTasks.filter((task) => task.status === "completed");
+  const completedTodayTasks = allTasks.filter(
+    (task) => isToday(task.dueDate) && task.status === "completed"
+  );
+  const pendingTodayTasks = allTasks.filter(
+    (task) => isToday(task.dueDate) && task.status === "pending"
+  );
+  const pendingTasks = allTasks.filter((task) => task.status === "pending");
+
+  return {
+    todaysTasks,
+    upcomingTasks,
+    missedTasks,
+    delayedTasks,
+    completedTasks,
+    completedTodayTasks,
+    pendingTodayTasks,
+    pendingTasks,
+  };
+}
+
+export const calculateTaskPoints = (task: Task) => {
+  const delayCount = task.delayCount || 0;
+  if (task.status === "completed") {
+    return -2 * delayCount + 10;
+  } else {
+    return -2 * delayCount - 8;
+  }
+};
+
+export function calculateTimeManagementStats(
+  tasks: Task[]
+): TimeManagementStats {
+  let onTimeTasksCount = 0;
+  let totalDelayDays = 0;
+  let delayedAndCompletedCount = 0;
+  let totalRelevantTasksForTiming = 0;
+
+  const now = new Date();
+
+  tasks.forEach((task) => {
+    if (task.status === "completed" && task.completedAt && task.dueDate) {
+      totalRelevantTasksForTiming++;
+      const dueDateStart = startOfDay(task.dueDate);
+      const completedAtStart = startOfDay(task.completedAt);
+
+      // Completed on or before the due date
+      if (
+        isBefore(completedAtStart, dueDateStart) ||
+        isEqual(completedAtStart, dueDateStart)
+      ) {
+        onTimeTasksCount++;
+      } else {
+        // Completed after due date
+        //Needs to be original due
+        const effectiveDueDate = task.dueDate
+          ? startOfDay(task.dueDate)
+          : dueDateStart;
+        const delay = differenceInDays(completedAtStart, effectiveDueDate);
+        if (delay > 0) {
+          totalDelayDays += delay;
+          delayedAndCompletedCount++;
+        }
+      }
+    } else if (
+      (isPast(task.dueDate) ||
+        (task.status === "pending" &&
+          isBefore(startOfDay(task.dueDate), startOfDay(now)))) &&
+      task.dueDate
+    ) {
+      // Consider missed tasks as not on-time
+      totalRelevantTasksForTiming++;
+    }
+  });
+
+  const averageDelayDays =
+    delayedAndCompletedCount > 0
+      ? Math.round(totalDelayDays / delayedAndCompletedCount)
+      : 0;
+  const onTimeCompletionRate =
+    totalRelevantTasksForTiming > 0
+      ? Math.round((onTimeTasksCount / totalRelevantTasksForTiming) * 100)
+      : 0;
+
+  return {
+    onTimeTasksCount,
+    totalRelevantTasksForTiming,
+    averageDelayDays,
+    onTimeCompletionRate,
+  };
+}
+
+export function calculateConsistencyStats(
+  completedTasks: Task[]
+): ConsistencyStats {
+  if (!completedTasks || completedTasks.length === 0) {
+    return { currentStreakDays: 0, bestStreakDays: 0 };
+  }
+
+  // Get unique days on which tasks were completed, sorted chronologically
+  const completionDays = Array.from(
+    new Set(
+      completedTasks
+        .filter((task) => task.completedAt) // Ensure completedAt exists
+        .map((task) =>
+          formatISO(startOfDay(task.completedAt!), { representation: "date" })
+        ) // 'yyyy-MM-dd'
+    )
+  ).sort(); // Sorts strings chronologically
+
+  if (completionDays.length === 0) {
+    return { currentStreakDays: 0, bestStreakDays: 0 };
+  }
+
+  let currentStreak = 0;
+  let bestStreak = 0;
+  const todayISO = formatISO(startOfDay(new Date()), {
+    representation: "date",
+  });
+
+  // Check if the last completion day is today or yesterday to start current streak
+  if (completionDays.length > 0) {
+    const lastCompletionDay = parseISO(
+      completionDays[completionDays.length - 1]
+    );
+    const diffFromToday = differenceInCalendarDays(
+      startOfDay(new Date()),
+      lastCompletionDay
+    );
+
+    if (diffFromToday === 0 || diffFromToday === 1) {
+      // Completed today or yesterday
+      currentStreak = 1; // Start with 1 if last completion was recent enough
+
+      for (let i = completionDays.length - 2; i >= 0; i--) {
+        const prevDay = parseISO(completionDays[i]);
+        const currentDayToCompare = parseISO(completionDays[i + 1]);
+        if (differenceInCalendarDays(currentDayToCompare, prevDay) === 1) {
+          currentStreak++;
+        } else {
+          break; // Streak broken
+        }
+      }
+    }
+  }
+
+  // Calculate best streak
+  if (completionDays.length > 0) {
+    let localCurrentStreak = 1;
+    bestStreak = 1; // At least one day of completion
+    for (let i = 1; i < completionDays.length; i++) {
+      const day1 = parseISO(completionDays[i - 1]);
+      const day2 = parseISO(completionDays[i]);
+      if (differenceInCalendarDays(day2, day1) === 1) {
+        localCurrentStreak++;
+      } else {
+        localCurrentStreak = 1; // Reset streak
+      }
+      if (localCurrentStreak > bestStreak) {
+        bestStreak = localCurrentStreak;
+      }
+    }
+  } else {
+    bestStreak = 0;
+  }
+
+  // If no task completed today or yesterday, current streak is 0
+  const lastCompletionDayObj =
+    completionDays.length > 0
+      ? parseISO(completionDays[completionDays.length - 1])
+      : null;
+  if (
+    lastCompletionDayObj &&
+    differenceInCalendarDays(startOfDay(new Date()), lastCompletionDayObj) > 1
+  ) {
+    currentStreak = 0;
+  }
+
+  return { currentStreakDays: currentStreak, bestStreakDays: bestStreak };
+}

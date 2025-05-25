@@ -37,3 +37,52 @@ export interface SearchedTask {
   icon: string;
   color: string;
 }
+
+export interface TimeManagementStats {
+  onTimeTasksCount: number;
+  totalRelevantTasksForTiming: number; // Completed or missed tasks that had a due date
+  averageDelayDays: number; // For tasks that were completed but after their original due date
+  onTimeCompletionRate: number;
+}
+
+export interface ConsistencyStats {
+  currentStreakDays: number;
+  bestStreakDays: number;
+}
+
+export interface ActivityLog {
+  id: string;
+  userId: string;
+  timestamp: Date;
+  type:
+    | "TASK_COMPLETED"
+    | "TASK_CREATED"
+    | "TASK_UPDATED"
+    | "EXPERIENCE_RATED"
+    | "TASK_DELAYED"
+    | "TASK_MISSED"
+    | "TASK_DELETED";
+  taskId?: string;
+  taskSnapshot?: Partial<Task>;
+  details?: string;
+  activityIcon?: keyof typeof import("lucide-react");
+  activityColor?: string;
+}
+
+export interface userProfileType {
+  displayName: string;
+  email: string;
+  photoURL: string;
+  rewardPoints: number;
+  memberSince: Date;
+}
+
+export interface ActionResult {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+export interface ActionError extends Error {
+  message: string;
+}

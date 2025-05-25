@@ -26,11 +26,10 @@ If valid, it extracts user info.
 It interacts with your Firestore users collection:
 Checks if the user (by UID) exists.
 If not, it creates a new user document (similar to what you had in signInWithGoogle but now server-side).
-It fetches/sets rewardPoints.
 Returns a user object that NextAuth.js will use to build the JWT and session. The id property here becomes token.sub and session.user.id.
 session: { strategy: "jwt" }: We're using JSON Web Tokens for session management.
 callbacks.jwt: This callback is invoked whenever a JWT is created (on sign-in) or updated.
-On initial sign-in (when user object from authorize is present), we transfer uid, email, name, picture, and rewardPoints into the token.
+On initial sign-in (when user object from authorize is present), we transfer uid, email, name and picture into the token.
 callbacks.session: This callback is invoked when a session is checked.
 It takes the token (from the jwt callback) and shapes the session.user object that will be available on the client via useSession() or getServerSession().
 pages.signIn: If a user tries to access a protected route without being authenticated, NextAuth.js will redirect them to /login. Create this page later.
@@ -71,8 +70,6 @@ export const authOptions: NextAuthOptions = {
           const userDocRef = adminDb.collection("users").doc(firebaseUser.uid);
           const userDocSnap = await userDocRef.get();
 
-          let rewardPoints = 0; // Default reward points
-
           // if (!userDocSnap.exists()) {
           if (!userDocSnap.exists) {
             // New user: create their document in Firestore
@@ -82,7 +79,6 @@ export const authOptions: NextAuthOptions = {
               displayName: firebaseUser.name,
               photoURL: firebaseUser.picture,
               createdAt: Timestamp.now(), // Use admin.firestore.Timestamp
-              rewardPoints: 0, // Initialize reward points
             });
             console.log(
               "New user document created in Firestore via NextAuth:",
@@ -91,8 +87,7 @@ export const authOptions: NextAuthOptions = {
           } else {
             // Existing user: fetch their reward points
             // You might also want to update displayName or photoURL if they changed in Google
-            const existingData = userDocSnap.data();
-            rewardPoints = existingData?.rewardPoints || 0;
+            //const existingData = userDocSnap.data();
             await userDocRef.update({
               // Optionally update fields
               displayName: firebaseUser.name,
@@ -108,8 +103,7 @@ export const authOptions: NextAuthOptions = {
             name: firebaseUser.name,
             email: firebaseUser.email,
             image: firebaseUser.picture,
-            rewardPoints, // Add custom data here
-          } as NextAuthUser & { rewardPoints: number }; // Extend NextAuthUser type
+          } as NextAuthUser;
         } catch (error) {
           console.error("Firebase Auth Error in NextAuth authorize:", error);
           return null;
@@ -131,10 +125,7 @@ export const authOptions: NextAuthOptions = {
         token.email = user.email;
         token.name = user.name;
         token.picture = user.image; // user.image is `picture` from `authorize`
-        // NextAuth types might not expect rewardPoints directly on user
-        token.rewardPoints = user.rewardPoints;
       }
-      // If you need to refresh rewardPoints or other dynamic data in the JWT periodically
       // you could add logic here, e.g., on `trigger === "update"` or based on JWT expiry.
       return token;
     },
@@ -145,8 +136,6 @@ export const authOptions: NextAuthOptions = {
         session.user.name = token.name;
         session.user.email = token.email;
         session.user.image = token.picture;
-        // Add custom properties to session.user
-        session.user.rewardPoints = token.rewardPoints as number;
       }
       return session;
     },

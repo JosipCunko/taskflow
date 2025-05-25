@@ -1,5 +1,5 @@
-import Loader from "../_components/Loader";
+import DashboardSkeleton from "../_components/skeleton/DashboardSkeleton";
 
 export default function Loading() {
-  return <Loader />;
+  return <DashboardSkeleton />;
 }

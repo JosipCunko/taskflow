@@ -1,7 +1,7 @@
-// app/page.tsx
 import Link from "next/link";
 import { FEATURES } from "./utils";
-import { MoveRight, Zap, CheckCircle } from "lucide-react";
+import { MoveRight, Zap } from "lucide-react";
+import Image from "next/image";
 
 const FeatureCard = ({
   icon: Icon,
@@ -32,7 +32,14 @@ export default function LandingPage() {
             href="/"
             className="text-2xl font-bold text-primary-400 flex items-center"
           >
-            <CheckCircle className="w-7 h-7 mr-2" /> TaskFlow
+            <Image
+              width={28}
+              height={28}
+              src={"/icon.png"}
+              className="mr-2"
+              alt={"Taskflow"}
+            />{" "}
+            TaskFlow
           </Link>
           <div className="space-x-4">
             <Link
@@ -174,7 +181,7 @@ export default function LandingPage() {
           <p className="text-text-low text-sm">
             © {new Date().getFullYear()} TaskFlow. All rights reserved.
           </p>
-          <p className="text-xs text-text-medium mt-1">
+          <p className="text-xs text-text-gray mt-1">
             Built with passion and <span className="text-red-500">❤️</span>
           </p>
         </div>

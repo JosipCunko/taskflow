@@ -1,36 +1,49 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { Task } from "../_types/types";
+import { ActionResult, ActionError, Task } from "../_types/types";
 import { createTask, deleteTask, getTaskByTaskId, updateTask } from "./tasks";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../api/auth/[...nextauth]/route";
-
-interface ActionResult {
-  success: boolean;
-  message?: string;
-  error?: string;
-}
+import { logUserActivity } from "./activity";
 
 export async function updateTaskStatusAction(
   formData: FormData
 ): Promise<ActionResult> {
   const taskId = formData.get("taskId") as string;
   const newStatus = formData.get("newStatus") as Task["status"];
-
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
   console.log(`ACTION: Mark Task ${taskId} as ${newStatus}`);
 
   try {
-    await updateTask(taskId, {
+    const updatedTask = await updateTask(taskId, {
       status: newStatus,
       completedAt: newStatus === "completed" ? new Date() : undefined,
     });
+
+    if (userId && updatedTask) {
+      await logUserActivity(userId, {
+        type: "TASK_UPDATED",
+        taskId,
+        activityColor: "#00c853",
+        activityIcon: "CircleCheckBig",
+        taskSnapshot: {
+          title: updatedTask.title,
+          description: updatedTask.description || "",
+          color: updatedTask.color,
+          icon: updatedTask.icon,
+        },
+      });
+    }
+
     revalidatePath("/tasks");
     return { success: true, message: `Task marked as ${newStatus}.` };
-  } catch (err: any) {
+  } catch (err) {
+    const error = err as ActionError;
     return {
       success: false,
-      error: err.message || "Failed to update task status.",
+      error: error.message || "Failed to update task status.",
     };
   }
 }
@@ -39,21 +52,40 @@ export async function updateTaskExperienceAction(
 ): Promise<ActionResult> {
   const taskId = formData.get("taskId") as string;
   const newExperience = formData.get("experience") as Task["experience"];
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
 
   console.log(`ACTION: Mark Task ${taskId} as ${newExperience}`);
   try {
-    await updateTask(taskId, {
+    const updatedTask = await updateTask(taskId, {
       experience: newExperience,
     });
+
+    if (userId && updatedTask) {
+      await logUserActivity(userId, {
+        type: "EXPERIENCE_RATED",
+        taskId,
+        activityColor: "#00c853",
+        activityIcon: "CircleCheckBig",
+        taskSnapshot: {
+          title: updatedTask.title,
+          description: updatedTask.description || "",
+          color: updatedTask.color,
+          icon: updatedTask.icon,
+        },
+      });
+    }
+
     revalidatePath("/tasks");
     return {
       success: true,
       message: `Task experience marked as ${newExperience}.`,
     };
-  } catch (err: any) {
+  } catch (err) {
+    const error = err as ActionError;
     return {
       success: false,
-      error: err.message || "Failed to update task experience.",
+      error: error.message || "Failed to update task experience.",
     };
   }
 }
@@ -66,6 +98,8 @@ export async function delayTaskAction(
 ): Promise<ActionResult> {
   const taskId = formData.get("taskId") as string;
   const delayOption = formData.get("delayOption") as "tomorrow" | "nextWeek";
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
 
   const newDueDate = new Date();
   if (delayOption === "tomorrow") {
@@ -74,15 +108,32 @@ export async function delayTaskAction(
     newDueDate.setDate(newDueDate.getDate() + 7);
   }
   newDueDate.setHours(hour, min);
+
   console.log(
     `ACTION: Delay Task ${taskId} to ${delayOption} (${newDueDate.toISOString()})`
   );
   try {
-    await updateTask(taskId, {
+    const updatedTask = await updateTask(taskId, {
       dueDate: newDueDate,
       status: "delayed",
       delayCount,
     });
+
+    if (userId && updatedTask) {
+      await logUserActivity(userId, {
+        type: "TASK_DELAYED",
+        taskId,
+        activityColor: "#00c853",
+        activityIcon: "CircleCheckBig",
+        taskSnapshot: {
+          title: updatedTask.title,
+          description: updatedTask.description || "",
+          color: updatedTask.color,
+          icon: updatedTask.icon,
+        },
+      });
+    }
+
     revalidatePath("/tasks");
     return {
       success: true,
@@ -90,8 +141,9 @@ export async function delayTaskAction(
         delayOption === "nextWeek" ? "next week" : "tomorrow"
       }.`,
     };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Failed to delay task." };
+  } catch (err) {
+    const error = err as ActionError;
+    return { success: false, error: error.message || "Failed to delay task." };
   }
 }
 /** Similar as delayTaskAction */
@@ -102,6 +154,8 @@ export async function rescheduleTaskAction(
 ): Promise<ActionResult> {
   const taskId = formData.get("taskId") as string;
   const newDueDateString = formData.get("newDueDate") as string;
+  const session = await getServerSession(authOptions);
+  const userId = session?.user.id;
 
   if (!newDueDateString) {
     return { success: false, error: "New due date is required." };
@@ -114,13 +168,33 @@ export async function rescheduleTaskAction(
   );
 
   try {
-    await updateTask(taskId, { dueDate: newDueDate, status: "pending" });
+    const updatedTask = await updateTask(taskId, {
+      dueDate: newDueDate,
+      status: "pending",
+    });
+
+    if (userId && updatedTask) {
+      await logUserActivity(userId, {
+        type: "TASK_UPDATED",
+        taskId,
+        activityColor: "#00c853",
+        activityIcon: "CircleCheckBig",
+        taskSnapshot: {
+          title: updatedTask.title,
+          description: updatedTask.description || "",
+          color: updatedTask.color,
+          icon: updatedTask.icon,
+        },
+      });
+    }
+
     revalidatePath("/tasks");
     return { success: true, message: "Task rescheduled." };
-  } catch (err: any) {
+  } catch (err) {
+    const error = err as ActionError;
     return {
       success: false,
-      error: err.message || "Failed to reschedule task.",
+      error: error.message || "Failed to reschedule task.",
     };
   }
 }
@@ -129,15 +203,38 @@ export async function deleteTaskAction(
   formData: FormData
 ): Promise<ActionResult> {
   const taskId = formData.get("taskId") as string;
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    throw new Error("User not authenticated.");
+  }
 
   console.log(`ACTION: Delete Task ${taskId}`);
 
   try {
-    await deleteTask(taskId);
+    const deletedTask = await deleteTask(taskId);
+    if (!deletedTask.userId) {
+      throw new Error(
+        "Deleted task data is incomplete (missing userId). Cannot log activity accurately."
+      );
+    }
+
+    await logUserActivity(session.user.id, {
+      type: "TASK_DELETED",
+      taskId,
+      taskSnapshot: {
+        title: deletedTask.title,
+        description: deletedTask.description || "",
+        color: deletedTask.color,
+        icon: deletedTask.icon,
+      },
+      activityColor: "#cf6679",
+      activityIcon: "Delete",
+    });
     revalidatePath("/tasks");
     return { success: true, message: "Task deleted." };
-  } catch (err: any) {
-    return { success: false, error: err.message || "Failed to delete task." };
+  } catch (err) {
+    const error = err as ActionError;
+    return { success: false, error: error.message || "Failed to delete task." };
   }
 }
 
@@ -159,10 +256,11 @@ export async function togglePriorityAction(
       success: true,
       message: `Task priority ${newIsPriority ? "added" : "removed"}.`,
     };
-  } catch (err: any) {
+  } catch (err) {
+    const error = err as ActionError;
     return {
       success: false,
-      error: err.message || "Failed to toggle priority.",
+      error: error.message || "Failed to toggle priority.",
     };
   }
 }
@@ -210,13 +308,29 @@ export async function createTaskAction(
 
   console.log("Task to be created:", newTask);
   try {
-    await createTask(newTask);
+    const createdTask = await createTask(newTask);
+
+    if (createdTask) {
+      await logUserActivity(session.user.id, {
+        type: "TASK_CREATED",
+        taskId: createdTask.id,
+        taskSnapshot: {
+          title: createdTask.title,
+          description: createdTask.description || "",
+          color: createdTask.color,
+          icon: createdTask.icon,
+        },
+        activityColor: "#00c853",
+        activityIcon: "CircleCheckBig",
+      });
+    }
     revalidatePath("/tasks");
     return {
       success: true,
       message: "Task created successfully.",
     };
-  } catch (error: any) {
+  } catch (err) {
+    const error = err as ActionError;
     return {
       success: false,
       error: error.message || "Failed to create a task.",
