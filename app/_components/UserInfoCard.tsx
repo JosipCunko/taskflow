@@ -4,7 +4,7 @@ import { User, Award, LogOut, Calendar } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import Button from "./reusable/Button";
-import { signOut } from "@/app/_lib/auth";
+import { signOut } from "@/app/_lib/auth-client";
 import { useEffect, useState } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/app/_lib/firebase";

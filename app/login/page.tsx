@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react";
 import Button from "../_components/reusable/Button";
 import { User } from "lucide-react";
-import { signInWithGoogle } from "../_lib/auth";
+import { signInWithGoogle } from "../_lib/auth-client";
 import Loader from "../_components/Loader";
 
 export default function LoginPage() {

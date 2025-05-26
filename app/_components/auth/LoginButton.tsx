@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { signInWithGoogle, signOut } from "@/app/_lib/auth";
+import { signInWithGoogle, signOut } from "@/app/_lib/auth-client";
 import { useRouter } from "next/navigation"; // For App Router
 import Button from "../reusable/Button";
 import { Session } from "next-auth";
