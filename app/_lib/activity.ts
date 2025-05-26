@@ -1,5 +1,4 @@
-// app/_lib/activity.ts
-import { adminDb } from "./admin"; // Your Firebase Admin setup
+import { adminDb } from "./admin";
 import type { ActivityLog } from "@/app/_types/types";
 
 export async function getRecentUserActivity(

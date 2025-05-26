@@ -1,7 +1,6 @@
 import ProfileTabs from "@/app/_components/ProfileTabs";
 import { db } from "@/app/_lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { User } from "lucide-react";
 import { getServerSession } from "next-auth";
 import { getTasksByUserId } from "@/app/_lib/tasks";
@@ -10,6 +9,7 @@ import { redirect } from "next/navigation";
 import { getRecentUserActivity } from "@/app/_lib/activity";
 import { calculateTaskPoints } from "@/app/utils";
 import { ActivityLog, Task } from "@/app/_types/types";
+import { authOptions } from "@/app/_lib/auth";
 
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions);

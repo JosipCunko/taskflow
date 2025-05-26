@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
 import AuthProvider from "./_components/auth/AuthProvider";
-import { UserContextProvider } from "./_components/context/UserContext";
 
 const geistSans = Montserrat({
   variable: "--font-montserrat",
@@ -29,9 +28,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} antialiased dark bg-background text-text-high transition-colors duration-200 `}
       >
-        <AuthProvider>
-          <UserContextProvider>{children}</UserContextProvider>
-        </AuthProvider>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

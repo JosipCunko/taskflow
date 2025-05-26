@@ -1,8 +1,8 @@
 import { getServerSession } from "next-auth";
 import { ChartColumn } from "lucide-react";
 import { getTasksByUserId } from "@/app/_lib/tasks";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import TaskCard from "@/app/_components/TaskCard";
+import { authOptions } from "@/app/_lib/auth";
 
 export default async function TasksPage() {
   const session = await getServerSession(authOptions);

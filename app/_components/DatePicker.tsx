@@ -54,9 +54,23 @@ function Footer({
   day: Date;
   hour: number;
   min: number;
-  setHour: (e: ChangeEvent<HTMLInputElement>) => void;
-  setMin: (e: ChangeEvent<HTMLInputElement>) => void;
+  setHour: (hour: number) => void;
+  setMin: (min: number) => void;
 }) {
+  const handleHourChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value)) {
+      setHour(value);
+    }
+  };
+
+  const handleMinChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value)) {
+      setMin(value);
+    }
+  };
+
   return (
     <div className="flex mt-2 items-center text-sm gap-5 text-gray-500">
       <div>
@@ -68,7 +82,7 @@ function Footer({
         <div className="h-2 w-2 rounded-full bg-blue-500 "></div>
         <input
           type="number"
-          onChange={(e) => setHour(e.target.value)}
+          onChange={handleHourChange}
           value={hour}
           className="w-7 grid place-items-center border rounded-[3px] user-valid:border-primary-500 border-transparent user-invalid:border-error text-text-low"
           min={0}
@@ -77,7 +91,7 @@ function Footer({
         <span className="font-bold">:</span>
         <input
           type="number"
-          onChange={(e) => setMin(e.target.value)}
+          onChange={handleMinChange}
           value={min}
           className="w-7 grid place-items-center border rounded-[3px] user-valid:border-primary-500 border-transparent user-invalid:border-error text-text-low"
           min={0}

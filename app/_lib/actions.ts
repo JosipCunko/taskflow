@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { ActionResult, ActionError, Task } from "../_types/types";
 import { createTask, deleteTask, getTaskByTaskId, updateTask } from "./tasks";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../api/auth/[...nextauth]/route";
 import { logUserActivity } from "./activity";
+import { authOptions } from "./auth";
 
 export async function updateTaskStatusAction(
   formData: FormData

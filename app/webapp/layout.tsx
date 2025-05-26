@@ -3,7 +3,7 @@ import Sidebar from "../_components/Sidebar";
 import TopSidebar from "../_components/TopSidebar";
 import { Toaster } from "react-hot-toast";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../api/auth/[...nextauth]/route";
+import { authOptions } from "../_lib/auth";
 import { getTasksByUserId } from "../_lib/tasks";
 
 export const metadata: Metadata = {

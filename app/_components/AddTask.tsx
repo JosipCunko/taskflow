@@ -197,7 +197,8 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
       handleToast(res, () => {
         onCloseModal?.();
       });
-    } catch (error) {
+    } catch (err) {
+      const error = err as Error;
       toast.error(error.message);
       console.error(error);
     }

@@ -1,8 +1,8 @@
 import { getServerSession } from "next-auth";
 import { SquareCheckBig } from "lucide-react";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { getTasksByUserId } from "@/app/_lib/tasks";
 import TaskCard from "@/app/_components/TaskCard";
+import { authOptions } from "@/app/_lib/auth";
 
 export default async function CompletedTasksPage() {
   const session = await getServerSession(authOptions);

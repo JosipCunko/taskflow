@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { ReactNode } from "react";
 import { getTasksByUserId } from "@/app/_lib/tasks";
-import { authOptions } from "../api/auth/[...nextauth]/route";
+import { authOptions } from "../_lib/auth";
 import { getServerSession } from "next-auth";
 import TaskCardSmall from "../_components/TaskCardSmall";
 import { calculateTaskPoints, generateTaskTypes } from "../utils";
