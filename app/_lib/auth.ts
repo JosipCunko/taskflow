@@ -51,10 +51,12 @@ export const signInWithGoogle = async (): Promise<void> => {
     } else {
       throw new Error("No user returned from Firebase sign-in.");
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (
-      error.code === "auth/popup-closed-by-user" ||
-      error.code === "auth/cancelled-popup-request"
+      error instanceof Error &&
+      "code" in error &&
+      (error.code === "auth/popup-closed-by-user" ||
+        error.code === "auth/cancelled-popup-request")
     ) {
       console.warn("Firebase sign-in popup closed or cancelled.");
     } else {

@@ -4,9 +4,23 @@ import { useSession } from "next-auth/react";
 import { signInWithGoogle, signOut } from "@/app/_lib/auth";
 import { useRouter } from "next/navigation"; // For App Router
 import Button from "../reusable/Button";
+import { Session } from "next-auth";
+
+interface ExtendedSession extends Session {
+  user: {
+    id: string;
+    name?: string | null;
+    email?: string | null;
+    image?: string | null;
+    rewardPoints?: number;
+  };
+}
 
 export default function LoginButton() {
-  const { data: session, status } = useSession();
+  const { data: session, status } = useSession() as {
+    data: ExtendedSession | null;
+    status: string;
+  };
   const router = useRouter();
 
   const handleSignIn = async () => {
@@ -42,7 +56,7 @@ export default function LoginButton() {
     return (
       <div className="flex items-center gap-4">
         <p className="text-sm">
-          {session.user?.name} ({(session.user as any).rewardPoints || 0} pts)
+          {session.user?.name} ({session.user?.rewardPoints || 0} pts)
         </p>
         <button
           onClick={handleSignOut}

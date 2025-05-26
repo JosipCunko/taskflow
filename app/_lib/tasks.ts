@@ -15,7 +15,6 @@ import {
   getDoc,
   deleteField,
   FieldValue,
-  DocumentSnapshot,
   // DocumentSnapshot, // For createdAt, updatedAt
 } from "firebase/firestore";
 import { db } from "./firebase";

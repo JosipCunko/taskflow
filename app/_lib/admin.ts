@@ -16,8 +16,9 @@ try {
       // Optional: databaseURL: 'https://<YOUR_PROJECT_ID>.firebaseio.com' if using Realtime Database
     });
   }
-} catch (error: any) {
-  console.error("Firebase Admin SDK initialization error:", error.stack);
+} catch (error: unknown) {
+  const errorMessage = error instanceof Error ? error.stack : "Unknown error";
+  console.error("Firebase Admin SDK initialization error:", errorMessage);
   throw new Error(
     "Could not initialize Firebase Admin SDK. Is FIREBASE_ADMIN_SDK_CONFIG a valid JSON string?"
   );

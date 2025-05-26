@@ -36,9 +36,13 @@ export default function CalendarPage() {
       setAllTasks(
         showCompleted ? res : res.filter((task) => task.status !== "completed")
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       setAllTasks([]);
-      errorToast(error.message);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "An error occurred while fetching tasks";
+      errorToast(errorMessage);
     } finally {
       setIsLoading(false);
     }

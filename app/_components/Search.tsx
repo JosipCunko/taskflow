@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Search as SearchIcon,
   ChevronRight,
@@ -12,13 +12,13 @@ import { searchUserTasks } from "../_lib/tasks";
 import Loader from "./Loader";
 import { SearchedTask, Task } from "../_types/types";
 
-const debounce = <F extends (...args: any[]) => any>(
-  func: F,
+const debounce = <T extends (...args: Parameters<T>) => ReturnType<T>>(
+  func: T,
   waitFor: number
 ) => {
   let timeout: ReturnType<typeof setTimeout> | null = null;
 
-  const debounced = (...args: Parameters<F>) => {
+  const debounced = (...args: Parameters<T>) => {
     if (timeout !== null) {
       clearTimeout(timeout);
       timeout = null;
@@ -26,7 +26,7 @@ const debounce = <F extends (...args: any[]) => any>(
     timeout = setTimeout(() => func(...args), waitFor);
   };
 
-  return debounced as (...args: Parameters<F>) => ReturnType<F>;
+  return debounced as (...args: Parameters<T>) => ReturnType<T>;
 };
 
 interface SearchProps {
@@ -50,7 +50,9 @@ export default function Search({ onCloseModal, tasks }: SearchProps) {
       try {
         const results = await searchUserTasks(query, tasks);
         setSearchResults(results);
-      } catch (error: any) {
+      } catch (err) {
+        //Avoid typescript whining
+        const error = err as Error;
         errorToast(error.message);
         setSearchResults([]);
       } finally {
@@ -60,9 +62,10 @@ export default function Search({ onCloseModal, tasks }: SearchProps) {
     [tasks]
   );
 
-  const debouncedSearch = useCallback(debounce(performSearch, 300), [
-    performSearch,
-  ]);
+  const debouncedSearch = useMemo(
+    () => debounce(performSearch, 300),
+    [performSearch]
+  );
 
   useEffect(() => {
     if (searchQuery.trim().length > 1) {
@@ -116,7 +119,9 @@ export default function Search({ onCloseModal, tasks }: SearchProps) {
         {!isLoading && searchQuery.trim() && searchResults.length === 0 && (
           <div className="p-6 text-center h-36">
             <MessageSquare size={40} className="mx-auto text-text-gray mb-3" />
-            <p className="text-text-gray">No tasks found for "{searchQuery}"</p>
+            <p className="text-text-gray">
+              No tasks found for &quot;{searchQuery}&quot;
+            </p>
             <p className="text-xs text-text-low mt-1">
               Try a different search term.
             </p>

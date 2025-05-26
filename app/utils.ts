@@ -216,6 +216,7 @@ export const FEATURES = [
     description: "Set up reminders for each task",
   },
   {
+    id: "dumbbell",
     icon: Dumbbell,
     label: "Dumbbell",
     description: "Improve yourself with discipline and dedication",
@@ -336,10 +337,10 @@ export const getTaskIconByName = (name: string | undefined): LucideIcon => {
   if (!name) return ClipboardList;
   const found =
     TASK_ICONS.find(
-      (item) => item.icon.displayName.toLowerCase() === name.toLowerCase()
+      (item) => item.icon.displayName?.toLowerCase() === name.toLowerCase()
     ) ||
     ACTIVITY_ICONS.find(
-      (item) => item.icon.displayName.toLowerCase() === name.toLowerCase()
+      (item) => item.icon.displayName?.toLowerCase() === name.toLowerCase()
     );
 
   return found ? found.icon : ClipboardList;
@@ -410,8 +411,13 @@ export function infoToast(message: string) {
   });
 }
 
-// { success: boolean; message?: string; error?: string }
-export const handleToast = (state: any, handler: () => void) => {
+interface ToastState {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+
+export const handleToast = (state: ToastState, handler: () => void) => {
   if (state.message || state.error) {
     if (state.success) {
       successToast(state.message || "Action performed successfully.");
@@ -633,9 +639,6 @@ export function calculateConsistencyStats(
 
   let currentStreak = 0;
   let bestStreak = 0;
-  const todayISO = formatISO(startOfDay(new Date()), {
-    representation: "date",
-  });
 
   // Check if the last completion day is today or yesterday to start current streak
   if (completionDays.length > 0) {
