@@ -5,20 +5,50 @@ export interface Task {
   id: string;
   userId: string;
   title: string;
-  description: string;
+  description?: string;
   icon: string;
   color: string;
   isToday?: boolean; // Helper, can be derived from dueDate
   isPriority: boolean; // 'focus' tag could set this
   isReminder: boolean;
-  dueDate: Date; // Stored as Timestamp in Firestore, converted to Date in app
-  status: "pending" | "completed" | "delayed";
   delayCount: number;
   tags?: string[]; // For user-defined tags like 'morning routine', 'gym'
   createdAt: Date; // Stored as Timestamp in Firestore
   updatedAt: Date; // Stored as Timestamp in Firestore
-  completedAt?: Date; // Stored as Timestamp in Firestore, set when status is 'completed'
-  experience?: "bad" | "okay" | "good" | "best"; // EmojiExperience.tsx
+  experience?: "bad" | "okay" | "good" | "best";
+
+  dueDate?: Date; // Stored as Timestamp in Firestore, converted to Date in app
+  completedAt?: Date;
+  status: "pending" | "completed" | "delayed";
+
+  isRepeating?: boolean;
+  repetitionRule?: RepetitionRule;
+  duration?: {
+    minutes: number;
+    hours: number;
+    days: number;
+  }; // Number of minutes, hours, days
+}
+export type RepetitionFrequency = "daily" | "weekly" | "monthly";
+export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+
+/** daily, weekly or monhtly
+ * interval: every x days
+ * daysOfWekk: [1,2] Monday, Tuesday
+ * timesPerWeek: 3
+ * startDate: often begining of the week
+ * completions: only for weekly and monthly
+ */
+export interface RepetitionRule {
+  //  status: "pending" | "completed" | "delayed";
+  frequency: RepetitionFrequency;
+  interval?: number; // every 'interval' days/weeks/months
+  daysOfWeek?: DayOfWeek[];
+  timesPerWeek?: number; // For "weekly" if it's like "3 times a week, any day"
+
+  lastInstanceCompletedDate?: Date;
+  startDate: Date;
+  completions?: number; // 0 or 1 for daily tasks
 }
 
 export type EmojiOption = {

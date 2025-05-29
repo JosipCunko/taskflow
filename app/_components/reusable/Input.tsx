@@ -9,18 +9,24 @@ function Input({
   className,
   placeholder,
   required,
+  min,
+  max,
 }: {
   type: string;
   id?: string;
   value?: string | number | undefined;
   onChange?: (e: ChangeEvent<HTMLInputElement>) => void;
-  placeholder: string;
+  placeholder?: string;
   className?: string;
   name: string;
   required?: boolean;
+  min?: string;
+  max?: string;
 }) {
   return (
     <input
+      min={min}
+      max={max}
       type={type}
       id={id ? id : name}
       name={name}

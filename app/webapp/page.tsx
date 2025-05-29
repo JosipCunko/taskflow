@@ -16,6 +16,7 @@ import { getServerSession } from "next-auth";
 import TaskCardSmall from "../_components/TaskCardSmall";
 import { calculateTaskPoints, generateTaskTypes } from "../utils";
 import { Task } from "../_types/types";
+import RepeatingTaskCard from "../_components/RepeatingTaskCard";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -23,6 +24,8 @@ export default async function DashboardPage() {
   const userId = session.user.id;
 
   const allTasks = await getTasksByUserId(userId);
+  const regularTasks = allTasks.filter((task) => !task.isRepeating);
+  const repeatingTasks = allTasks.filter((task) => task.isRepeating);
 
   const {
     todaysTasks,
@@ -32,15 +35,15 @@ export default async function DashboardPage() {
     completedTasks,
     completedTodayTasks,
     pendingTodayTasks,
-  } = generateTaskTypes(allTasks);
+  } = generateTaskTypes(regularTasks);
 
   const averageDelayCount =
     delayedTasks.length > 0
-      ? allTasks.reduce((acc, task) => acc + (task.delayCount || 0), 0) /
+      ? regularTasks.reduce((acc, task) => acc + (task.delayCount || 0), 0) /
         delayedTasks.length
       : 0;
 
-  const totalPoints = allTasks.reduce(
+  const totalPoints = regularTasks.reduce(
     (acc, task) => acc + calculateTaskPoints(task),
     0
   );
@@ -193,9 +196,9 @@ export default async function DashboardPage() {
               <div className="flex justify-between items-center">
                 <span className="text-sm text-text-low">Completion Rate</span>
                 <span className="font-medium">
-                  {allTasks.length > 0
+                  {regularTasks.length > 0
                     ? `${Math.round(
-                        (completedTasks.length / allTasks.length) * 100
+                        (completedTasks.length / regularTasks.length) * 100
                       )}%`
                     : "0%"}
                 </span>
@@ -243,7 +246,7 @@ export default async function DashboardPage() {
               <div className="flex justify-between items-center">
                 <span className="text-sm text-text-low">Success Rate</span>
                 <span className="font-medium">
-                  {allTasks.length > 0
+                  {regularTasks.length > 0
                     ? `${Math.round(
                         (completedTasks.length /
                           (completedTasks.length + missedTasks.length)) *

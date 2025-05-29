@@ -1,11 +1,17 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { ActionResult, ActionError, Task } from "../_types/types";
+import {
+  ActionResult,
+  ActionError,
+  Task,
+  RepetitionRule,
+} from "../_types/types";
 import { createTask, deleteTask, getTaskByTaskId, updateTask } from "./tasks";
 import { getServerSession } from "next-auth";
 import { logUserActivity } from "./activity";
 import { authOptions } from "./auth";
+import { format } from "date-fns";
 
 export async function updateTaskStatusAction(
   formData: FormData
@@ -274,7 +280,9 @@ export async function createTaskAction(
   selectedColor: string,
   icon: string,
   dueDate: Date,
-  tags: string[]
+  tags: string[],
+  isRepeating: boolean,
+  repetitionRuleData: RepetitionRule
 ) {
   // Must pass authOptions
   const session = await getServerSession(authOptions);
@@ -334,6 +342,70 @@ export async function createTaskAction(
     return {
       success: false,
       error: error.message || "Failed to create a task.",
+    };
+  }
+}
+
+// Assume completeRepeatingTaskInstance is your DB logic (e.g., updating subcollection)
+// from repeatingTaskUtils.ts conceptually, but needs actual DB code
+// For a true Server Action, it would look like:
+export async function completeRepeatingTaskInstanceAction(
+  taskId: string,
+  instanceDate: Date // This should be just the date, time stripped or ignored
+): Promise<ActionResult> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return { success: false, error: "Not authenticated." };
+  }
+  try {
+    // --- THIS IS WHERE YOU PUT YOUR FIRESTORE LOGIC ---
+    // 1. Fetch the main repeating task document.
+    // 2. Validate the repetition rule and if an instance is due on instanceDate.
+    // 3. Update the status of this specific instance.
+    // - If using a subcollection 'occurrences':
+    // const occurrenceRef = adminDb.doc(`tasks/${taskId}/occurrences/${format(instanceDate, 'yyyy-MM-dd')}`);
+    // await occurrenceRef.set({ date: Timestamp.fromDate(startOfDay(instanceDate)), status: 'completed', completedAt: Timestamp.now(), userId: session.user.id }, { merge: true });
+    // - If updating fields on the main task document (for 'daily' or 'X times per week'):
+    // This is more complex and depends on the rule. Refer to the conceptual logic in repeatingTaskUtils.
+    // For example, for daily task:
+    // await adminDb.doc(`tasks/${taskId}`).update({ lastInstanceCompletedDate: Timestamp.fromDate(startOfDay(instanceDate)) });
+    // For X times per week: calculate completionsThisPeriod, currentPeriodStartDate based on instanceDate, and update.
+    // IMPORTANT: Choose ONE method (subcollection OR fields on main doc) and implement consistently.
+    // Subcollection is generally more robust.
+
+    console.log(
+      `Firestore: Mark task ${taskId} instance for ${format(
+        instanceDate,
+        "yyyy-MM-dd"
+      )} as completed.`
+    );
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    await logUserActivity(session.user.id, {
+      // Log this activity
+      type: "TASK_COMPLETED",
+      taskId: taskId,
+      details: `Completed repeating task instance for ${format(
+        instanceDate,
+        "MMM d"
+      )}`,
+      taskSnapshot: {
+        id: taskId,
+        title: "Fetched Task Title" /* Fetch actual title for snapshot */,
+      },
+      activityIcon: "CheckCircle2",
+      activityColor: "var(--color-success)",
+    });
+
+    revalidatePath("/dashboard"); // Or whatever page shows these tasks
+    revalidatePath("/tasks");
+    return { success: true, message: "Instance marked complete!" };
+  } catch (error) {
+    const err = error as Error;
+    console.error("Error completing repeating task instance:", err);
+    return {
+      success: false,
+      error: err.message || "Failed to complete instance.",
     };
   }
 }
