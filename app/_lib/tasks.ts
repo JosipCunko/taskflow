@@ -18,8 +18,7 @@ import {
   // DocumentSnapshot, // For createdAt, updatedAt
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { SearchedTask, Task } from "@/app/_types/types";
-import { isSameDay } from "date-fns";
+import { RepetitionRule, SearchedTask, Task } from "@/app/_types/types";
 
 const TASKS_COLLECTION = "tasks";
 
@@ -36,19 +35,14 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Task => {
     userId: data.userId,
     title: data.title,
     description: data.description,
-    type: data.type,
     icon: data.icon,
     color: data.color,
-    isToday:
-      data.isToday ||
-      isSameDay((data.dueDate as Timestamp).toDate(), new Date()),
     isPriority: data.isPriority || false,
     isReminder: data.isReminder || false,
     dueDate: data.dueDate ? (data.dueDate as Timestamp).toDate() : new Date(),
     status: data.status || "pending",
     delayCount: data.delayCount || 0,
     tags: data.tags || [],
-    preconditionTaskIds: data.preconditionTaskIds || [],
     createdAt: data.createdAt
       ? (data.createdAt as Timestamp).toDate()
       : new Date(),
@@ -59,6 +53,16 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Task => {
       ? (data.completedAt as Timestamp).toDate()
       : undefined,
     experience: data.experience,
+    duration: data.duration || undefined,
+    isRepeating: data.isRepeating || false,
+    repetitionRule: data.repetitionRule
+      ? {
+          ...data.repetitionRule,
+          startDate: data.repetitionRule.startDate?.toDate(),
+          lastInstanceCompletedDate:
+            data.repetitionRule.lastInstanceCompletedDate?.toDate(),
+        }
+      : undefined,
   } as Task;
 };
 
@@ -247,16 +251,15 @@ export const getMissedAndDelayedTasksByUserId = async (
 export const createTask = async (
   taskData: Omit<
     Task,
-    "id" | "createdAt" | "updatedAt" | "points" | "delayCount" | "status"
+    "id" | "createdAt" | "updatedAt" | "delayCount" | "status"
   > & { userId: string }
 ): Promise<Task> => {
   try {
     const docRef = await addDoc(collection(db, TASKS_COLLECTION), {
       ...taskData,
-      dueDate: Timestamp.fromDate(taskData.dueDate), // Convert Date to Timestamp
+      dueDate: Timestamp.fromDate(taskData.dueDate),
       status: "pending",
       delayCount: 0,
-      points: 0,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
@@ -296,7 +299,9 @@ export const updateTask = async (
         | Date
         | Timestamp
         | string[]
-        | undefined;
+        | undefined
+        | RepetitionRule
+        | { minutes: number; hours: number; days: number };
     } = {};
 
     // Convert updates to Firestore format

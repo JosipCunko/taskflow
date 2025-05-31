@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { getTaskIconByName } from "../utils";
+import { CardSpecificIcons, getTaskIconByName } from "../utils";
 import { Task } from "../_types/types";
 
 export default function TaskCardSmall({ task }: { task: Task }) {
@@ -26,6 +26,14 @@ export default function TaskCardSmall({ task }: { task: Task }) {
           <p className="text-xs text-text-gray mt-1">
             {format(task.dueDate, "p")}
           </p>
+        )}
+        {task.duration && (
+          <span className="mt-2 text-xs flex items-center gap-1.5 ">
+            <CardSpecificIcons.Time size={12} />
+            {task.duration.days !== 0 && <span>{task.duration.days}d</span>}
+            {task.duration.hours && <span>{task.duration.hours}h</span>}
+            {task.duration.minutes && <span>{task.duration.minutes}m</span>}
+          </span>
         )}
       </div>
     </li>

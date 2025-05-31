@@ -15,7 +15,7 @@ export default function ColorPicker({
         htmlFor="type"
         className="block text-sm font-medium text-text-low mb-1"
       >
-        Tag color
+        Task color
       </label>
       <div className="grid grid-cols-10 gap-2 mb-4">
         {colorsColorPicker.map((color) => (

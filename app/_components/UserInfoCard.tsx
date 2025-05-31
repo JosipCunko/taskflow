@@ -1,6 +1,6 @@
 "use client";
 
-import { User, Award, LogOut, Calendar } from "lucide-react";
+import { User, LogOut, Calendar } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import Button from "./reusable/Button";
@@ -58,14 +58,6 @@ export default function UserInfoCard({
           <p className="text-text-low">{session?.user.email}</p>
 
           <div className="mt-6 w-full space-y-4">
-            <div className="flex items-center justify-between py-3 border-b border-divider">
-              <div className="flex items-center gap-3">
-                <Award size={20} className="text-primary" />
-                <span>Reward Points</span>
-              </div>
-              <span className="font-semibold">{userProfile.rewardPoints}</span>
-            </div>
-
             <div className="flex items-center justify-between py-3 border-b border-divider">
               <div className="flex items-center gap-3">
                 <Calendar size={20} className="text-primary" />

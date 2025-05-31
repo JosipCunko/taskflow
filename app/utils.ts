@@ -49,23 +49,26 @@ import {
 import toast from "react-hot-toast";
 import {
   ConsistencyStats,
+  DayOfWeek,
   EmojiOption,
   Task,
+  TaskCategories,
   TimeManagementStats,
 } from "./_types/types";
 import {
+  addDays,
   differenceInCalendarDays,
   differenceInDays,
+  endOfWeek,
   formatISO,
+  getDay,
   isBefore,
   isEqual,
   parseISO,
   startOfDay,
+  startOfWeek,
 } from "date-fns";
-import { isFuture } from "date-fns";
-import { isAfter } from "date-fns";
-import { isPast } from "date-fns";
-import { isToday } from "date-fns";
+import { isFuture, isAfter, isPast, isToday } from "date-fns";
 
 /** Possible task icons to set in the IconPicker*/
 export const TASK_ICONS = [
@@ -274,7 +277,84 @@ export const navItemsToSearch = [
     link: "/webapp/calendar",
   },
 ];
+export const emojiOptions: EmojiOption[] = [
+  { id: "bad", emoji: Frown, label: "Bad", selected: false },
+  { id: "okay", emoji: Meh, label: "Okay", selected: false },
+  { id: "good", emoji: Smile, label: "Good", selected: false },
+  { id: "best", emoji: BicepsFlexed, label: "Best", selected: false },
+];
 
+export const CardSpecificIcons = {
+  DueDate: Calendar,
+  Priority: Zap,
+  Reminder: Bell,
+  StatusPending: Clock,
+  StatusCompleted: CheckCircle2,
+  StatusDelayed: XCircle,
+  Tag: Tag,
+  Precondition: Link2,
+  Points: Star,
+  ExperienceGood: Smile,
+  ExperienceOkay: Meh,
+  ExperienceBad: Frown,
+  Options: MoreHorizontal,
+  Edit: Edit3,
+  Delete: Trash2,
+  PreconditionTasks: ArrowRightLeft,
+  MarkComplete: CheckCircle2,
+  DelayTomorrow: CalendarClock,
+  DelayNextWeek: CalendarClock,
+  Reschedule: CalendarPlus,
+  AddPriority: Zap,
+  RemovePriority: ZapOff,
+  SetReminder: BellPlus,
+  Smile: Smile,
+  ExperienceBest: BicepsFlexed,
+  Time: Clock,
+};
+/*Actually, label === icon, but I will leave it only for ClipboardList*/
+export const getTaskIconByName = (name: string | undefined): LucideIcon => {
+  if (!name) return ClipboardList;
+  const found =
+    TASK_ICONS.find(
+      (item) => item.icon.displayName?.toLowerCase() === name.toLowerCase()
+    ) ||
+    ACTIVITY_ICONS.find(
+      (item) => item.icon.displayName?.toLowerCase() === name.toLowerCase()
+    );
+
+  return found ? found.icon : ClipboardList;
+};
+
+export function getStatusStyles(status: "completed" | "delayed" | "pending") {
+  switch (status) {
+    case "completed":
+      return {
+        icon: CardSpecificIcons.StatusCompleted,
+        text: "Completed",
+        colorClass: "text-green-400", // or 'status-completed-text'
+        bgColorClass: "bg-green-500/10",
+      };
+    case "delayed":
+      return {
+        icon: CardSpecificIcons.StatusDelayed,
+        text: "Delayed",
+        colorClass: "text-red-400", // Or 'status-delayed-text'
+        bgColorClass: "bg-red-500/10",
+      };
+    case "pending":
+    default:
+      return {
+        icon: CardSpecificIcons.StatusPending,
+        text: "Pending",
+        colorClass: "text-yellow-400", // Or 'status-pending-text'
+        bgColorClass: "bg-yellow-500/10",
+      };
+  }
+}
+
+/* Date functions */
+/* Date functions */
 /* Date functions */
 export function getPhaseOfTheDay() {
   const date = new Date();
@@ -325,55 +405,8 @@ export const formatDateTime = (date: Date | string | undefined): string => {
   }
 };
 
-/* Task Card */
-
-export interface TaskIconItem {
-  name: string;
-  icon: LucideIcon;
-}
-
-/*Actually, label === icon, but I will leave it only for ClipboardList*/
-export const getTaskIconByName = (name: string | undefined): LucideIcon => {
-  if (!name) return ClipboardList;
-  const found =
-    TASK_ICONS.find(
-      (item) => item.icon.displayName?.toLowerCase() === name.toLowerCase()
-    ) ||
-    ACTIVITY_ICONS.find(
-      (item) => item.icon.displayName?.toLowerCase() === name.toLowerCase()
-    );
-
-  return found ? found.icon : ClipboardList;
-};
-
-export const CardSpecificIcons = {
-  DueDate: Calendar,
-  Priority: Zap,
-  Reminder: Bell,
-  StatusPending: Clock,
-  StatusCompleted: CheckCircle2,
-  StatusDelayed: XCircle,
-  Tag: Tag,
-  Precondition: Link2,
-  Points: Star,
-  ExperienceGood: Smile,
-  ExperienceOkay: Meh,
-  ExperienceBad: Frown,
-  Options: MoreHorizontal,
-  Edit: Edit3,
-  Delete: Trash2,
-  PreconditionTasks: ArrowRightLeft,
-  MarkComplete: CheckCircle2,
-  DelayTomorrow: CalendarClock,
-  DelayNextWeek: CalendarClock,
-  Reschedule: CalendarPlus,
-  AddPriority: Zap,
-  RemovePriority: ZapOff,
-  SetReminder: BellPlus,
-  Smile: Smile,
-  ExperienceBest: BicepsFlexed,
-};
-
+/* Toaster */
+/* Toaster */
 /* Toaster */
 export function successToast(message: string) {
   toast(message, {
@@ -411,13 +444,14 @@ export function infoToast(message: string) {
   });
 }
 
-interface ToastState {
-  success: boolean;
-  message?: string;
-  error?: string;
-}
-
-export const handleToast = (state: ToastState, handler: () => void) => {
+export const handleToast = (
+  state: {
+    success: boolean;
+    message?: string;
+    error?: string;
+  },
+  handler?: () => void
+) => {
   if (state.message || state.error) {
     if (state.success) {
       successToast(state.message || "Action performed successfully.");
@@ -430,71 +464,15 @@ export const handleToast = (state: ToastState, handler: () => void) => {
   }
 };
 
-/**Phone number validation */
+/**Validation */
+/**Validation */
+/**Validation */
 export const phoneNumberRegex =
   /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/;
 
 // if (!phoneNumberRegex.test(phoneNumber)) {
 //   errorToast("Please enter a valid phone number.");
 // }
-
-export const sampleTasks: Task[] = [
-  {
-    id: "2",
-    userId: "user123",
-    title: "Grocery Shopping for the Week",
-    description:
-      "Buy fruits, vegetables, milk, and other essentials for the week. Check pantry for stock.",
-    icon: "ShoppingCart",
-    color: "#10B981", // Green
-    isPriority: false,
-    isReminder: false,
-    dueDate: new Date(Date.now() + 86400000 * 2), // In 2 days
-    status: "pending",
-    delayCount: 0,
-    tags: ["home", "essentials"],
-    createdAt: new Date(Date.now() - 86400000 * 3),
-    updatedAt: new Date(Date.now() - 86400000 * 3),
-  },
-
-  {
-    id: "4",
-    userId: "user123",
-    title: "Submit Monthly Expense Report",
-    description:
-      "Compile all receipts and submit the expense report for last month through the company portal.",
-    icon: "ClipboardList",
-    color: "#F59E0B", // Amber
-    isPriority: false,
-    isReminder: false,
-    dueDate: new Date(Date.now() - 86400000 * 10), // Due 10 days ago
-    status: "completed",
-    delayCount: 0,
-    tags: ["finance", "report"],
-    createdAt: new Date(Date.now() - 86400000 * 40),
-    updatedAt: new Date(Date.now() - 86400000 * 10),
-    completedAt: new Date(Date.now() - 86400000 * 9),
-    experience: "good",
-  },
-];
-
-export const emojiOptions: EmojiOption[] = [
-  { id: "bad", emoji: Frown, label: "Bad", selected: false },
-  { id: "okay", emoji: Meh, label: "Okay", selected: false },
-  { id: "good", emoji: Smile, label: "Good", selected: false },
-  { id: "best", emoji: BicepsFlexed, label: "Best", selected: false },
-];
-
-export interface TaskCategories {
-  todaysTasks: Task[];
-  upcomingTasks: Task[];
-  missedTasks: Task[];
-  delayedTasks: Task[];
-  completedTasks: Task[];
-  completedTodayTasks: Task[];
-  pendingTodayTasks: Task[];
-  pendingTasks: Task[];
-}
 
 export function generateTaskTypes(allTasks: Task[]): TaskCategories {
   const now = new Date();
@@ -544,6 +522,9 @@ export function generateTaskTypes(allTasks: Task[]): TaskCategories {
   };
 }
 
+/*Stats */
+/*Stats */
+/*Stats */
 export const calculateTaskPoints = (task: Task) => {
   const delayCount = task.delayCount || 0;
   if (task.status === "completed") {
@@ -699,4 +680,77 @@ export function calculateConsistencyStats(
   }
 
   return { currentStreakDays: currentStreak, bestStreakDays: bestStreak };
+}
+
+/*Repeating tasks */
+/*Repeating tasks */
+/*Repeating tasks */
+export const MONDAY_START_OF_WEEK = { weekStartsOn: 1 } as const;
+export function calculateNextDueDate(
+  task: Task,
+  currentDate: Date = new Date()
+): Date | undefined {
+  if (!task.isRepeating || !task.repetitionRule) {
+    return task.dueDate;
+  }
+
+  const rule = task.repetitionRule;
+
+  if (rule.timesPerWeek) {
+    // For times per week, due date is always end of week
+    return endOfWeek(currentDate, MONDAY_START_OF_WEEK);
+  }
+
+  if (rule.daysOfWeek?.length) {
+    const today = getDay(currentDate) as DayOfWeek;
+    let nextDueDay = today;
+    while (!rule.daysOfWeek.includes(nextDueDay as DayOfWeek)) {
+      nextDueDay = (nextDueDay + 1) % 7;
+    }
+    const daysUntilNext = (nextDueDay - today + 7) % 7;
+    return addDays(currentDate, daysUntilNext);
+  }
+
+  if (rule.interval && rule.startDate) {
+    const daysSinceStart = differenceInDays(currentDate, rule.startDate);
+    const isDueToday =
+      task.status === "completed"
+        ? false
+        : daysSinceStart % rule.interval === 0;
+
+    if (isDueToday) {
+      return addDays(currentDate, rule.interval);
+    } else {
+      const daysUntilNext = rule.interval - (daysSinceStart % rule.interval);
+      return addDays(currentDate, daysUntilNext);
+    }
+  }
+  return undefined;
+}
+export function isTaskDueOn(task: Task, date: Date): boolean {
+  if (!task.isRepeating || !task.repetitionRule) {
+    return false;
+  }
+  //CAREFUL
+  if (task.status === "completed") return false;
+
+  const rule = task.repetitionRule;
+
+  if (rule.timesPerWeek) {
+    const weekStart = startOfWeek(date, MONDAY_START_OF_WEEK);
+    const isCurrentWeek =
+      startOfWeek(date, MONDAY_START_OF_WEEK).getTime() === weekStart.getTime();
+    return isCurrentWeek && (rule.completions || 0) < rule.timesPerWeek;
+  }
+
+  if (rule.daysOfWeek?.length) {
+    const dayOfWeek = getDay(date) as DayOfWeek;
+    return rule.daysOfWeek.includes(dayOfWeek);
+  }
+
+  if (rule.interval && rule.startDate) {
+    const daysSinceStart = differenceInDays(date, rule.startDate);
+    return daysSinceStart % rule.interval === 0;
+  }
+  return false;
 }

@@ -1,13 +1,20 @@
 "use client";
+/*
+ dueDate Parameter: You pass dueDate but then overwrite it for timesPerWeek and daysOfWeek with endOfWeek(new Date(), MONDAY_START_OF_WEEK). For interval tasks, you use the passed dueDate. This is a bit inconsistent. The dueDate for the first instance of a repeating task can be a user choice. The subsequent due dates are then calculated.
+ */
 
 import { useContext, useState, useMemo, useEffect } from "react";
 import type { RefAttributes, ForwardRefExoticComponent } from "react";
 import { Calendar, CheckCircle } from "lucide-react";
 import type { LucideProps } from "lucide-react";
-import { toast } from "react-hot-toast";
 
 import ColorPicker from "./ColorPicker";
-import { colorsColorPicker, handleToast, TASK_ICONS } from "../utils";
+import {
+  colorsColorPicker,
+  errorToast,
+  handleToast,
+  TASK_ICONS,
+} from "../utils";
 import Button from "./reusable/Button";
 import IconPicker from "./IconPicker";
 import DatePicker from "./DatePicker";
@@ -16,12 +23,10 @@ import Modal, { ModalContext } from "./Modal";
 import { createTaskAction } from "../_lib/actions";
 import { format, isSameDay } from "date-fns";
 import TagInput from "./TagInput";
-import {
-  DayOfWeek,
-  RepetitionFrequency,
-  RepetitionRule,
-} from "../_types/types";
+import { DayOfWeek } from "../_types/types";
 import Checkbox from "./reusable/Checkbox";
+import { preCreateRepeatingTask } from "../_lib/repeatingTasks";
+import RepetitionRulesModal from "./RepetitionRulesModal";
 interface AddTaskProps {
   onCloseModal?: () => void;
 }
@@ -38,7 +43,7 @@ const ShowMoreTriggerButton = (props: InjectedShowMoreTriggerButtonProps) => {
   return (
     // Pass the onClick from props (injected by Modal.Open) to the actual Button component
     <Button variant="secondary" type="button" onClick={onClick}>
-      <span className="text-gray-500">Show more</span>
+      <span className="text-gray-500">Customize task</span>
       <svg
         className={`w-5 h-5 text-gray-400 transition-transform ${
           isOpen ? "transform rotate-180" : ""
@@ -131,11 +136,12 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
   const [hour, setHour] = useState(23);
   const [min, setMin] = useState(59);
 
-  const [isToday, setIsToday] = useState(true);
   const [isPriority, setIsPriority] = useState(false);
   const [isReminder, setIsReminder] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
-
+  const [durationDays, setDurationDays] = useState<number>(0);
+  const [durationHours, setDurationHours] = useState<number>(0);
+  const [durationMinutes, setDurationMinutes] = useState<number>(0);
   const [selectedColor, setSelectedColor] = useState<string>(
     colorsColorPicker[0]
   );
@@ -146,30 +152,55 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
   >(TASK_ICONS[0].icon);
 
   const [isRepeatingTask, setIsRepeatingTask] = useState(false);
-  const [repetitionFreq, setRepetitionFreq] =
-    useState<RepetitionFrequency>("daily");
-  const [selectedDaysOfWeek, setSelectedDaysOfWeek] = useState<DayOfWeek[]>([]); // Complete every saturday
-  const [timesPerWeek, setTimesPerWeek] = useState<number>(1); // For X times per week
-  const [interval, setInterval] = useState<number>(1); // Every X days
+  const [selectedDaysOfWeek, setSelectedDaysOfWeek] = useState<DayOfWeek[]>([]);
+  const [timesPerWeek, setTimesPerWeek] = useState<number>(1);
+  const [interval, setInterval] = useState<number>(1);
   const [taskStartDate, setTaskStartDate] = useState<Date>(new Date());
+  const [activeRepetitionType, setActiveRepetitionType] = useState<
+    "interval" | "daysOfWeek" | "timesPerWeek" | "none"
+  >("none");
+  const isDueDateToday = isSameDay(new Date(), selectedDate);
 
   const [showMoreOpenName, setShowMoreOpenName] = useState<string>("");
   const openShowMore = (name: string) => setShowMoreOpenName(name);
   const closeShowMore = () => setShowMoreOpenName("");
 
-  useEffect(
-    function () {
-      if (!isSameDay(new Date(), selectedDate)) {
-        setIsToday(false);
-      }
-      if (isSameDay(new Date(), selectedDate)) {
-        setIsToday(true);
-      }
-    },
-    [selectedDate]
+  const [repetitionModalOpenName, setRepetitionModalOpenName] =
+    useState<string>("");
+  const openRepetitionModal = (name: string) =>
+    setRepetitionModalOpenName(name);
+  const closeRepetitionModal = () => setRepetitionModalOpenName("");
+  const repetitionModalContextValue = useMemo(
+    () => ({
+      openName: repetitionModalOpenName,
+      open: openRepetitionModal,
+      close: closeRepetitionModal,
+    }),
+    [repetitionModalOpenName]
   );
 
-  // Memoize the context value for the "show-more" modal to prevent unnecessary re-renders and to ensure its stability across AddTask re-renders.
+  useEffect(() => {
+    if (isRepeatingTask && repetitionModalOpenName !== "repetition-rules") {
+      if (activeRepetitionType === "none") {
+        setActiveRepetitionType("interval");
+      }
+      openRepetitionModal("repetition-rules");
+    }
+    // Added repetitionModalOpenName
+  }, [isRepeatingTask, activeRepetitionType, repetitionModalOpenName]);
+
+  useEffect(() => {
+    if (!isRepeatingTask) {
+      setActiveRepetitionType("none");
+    }
+  }, [isRepeatingTask]);
+  const handleRepetitionDone = () => {
+    if (activeRepetitionType === "none") {
+      setIsRepeatingTask(false);
+    }
+    closeRepetitionModal();
+  };
+
   const showMoreModalContextValue = useMemo(
     () => ({
       openName: showMoreOpenName,
@@ -183,53 +214,81 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
     try {
       const title = formData.get("title");
 
-      if (
-        !title ||
-        !selectedDate ||
-        !hour ||
-        !min ||
-        !selectedColor ||
-        !selectedIcon
-      ) {
+      if (!title || !hour || !selectedColor || !selectedIcon) {
         throw new Error("Missing some required fields.");
       }
 
+      //CAREFUL for interval tasks
       const dueDate = new Date(selectedDate);
-      dueDate.setHours(hour);
-      dueDate.setMinutes(min);
+      dueDate.setHours(hour, min, 0, 0);
 
-      const isRepeating = isRepeatingTask;
-      const repetitionRuleData: RepetitionRule = {
-        frequency: repetitionFreq,
-        interval: interval ? interval : undefined,
-        timesPerWeek: timesPerWeek ? timesPerWeek : undefined,
-        daysOfWeek:
-          selectedDaysOfWeek.length > 0 ? selectedDaysOfWeek : undefined,
-        startDate: taskStartDate,
-        completions: 0,
-        lastInstanceCompletedDate: undefined,
-      };
+      let argInterval: number | undefined = undefined;
+      let argTimesPerWeek: number | undefined = undefined;
+      let argDaysOfWeek: DayOfWeek[] = [];
 
-      // !!! UPDATE creteTaskAction
+      if (isRepeatingTask && activeRepetitionType !== "none") {
+        switch (activeRepetitionType) {
+          case "interval":
+            argInterval = interval;
+            break;
+          case "timesPerWeek":
+            argTimesPerWeek = timesPerWeek;
+            break;
+          case "daysOfWeek":
+            argDaysOfWeek =
+              selectedDaysOfWeek.length > 0 ? selectedDaysOfWeek : [];
+            if (!argDaysOfWeek) {
+              errorToast(
+                "Please select days for 'Specific Days' repetition or choose a different type."
+              );
+              setIsRepeatingTask(false);
+              setActiveRepetitionType("none");
+              return;
+            }
+            break;
+        }
+      } else if (isRepeatingTask && activeRepetitionType === "none") {
+        setIsRepeatingTask(false);
+      }
+
+      const {
+        dueDate: effectiveDueDate,
+        isRepeating,
+        repetitionRule,
+      } = preCreateRepeatingTask(
+        argInterval,
+        argTimesPerWeek,
+        argDaysOfWeek,
+        dueDate,
+        taskStartDate
+      );
+      const durationObject =
+        durationDays > 0 || durationHours > 0 || durationMinutes > 0
+          ? {
+              minutes: durationMinutes,
+              hours: durationHours,
+              days: durationDays,
+            }
+          : undefined;
+
       const res = await createTaskAction(
         formData,
-        isToday,
         isPriority,
         isReminder,
         selectedColor,
         selectedIcon.displayName || selectedIcon.name,
-        dueDate,
+        effectiveDueDate as Date,
         tags,
-        isRepeating,
-        repetitionRuleData
+        durationObject,
+        isRepeating as boolean,
+        repetitionRule
       );
       handleToast(res, () => {
         onCloseModal?.();
       });
     } catch (err) {
       const error = err as Error;
-      toast.error(error.message);
-      console.error(error);
+      errorToast(error.message);
     }
   };
 
@@ -252,7 +311,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
               type="text"
               id="title"
               name="title"
-              placeholder="Check notes before meeting Friday"
+              placeholder="e.q. Buy barbecue sauce tommorow"
               required
             />
           </div>
@@ -267,7 +326,6 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
             <Input type="text" placeholder="Description" name="description" />
           </div>
         </div>
-
         <TagInput
           id="task-topics"
           label="Tags"
@@ -275,23 +333,23 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
           setTags={setTags}
           placeholder="e.g. family, gym"
         />
-
         <div className="flex items-center space-x-2 mt-4 mb-6 ">
-          <Button
-            variant="tag"
-            onClick={() => {
-              setIsToday(!isToday);
-              setSelectedDate(new Date());
-            }}
-            className={` ${
-              isToday
-                ? "bg-green-100 text-green-800"
-                : "bg-background-500 text-text-low"
-            }`}
-          >
-            <Calendar size={16} className="mr-1" />
-            Today
-          </Button>
+          {!isRepeatingTask && (
+            <Button
+              variant="tag"
+              onClick={() => {
+                setSelectedDate(new Date());
+              }}
+              className={` ${
+                isDueDateToday
+                  ? "bg-green-100 text-green-800"
+                  : "bg-background-500 text-text-low"
+              }`}
+            >
+              <Calendar size={16} className="mr-1" />
+              Today
+            </Button>
+          )}
 
           <Button
             variant="tag"
@@ -319,7 +377,6 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
             Reminders
           </Button>
         </div>
-
         <ModalContext.Provider value={showMoreModalContextValue}>
           <Modal.Open opens="show-more">
             <ShowMoreTriggerButton opens="show-more" />
@@ -341,163 +398,136 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
             />
           </Modal.Window>
         </ModalContext.Provider>
-
-        <div className="mt-4">
+        <div className="pt-4 ">
           <Checkbox
             id="isRepeating"
             name="isRepeating"
             label="Make this a repeating task"
             checked={isRepeatingTask}
-            onChange={(e) => setIsRepeatingTask(e.target.checked)}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setIsRepeatingTask(checked);
+              if (!checked) {
+                setActiveRepetitionType("none");
+              }
+            }}
           />
+          {/* Display summary of repetition if set */}
+          {isRepeatingTask && activeRepetitionType !== "none" && (
+            <button
+              type="button"
+              onClick={() => openRepetitionModal("repetition-rules")}
+              className="mt-2 text-sm text-primary-500 hover:text-primary-400 underline text-left w-full"
+            >
+              {activeRepetitionType === "interval" &&
+                `Repeats every ${interval} day(s)`}
+              {activeRepetitionType === "daysOfWeek" &&
+                `Repeats on ${
+                  selectedDaysOfWeek
+                    .map(
+                      (d) =>
+                        ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d]
+                    )
+                    .join(", ") || "selected days"
+                }`}
+              {activeRepetitionType === "timesPerWeek" &&
+                `Repeats ${timesPerWeek} time(s) per week`}
+              {taskStartDate &&
+                ` starting ${format(taskStartDate, "MMM d, yyyy")}`}
+              <span className="ml-1">(Edit)</span>
+            </button>
+          )}
         </div>
 
-        {isRepeatingTask && (
-          <div className="mt-4 p-4 bg-background-600 rounded-lg border border-divider space-y-4 animate-fadeIn">
-            <h4 className="text-sm font-medium text-text-low mb-2">
-              Repetition Rules
-            </h4>
+        <ModalContext.Provider value={repetitionModalContextValue}>
+          <Modal.Window name="repetition-rules">
+            <RepetitionRulesModal
+              activeRepetitionType={activeRepetitionType}
+              setActiveRepetitionType={setActiveRepetitionType}
+              intervalValue={interval}
+              setIntervalValue={setInterval}
+              timesPerWeekValue={timesPerWeek}
+              setTimesPerWeekValue={setTimesPerWeek}
+              selectedDaysOfWeek={selectedDaysOfWeek}
+              setSelectedDaysOfWeek={setSelectedDaysOfWeek}
+              repetitionTaskStartDate={taskStartDate}
+              setRepetitionTaskStartDate={setTaskStartDate}
+              onDone={handleRepetitionDone}
+            />
+          </Modal.Window>
+        </ModalContext.Provider>
 
+        {/* --- DURATION UI --- */}
+        <div className="pt-4">
+          <h4 className="text-sm font-semibold text-text-low mb-2 mt-2">
+            Estimated Duration (Optional)
+          </h4>
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label
-                htmlFor="repetitionFreq"
+                htmlFor="durationDays"
                 className="block text-xs font-medium text-text-low mb-1"
               >
-                Frequency
-              </label>
-              <select
-                id="repetitionFreq"
-                value={repetitionFreq}
-                onChange={(e) =>
-                  setRepetitionFreq(e.target.value as RepetitionFrequency)
-                }
-                className="w-full bg-background-650 border border-background-500 text-text-high p-2 rounded-md text-sm focus:ring-primary-500 focus:border-primary-500"
-              >
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-              </select>
-            </div>
-
-            {/* Conditional UI based on frequency */}
-            {repetitionFreq === "weekly" && (
-              <>
-                {/* Option 1: Specific Days of Week */}
-                <div className="space-y-1">
-                  <p className="text-xs font-medium text-text-low mb-1">
-                    Select days (for &quot;Weekly on specific days&quot;):
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {(
-                      ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const
-                    ).map((dayLabel, index) => {
-                      const dayValue = ((index + 1) % 7) as DayOfWeek;
-                      return (
-                        <button
-                          type="button"
-                          key={dayLabel}
-                          onClick={() => {
-                            setSelectedDaysOfWeek((prev) =>
-                              prev.includes(dayValue)
-                                ? prev.filter((d) => d !== dayValue)
-                                : [...prev, dayValue]
-                            );
-                          }}
-                          className={`px-3 py-1.5 text-xs rounded-md border transition-colors
-${
-  selectedDaysOfWeek.includes(dayValue)
-    ? "bg-primary-500 text-white border-primary-500"
-    : "bg-background-500 text-text-low border-background-400 hover:border-primary-400"
-}`}
-                        >
-                          {dayLabel}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <p className="text-2xs text-text-medium mt-1">
-                    Selected:{" "}
-                    {selectedDaysOfWeek
-                      .map(
-                        (d) =>
-                          ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d]
-                      )
-                      .join(", ") || "None"}
-                  </p>
-                  <p className="text-2xs text-text-medium mt-1">
-                    Note: Setting &quot;Select times per week&quot; &quot;Select
-                    interval&quot; above will override this.
-                  </p>
-                </div>
-                {/* Option 2: Times per week */}
-                <div className="border-t border-divider pt-3 mt-3">
-                  <label
-                    htmlFor="timesPerWeek"
-                    className="block text-xs font-medium text-text-low mb-1"
-                  >
-                    Or, occur this many times per week (any day):
-                  </label>
-                  <Input
-                    type="number"
-                    id="timesPerWeek"
-                    name="timesPerWeek"
-                    min="1"
-                    max="7"
-                    value={String(timesPerWeek)}
-                    onChange={(e) =>
-                      setTimesPerWeek(
-                        Math.max(1, parseInt(e.target.value) || 1)
-                      )
-                    }
-                    placeholder="e.g., 3"
-                    className="bg-background-650 border-background-500 text-sm"
-                  />
-                  <p className="text-2xs text-text-medium mt-1">
-                    Note: Setting &quot;Select days&quot; &quot;Select
-                    interval&quot; above will override this.
-                  </p>
-                </div>
-
-                {/* Option 3: Interval */}
-                <div className="border-t border-divider pt-3 mt-3">
-                  <label
-                    htmlFor="interval"
-                    className="block text-xs font-medium text-text-low mb-1"
-                  >
-                    Or, occur every few days:
-                  </label>
-                  <Input
-                    type="number"
-                    id="interval"
-                    name="interval"
-                    value={interval}
-                    onChange={(e) => setInterval(+e.target.value)}
-                    className="bg-background-650 border-background-500 text-sm"
-                  />
-                  <p className="text-2xs text-text-medium mt-1">
-                    Note: Setting &quot;Select days of week&quot; and
-                    &quot;Select times per week&quot; above will override this.
-                  </p>
-                </div>
-              </>
-            )}
-
-            {/* Start Date for repetition */}
-            <div>
-              <label className="block text-xs font-medium text-text-low mb-1">
-                Start repeating on
+                Days
               </label>
               <Input
-                type="date"
-                name="taskStartDate"
-                value={format(taskStartDate, "yyyy-MM-dd")}
-                onChange={(e) => setTaskStartDate(new Date(e.target.value))}
-                className="bg-background-650 border-background-500 text-sm"
+                type="number"
+                id="durationDays"
+                name="durationDays"
+                min="0"
+                value={String(durationDays)}
+                onChange={(e) =>
+                  setDurationDays(Math.max(0, parseInt(e.target.value) || 0))
+                }
+                className="w-full bg-background-650 border-background-500 text-sm"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="durationHours"
+                className="block text-xs font-medium text-text-low mb-1"
+              >
+                Hours
+              </label>
+              <Input
+                type="number"
+                id="durationHours"
+                name="durationHours"
+                min="0"
+                max="23"
+                value={String(durationHours)}
+                onChange={(e) =>
+                  setDurationHours(
+                    Math.max(0, Math.min(23, parseInt(e.target.value) || 0))
+                  )
+                }
+                className="w-full bg-background-650 border-background-500 text-sm"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="durationMinutes"
+                className="block text-xs font-medium text-text-low mb-1"
+              >
+                Minutes
+              </label>
+              <Input
+                type="number"
+                id="durationMinutes"
+                name="durationMinutes"
+                min="0"
+                max="59"
+                value={String(durationMinutes)}
+                onChange={(e) =>
+                  setDurationMinutes(
+                    Math.max(0, Math.min(59, parseInt(e.target.value) || 0))
+                  )
+                }
+                className="w-full bg-background-650 border-background-500 text-sm"
               />
             </div>
           </div>
-        )}
-
+        </div>
         <div className="flex justify-between items-center mt-5">
           <div></div>
           <div className="flex items-center space-x-2">

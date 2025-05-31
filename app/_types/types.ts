@@ -1,4 +1,4 @@
-import { LucideProps } from "lucide-react";
+import { LucideIcon, LucideProps } from "lucide-react";
 import { ForwardRefExoticComponent, RefAttributes } from "react";
 
 export interface Task {
@@ -8,7 +8,6 @@ export interface Task {
   description?: string;
   icon: string;
   color: string;
-  isToday?: boolean; // Helper, can be derived from dueDate
   isPriority: boolean; // 'focus' tag could set this
   isReminder: boolean;
   delayCount: number;
@@ -17,7 +16,7 @@ export interface Task {
   updatedAt: Date; // Stored as Timestamp in Firestore
   experience?: "bad" | "okay" | "good" | "best";
 
-  dueDate?: Date; // Stored as Timestamp in Firestore, converted to Date in app
+  dueDate: Date; // Stored as Timestamp in Firestore, converted to Date in app
   completedAt?: Date;
   status: "pending" | "completed" | "delayed";
 
@@ -27,7 +26,7 @@ export interface Task {
     minutes: number;
     hours: number;
     days: number;
-  }; // Number of minutes, hours, days
+  };
 }
 export type RepetitionFrequency = "daily" | "weekly" | "monthly";
 export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
@@ -40,15 +39,14 @@ export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
  * completions: only for weekly and monthly
  */
 export interface RepetitionRule {
-  //  status: "pending" | "completed" | "delayed";
   frequency: RepetitionFrequency;
   interval?: number; // every 'interval' days/weeks/months
-  daysOfWeek?: DayOfWeek[];
+  daysOfWeek: DayOfWeek[];
   timesPerWeek?: number; // For "weekly" if it's like "3 times a week, any day"
 
   lastInstanceCompletedDate?: Date;
   startDate: Date;
-  completions?: number; // 0 or 1 for daily tasks
+  completions: number; // 0 or 1 for daily tasks
 }
 
 export type EmojiOption = {
@@ -66,6 +64,20 @@ export interface SearchedTask {
   description?: string;
   icon: string;
   color: string;
+}
+export interface TaskCategories {
+  todaysTasks: Task[];
+  upcomingTasks: Task[];
+  missedTasks: Task[];
+  delayedTasks: Task[];
+  completedTasks: Task[];
+  completedTodayTasks: Task[];
+  pendingTodayTasks: Task[];
+  pendingTasks: Task[];
+}
+export interface TaskIconItem {
+  name: string;
+  icon: LucideIcon;
 }
 
 export interface TimeManagementStats {
@@ -103,7 +115,6 @@ export interface userProfileType {
   displayName: string;
   email: string;
   photoURL: string;
-  rewardPoints: number;
   memberSince: Date;
 }
 

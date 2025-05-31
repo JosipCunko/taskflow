@@ -16,7 +16,7 @@ import { getServerSession } from "next-auth";
 import TaskCardSmall from "../_components/TaskCardSmall";
 import { calculateTaskPoints, generateTaskTypes } from "../utils";
 import { Task } from "../_types/types";
-import RepeatingTaskCard from "../_components/RepeatingTaskCard";
+import RepeatingTaskCardSmall from "../_components/RepeatingTaskCardSmall";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -274,6 +274,22 @@ export default async function DashboardPage() {
               .map((task: Task) => <TaskCardSmall key={task.id} task={task} />)
           ) : (
             <p className="text-center text-text-low py-4">No upcoming tasks</p>
+          )}
+        </div>
+      </section>
+      <section className="bg-background-700 rounded-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-text-low">
+            Repeating Tasks
+          </h2>
+        </div>
+        <div className="space-y-4">
+          {repeatingTasks.length > 0 ? (
+            repeatingTasks.map((task: Task) => (
+              <RepeatingTaskCardSmall key={task.id} notProcessedTask={task} />
+            ))
+          ) : (
+            <p className="text-center text-text-low py-4">No repeating tasks</p>
           )}
         </div>
       </section>

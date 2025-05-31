@@ -1,7 +1,12 @@
 "use client"; // using Next.js App Router and framer-motion client features
 
 import { AnimatePresence, motion } from "framer-motion";
-import { getTaskIconByName, CardSpecificIcons, handleToast } from "../utils";
+import {
+  getTaskIconByName,
+  CardSpecificIcons,
+  handleToast,
+  getStatusStyles,
+} from "../utils";
 import { formatDate, formatDateTime } from "../utils";
 import { Task } from "../_types/types";
 import { format, isPast, isSameDay, isToday } from "date-fns";
@@ -63,7 +68,7 @@ interface TaskCardProps {
 export default function TaskCard({ task, index = 0 }: TaskCardProps) {
   const TaskIcon = getTaskIconByName(task.icon);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const statusInfo = getStatusStyles();
+  const statusInfo = getStatusStyles(task.status);
   const StatusIcon = statusInfo.icon;
   const isPastDue = !task.completedAt && isPast(new Date(task.dueDate));
   // Crutial callback implementation to avoid too many re-renders
@@ -83,33 +88,6 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
       },
     },
   };
-
-  function getStatusStyles() {
-    switch (task.status) {
-      case "completed":
-        return {
-          icon: CardSpecificIcons.StatusCompleted,
-          text: "Completed",
-          colorClass: "text-green-400", // or 'status-completed-text'
-          bgColorClass: "bg-green-500/10",
-        };
-      case "delayed":
-        return {
-          icon: CardSpecificIcons.StatusDelayed,
-          text: "Delayed",
-          colorClass: "text-red-400", // Or 'status-delayed-text'
-          bgColorClass: "bg-red-500/10",
-        };
-      case "pending":
-      default:
-        return {
-          icon: CardSpecificIcons.StatusPending,
-          text: "Pending",
-          colorClass: "text-yellow-400", // Or 'status-pending-text'
-          bgColorClass: "bg-yellow-500/10",
-        };
-    }
-  }
 
   const getExperienceIcon = () => {
     if (!task.completedAt || !task.experience) return null;
@@ -489,12 +467,24 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
             {task.tags.map((tag) => (
               <span
                 key={tag}
-                className="text-xs px-2 py-0.5 bg-tag-bg text-tag-text rounded-full flex items-center bg-background-500"
+                className="text-xs px-2 py-0.5  rounded-full flex items-center bg-background-500"
               >
                 <CardSpecificIcons.Tag size={12} className="mr-2 opacity-70" />{" "}
                 {tag}
               </span>
             ))}
+          </div>
+        )}
+        {task.duration && (
+          <div className="mt-1">
+            <span className="px-2 text-xs py-0.5 w-fit rounded-full flex items-center gap-1.5 bg-background-500">
+              <CardSpecificIcons.Time size={12} />
+              {task.duration.days !== 0 && <span>{task.duration.days}d</span>}
+              {task.duration.hours !== 0 && <span>{task.duration.hours}h</span>}
+              {task.duration.minutes !== 0 && (
+                <span>{task.duration.minutes}m</span>
+              )}
+            </span>
           </div>
         )}
       </div>

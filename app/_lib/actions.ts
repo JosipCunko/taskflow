@@ -274,15 +274,21 @@ export async function togglePriorityAction(
 /*Create action */
 export async function createTaskAction(
   formData: FormData,
-  isToday: boolean,
   isPriority: boolean,
   isReminder: boolean,
   selectedColor: string,
   icon: string,
   dueDate: Date,
   tags: string[],
+  duration:
+    | {
+        minutes: number;
+        hours: number;
+        days: number;
+      }
+    | undefined,
   isRepeating: boolean,
-  repetitionRuleData: RepetitionRule
+  repetitionRule: RepetitionRule | undefined
 ) {
   // Must pass authOptions
   const session = await getServerSession(authOptions);
@@ -301,10 +307,12 @@ export async function createTaskAction(
   const title = String(formData.get("title"));
   const description = String(formData.get("description") || "");
 
-  const newTask = {
+  const newTask: Omit<
+    Task,
+    "status" | "id" | "createdAt" | "delayCount" | "updatedAt"
+  > & { userId: string } = {
     title,
     description,
-    isToday,
     isPriority,
     isReminder,
     color: selectedColor,
@@ -312,7 +320,15 @@ export async function createTaskAction(
     dueDate,
     userId,
     tags,
+    isRepeating,
   };
+
+  if (duration) {
+    newTask.duration = duration;
+  }
+  if (repetitionRule) {
+    newTask.repetitionRule = repetitionRule;
+  }
 
   console.log("Task to be created:", newTask);
   try {

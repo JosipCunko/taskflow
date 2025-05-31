@@ -54,7 +54,6 @@ export default async function ProfilePage() {
         <UserInfoCard userProfile={userProfileData} />{" "}
         <ProfileTabs
           tasks={tasks as Task[]}
-          userProfileData={userProfileData}
           activityLogs={recentActivityLogs as ActivityLog[]}
         />
       </div>

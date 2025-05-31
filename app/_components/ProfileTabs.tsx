@@ -22,7 +22,6 @@ import Checkbox from "./reusable/Checkbox";
 
 export default function ProfileTabs({
   tasks,
-  userProfileData,
   activityLogs,
 }: {
   tasks: Task[];
@@ -124,12 +123,6 @@ export default function ProfileTabs({
                             100
                         )}%`
                       : "N/A"}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-text-low">Reward Points</span>
-                  <span className="font-semibold text-primary-400">
-                    {userProfileData?.rewardPoints || 0}
                   </span>
                 </div>
               </div>
