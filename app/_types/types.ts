@@ -127,3 +127,11 @@ export interface ActionResult {
 export interface ActionError extends Error {
   message: string;
 }
+
+export interface Note {
+  id: string;
+  userId: string;
+  title: string;
+  content: string;
+  updatedAt: Date;
+}

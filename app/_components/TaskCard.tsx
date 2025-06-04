@@ -169,7 +169,7 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
                 className="absolute right-0 mt-2 w-60 bg-background-600 border border-divider shadow-xl rounded-lg p-1.5 z-50 origin-top-right focus:outline-none"
               >
                 {/* ---: Action: Mark as Completed/Pending --- */}
-                {task.status !== "completed" && (
+                {!task.isRepeating && task.status !== "completed" && (
                   <li>
                     <form
                       action={async (formData: FormData) => {
@@ -185,7 +185,7 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
                     </form>
                   </li>
                 )}
-                {task.status === "completed" && (
+                {!task.isRepeating && task.status === "completed" && (
                   <li>
                     <form
                       action={async (formData: FormData) => {
@@ -205,7 +205,7 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
                 )}
 
                 {/* ---: Action: Delay --- */}
-                {task.status !== "completed" && (
+                {!task.isRepeating && task.status !== "completed" && (
                   <>
                     {!isSameDay(
                       task.dueDate,
@@ -299,7 +299,7 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
                 )}
 
                 {/* ---: Action: Reschedule (with date input) --- */}
-                {task.status !== "completed" && (
+                {!task.isRepeating && task.status !== "completed" && (
                   <li className="px-1.5 py-1.5 group">
                     <form
                       action={async (formData: FormData) => {
@@ -339,7 +339,7 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
                 )}
 
                 {/* ---: Action: Toggle Priority --- */}
-                {task.status !== "completed" && (
+                {!task.isRepeating && task.status !== "completed" && (
                   <li>
                     <form
                       action={async (formData: FormData) => {
@@ -366,7 +366,7 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
                   </li>
                 )}
                 {/* Emoji experience */}
-                {task.status === "completed" && (
+                {!task.isRepeating && task.status === "completed" && (
                   <li>
                     <form
                       action={async (formData: FormData) => {

@@ -15,7 +15,6 @@ import { useSession } from "next-auth/react";
 import { Task } from "@/app/_types/types";
 import { getTasksByUserId } from "@/app/_lib/tasks";
 import Button from "@/app/_components/reusable/Button";
-import Checkbox from "@/app/_components/reusable/Checkbox";
 import Loader from "@/app/_components/Loader";
 import TaskCardSmall from "@/app/_components/TaskCardSmall";
 
@@ -27,15 +26,12 @@ export default function CalendarPage() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const session = useSession();
 
-  const [showCompleted, setShowCompleted] = useState(false);
-
   const fetchTasks = useCallback(async () => {
     setIsLoading(true);
     try {
       const res = await getTasksByUserId(session.data?.user.id);
-      setAllTasks(
-        showCompleted ? res : res.filter((task) => task.status !== "completed")
-      );
+      const nonRepeatingTasks = res.filter((task) => !task.isRepeating);
+      setAllTasks(nonRepeatingTasks);
     } catch (error: unknown) {
       setAllTasks([]);
       const errorMessage =
@@ -46,7 +42,7 @@ export default function CalendarPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [session.data?.user.id, showCompleted]);
+  }, [session.data?.user.id]);
 
   useEffect(
     function () {
@@ -117,15 +113,6 @@ export default function CalendarPage() {
                 className={`w-5 h-5 ${isLoading ? "animate-spin" : ""}`}
               />
             </Button>
-
-            <Checkbox
-              id="completed"
-              name="completed"
-              checked={showCompleted}
-              onChange={() => setShowCompleted(!showCompleted)}
-              label="Show completed tasks"
-              className="absolute top-18 right-[7%]"
-            />
           </div>
 
           <div className="lg:col-span-3 bg-background-600 p-4 sm:p-6 rounded-xl shadow-xl relative max-h-[370px] overflow-scroll">

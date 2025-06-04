@@ -11,9 +11,9 @@ export default async function CompletedTasksPage() {
     return null;
   }
   const userId = session.user.id;
-  const userTasks = await getTasksByUserId(userId);
-  const userCompletedTasks = userTasks.filter(
-    (task) => task.status === "completed"
+  const allUserTasks = await getTasksByUserId(userId);
+  const userCompletedTasks = allUserTasks.filter(
+    (task) => task.status === "completed" && !task.isRepeating
   );
 
   return (

@@ -27,6 +27,7 @@ import { DayOfWeek } from "../_types/types";
 import Checkbox from "./reusable/Checkbox";
 import { preCreateRepeatingTask } from "../_lib/repeatingTasks";
 import RepetitionRulesModal from "./RepetitionRulesModal";
+import NumberInputs from "./reusable/NumberInputs";
 interface AddTaskProps {
   onCloseModal?: () => void;
 }
@@ -74,6 +75,7 @@ const ShowMoreDetailsContent = ({
   min,
   setHour,
   setMin,
+  isRepeatingTask,
 }: {
   selectedColor: string;
   setSelectedColor: (s: string) => void;
@@ -92,6 +94,7 @@ const ShowMoreDetailsContent = ({
   setHour: (hour: number) => void;
   min: number;
   setMin: (min: number) => void;
+  isRepeatingTask: boolean;
 }) => {
   const handleDone = () => {
     onCloseModal?.();
@@ -102,7 +105,7 @@ const ShowMoreDetailsContent = ({
       <h3 className="text-lg font-semibold text-text-high mb-1">
         Customize Task
       </h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 items-start gap-6 md:gap-10">
+      <div className="flex flex-wrap items-start gap-6 md:gap-10">
         <div className="flex flex-col gap-4">
           <ColorPicker
             selectedColor={selectedColor}
@@ -114,14 +117,16 @@ const ShowMoreDetailsContent = ({
           />
         </div>
 
-        <DatePicker
-          date={selectedDate}
-          setDate={setSelectedDate}
-          hour={hour}
-          setHour={setHour}
-          min={min}
-          setMin={setMin}
-        />
+        {!isRepeatingTask && (
+          <DatePicker
+            date={selectedDate}
+            setDate={setSelectedDate}
+            hour={hour}
+            setHour={setHour}
+            min={min}
+            setMin={setMin}
+          />
+        )}
       </div>
 
       <Button onClick={handleDone} variant="primary">
@@ -135,6 +140,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [hour, setHour] = useState(23);
   const [min, setMin] = useState(59);
+  const [time, setTime] = useState<number[]>([23, 59]);
 
   const [isPriority, setIsPriority] = useState(false);
   const [isReminder, setIsReminder] = useState(false);
@@ -180,25 +186,25 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
   );
 
   useEffect(() => {
-    if (isRepeatingTask && repetitionModalOpenName !== "repetition-rules") {
+    if (isRepeatingTask) {
       if (activeRepetitionType === "none") {
         setActiveRepetitionType("interval");
       }
       openRepetitionModal("repetition-rules");
-    }
-    // Added repetitionModalOpenName
-  }, [isRepeatingTask, activeRepetitionType, repetitionModalOpenName]);
-
-  useEffect(() => {
-    if (!isRepeatingTask) {
+    } else {
       setActiveRepetitionType("none");
+      if (repetitionModalOpenName === "repetition-rules") {
+        closeRepetitionModal();
+      }
     }
   }, [isRepeatingTask]);
+
   const handleRepetitionDone = () => {
     if (activeRepetitionType === "none") {
       setIsRepeatingTask(false);
+    } else {
+      closeRepetitionModal();
     }
-    closeRepetitionModal();
   };
 
   const showMoreModalContextValue = useMemo(
@@ -395,6 +401,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
               min={min}
               setMin={setMin}
               // onCloseModal is automatically passed by Modal.Window, will be 'closeShowMore' from memoized context
+              isRepeatingTask={isRepeatingTask}
             />
           </Modal.Window>
         </ModalContext.Provider>
@@ -528,6 +535,12 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
             </div>
           </div>
         </div>
+        <NumberInputs
+          count={4}
+          setValues={setTime}
+          values={time}
+          isTimeInput={true}
+        />
         <div className="flex justify-between items-center mt-5">
           <div></div>
           <div className="flex items-center space-x-2">

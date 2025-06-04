@@ -4,6 +4,9 @@ import {
   signOut as firebaseSignOut,
   onAuthStateChanged as firebaseOnAuthStateChanged,
   User as FirebaseUserType,
+  createUserWithEmailAndPassword as firebaseCreateUserWithEmailAndPassword,
+  signInWithEmailAndPassword as firebaseSignInWithEmailAndPassword,
+  updateProfile as firebaseUpdateProfile,
 } from "firebase/auth";
 import { auth } from "./firebase";
 import {
@@ -63,6 +66,113 @@ export const signInWithGoogle = async (): Promise<void> => {
       console.error("Error during Google sign-in flow:", error);
     }
     throw error; // Re-throw for the component to handle
+  }
+};
+
+/**
+ * Creates a new user with email and password using Firebase, optionally updates their display name,
+ * then signs into NextAuth.
+ */
+export const signUpWithEmailAndPasswordFirebase = async (
+  email: string,
+  password: string,
+  displayName?: string
+): Promise<void> => {
+  try {
+    // 1. Create user with Firebase client-side
+    const userCredential = await firebaseCreateUserWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
+    const firebaseUser = userCredential.user;
+
+    if (firebaseUser) {
+      // 2. Optionally update Firebase user's display name
+      if (displayName) {
+        try {
+          await firebaseUpdateProfile(firebaseUser, { displayName });
+          console.log("Firebase profile updated with displayName.");
+        } catch (profileError) {
+          console.error("Error updating Firebase profile:", profileError);
+          // Continue even if profile update fails, user is already created
+        }
+      }
+
+      // 3. Get the Firebase ID token (force refresh to include profile updates if any)
+      const idToken = await firebaseUser.getIdToken(true);
+
+      // 4. Sign into NextAuth.js using the 'credentials' provider
+      const nextAuthResult = await nextAuthSignIn("credentials", {
+        idToken,
+        redirect: false,
+      });
+
+      if (nextAuthResult?.error) {
+        console.error(
+          "NextAuth sign-in error after Firebase signup:",
+          nextAuthResult.error
+        );
+        throw new Error(nextAuthResult.error);
+      }
+
+      console.log(
+        "Successfully signed up with Firebase and signed in with NextAuth."
+      );
+      redirect("/webapp");
+    } else {
+      throw new Error("No user returned from Firebase user creation.");
+    }
+  } catch (error: unknown) {
+    console.error("Error during email/password sign-up flow:", error);
+    throw error;
+  }
+};
+
+/**
+ * Signs in an existing user with email and password using Firebase, then signs into NextAuth.
+ */
+export const signInWithEmailAndPasswordFirebase = async (
+  email: string,
+  password: string
+): Promise<void> => {
+  try {
+    // 1. Sign in with Firebase client-side
+    const userCredential = await firebaseSignInWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
+    const firebaseUser = userCredential.user;
+
+    if (firebaseUser) {
+      // 2. Get the Firebase ID token
+      const idToken = await firebaseUser.getIdToken(true);
+
+      // 3. Sign into NextAuth.js using the 'credentials' provider
+      const nextAuthResult = await nextAuthSignIn("credentials", {
+        idToken,
+        redirect: false,
+      });
+
+      if (nextAuthResult?.error) {
+        console.error(
+          "NextAuth sign-in error after Firebase sign-in:",
+          nextAuthResult.error
+        );
+        throw new Error(nextAuthResult.error);
+      }
+
+      console.log(
+        "Successfully signed in with Firebase (email/password) and NextAuth."
+      );
+      redirect("/webapp");
+    } else {
+      throw new Error("No user returned from Firebase sign-in.");
+    }
+  } catch (error: unknown) {
+    console.error("Error during email/password sign-in flow:", error);
+    throw error;
   }
 };
 

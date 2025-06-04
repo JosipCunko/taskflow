@@ -276,6 +276,12 @@ export const navItemsToSearch = [
     command: ["Ctrl", "U"],
     link: "/webapp/calendar",
   },
+  {
+    icon: FileText,
+    label: "Notes",
+    command: ["Ctrl", "N"],
+    link: "/webapp/notes",
+  },
 ];
 export const emojiOptions: EmojiOption[] = [
   { id: "bad", emoji: Frown, label: "Bad", selected: false },

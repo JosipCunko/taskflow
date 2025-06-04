@@ -105,7 +105,7 @@ export default function RepetitionRulesModal({
               onChange={(e) =>
                 setIntervalValue(Math.max(1, parseInt(e.target.value) || 1))
               }
-              className="w-20 bg-background-550 border-divider text-sm"
+              className="w-20 bg-background-550 text-sm"
             />
             <span className="text-sm text-text-low">days</span>
           </div>
@@ -179,7 +179,7 @@ export default function RepetitionRulesModal({
                 Math.max(1, Math.min(7, parseInt(e.target.value) || 1))
               )
             }
-            className="w-20 bg-background-550 border-divider text-sm"
+            className="w-20 bg-background-550  text-sm"
           />
         </div>
       )}

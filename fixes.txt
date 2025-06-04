@@ -1,0 +1,1 @@
+When I try to login with google provider, I am succussfully logged in, but I am not redirected. Error message has been displayed in the state as "NEXT_REDIRECT". Also, will the signOut function from auth.ts work also with email and password provider as it is with google provider?

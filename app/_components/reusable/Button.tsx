@@ -3,7 +3,7 @@ import { ReactNode } from "react";
 interface ButtonProps {
   children: ReactNode;
   variant?: "primary" | "secondary" | "sidebar" | "danger" | "noStyle" | "tag";
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent<HTMLButtonElement> | undefined) => void;
   disabled?: boolean;
   className?: string;
   type?: "button" | "submit" | "reset";

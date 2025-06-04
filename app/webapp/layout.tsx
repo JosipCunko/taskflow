@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
-import Sidebar from "../_components/Sidebar";
-import TopSidebar from "../_components/TopSidebar";
-import { Toaster } from "react-hot-toast";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../_lib/auth";
 import { getTasksByUserId } from "../_lib/tasks";
+import { Toaster } from "react-hot-toast";
+import ClientWebappLayout from "@/app/_components/ClientWebappLayout";
 
 export const metadata: Metadata = {
-  title: "TaskFlow",
-  description: "Task management web application",
+  title: "TaskFlow - WebApp",
+  description: "Manage your tasks and boost your productivity with TaskFlow.",
 };
 
 export default async function RootLayout({
@@ -17,19 +16,19 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const session = await getServerSession(authOptions);
-  const userId = session?.user.id;
-  const tasks = await getTasksByUserId(userId);
+  // Note: If session is null (user not authenticated), NextAuth middleware should ideally redirect.
+  // Handling it here as well for robustness or if middleware isn't set up for all cases.
+  // However, ClientWebappLayout will receive session as potentially null.
+
+  const userId = session?.user?.id;
+  // Fetch tasks only if userId is available. Pass empty array if not.
+  const tasks = userId ? await getTasksByUserId(userId) : [];
 
   return (
     <>
-      <div className="flex h-screen tracking-tight">
-        <Sidebar tasks={tasks} />
-        <main className="flex-1 overflow-auto bg-background-625 flex flex-col">
-          <TopSidebar session={session} />
-
-          <div className="flex-1 overflow-auto relative">{children}</div>
-        </main>
-      </div>
+      <ClientWebappLayout session={session} tasks={tasks}>
+        {children}
+      </ClientWebappLayout>
       <Toaster position="top-center" containerStyle={{ zIndex: 999999 }} />
     </>
   );

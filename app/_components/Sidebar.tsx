@@ -11,6 +11,7 @@ import {
   Inbox,
   ChartColumn,
   Settings2,
+  FileText,
 } from "lucide-react";
 import Search from "@/app/_components/Search";
 import Button from "./reusable/Button";
@@ -46,6 +47,11 @@ export default function Sidebar({ tasks }: { tasks: Task[] }) {
         label: "Completed",
         href: "/webapp/completed",
         icon: CheckSquare,
+      },
+      {
+        label: "Notes",
+        href: "/webapp/notes",
+        icon: FileText,
       },
     ],
     me: [

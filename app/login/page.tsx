@@ -1,37 +1,179 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useState, FormEvent } from "react";
+import { useSession, signIn } from "next-auth/react";
 import Button from "../_components/reusable/Button";
+import Input from "../_components/reusable/Input";
 import { User } from "lucide-react";
-import { signInWithGoogle } from "../_lib/auth-client";
+import {
+  signInWithGoogle,
+  signInWithEmailAndPasswordFirebase,
+  signUpWithEmailAndPasswordFirebase,
+} from "../_lib/auth-client";
 import Loader from "../_components/Loader";
 
 export default function LoginPage() {
-  const { data: session, status } = useSession();
-  console.log("session from /login", session);
+  const { status } = useSession();
 
-  // useEffect(() => {
-  //   if (status === "authenticated") {
-  //     router.push("/");
-  //   }
-  // }, [status, router]);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  if (status === "loading") return <Loader label="Loading the session..." />;
-  // if (status === "authenticated")
-  //   return <Loader label="Redirecting to the dashboard..." />;
+  if (status === "loading") return <Loader label="Loading session..." />;
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsLoading(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      if (isSignUp) {
+        if (!displayName.trim()) {
+          setError("Display name is required for sign up.");
+          setIsLoading(false);
+          return;
+        }
+        await signUpWithEmailAndPasswordFirebase(email, password, displayName);
+      } else {
+        await signInWithEmailAndPasswordFirebase(email, password);
+      }
+    } catch (errUnknown: unknown) {
+      const err = errUnknown as { code?: string; message?: string };
+      let errorMessage = "An unknown error occurred.";
+      if (err.message) {
+        errorMessage = err.message;
+      }
+      if (err.code) {
+        switch (err.code) {
+          case "auth/user-not-found":
+          case "auth/invalid-credential":
+            errorMessage = "Invalid email or password. Please try again.";
+            break;
+          case "auth/wrong-password":
+            errorMessage = "Incorrect password. Please try again.";
+            break;
+          case "auth/email-already-in-use":
+            errorMessage = "This email is already in use. Try signing in.";
+            break;
+          case "auth/weak-password":
+            errorMessage =
+              "Password is too weak. It should be at least 6 characters.";
+            break;
+          default:
+            if (!err.message)
+              errorMessage = `Error: ${err.code || "authentication failed"}`;
+            break;
+        }
+      }
+      setError(errorMessage);
+      console.error("Authentication error:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGitHubSignIn = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await signIn("github", { callbackUrl: "/webapp" });
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      setError(error.message || "Failed to sign in with GitHub.");
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-background-600">
       <div className="w-full md:w-1/2 flex flex-col p-8">
         <div className="flex-grow flex flex-col justify-center max-w-md mx-auto w-full">
           <h1 className="text-2xl font-bold text-text-high mb-1">
-            Welcome back
+            {isSignUp ? "Create an Account" : "Welcome back"}
           </h1>
-          <p className="text-text-low text-sm mb-8">Sign in to your account</p>
+          <p className="text-text-low text-sm mb-8">
+            {isSignUp
+              ? "Fill in the details to create your account"
+              : "Sign in to your account"}
+          </p>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {isSignUp && (
+              <Input
+                type="text"
+                id="displayName"
+                name="displayName"
+                placeholder="Username"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                required={isSignUp}
+                className="w-full"
+              />
+            )}
+            <Input
+              type="email"
+              id="email"
+              name="email"
+              placeholder="Email Address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full"
+            />
+            <Input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full"
+            />
+            {error && (
+              <p className="text-sm text-red-500 bg-red-100 border border-red-300 p-2 rounded">
+                {error}
+              </p>
+            )}
+            {successMessage && (
+              <p className="text-sm text-green-700 bg-green-100 border border-green-300 p-2 rounded">
+                {successMessage}
+              </p>
+            )}
+            <Button
+              type="submit"
+              variant="primary"
+              className="w-full flex items-center justify-center py-2.5"
+              disabled={isLoading}
+            >
+              {isLoading && !isSignUp && !error
+                ? "Signing In..."
+                : isLoading && isSignUp && !error
+                ? "Creating Account..."
+                : isSignUp
+                ? "Create Account"
+                : "Sign In"}
+            </Button>
+          </form>
+
+          <div className="my-6 flex items-center">
+            <div className="flex-grow border-t border-background-500"></div>
+            <span className="mx-4 text-xs text-text-low uppercase">
+              Or continue with
+            </span>
+            <div className="flex-grow border-t border-background-500"></div>
+          </div>
 
           <Button
             variant="secondary"
-            className="flex items-center justify-center border border-background-500 rounded py-2 px-4 mb-4 text-text-high hover:bg-background-500 transition-colors"
+            className="flex items-center justify-center border border-background-500 rounded py-2 px-4 mb-4 text-text-high hover:bg-background-500 transition-colors w-full"
+            onClick={handleGitHubSignIn}
+            disabled={isLoading}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -45,10 +187,33 @@ export default function LoginPage() {
             </svg>
             Continue with GitHub
           </Button>
+
           <Button
             variant="secondary"
-            className="flex items-center justify-center border border-background-500 rounded py-2 px-4 mb-4 text-text-high hover:bg-background-500 transition-colors"
-            onClick={signInWithGoogle}
+            className="flex items-center justify-center border border-background-500 rounded py-2 px-4 mb-4 text-text-high hover:bg-background-500 transition-colors w-full"
+            onClick={async () => {
+              setIsLoading(true);
+              setError(null);
+              try {
+                await signInWithGoogle();
+              } catch (errUnknown: unknown) {
+                const googleError = errUnknown as {
+                  message?: string;
+                  code?: string;
+                };
+                let errorMessage = "Failed to sign in with Google.";
+                if (googleError.message) {
+                  errorMessage = googleError.message;
+                }
+                if (googleError.code === "auth/popup-closed-by-user") {
+                  errorMessage = "Sign-in process cancelled.";
+                }
+                setError(errorMessage);
+                console.error("Google Sign-In error:", googleError);
+                setIsLoading(false);
+              }
+            }}
+            disabled={isLoading}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -75,13 +240,30 @@ export default function LoginPage() {
                 d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"
               ></path>
             </svg>
-            Continue with Google
+            <span className="ml-2">Continue with Google</span>
           </Button>
+
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setError(null);
+                setSuccessMessage(null);
+              }}
+              className="text-sm text-primary-500 hover:underline"
+            >
+              {isSignUp
+                ? "Already have an account? Sign In"
+                : "Don't have an account? Sign Up"}
+            </button>
+          </div>
 
           <div className="mt-4 text-center">
             <p className="text-text-low text-sm">
               Having troubles when signing in?{" "}
-              <span className="underline text-primary-500">Contact me</span>
+              <span className="underline text-primary-500 cursor-pointer">
+                Contact me
+              </span>
             </p>
           </div>
         </div>

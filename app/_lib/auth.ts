@@ -1,7 +1,13 @@
 import { JWT } from "next-auth/jwt";
 import { AdapterUser } from "next-auth/adapters";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { NextAuthOptions, User as NextAuthUser, Session } from "next-auth";
+import GitHubProvider from "next-auth/providers/github";
+import {
+  NextAuthOptions,
+  User as NextAuthUser,
+  Session,
+  Account,
+} from "next-auth";
 import { adminAuth, adminDb } from "@/app/_lib/admin";
 import { Timestamp } from "firebase-admin/firestore";
 
@@ -33,6 +39,10 @@ pages.signIn: If a user tries to access a protected route without being authenti
  */
 export const authOptions: NextAuthOptions = {
   providers: [
+    GitHubProvider({
+      clientId: process.env.GITHUB_ID as string,
+      clientSecret: process.env.GITHUB_SECRET as string,
+    }),
     CredentialsProvider({
       name: "Firebase",
       credentials: {
@@ -40,63 +50,47 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials: Record<"idToken", string> | undefined) {
         if (!credentials?.idToken) {
-          console.error("No ID token provided to authorize");
+          console.error("No ID token provided to authorize for Firebase");
           return null;
         }
-
+        // Firebase ID Token verification logic (this is specific to your email/pass & Google via Firebase SDK flow)
         try {
-          // 1. Verify the Firebase ID token using Firebase Admin SDK
           const decodedToken = await adminAuth.verifyIdToken(
             credentials.idToken
           );
           if (!decodedToken || !decodedToken.uid) {
-            console.error("Failed to verify ID token or UID missing");
+            console.error("Failed to verify Firebase ID token or UID missing");
             return null;
           }
-
-          // 2. Token is verified, extract user info
           const firebaseUser: FirebaseUser = {
             uid: decodedToken.uid,
             email: decodedToken.email,
-            name: decodedToken.name || decodedToken.email?.split("@")[0], // Fallback for name
+            name: decodedToken.name || decodedToken.email?.split("@")[0],
             picture: decodedToken.picture,
             email_verified: decodedToken.email_verified,
           };
 
-          // 3. Check if user exists in your Firestore 'users' collection, or create/update them
+          // Firestore user creation/update for Firebase authenticated users
           const userDocRef = adminDb.collection("users").doc(firebaseUser.uid);
           const userDocSnap = await userDocRef.get();
-
-          // if (!userDocSnap.exists()) {
           if (!userDocSnap.exists) {
-            // New user: create their document in Firestore
             await userDocRef.set({
-              uid: firebaseUser.uid,
+              uid: firebaseUser.uid, // This is Firebase UID
               email: firebaseUser.email,
               displayName: firebaseUser.name,
               photoURL: firebaseUser.picture,
-              createdAt: Timestamp.now(), // Use admin.firestore.Timestamp
+              provider: "firebase", // Indicate provider
+              createdAt: Timestamp.now(),
             });
-            console.log(
-              "New user document created in Firestore via NextAuth:",
-              firebaseUser.uid
-            );
           } else {
-            // Existing user: fetch their reward points
-            // You might also want to update displayName or photoURL if they changed in Google
-            //const existingData = userDocSnap.data();
             await userDocRef.update({
-              // Optionally update fields
               displayName: firebaseUser.name,
               photoURL: firebaseUser.picture,
-              lastLoginAt: Timestamp.now(), // Example: track last login
+              lastLoginAt: Timestamp.now(),
             });
           }
-
-          // 4. Return the user object for NextAuth session
-          // This object will be available in the `jwt` callback `token` parameter (if new sign in) or `user` parameter
           return {
-            id: firebaseUser.uid, // This will be `token.sub` and `session.user.id`
+            id: firebaseUser.uid, // Use Firebase UID as id for this provider
             name: firebaseUser.name,
             email: firebaseUser.email,
             image: firebaseUser.picture,
@@ -112,39 +106,89 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
   callbacks: {
-    // async jwt({ token, user, account, profile, trigger }) {
+    async signIn({ user, account }) {
+      if (account && user.email) {
+        // For OAuth providers like GitHub
+        const userDocRef = adminDb.collection("users").doc(user.id); // Use NextAuth user.id (which can be provider's ID)
+        const userDocSnap = await userDocRef.get();
+
+        if (!userDocSnap.exists) {
+          // New user via OAuth, create their document in Firestore
+          try {
+            await userDocRef.set({
+              uid: user.id, // Store NextAuth user.id (e.g., GitHub user ID string)
+              email: user.email,
+              displayName: user.name,
+              photoURL: user.image,
+              provider: account.provider,
+              createdAt: Timestamp.now(),
+            });
+            console.log(
+              `New user document created in Firestore via NextAuth OAuth (${account.provider}):`,
+              user.id
+            );
+          } catch (dbError) {
+            console.error(
+              "Firestore error during OAuth new user creation:",
+              dbError
+            );
+            return false; // Prevent sign-in if DB operation fails
+          }
+        } else {
+          // Existing OAuth user, update last login or other details if needed
+          try {
+            await userDocRef.update({
+              displayName: user.name, // Update name/image in case it changed on provider
+              photoURL: user.image,
+              lastLoginAt: Timestamp.now(),
+            });
+          } catch (dbError) {
+            console.error("Firestore error during OAuth user update:", dbError);
+            // Don't prevent sign-in for update failures, but log it.
+          }
+        }
+      }
+      return true; // Allow sign-in
+    },
     async jwt({
       token,
       user,
+      account,
     }: {
       token: JWT;
-      user: NextAuthUser | AdapterUser;
+      user?: NextAuthUser | AdapterUser;
+      account?: Account | null;
     }) {
-      // `user` is only passed on initial sign-in.
-      // `account` & `profile` are also only available at sign-in.
-      if (user) {
-        // This block runs on sign-in
-        token.uid = user.id; // user.id is the `id` from `authorize` function (Firebase UID)
+      if (account && user) {
+        token.uid = user.id;
         token.email = user.email;
         token.name = user.name;
-        token.picture = user.image; // user.image is `picture` from `authorize`
+        token.picture = user.image;
+        token.provider = account.provider; // account.provider is string
       }
-      // you could add logic here, e.g., on `trigger === "update"` or based on JWT expiry.
       return token;
     },
     async session({ session, token }: { session: Session; token: JWT }) {
-      // Send properties to the client, e.g., an access token, user data from JWT
-      if (token) {
-        session.user.id = token.uid as string; // Firebase UID
+      if (token && session.user) {
+        session.user.id = token.uid as string;
         session.user.name = token.name;
         session.user.email = token.email;
         session.user.image = token.picture;
+        (
+          session.user as {
+            id: string;
+            provider?: string;
+            name?: string | null;
+            email?: string | null;
+            image?: string | null;
+          }
+        ).provider = token.provider as string | undefined;
       }
       return session;
     },
   },
   pages: {
-    signIn: "/login", // Redirect users to /login if trying to access protected pages
+    signIn: "/login",
   },
   // Optional: Add debug true for development
   // debug: process.env.NODE_ENV === 'development',

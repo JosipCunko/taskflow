@@ -32,7 +32,7 @@ function Input({
       name={name}
       value={value}
       onChange={onChange}
-      className={`w-full px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-background-500 placeholder:text-text-gray ${
+      className={`w-full px-3 py-2 rounded-md focus:outline-none border-1 border-background-500 focus:ring-2 focus:ring-background-500 placeholder:text-text-gray ${
         className ? className : ""
       }`}
       placeholder={placeholder}

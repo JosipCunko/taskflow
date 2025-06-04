@@ -25,7 +25,7 @@ export default function IconPicker({
       >
         Task icon
       </label>
-      <div className="grid grid-cols-10 gap-2 mb-4">
+      <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2 mb-4">
         {TASK_ICONS.map((icon) => (
           <button
             type="button"

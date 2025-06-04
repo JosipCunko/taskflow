@@ -72,28 +72,28 @@ function Footer({
   };
 
   return (
-    <div className="flex mt-2 items-center text-sm gap-5 text-gray-500">
+    <div className="flex flex-col sm:flex-row mt-2 items-start sm:items-center text-sm gap-3 sm:gap-5 text-gray-500">
       <div>
         <span className="text-text-low">Selected Date: </span>
         <span>{format(day, "dd. MM. yyyy")}</span>
       </div>
 
-      <div className="flex flex-row items-center gap-0.5">
+      <div className="flex flex-row items-center gap-1">
         <div className="h-2 w-2 rounded-full bg-blue-500 "></div>
         <input
           type="number"
           onChange={handleHourChange}
           value={hour}
-          className="w-7 grid place-items-center border rounded-[3px] user-valid:border-primary-500 border-transparent user-invalid:border-error text-text-low"
+          className="w-10 px-1 text-center border rounded-[3px] user-valid:border-primary-500 border-transparent user-invalid:border-error text-text-low bg-background-600 focus:ring-1 focus:ring-primary-500 outline-none"
           min={0}
-          max={24}
+          max={23}
         />
         <span className="font-bold">:</span>
         <input
           type="number"
           onChange={handleMinChange}
           value={min}
-          className="w-7 grid place-items-center border rounded-[3px] user-valid:border-primary-500 border-transparent user-invalid:border-error text-text-low"
+          className="w-10 px-1 text-center border rounded-[3px] user-valid:border-primary-500 border-transparent user-invalid:border-error text-text-low bg-background-600 focus:ring-1 focus:ring-primary-500 outline-none"
           min={0}
           max={59}
         />
