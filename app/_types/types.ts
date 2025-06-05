@@ -17,15 +17,15 @@ export interface Task {
   experience?: "bad" | "okay" | "good" | "best";
 
   dueDate: Date; // Stored as Timestamp in Firestore, converted to Date in app
+  startTime?: { hour: number; minute: number }; // NEW: Time of day for the task
   completedAt?: Date;
   status: "pending" | "completed" | "delayed";
 
   isRepeating?: boolean;
   repetitionRule?: RepetitionRule;
   duration?: {
-    minutes: number;
     hours: number;
-    days: number;
+    minutes: number;
   };
 }
 export type RepetitionFrequency = "daily" | "weekly" | "monthly";

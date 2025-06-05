@@ -10,6 +10,7 @@ declare module "next-auth" {
       /** The user's Firebase UID. */
       id: string;
       provider?: string;
+      rewardPoints?: number;
     } & DefaultSession["user"]; // Keep existing properties like name, email, image
   }
 
@@ -21,6 +22,7 @@ declare module "next-auth" {
   interface User extends DefaultUser {
     // id is already part of DefaultUser
     provider?: string;
+    rewardPoints?: number;
   }
 }
 
@@ -30,6 +32,7 @@ declare module "next-auth/jwt" {
     /** Firebase UID */
     uid: string;
     provider?: string;
+    rewardPoints?: number;
     // name, email, picture are often included by default if available from provider
   }
 }

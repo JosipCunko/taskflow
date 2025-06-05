@@ -1,8 +1,8 @@
-// components/TagInput.tsx
 "use client";
 
-import React, { useState, KeyboardEvent } from "react";
+import { useState, KeyboardEvent } from "react";
 import { X } from "lucide-react";
+import { infoToast } from "../utils";
 
 interface TagInputProps {
   tags: string[];
@@ -12,13 +12,13 @@ interface TagInputProps {
   label?: string;
 }
 
-const TagInput: React.FC<TagInputProps> = ({
+function TagInput({
   tags,
   setTags,
   placeholder = "Add a tag...",
   id = "tag-input",
   label = "Tags",
-}) => {
+}: TagInputProps) {
   const [inputValue, setInputValue] = useState("");
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -29,6 +29,10 @@ const TagInput: React.FC<TagInputProps> = ({
     const newTag = inputValue.trim();
     if (newTag && !tags.includes(newTag)) {
       setTags([...tags, newTag]);
+    }
+    if (tags.length === 6) {
+      infoToast("You can only add up to 6 tags");
+      setTags(tags.filter((tag) => tag !== newTag));
     }
     setInputValue("");
   };
@@ -60,7 +64,7 @@ const TagInput: React.FC<TagInputProps> = ({
           </span>
         </label>
       )}
-      <div className="flex flex-wrap items-center gap-2 p-2.5 rounded-lg bg-background-700 border border-background-500 focus-within:border-primary-500 focus-within:ring-1 focus-within:ring-primary-500 transition-all">
+      <div className="max-w-sm flex flex-wrap items-center gap-2 p-2.5 rounded-lg bg-background-700 border border-background-500 focus-within:border-primary-500 focus-within:ring-1 focus-within:ring-primary-500 transition-all">
         {tags.map((tag, index) => (
           <span
             key={index}
@@ -89,6 +93,6 @@ const TagInput: React.FC<TagInputProps> = ({
       </div>
     </div>
   );
-};
+}
 
 export default TagInput;

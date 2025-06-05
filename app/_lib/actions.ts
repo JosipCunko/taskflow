@@ -279,14 +279,9 @@ export async function createTaskAction(
   selectedColor: string,
   icon: string,
   dueDate: Date,
+  startTime: { hour: number; minute: number } | undefined,
   tags: string[],
-  duration:
-    | {
-        minutes: number;
-        hours: number;
-        days: number;
-      }
-    | undefined,
+  duration: { hours: number; minutes: number } | undefined,
   isRepeating: boolean,
   repetitionRule: RepetitionRule | undefined
 ) {
@@ -307,32 +302,33 @@ export async function createTaskAction(
   const title = String(formData.get("title"));
   const description = String(formData.get("description") || "");
 
-  const newTask: Omit<
+  const newTaskData: Omit<
     Task,
-    "status" | "id" | "createdAt" | "delayCount" | "updatedAt"
+    "id" | "createdAt" | "updatedAt" | "delayCount" | "status"
   > & { userId: string } = {
+    userId,
     title,
     description,
+    icon,
+    color: selectedColor,
     isPriority,
     isReminder,
-    color: selectedColor,
-    icon,
     dueDate,
-    userId,
-    tags,
-    isRepeating,
+    startTime,
+    tags: tags || [],
+    isRepeating: isRepeating || false,
   };
 
   if (duration) {
-    newTask.duration = duration;
+    newTaskData.duration = duration;
   }
   if (repetitionRule) {
-    newTask.repetitionRule = repetitionRule;
+    newTaskData.repetitionRule = repetitionRule;
   }
 
-  console.log("Task to be created:", newTask);
+  console.log("Task to be created via action:", newTaskData);
   try {
-    const createdTask = await createTask(newTask);
+    const createdTask = await createTask(newTaskData);
 
     if (createdTask) {
       await logUserActivity(session.user.id, {

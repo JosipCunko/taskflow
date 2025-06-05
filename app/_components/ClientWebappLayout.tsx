@@ -21,23 +21,24 @@ export default function ClientWebappLayout({
   children,
 }: ClientWebappLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
   const pathname = usePathname();
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   // Close sidebar on route change for mobile
   useEffect(() => {
-    if (typeof window !== "undefined" && window.innerWidth < 768) {
+    if (hasMounted && window.innerWidth < 768) {
       // md breakpoint (768px)
       setIsSidebarOpen(false);
     }
-  }, [pathname]);
+  }, [pathname, hasMounted]);
 
   // Handle body scroll when sidebar is open on mobile
   useEffect(() => {
-    if (
-      isSidebarOpen &&
-      typeof window !== "undefined" &&
-      window.innerWidth < 768
-    ) {
+    if (hasMounted && isSidebarOpen && window.innerWidth < 768) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "unset";
@@ -45,7 +46,7 @@ export default function ClientWebappLayout({
     return () => {
       document.body.style.overflow = "unset"; // Cleanup on component unmount
     };
-  }, [isSidebarOpen]);
+  }, [isSidebarOpen, hasMounted]);
 
   const sidebarVariants = {
     open: { x: 0 },
@@ -58,7 +59,7 @@ export default function ClientWebappLayout({
   };
 
   return (
-    <div className="flex h-screen tracking-tight bg-background-625 relative">
+    <div className="flex h-screen overflow-hidden tracking-tight bg-background-625 relative">
       {" "}
       {/* Added relative for absolute positioning context of button if needed */}
       {/* Mobile Menu Button */}
@@ -71,32 +72,32 @@ export default function ClientWebappLayout({
       </button>
       {/* Sidebar for Mobile (Overlay) and Desktop (Static) */}
       <AnimatePresence>
-        {isSidebarOpen &&
-          window.innerWidth < 768 && ( // Ensure backdrop only for mobile
-            <motion.div
-              key="backdrop-mobile"
-              className="md:hidden fixed inset-0 bg-black/60 z-40" // Higher z-index for backdrop
-              initial="closed"
-              animate="open"
-              exit="closed"
-              variants={backdropVariants}
-              onClick={() => setIsSidebarOpen(false)}
-            />
-          )}
+        {hasMounted && isSidebarOpen && window.innerWidth < 768 && (
+          <motion.div
+            key="backdrop-mobile"
+            className="md:hidden fixed inset-0 bg-black/60 z-40"
+            initial="closed"
+            animate="open"
+            exit="closed"
+            variants={backdropVariants}
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
       </AnimatePresence>
       <motion.div
         className="fixed inset-y-0 left-0 z-50 md:static md:z-auto h-full w-64 transform transition-transform duration-300 ease-in-out md:translate-x-0 bg-background-700 md:shadow-none shadow-xl"
-        initial={false} // Don't animate on initial load for desktop
-        animate={
-          (isSidebarOpen &&
-            typeof window !== "undefined" &&
-            window.innerWidth < 768) ||
-          (typeof window !== "undefined" && window.innerWidth >= 768)
-            ? "open"
-            : "closed"
-        }
+        initial="closed"
         variants={sidebarVariants}
         transition={{ type: "tween", duration: 0.3 }}
+        animate={
+          hasMounted
+            ? window.innerWidth < 768
+              ? isSidebarOpen
+                ? "open"
+                : "closed"
+              : "open"
+            : "closed"
+        }
       >
         {/* Sidebar might need session if it has user-specific actions like logout */}
         <Sidebar tasks={tasks} />

@@ -1,5 +1,3 @@
-import Button from "./Button";
-
 export default function NumberInputs({
   count,
   values,
@@ -32,15 +30,12 @@ export default function NumberInputs({
 
         {Array.from({ length: count }).map((_, index) => {
           return (
-            <>
+            <div key={index} className="flex items-center ">
               <input
-                key={index}
                 type="number"
                 className="code "
                 min="0"
-                max={
-                  isTimeInput && index === 0 ? "3" : values[0] === 2 ? "3" : "9"
-                }
+                max={isTimeInput ? "59" : "99"}
                 placeholder="0"
                 onChange={(e) => {
                   setValues([...values, parseInt(e.target.value)]);
@@ -49,13 +44,10 @@ export default function NumberInputs({
               {isTimeInput && index === 1 && (
                 <span className="text-sm text-gray-500 font-bold">:</span>
               )}
-            </>
+            </div>
           );
         })}
       </div>
-      <Button variant="secondary" type="submit">
-        Submit
-      </Button>
     </div>
   );
 }

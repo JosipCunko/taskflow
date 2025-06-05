@@ -1,26 +1,27 @@
 import type { ChangeEvent } from "react";
 import { DayPicker } from "react-day-picker";
-import { format } from "date-fns";
 import "react-day-picker/dist/style.css";
+import Input from "./reusable/Input";
 
 export default function DatePicker({
   date,
   setDate,
-  hour,
-  setHour,
-  min,
-  setMin,
+  endTime,
+  setEndTime,
+  timeInputsDisabled,
 }: {
   date: Date;
   setDate: (date: Date) => void;
-  hour: number;
-  setHour: (hour: number) => void;
-  min: number;
-  setMin: (min: number) => void;
+  endTime: number[];
+  setEndTime: (endTime: number[]) => void;
+  timeInputsDisabled?: boolean;
 }) {
   const handleDaySelect = (day: Date) => {
     setDate(day);
   };
+
+  const today = new Date();
+  const disabledDays = { before: today };
 
   return (
     <div className="w-fit">
@@ -31,13 +32,12 @@ export default function DatePicker({
         mode="single"
         selected={date}
         onSelect={handleDaySelect}
+        disabled={disabledDays}
         footer={
           <Footer
-            day={date}
-            hour={hour}
-            min={min}
-            setMin={setMin}
-            setHour={setHour}
+            endTime={endTime}
+            setEndTime={setEndTime}
+            timeInputsDisabled={timeInputsDisabled}
           />
         }
       />
@@ -45,58 +45,53 @@ export default function DatePicker({
   );
 }
 function Footer({
-  day,
-  hour,
-  min,
-  setHour,
-  setMin,
+  endTime,
+  setEndTime,
+  timeInputsDisabled,
 }: {
-  day: Date;
-  hour: number;
-  min: number;
-  setHour: (hour: number) => void;
-  setMin: (min: number) => void;
+  endTime: number[];
+  setEndTime: (endTime: number[]) => void;
+  timeInputsDisabled?: boolean;
 }) {
-  const handleHourChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value);
-    if (!isNaN(value)) {
-      setHour(value);
-    }
-  };
-
-  const handleMinChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value);
-    if (!isNaN(value)) {
-      setMin(value);
-    }
-  };
-
   return (
-    <div className="flex flex-col sm:flex-row mt-2 items-start sm:items-center text-sm gap-3 sm:gap-5 text-gray-500">
-      <div>
-        <span className="text-text-low">Selected Date: </span>
-        <span>{format(day, "dd. MM. yyyy")}</span>
-      </div>
-
-      <div className="flex flex-row items-center gap-1">
-        <div className="h-2 w-2 rounded-full bg-blue-500 "></div>
-        <input
-          type="number"
-          onChange={handleHourChange}
-          value={hour}
-          className="w-10 px-1 text-center border rounded-[3px] user-valid:border-primary-500 border-transparent user-invalid:border-error text-text-low bg-background-600 focus:ring-1 focus:ring-primary-500 outline-none"
-          min={0}
-          max={23}
-        />
-        <span className="font-bold">:</span>
-        <input
-          type="number"
-          onChange={handleMinChange}
-          value={min}
-          className="w-10 px-1 text-center border rounded-[3px] user-valid:border-primary-500 border-transparent user-invalid:border-error text-text-low bg-background-600 focus:ring-1 focus:ring-primary-500 outline-none"
-          min={0}
-          max={59}
-        />
+    <div className="flex flex-col items-start text-sm text-text-gray">
+      <div className="flex flex-col gap-2 ">
+        <label className="text-sm font-medium text-text-low text-nowrap">
+          Ends at:
+        </label>
+        <div className="flex items-center gap-2 p-1">
+          <Input
+            type="number"
+            name="endTimeHour"
+            value={endTime[0].toString().padStart(2, "0")}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => {
+              const newHour = parseInt(e.target.value, 10);
+              setEndTime([
+                isNaN(newHour) ? 0 : Math.max(0, Math.min(23, newHour)),
+                endTime[1],
+              ]);
+            }}
+            className="text-center bg-background-500 focus:ring-primary-500 outline-none appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            placeholder="HH"
+            disabled={timeInputsDisabled}
+          />
+          <span className="font-bold text-text-medium">:</span>
+          <Input
+            type="number"
+            name="endTimeMinute"
+            value={endTime[1].toString().padStart(2, "0")}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => {
+              const newMin = parseInt(e.target.value, 10);
+              setEndTime([
+                endTime[0],
+                isNaN(newMin) ? 0 : Math.max(0, Math.min(59, newMin)),
+              ]);
+            }}
+            disabled={timeInputsDisabled}
+            className="text-center bg-background-500 focus:ring-primary-500 outline-none appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            placeholder="MM"
+          />
+        </div>
       </div>
     </div>
   );

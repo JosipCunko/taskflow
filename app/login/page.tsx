@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import { useSession, signIn } from "next-auth/react";
 import Button from "../_components/reusable/Button";
 import Input from "../_components/reusable/Input";
@@ -11,9 +11,13 @@ import {
   signUpWithEmailAndPasswordFirebase,
 } from "../_lib/auth-client";
 import Loader from "../_components/Loader";
+import { useRouter } from "next/navigation";
+import PasswordGenerator from "../_components/PasswordGenerator";
+import { Tooltip } from "react-tooltip";
 
 export default function LoginPage() {
   const { status } = useSession();
+  const router = useRouter();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,8 +27,16 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  if (status === "loading") return <Loader label="Loading session..." />;
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.push("/webapp");
+    }
+  }, [status, router]);
 
+  if (status === "loading") return <Loader label="Loading session..." />;
+  if (status === "authenticated") {
+    return <Loader label="Redirecting to webapp..." />;
+  }
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsLoading(true);
@@ -125,16 +137,29 @@ export default function LoginPage() {
               required
               className="w-full"
             />
-            <Input
-              type="password"
-              id="password"
-              name="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full"
-            />
+            <div className="relative tooltip-container">
+              <Input
+                type="text"
+                id="password"
+                name="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full"
+              />
+              <PasswordGenerator
+                setCurrentPassword={setPassword}
+                length={12}
+                customClassName="absolute top-2 right-2"
+              />
+              <Tooltip
+                id="password-generator"
+                place="top"
+                className="tooltip-diff-arrow"
+                classNameArrow="tooltip-arrow"
+              />
+            </div>
             {error && (
               <p className="text-sm text-red-500 bg-red-100 border border-red-300 p-2 rounded">
                 {error}

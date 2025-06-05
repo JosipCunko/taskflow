@@ -12,6 +12,7 @@ import {
   ChartColumn,
   Settings2,
   FileText,
+  CalendarArrowUp,
 } from "lucide-react";
 import Search from "@/app/_components/Search";
 import Button from "./reusable/Button";
@@ -36,7 +37,7 @@ export default function Sidebar({ tasks }: { tasks: Task[] }) {
       {
         label: "Calendar",
         href: "/webapp/calendar",
-        icon: Calendar,
+        icon: CalendarArrowUp,
       },
       {
         label: "Tasks",
@@ -52,6 +53,11 @@ export default function Sidebar({ tasks }: { tasks: Task[] }) {
         label: "Notes",
         href: "/webapp/notes",
         icon: FileText,
+      },
+      {
+        label: "Today",
+        href: "/webapp/today",
+        icon: Calendar,
       },
     ],
     me: [
@@ -117,9 +123,9 @@ export default function Sidebar({ tasks }: { tasks: Task[] }) {
                           } `}
                       >
                         <div className="relative">
-                          {item?.label === "Calendar" && (
+                          {item?.label === "Today" && (
                             <span className="absolute top-[6px] left-[5px] text-[9px] font-bold">
-                              {new Date().getDate()}
+                              {String(new Date().getDate()).padStart(2, "0")}
                             </span>
                           )}
                           <item.icon size={20} />

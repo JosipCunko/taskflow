@@ -11,6 +11,11 @@ import {
 import { adminAuth, adminDb } from "@/app/_lib/admin";
 import { Timestamp } from "firebase-admin/firestore";
 
+// Define a combined type for user objects that will hold rewardPoints
+type UserWithRewardPoints = (NextAuthUser | AdapterUser) & {
+  rewardPoints?: number;
+};
+
 interface FirebaseUser {
   // Define the expected structure from Firebase ID token
   uid: string;
@@ -73,6 +78,8 @@ export const authOptions: NextAuthOptions = {
           // Firestore user creation/update for Firebase authenticated users
           const userDocRef = adminDb.collection("users").doc(firebaseUser.uid);
           const userDocSnap = await userDocRef.get();
+          let rewardPoints = 0; // Default for new user
+
           if (!userDocSnap.exists) {
             await userDocRef.set({
               uid: firebaseUser.uid, // This is Firebase UID
@@ -81,20 +88,26 @@ export const authOptions: NextAuthOptions = {
               photoURL: firebaseUser.picture,
               provider: "firebase", // Indicate provider
               createdAt: Timestamp.now(),
+              rewardPoints: 0, // Initialize rewardPoints
             });
           } else {
+            // Existing user, fetch their rewardPoints
+            rewardPoints = userDocSnap.data()?.rewardPoints || 0;
             await userDocRef.update({
               displayName: firebaseUser.name,
               photoURL: firebaseUser.picture,
               lastLoginAt: Timestamp.now(),
             });
           }
-          return {
-            id: firebaseUser.uid, // Use Firebase UID as id for this provider
+          // Ensure the returned user object shape matches NextAuthUser & your extended User type
+          const returnedUser: UserWithRewardPoints = {
+            id: firebaseUser.uid,
             name: firebaseUser.name,
             email: firebaseUser.email,
             image: firebaseUser.picture,
-          } as NextAuthUser;
+            rewardPoints: rewardPoints,
+          };
+          return returnedUser as NextAuthUser;
         } catch (error) {
           console.error("Firebase Auth Error in NextAuth authorize:", error);
           return null;
@@ -111,6 +124,7 @@ export const authOptions: NextAuthOptions = {
         // For OAuth providers like GitHub
         const userDocRef = adminDb.collection("users").doc(user.id); // Use NextAuth user.id (which can be provider's ID)
         const userDocSnap = await userDocRef.get();
+        let rewardPoints = 0; // Default for new user
 
         if (!userDocSnap.exists) {
           // New user via OAuth, create their document in Firestore
@@ -122,6 +136,7 @@ export const authOptions: NextAuthOptions = {
               photoURL: user.image,
               provider: account.provider,
               createdAt: Timestamp.now(),
+              rewardPoints: 0, // Initialize rewardPoints
             });
             console.log(
               `New user document created in Firestore via NextAuth OAuth (${account.provider}):`,
@@ -136,17 +151,22 @@ export const authOptions: NextAuthOptions = {
           }
         } else {
           // Existing OAuth user, update last login or other details if needed
+          // Fetch existing rewardPoints
+          rewardPoints = userDocSnap.data()?.rewardPoints || 0;
           try {
             await userDocRef.update({
               displayName: user.name, // Update name/image in case it changed on provider
               photoURL: user.image,
               lastLoginAt: Timestamp.now(),
+              // rewardPoints are managed by task updates
             });
           } catch (dbError) {
             console.error("Firestore error during OAuth user update:", dbError);
             // Don't prevent sign-in for update failures, but log it.
           }
         }
+        // Attach rewardPoints to the user object to be used in the JWT callback
+        (user as UserWithRewardPoints).rewardPoints = rewardPoints;
       }
       return true; // Allow sign-in
     },
@@ -159,30 +179,48 @@ export const authOptions: NextAuthOptions = {
       user?: NextAuthUser | AdapterUser;
       account?: Account | null;
     }) {
+      // user parameter is the user object from authorize or signIn callbacks (or AdapterUser)
+      // account parameter is only passed on initial sign-in
       if (account && user) {
+        // This is an initial sign-in
         token.uid = user.id;
         token.email = user.email;
         token.name = user.name;
         token.picture = user.image;
-        token.provider = account.provider; // account.provider is string
+        token.provider = account.provider;
+
+        // User object from signIn/authorize should have rewardPoints by now
+        const userWithRewards = user as UserWithRewardPoints;
+        if (typeof userWithRewards.rewardPoints === "number") {
+          token.rewardPoints = userWithRewards.rewardPoints;
+        } else {
+          // const userDocRef = adminDb.collection("users").doc(user.id);
+          // const userDocSnap = await userDocRef.get();
+          // token.rewardPoints = userDocSnap.exists() ? userDocSnap.data()?.rewardPoints || 0 : 0;
+          token.rewardPoints = 0; // Defaulting to 0 if not on user object for now
+        }
       }
+      // For subsequent JWT calls (e.g., session refresh), user and account are undefined.
+      // If rewardPoints can change and need to be fresh in JWT always, fetch here using token.uid.
+      // For now, assuming rewardPoints are set at login and updated in session by client-side triggers.
       return token;
     },
     async session({ session, token }: { session: Session; token: JWT }) {
-      if (token && session.user) {
-        session.user.id = token.uid as string;
-        session.user.name = token.name;
-        session.user.email = token.email;
-        session.user.image = token.picture;
-        (
-          session.user as {
-            id: string;
-            provider?: string;
-            name?: string | null;
-            email?: string | null;
-            image?: string | null;
-          }
-        ).provider = token.provider as string | undefined;
+      if (session.user) {
+        if (token.uid) session.user.id = token.uid;
+        if (token.name) session.user.name = token.name;
+        if (token.email) session.user.email = token.email;
+        if (token.picture) session.user.image = token.picture;
+
+        // provider is string | undefined on JWT and Session.user
+        if (token.provider) session.user.provider = token.provider;
+
+        // rewardPoints is number | undefined on JWT and Session.user
+        if (typeof token.rewardPoints === "number") {
+          session.user.rewardPoints = token.rewardPoints;
+        } else {
+          session.user.rewardPoints = undefined; // Or 0 as a default if preferred
+        }
       }
       return session;
     },

@@ -15,12 +15,58 @@ import {
   getDoc,
   deleteField,
   FieldValue,
+  increment, // Import FieldValue.increment
   // DocumentSnapshot, // For createdAt, updatedAt
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { RepetitionRule, SearchedTask, Task } from "@/app/_types/types";
+import { calculateTaskPoints } from "@/app/utils";
+
+// Define a type for the data structure being written to Firestore for a new task
+interface TaskFirestoreData {
+  userId: string;
+  title: string;
+  description?: string;
+  icon: string;
+  color: string;
+  isPriority: boolean;
+  isReminder: boolean;
+  dueDate: Timestamp; // Firestore Timestamp
+  startTime?: { hour: number; minute: number };
+  status: "pending" | "completed" | "delayed";
+  delayCount: number;
+  tags?: string[];
+  createdAt: FieldValue; // serverTimestamp()
+  updatedAt: FieldValue; // serverTimestamp()
+  experience?: "bad" | "okay" | "good" | "best";
+  duration?: { hours: number; minutes: number };
+  isRepeating?: boolean;
+  repetitionRule?: RepetitionRule; // Assuming RepetitionRule is already storable as is or needs conversion
+}
 
 const TASKS_COLLECTION = "tasks";
+const USERS_COLLECTION = "users"; // For updating rewardPoints
+
+// Helper to update user reward points
+const updateUserRewardPoints = async (
+  userId: string,
+  pointsDiff: number
+): Promise<void> => {
+  if (!userId || typeof pointsDiff !== "number" || pointsDiff === 0) {
+    // No user or no change, do nothing
+    return;
+  }
+  try {
+    const userDocRef = doc(db, USERS_COLLECTION, userId);
+    // Atomically increment/decrement the user's rewardPoints
+    // If the field doesn't exist, increment starts it at pointsDiff
+    await updateDoc(userDocRef, {
+      rewardPoints: increment(pointsDiff),
+    });
+  } catch (error) {
+    console.error(`Error updating reward points for user ${userId}:`, error);
+  }
+};
 
 // Helper to convert Firestore doc to Task object
 /**
@@ -40,6 +86,7 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Task => {
     isPriority: data.isPriority || false,
     isReminder: data.isReminder || false,
     dueDate: data.dueDate ? (data.dueDate as Timestamp).toDate() : new Date(),
+    startTime: data.startTime || undefined,
     status: data.status || "pending",
     delayCount: data.delayCount || 0,
     tags: data.tags || [],
@@ -151,7 +198,7 @@ export const getTodaysTasksByUserId = async (
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map((docSnapshot) => fromFirestore(docSnapshot));
   } catch (error) {
-    console.error("Error fetching today's tasks:", error);
+    console.error(`Error fetching today's tasks:`, error);
     throw error;
   }
 };
@@ -255,17 +302,59 @@ export const createTask = async (
   > & { userId: string }
 ): Promise<Task> => {
   try {
-    const docRef = await addDoc(collection(db, TASKS_COLLECTION), {
-      ...taskData,
+    // Construct the object for Firestore using the defined interface
+    const taskToCreateFirebase: TaskFirestoreData = {
+      userId: taskData.userId,
+      title: taskData.title,
+      description: taskData.description,
+      icon: taskData.icon,
+      color: taskData.color,
+      isPriority: taskData.isPriority,
+      isReminder: taskData.isReminder,
       dueDate: Timestamp.fromDate(taskData.dueDate),
-      status: "pending",
-      delayCount: 0,
+      status: "pending", // Initial status
+      delayCount: 0, // Initial delayCount
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    });
+      tags: taskData.tags || [],
+      isRepeating: taskData.isRepeating || false,
+      // Optional fields, only add if they exist in taskData
+    };
 
-    const createdDoc = await getDoc(docRef);
-    return fromFirestore(createdDoc as QueryDocumentSnapshot<DocumentData>);
+    if (taskData.startTime) {
+      taskToCreateFirebase.startTime = taskData.startTime;
+    }
+    if (taskData.duration) {
+      taskToCreateFirebase.duration = taskData.duration;
+    }
+    if (taskData.experience) {
+      taskToCreateFirebase.experience = taskData.experience;
+    }
+    if (taskData.repetitionRule) {
+      // Ensure repetitionRule's date fields are Timestamps if necessary before storing
+      // For now, assuming it can be stored directly if sub-fields are basic types or Timestamps.
+      // If RepetitionRule contains Date objects that need to be Timestamps, convert them here.
+      // Example: if (taskData.repetitionRule.startDate instanceof Date) { ... convert ... }
+      taskToCreateFirebase.repetitionRule = taskData.repetitionRule;
+    }
+
+    const docRef = await addDoc(
+      collection(db, TASKS_COLLECTION),
+      taskToCreateFirebase
+    );
+
+    const createdDocSnap = await getDoc(docRef);
+    const createdTask = fromFirestore(
+      createdDocSnap as QueryDocumentSnapshot<DocumentData>
+    );
+
+    // Calculate points for the newly created task and update user
+    if (createdTask.userId) {
+      const pointsNew = calculateTaskPoints(createdTask);
+      await updateUserRewardPoints(createdTask.userId, pointsNew);
+    }
+
+    return createdTask;
   } catch (error) {
     console.error("Error creating task:", error);
     throw error;
@@ -284,11 +373,15 @@ export const updateTask = async (
 ): Promise<Task> => {
   try {
     const taskRef = doc(db, TASKS_COLLECTION, taskId);
-    const taskDoc = await getDoc(taskRef);
+    const taskOldSnap = await getDoc(taskRef);
 
-    if (!taskDoc.exists()) {
-      throw new Error("Task not found");
+    if (!taskOldSnap.exists()) {
+      throw new Error("Task not found for update");
     }
+    const taskOld = fromFirestore(
+      taskOldSnap as QueryDocumentSnapshot<DocumentData>
+    );
+    const pointsOld = calculateTaskPoints(taskOld);
 
     const updateData: {
       [key: string]:
@@ -301,14 +394,16 @@ export const updateTask = async (
         | string[]
         | undefined
         | RepetitionRule
-        | { minutes: number; hours: number; days: number };
+        | { hour: number; minute: number }
+        | { hours: number; minutes: number };
     } = {};
 
-    // Convert updates to Firestore format
     Object.entries(updates).forEach(([key, value]) => {
       if (value !== undefined) {
         if (value instanceof Date) {
           updateData[key] = Timestamp.fromDate(value);
+        } else if (key === "startTime" || key === "duration") {
+          updateData[key] = value;
         } else {
           updateData[key] = value;
         }
@@ -321,7 +416,6 @@ export const updateTask = async (
       updateData.dueDate = Timestamp.fromDate(updates.dueDate);
     }
 
-    // --- If 'completedAt' is explicitly passed as a Date, convert it ---
     if (updates.completedAt && updates.completedAt instanceof Date) {
       updateData.completedAt = Timestamp.fromDate(updates.completedAt);
     } else if (
@@ -331,21 +425,41 @@ export const updateTask = async (
       updateData.completedAt = deleteField();
     }
 
-    // Clean up undefined values
+    if (updates.startTime) {
+      updateData.startTime = updates.startTime;
+    }
+    if (updates.duration) {
+      updateData.duration = updates.duration;
+    }
+
     Object.keys(updateData).forEach((key) => {
-      if (updateData[key] === undefined && key !== "completedAt") {
+      if (
+        updateData[key] === undefined &&
+        key !== "completedAt" &&
+        key !== "startTime" &&
+        key !== "duration"
+      ) {
         delete updateData[key];
       }
     });
 
     await updateDoc(taskRef, updateData);
 
-    const updatedDoc = await getDoc(taskRef);
-    if (!updatedDoc.exists()) {
+    const updatedDocSnap = await getDoc(taskRef); // Re-fetch the updated document
+    if (!updatedDocSnap.exists()) {
       throw new Error("Task not found after update");
     }
+    const taskNew = fromFirestore(
+      updatedDocSnap as QueryDocumentSnapshot<DocumentData>
+    );
+    const pointsNew = calculateTaskPoints(taskNew);
 
-    return fromFirestore(updatedDoc as QueryDocumentSnapshot<DocumentData>);
+    const deltaPoints = pointsNew - pointsOld;
+    if (taskNew.userId && deltaPoints !== 0) {
+      await updateUserRewardPoints(taskNew.userId, deltaPoints);
+    }
+
+    return taskNew;
   } catch (error) {
     console.error("Error updating task:", error);
     throw error;
@@ -360,25 +474,27 @@ export const updateTask = async (
 export const deleteTask = async (taskId: string): Promise<Task> => {
   try {
     const taskRef = doc(db, TASKS_COLLECTION, taskId);
-    const taskDoc = await getDoc(taskRef);
-    if (!taskDoc.exists()) {
-      throw new Error("Task not found");
+    const taskDocSnap = await getDoc(taskRef);
+    if (!taskDocSnap.exists()) {
+      console.warn(`Task ${taskId} not found for deletion.`);
+      throw new Error("Task not found for deletion point calculation.");
     }
 
-    const taskData = fromFirestore(taskDoc);
-    if (!taskData) {
-      throw new Error(
-        `Failed to parse task data for task ID ${taskId}, likely missing critical fields like userId.`
-      );
-    }
-    if (!taskData.userId) {
-      console.error(
-        "FATAL: taskData object created by fromClientFirestore is missing userId. This indicates a flaw in fromClientFirestore or source data."
-      );
-      throw new Error(`Task data for ${taskId} parsed without a userId.`);
-    }
+    const taskOld = fromFirestore(
+      taskDocSnap as QueryDocumentSnapshot<DocumentData>
+    );
+    const pointsOld = calculateTaskPoints(taskOld);
+
+    // Perform the deletion
     await deleteDoc(taskRef);
-    return taskData;
+
+    // After deletion, the task's contribution to points is 0.
+    // The delta is 0 - pointsOld.
+    if (taskOld.userId) {
+      await updateUserRewardPoints(taskOld.userId, -pointsOld);
+    }
+
+    return taskOld; // Return the data of the task that was deleted
   } catch (error) {
     console.error("Error deleting task:", error);
     throw error;

@@ -11,6 +11,7 @@ function Input({
   required,
   min,
   max,
+  disabled,
 }: {
   type: string;
   id?: string;
@@ -22,6 +23,7 @@ function Input({
   required?: boolean;
   min?: string;
   max?: string;
+  disabled?: boolean;
 }) {
   return (
     <input
@@ -36,6 +38,7 @@ function Input({
         className ? className : ""
       }`}
       placeholder={placeholder}
+      disabled={disabled}
       required={required}
     />
   );

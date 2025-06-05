@@ -9,10 +9,10 @@ import {
 } from "../utils";
 import { formatDate, formatDateTime } from "../utils";
 import { Task } from "../_types/types";
-import { format, isPast, isSameDay, isToday } from "date-fns";
+import { format, isPast, isSameDay, isToday, isValid } from "date-fns";
 import { useFormStatus } from "react-dom";
 import Button from "./reusable/Button";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   delayTaskAction,
   rescheduleTaskAction,
@@ -23,6 +23,14 @@ import {
 } from "../_lib/actions";
 import { useOutsideClick } from "../hooks/useOutsideClick";
 import EmojiExperience from "./EmojiExperience";
+import {
+  ChevronDown,
+  ChevronUp,
+  Clock,
+  Repeat,
+  Tag,
+  Timer,
+} from "lucide-react";
 
 function ActionSubmitButton({
   children,
@@ -68,13 +76,15 @@ interface TaskCardProps {
 export default function TaskCard({ task, index = 0 }: TaskCardProps) {
   const TaskIcon = getTaskIconByName(task.icon);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const statusInfo = getStatusStyles(task.status);
   const StatusIcon = statusInfo.icon;
-  const isPastDue = !task.completedAt && isPast(new Date(task.dueDate));
-  // Crutial callback implementation to avoid too many re-renders
+  const isPastDue =
+    task.status !== "completed" &&
+    task.dueDate &&
+    isPast(new Date(task.dueDate));
+
   const outsideClickRef = useOutsideClick(() => setIsDropdownOpen(false));
-  const hour = task.dueDate.getHours();
-  const min = task.dueDate.getMinutes();
 
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -89,61 +99,69 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
     },
   };
 
+  const formattedDueDate = useMemo(() => {
+    if (!task.dueDate || !isValid(new Date(task.dueDate))) return "N/A";
+    return formatDate(task.dueDate);
+  }, [task.dueDate]);
+
   const getExperienceIcon = () => {
     if (!task.completedAt || !task.experience) return null;
+    const commonClasses = "w-5 h-5";
     switch (task.experience) {
       case "good":
         return (
-          <CardSpecificIcons.ExperienceGood className="w-5 h-5 text-green-400" />
+          <CardSpecificIcons.ExperienceGood
+            className={`${commonClasses} text-green-400`}
+          />
         );
       case "okay":
         return (
-          <CardSpecificIcons.ExperienceOkay className="w-5 h-5 text-yellow-400" />
+          <CardSpecificIcons.ExperienceOkay
+            className={`${commonClasses} text-yellow-400`}
+          />
         );
       case "bad":
         return (
-          <CardSpecificIcons.ExperienceBad className="w-5 h-5 text-red-400" />
+          <CardSpecificIcons.ExperienceBad
+            className={`${commonClasses} text-red-400`}
+          />
         );
       case "best":
         return (
-          <CardSpecificIcons.ExperienceBest className="w-5 h-5 text-yellow-400" />
+          <CardSpecificIcons.ExperienceBest
+            className={`${commonClasses} text-yellow-400`} // Assuming best is also yellow, or choose another color
+          />
         );
       default:
         return null;
     }
   };
+
   return (
     <motion.div
       variants={cardVariants}
       initial="hidden"
       animate="visible"
-      whileHover={{ y: -5, boxShadow: "0px 8px 25px rgba(0,0,0,0.1)" }}
-      layout // Animates layout changes (e.g., if content changes)
-      style={
-        {
-          "--task-color": task.color,
-          border: "1px solid #0c4a6e",
-          borderRadius: "0.5rem",
-        } as React.CSSProperties
-      }
+      whileHover={{ y: -3, boxShadow: "0px 6px 20px rgba(0,0,0,0.07)" }}
+      layout
+      className="bg-background-secondary rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 border-l-4"
+      style={{ borderColor: task.color }}
       ref={outsideClickRef}
     >
-      <div className="p-5 flex items-start space-x-4 border-b border-divider relative">
-        <div
-          className="p-3 rounded-lg w-12 h-12 flex items-center justify-center"
-          style={{ backgroundColor: `${task.color}33` }}
-        >
-          <TaskIcon size={24} style={{ color: task.color }} />
-        </div>
-        <div className="flex-grow min-w-0 flex flex-col gap-2">
-          <h3 className="text-lg font-semibold text-text-high break-words text-pretty truncate">
-            {task.title}
-          </h3>
-          {task.description && (
-            <p className="text-sm mb-4 text-text-gray leading-relaxed line-clamp-3">
-              {task.description}
-            </p>
-          )}
+      {/* Header: Icon, Title, Options */}
+      <div className="p-4 flex items-start justify-between border-b border-divider">
+        <div className="flex items-start space-x-3">
+          <div
+            className="p-2.5 rounded-md w-10 h-10 flex items-center justify-center shrink-0"
+            style={{ backgroundColor: `${task.color}20` }} // Lighter background
+          >
+            <TaskIcon size={20} style={{ color: task.color }} />
+          </div>
+          <div className="flex-grow min-w-0">
+            <h3 className="text-md font-semibold text-text-high break-words">
+              {task.title}
+            </h3>
+          </div>
         </div>
 
         <div className="relative shrink-0">
@@ -151,8 +169,9 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
             variant="secondary"
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             aria-label="Task options"
+            className="text-text-low hover:text-text-high hover:bg-background-hover focus:ring-1 focus:ring-primary-500 p-2 rounded-md"
           >
-            <CardSpecificIcons.Options size={20} />
+            <CardSpecificIcons.Options size={18} />
           </Button>
           <AnimatePresence>
             {isDropdownOpen && (
@@ -216,8 +235,10 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
                           action={async (formData: FormData) => {
                             const res = await delayTaskAction(
                               formData,
-                              hour,
-                              min,
+                              task.startTime?.hour ??
+                                new Date(task.dueDate).getHours(),
+                              task.startTime?.minute ??
+                                new Date(task.dueDate).getMinutes(),
                               task.delayCount
                             );
                             handleToast(res, () => setIsDropdownOpen(false));
@@ -242,18 +263,24 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
                     {(() => {
                       // Calculate the start of next week (Monday)
                       const today = new Date();
-                      const dayOfWeek = today.getDay();
-                      const daysUntilNextMonday = (8 - dayOfWeek) % 7 || 7;
+                      const dayOfWeek = today.getDay(); // Sunday is 0, Monday is 1
+                      const daysUntilNextMonday =
+                        (dayOfWeek === 0 ? 1 : 8 - dayOfWeek) % 7;
                       const nextMonday = new Date(today);
-                      nextMonday.setDate(today.getDate() + daysUntilNextMonday);
+                      nextMonday.setDate(
+                        today.getDate() +
+                          (daysUntilNextMonday === 0 ? 7 : daysUntilNextMonday)
+                      ); // if today is monday, jump to next monday
                       nextMonday.setHours(0, 0, 0, 0);
 
                       // Calculate the due date's week start (Monday)
                       const dueDate = new Date(task.dueDate);
                       const dueDayOfWeek = dueDate.getDay();
                       const dueWeekMonday = new Date(dueDate);
+                      // Adjust to get to the previous Monday (or current if it's Monday)
                       dueWeekMonday.setDate(
-                        dueDate.getDate() - ((dueDayOfWeek + 6) % 7)
+                        dueDate.getDate() -
+                          (dueDayOfWeek === 0 ? 6 : dueDayOfWeek - 1)
                       );
                       dueWeekMonday.setHours(0, 0, 0, 0);
 
@@ -265,8 +292,10 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
                               action={async (formData: FormData) => {
                                 const res = await delayTaskAction(
                                   formData,
-                                  hour,
-                                  min,
+                                  task.startTime?.hour ??
+                                    new Date(task.dueDate).getHours(),
+                                  task.startTime?.minute ??
+                                    new Date(task.dueDate).getMinutes(),
                                   task.delayCount
                                 );
                                 handleToast(res, () =>
@@ -305,8 +334,10 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
                       action={async (formData: FormData) => {
                         const res = await rescheduleTaskAction(
                           formData,
-                          hour,
-                          min
+                          task.startTime?.hour ??
+                            new Date(task.dueDate).getHours(),
+                          task.startTime?.minute ??
+                            new Date(task.dueDate).getMinutes()
                         );
                         handleToast(res, () => setIsDropdownOpen(false));
                       }}
@@ -330,7 +361,7 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
                           className="flex-grow p-1.5 border border-divider rounded-md text-sm bg-background-input text-text-default focus:ring-primary-600 focus:border-primary-600"
                           required
                         />
-                        <Button type="submit" aria-label="Confirm reschedule">
+                        <Button type="submit" variant="secondary">
                           Set
                         </Button>
                       </div>
@@ -396,7 +427,7 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
                     <ActionSubmitButton
                       Icon={CardSpecificIcons.Delete}
                       className="text-red-500 hover:bg-red-500/10"
-                      classNameIcon="group-hover:bg-red-500"
+                      classNameIcon="group-hover:text-red-500"
                     >
                       <span className="group-hover:text-red-500">
                         Delete Task
@@ -410,102 +441,185 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
         </div>
       </div>
 
-      <div className="p-5 flex-grow space-y-3">
-        <div className="flex flex-wrap gap-3 items-center text-xs">
-          <div
-            className={`flex items-center space-x-1 px-2 py-1 rounded-full ${statusInfo.bgColorClass}`}
-          >
-            <StatusIcon size={14} className={statusInfo.colorClass} />
-            <span className={statusInfo.colorClass}>
-              {task.dueDate < new Date() ? "Missed" : statusInfo.text}
-            </span>
-            {task.status === "delayed" && task.delayCount > 0 && (
-              <span className={`ml-1 font-semibold ${statusInfo.colorClass}`}>
-                ({task.delayCount})
-              </span>
+      {/* Main Content: Description, Due Date, Status, Indicators */}
+      <div className="p-4 space-y-3">
+        {task.description && (
+          <div className="text-sm text-text-default">
+            <p
+              className={`leading-relaxed ${
+                !isDescriptionExpanded ? "line-clamp-2" : ""
+              }`}
+            >
+              {task.description}
+            </p>
+            {task.description.length > 100 && ( // Rough check if description is long enough to warrant expander
+              <button
+                onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                className="text-xs text-primary-500 hover:text-primary-400 mt-1 flex items-center"
+              >
+                {isDescriptionExpanded ? "Show Less" : "Show More"}
+                {isDescriptionExpanded ? (
+                  <ChevronUp size={14} className="ml-1" />
+                ) : (
+                  <ChevronDown size={14} className="ml-1" />
+                )}
+              </button>
             )}
           </div>
-          <div
-            className={`flex items-center space-x-1 px-2 py-1 rounded-full ${
-              isPastDue && task.status !== "completed"
-                ? "bg-red-500/10 text-red-400"
-                : "bg-blue-500/10 text-blue-400"
-            }`}
-          >
-            <CardSpecificIcons.DueDate size={14} />
-            <span>
-              Due: {formatDate(task.dueDate)}{" "}
-              {`${hour}:${min}` === "23:59"
-                ? ""
-                : `${format(task.dueDate, "p")}`}
+        )}
+
+        {/* Due Date & Time */}
+        <div
+          className={`flex items-center space-x-1.5 text-xs px-2.5 py-1.5 rounded-md w-fit ${
+            isPastDue
+              ? "bg-red-500/10 text-red-500"
+              : "bg-blue-500/10 text-blue-400"
+          }`}
+        >
+          <CardSpecificIcons.DueDate size={14} />
+          <span>Due: {formattedDueDate}</span>
+          {isToday(task.dueDate) && task.status !== "completed" && (
+            <span className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-primary-600 text-white font-semibold">
+              Today
             </span>
-            {isToday(task.dueDate) && (
-              <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-primary-600 text-white font-semibold">
-                Today
+          )}
+          {task.startTime ? (
+            <div className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-background-500 text-text-low flex items-center gap-2">
+              <span>
+                {task.startTime.hour.toString().padStart(2, "0")}:
+                {task.startTime.minute.toString().padStart(2, "0")}
               </span>
-            )}
-          </div>
+              <span>-</span>
+              <span>
+                {task.dueDate.getHours().toString().padStart(2, "0")}:
+                {task.dueDate.getMinutes().toString().padStart(2, "0")}
+              </span>
+            </div>
+          ) : (
+            <div className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-background-500 text-text-low ">
+              <span>
+                {task.dueDate.getHours().toString().padStart(2, "0")}:
+                {task.dueDate.getMinutes().toString().padStart(2, "0")}
+              </span>
+            </div>
+          )}
         </div>
 
-        <div className="flex flex-wrap gap-2 items-center">
+        {/* Status Badge & Delay Count */}
+        <div className="flex flex-wrap gap-2 items-center text-xs">
+          <div
+            className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-md ${statusInfo.bgColorClass} ${statusInfo.colorClass}`}
+          >
+            <StatusIcon size={14} />
+            <span>
+              {isPastDue &&
+              task.status !== "completed" &&
+              task.status !== "delayed"
+                ? "Missed"
+                : statusInfo.text}
+            </span>
+            {task.status === "delayed" && task.delayCount > 0 && (
+              <span className="ml-1 font-semibold">({task.delayCount})</span>
+            )}
+          </div>
+
+          {/* Priority Indicator */}
           {task.isPriority && (
-            <div className="flex items-center space-x-1 text-xs px-2 py-1 rounded-full bg-orange-500/10 text-orange-400">
+            <div className="flex items-center space-x-1.5 text-xs px-2.5 py-1.5 rounded-md bg-orange-500/10 text-orange-400">
               <CardSpecificIcons.Priority size={14} />
               <span>Priority</span>
             </div>
           )}
+
+          {/* Reminder Indicator */}
           {task.isReminder && (
-            <div className="flex items-center space-x-1 text-xs px-2 py-1 rounded-full bg-purple-500/10 text-purple-400">
+            <div className="flex items-center space-x-1.5 text-xs px-2.5 py-1.5 rounded-md bg-purple-500/10 text-purple-400">
               <CardSpecificIcons.Reminder size={14} />
-              <span>Reminder Set</span>
+              <span>Reminder</span>
+            </div>
+          )}
+
+          {/* Repeating Task Indicator */}
+          {task.isRepeating && (
+            <div className="flex items-center space-x-1.5 text-xs px-2.5 py-1.5 rounded-md bg-teal-500/10 text-teal-400">
+              <Repeat size={14} />
+              <span>
+                Repeating
+                {task.repetitionRule?.frequency &&
+                  ` (${
+                    task.repetitionRule.frequency.charAt(0).toUpperCase() +
+                    task.repetitionRule.frequency.slice(1)
+                  })`}
+              </span>
             </div>
           )}
         </div>
 
+        {/* Duration */}
+        {task.duration &&
+          (task.duration.hours > 0 || task.duration.minutes > 0) && (
+            <div className="flex items-center space-x-1.5 text-xs px-2.5 py-1.5 rounded-md bg-indigo-500/10 text-indigo-400 w-fit">
+              <Timer size={14} />
+              <span>
+                {task.duration.hours > 0 && `${task.duration.hours}h `}
+                {task.duration.minutes > 0 && `${task.duration.minutes}m`}
+              </span>
+            </div>
+          )}
+
+        {/* Tags */}
         {task.tags && task.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-1">
+          <div className="flex flex-wrap gap-1.5 mt-2">
             {task.tags.map((tag) => (
               <span
                 key={tag}
-                className="text-xs px-2 py-0.5  rounded-full flex items-center bg-background-500"
+                className="text-xs px-2 py-1 rounded-full flex items-center bg-background-muted text-text-low"
               >
-                <CardSpecificIcons.Tag size={12} className="mr-2 opacity-70" />{" "}
-                {tag}
+                <Tag size={12} className="mr-1.5 opacity-70" /> {tag}
               </span>
             ))}
           </div>
         )}
-        {task.duration && (
-          <div className="mt-1">
-            <span className="px-2 text-xs py-0.5 w-fit rounded-full flex items-center gap-1.5 bg-background-500">
-              <CardSpecificIcons.Time size={12} />
-              {task.duration.days !== 0 && <span>{task.duration.days}d</span>}
-              {task.duration.hours !== 0 && <span>{task.duration.hours}h</span>}
-              {task.duration.minutes !== 0 && (
-                <span>{task.duration.minutes}m</span>
-              )}
-            </span>
-          </div>
-        )}
       </div>
 
-      <div className="px-5 py-3 bg-background-main/30 border-t border-divider text-xs text-text-low space-y-1">
+      {/* Footer: Dates & Experience */}
+      <div className="px-4 py-2.5 bg-background-main/50 border-t border-divider text-xs text-text-low space-y-1 rounded-b-lg">
         <div className="flex justify-between items-center">
-          <span>
-            Created:{" "}
-            {formatDate(task.createdAt, { day: "numeric", month: "short" })}
-          </span>
-          {getExperienceIcon()}
-          {task.completedAt && (
+          <div
+            className="flex items-center"
+            title={`Created: ${formatDateTime(task.createdAt)}`}
+          >
+            <Clock size={12} className="mr-1 opacity-70" />
             <span>
-              Completed:{" "}
-              {formatDate(task.completedAt, { day: "numeric", month: "short" })}
+              {formatDate(task.createdAt, { day: "numeric", month: "short" })}
             </span>
-          )}
+          </div>
+
+          <div className="flex items-center space-x-2">
+            {getExperienceIcon()}
+            {task.completedAt && (
+              <span title={`Completed: ${formatDateTime(task.completedAt)}`}>
+                Done:{" "}
+                {formatDate(task.completedAt, {
+                  day: "numeric",
+                  month: "short",
+                })}
+              </span>
+            )}
+          </div>
         </div>
 
-        <p className="text-right opacity-60">
-          Last updated: {formatDateTime(task.updatedAt)}
+        <p
+          className="text-right opacity-60 text-[11px]"
+          title={`Last updated: ${formatDateTime(task.updatedAt)}`}
+        >
+          Updated:{" "}
+          {formatDate(task.updatedAt, {
+            day: "numeric",
+            month: "short",
+            year: "2-digit",
+          })}{" "}
+          {format(new Date(task.updatedAt), "p")}
         </p>
       </div>
     </motion.div>

@@ -54,7 +54,7 @@ export default function TopSidebar({ session }: { session: Session | null }) {
           />
         </>
 
-        <Link href="/profile">
+        <Link href="/webapp/profile">
           <Image
             src={session?.user.image || "/will-not-work.png"}
             width={40}
