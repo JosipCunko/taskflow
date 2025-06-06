@@ -284,14 +284,12 @@ export const navItemsToSearch = [
     label: "Today",
     command: ["Ctrl", "F1"],
     link: "/webapp/today",
-    command: ["Ctrl","F1"],
   },
   {
     icon: FileText,
     label: "Notes",
     command: ["Ctrl", "F2"],
     link: "/webapp/notes",
-    command: ["Ctrl","F2"],
   },
 ];
 export const emojiOptions: EmojiOption[] = [
