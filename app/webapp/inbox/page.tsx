@@ -1,4 +1,4 @@
-import { Inbox } from "lucide-react";
+import { Inbox, Smile } from "lucide-react";
 
 export default function InboxPage() {
   return (
@@ -8,6 +8,9 @@ export default function InboxPage() {
           <Inbox className="w-8 h-8 mr-3 text-primary-500" />
           Inbox
         </h1>
+        <p className="text-text-low flex items-center gap-2">
+          Inbox functionality comming up... <Smile className="w-4 h-4" />
+        </p>
       </div>
     </div>
   );

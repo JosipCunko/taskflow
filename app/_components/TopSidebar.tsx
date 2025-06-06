@@ -11,14 +11,14 @@ import { Plus } from "lucide-react";
 import Modal from "./Modal";
 import Button from "./reusable/Button";
 import AddTask from "./AddTask";
-import { useKeyboardNavigation } from "../hooks/useKeyboardNavigation";
+import { useKeyboardNavigation } from "../_hooks/useKeyboardNavigation";
 export default function TopSidebar({ session }: { session: Session | null }) {
   //Beacuse it is a CC - must be for react-tooltip
   useKeyboardNavigation();
   return (
     <header className="flex items-center justify-between p-4 border-b border-background-500">
       <div>
-        <h1 className="text-xl font-semibold">
+        <h1 className="text-xl font-semibold sm:block hidden text-text-low">
           Good {getPhaseOfTheDay()}, {session?.user.name}
         </h1>
       </div>
@@ -26,7 +26,7 @@ export default function TopSidebar({ session }: { session: Session | null }) {
       <div className="flex items-center gap-4 tooltip-container">
         <Modal>
           <Modal.Open opens="add-task">
-            <Button>
+            <Button className="text-nowrap">
               <Plus size={18} />
               <span>New Task</span>
             </Button>

@@ -59,7 +59,7 @@ export default function ClientWebappLayout({
   };
 
   return (
-    <div className="flex h-screen overflow-hidden tracking-tight bg-background-625 relative">
+    <div className="flex h-screen overflow-x-hidden overflow-y-auto tracking-tight bg-background-625 relative">
       {" "}
       {/* Added relative for absolute positioning context of button if needed */}
       {/* Mobile Menu Button */}

@@ -6,6 +6,7 @@ import {
   useContext,
   useState,
   ReactElement,
+  useEffect,
 } from "react";
 import { createPortal } from "react-dom";
 import Button from "./reusable/Button";
@@ -57,12 +58,21 @@ function Window({ children, name, showButton = undefined }: WindowProps) {
   if (!context) throw new Error("Window must be used within Modal Provider");
   const { openName, close } = context;
 
-  /*
-  const modalRef = useRef<HTMLDivElement>(null);
-  const outsideClickRef = useOutsideClick(
-    dontUseOutsideClick ? () => {} : close,
-    !dontUseOutsideClick
-  );*/
+  // DONT USE useOutsideClick BECAUSE IT CLOSES THE MODAL, ANOTHER MODAL WILL BE OPENED AND THAT WILL CLOSE THIS MODAL
+  useEffect(
+    function () {
+      function handleEscapeKey(e: KeyboardEvent) {
+        if (e.key === "Escape") {
+          close();
+        }
+      }
+
+      document.addEventListener("keydown", handleEscapeKey);
+
+      return () => document.removeEventListener("keydown", handleEscapeKey);
+    },
+    [close]
+  );
 
   if (name !== openName) return null;
 
@@ -72,7 +82,7 @@ function Window({ children, name, showButton = undefined }: WindowProps) {
 
   return createPortal(
     <div
-      className="fixed top-0 left-0 w-full h-[100vh] bg-background-625 backdrop-blur-sm z-[999] p-0 " // adjusted backdrop-blur and z-index
+      className="fixed inset-0 rounded-xl backdrop-blur-lg z-[999] p-0 " // adjusted backdrop-blur and z-index
     >
       <div
         className="fixed top-[50%] left-[50%] rounded-lg shadow-lg bg-background-700 p-4"

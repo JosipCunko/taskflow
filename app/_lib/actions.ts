@@ -49,7 +49,7 @@ export async function updateTaskStatusAction(
     const error = err as ActionError;
     return {
       success: false,
-      error: error.message || "Failed to update task status.",
+      error: error.message || "Failed to update task status",
     };
   }
 }
@@ -91,7 +91,7 @@ export async function updateTaskExperienceAction(
     const error = err as ActionError;
     return {
       success: false,
-      error: error.message || "Failed to update task experience.",
+      error: error.message || "Failed to update task experience",
     };
   }
 }
@@ -149,7 +149,7 @@ export async function delayTaskAction(
     };
   } catch (err) {
     const error = err as ActionError;
-    return { success: false, error: error.message || "Failed to delay task." };
+    return { success: false, error: error.message || "Failed to delay task" };
   }
 }
 /** Similar as delayTaskAction */
@@ -164,7 +164,7 @@ export async function rescheduleTaskAction(
   const userId = session?.user.id;
 
   if (!newDueDateString) {
-    return { success: false, error: "New due date is required." };
+    return { success: false, error: "New due date is required" };
   }
   const newDueDate = new Date(newDueDateString);
   newDueDate.setHours(hour, min);
@@ -195,12 +195,12 @@ export async function rescheduleTaskAction(
     }
 
     revalidatePath("/tasks");
-    return { success: true, message: "Task rescheduled." };
+    return { success: true, message: "Task rescheduled" };
   } catch (err) {
     const error = err as ActionError;
     return {
       success: false,
-      error: error.message || "Failed to reschedule task.",
+      error: error.message || "Failed to reschedule task",
     };
   }
 }
@@ -211,7 +211,7 @@ export async function deleteTaskAction(
   const taskId = formData.get("taskId") as string;
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    throw new Error("User not authenticated.");
+    throw new Error("User not authenticated");
   }
 
   console.log(`ACTION: Delete Task ${taskId}`);
@@ -220,7 +220,7 @@ export async function deleteTaskAction(
     const deletedTask = await deleteTask(taskId);
     if (!deletedTask.userId) {
       throw new Error(
-        "Deleted task data is incomplete (missing userId). Cannot log activity accurately."
+        "Deleted task data is incomplete (missing userId). Cannot log activity accurately"
       );
     }
 
@@ -237,10 +237,10 @@ export async function deleteTaskAction(
       activityIcon: "Delete",
     });
     revalidatePath("/tasks");
-    return { success: true, message: "Task deleted." };
+    return { success: true, message: "Task deleted" };
   } catch (err) {
     const error = err as ActionError;
-    return { success: false, error: error.message || "Failed to delete task." };
+    return { success: false, error: error.message || "Failed to delete task" };
   }
 }
 
@@ -249,7 +249,7 @@ export async function togglePriorityAction(
 ): Promise<ActionResult> {
   const taskId = formData.get("taskId") as string;
   const currentTask = await getTaskByTaskId(taskId);
-  if (!currentTask) return { success: false, error: "Task not found." };
+  if (!currentTask) return { success: false, error: "Task not found" };
   const newIsPriority = !currentTask.isPriority;
 
   console.log(
@@ -266,7 +266,7 @@ export async function togglePriorityAction(
     const error = err as ActionError;
     return {
       success: false,
-      error: error.message || "Failed to toggle priority.",
+      error: error.message || "Failed to toggle priority",
     };
   }
 }
@@ -291,10 +291,10 @@ export async function createTaskAction(
   // const jwt = (await cookieStore).get("next-auth.session-token");
 
   if (!session || !session.user || !session.user.id) {
-    console.error("User not authenticated or user ID missing from session.");
+    console.error("User not authenticated or user ID missing from session");
     return {
       success: false,
-      error: "User not authenticated.",
+      error: "User not authenticated",
     };
   }
   const userId = session.user.id;
@@ -370,13 +370,13 @@ export async function createTaskAction(
     revalidatePath("/tasks");
     return {
       success: true,
-      message: "Task created successfully.",
+      message: "Task created successfully",
     };
   } catch (err) {
     const error = err as ActionError;
     return {
       success: false,
-      error: error.message || "Failed to create a task.",
+      error: error.message || "Failed to create a task",
     };
   }
 }
@@ -390,7 +390,7 @@ export async function completeRepeatingTaskInstanceAction(
 ): Promise<ActionResult> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    return { success: false, error: "Not authenticated." };
+    return { success: false, error: "Not authenticated" };
   }
   try {
     // --- THIS IS WHERE YOU PUT YOUR FIRESTORE LOGIC ---
@@ -440,7 +440,7 @@ export async function completeRepeatingTaskInstanceAction(
     console.error("Error completing repeating task instance:", err);
     return {
       success: false,
-      error: err.message || "Failed to complete instance.",
+      error: err.message || "Failed to complete instance",
     };
   }
 }

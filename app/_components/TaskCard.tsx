@@ -21,7 +21,7 @@ import {
   deleteTaskAction,
   updateTaskExperienceAction,
 } from "../_lib/actions";
-import { useOutsideClick } from "../hooks/useOutsideClick";
+import { useOutsideClick } from "../_hooks/useOutsideClick";
 import EmojiExperience from "./EmojiExperience";
 import {
   ChevronDown,

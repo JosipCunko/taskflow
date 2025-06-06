@@ -11,6 +11,8 @@ declare module "next-auth" {
       id: string;
       provider?: string;
       rewardPoints?: number;
+      notifyReminders?: boolean;
+      notifyAchievements?: boolean;
     } & DefaultSession["user"]; // Keep existing properties like name, email, image
   }
 
@@ -23,6 +25,8 @@ declare module "next-auth" {
     // id is already part of DefaultUser
     provider?: string;
     rewardPoints?: number;
+    notifyReminders?: boolean;
+    notifyAchievements?: boolean;
   }
 }
 
@@ -33,6 +37,8 @@ declare module "next-auth/jwt" {
     uid: string;
     provider?: string;
     rewardPoints?: number;
+    notifyReminders?: boolean;
+    notifyAchievements?: boolean;
     // name, email, picture are often included by default if available from provider
   }
 }

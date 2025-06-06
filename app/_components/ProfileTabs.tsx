@@ -19,14 +19,17 @@ import {
 import { formatDistanceToNowStrict } from "date-fns";
 import TaskCardSmall from "./TaskCardSmall";
 import Checkbox from "./reusable/Checkbox";
+import { updateUser } from "../_lib/user";
+import { handleToast } from "../utils";
 
 export default function ProfileTabs({
   tasks,
   activityLogs,
+  userProfileData,
 }: {
   tasks: Task[];
-  userProfileData?: userProfileType;
   activityLogs: ActivityLog[];
+  userProfileData: userProfileType;
 }) {
   const [activeTab, setActiveTab] = useState<"overview" | "settings">(
     "overview"
@@ -41,9 +44,7 @@ export default function ProfileTabs({
     [categorizedTasks.completedTasks]
   );
 
-  const [taskRemindersEnabled, setTaskRemindersEnabled] = useState(true);
-  const [achievementAlertsEnabled, setAchievementAlertsEnabled] =
-    useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [darkModeEnabled, setDarkModeEnabled] = useState(true);
 
   const getActivityDisplayInfo = (
@@ -293,11 +294,17 @@ export default function ProfileTabs({
                     </p>
                   </div>
                 }
-                checked={taskRemindersEnabled}
-                onChange={(e) => {
-                  setTaskRemindersEnabled(e.target.checked);
-                  // TODO: Save this preference
+                checked={userProfileData.notifyReminders}
+                onChange={async (e) => {
+                  setIsLoading(true);
+                  const res = await updateUser(userProfileData.id, {
+                    notifyReminders: e.target.checked,
+                  });
+
+                  handleToast(res);
+                  setIsLoading(false);
                 }}
+                disabled={isLoading}
               />
               <Checkbox
                 id="achievementAlerts"
@@ -312,11 +319,17 @@ export default function ProfileTabs({
                     </p>
                   </div>
                 }
-                checked={achievementAlertsEnabled}
-                onChange={(e) => {
-                  setAchievementAlertsEnabled(e.target.checked);
-                  // TODO: Save this preference
+                checked={userProfileData.notifyAchievements}
+                onChange={async (e) => {
+                  setIsLoading(true);
+                  const res = await updateUser(userProfileData.id, {
+                    notifyAchievements: e.target.checked,
+                  });
+
+                  handleToast(res);
+                  setIsLoading(false);
                 }}
+                disabled={isLoading}
               />
             </div>
           </div>
@@ -345,7 +358,7 @@ export default function ProfileTabs({
                 onChange={(e) => {
                   setDarkModeEnabled(e.target.checked);
                 }}
-                disabled // If always dark, disable this
+                disabled
               />
             </div>
           </div>

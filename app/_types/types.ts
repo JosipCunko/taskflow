@@ -112,10 +112,15 @@ export interface ActivityLog {
 }
 
 export interface userProfileType {
+  id: string;
   displayName: string;
   email: string;
   photoURL: string;
   memberSince: Date;
+  notifyReminders: boolean;
+  notifyAchievements: boolean;
+  notesCount: number;
+  rewardPoints: number;
 }
 
 export interface ActionResult {

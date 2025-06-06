@@ -10,7 +10,6 @@ import {
   Home,
   Inbox,
   ChartColumn,
-  Settings2,
   FileText,
   CalendarArrowUp,
 } from "lucide-react";
@@ -65,11 +64,6 @@ export default function Sidebar({ tasks }: { tasks: Task[] }) {
         label: "Profile",
         href: "/webapp/profile",
         icon: User,
-      },
-      {
-        label: "Settings",
-        href: "/webapp/settings",
-        icon: Settings2,
       },
     ],
   };

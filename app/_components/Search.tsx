@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Search as SearchIcon,
   ChevronRight,
@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { errorToast, getTaskIconByName, navItemsToSearch } from "../utils";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { searchUserTasks } from "../_lib/tasks";
 import Loader from "./Loader";
 import { SearchedTask, Task } from "../_types/types";
@@ -38,6 +39,9 @@ export default function Search({ onCloseModal, tasks }: SearchProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchedTask[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const router = useRouter();
+  const navListRef = useRef<HTMLUListElement>(null);
 
   const performSearch = useCallback(
     async (query: string) => {
@@ -74,12 +78,42 @@ export default function Search({ onCloseModal, tasks }: SearchProps) {
       setSearchResults([]);
       setIsLoading(false);
     }
+    setHighlightedIndex(-1);
   }, [searchQuery, debouncedSearch]);
+
+  useEffect(() => {
+    if (highlightedIndex > -1 && navListRef.current) {
+      const item = navListRef.current.children[
+        highlightedIndex
+      ] as HTMLLIElement;
+      if (item) {
+        item.scrollIntoView({ block: "nearest" });
+      }
+    }
+  }, [highlightedIndex]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Escape") {
       setSearchQuery("");
       if (onCloseModal) onCloseModal();
+      return;
+    }
+
+    if (!searchQuery.trim() && searchResults.length === 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setHighlightedIndex((prev) => (prev + 1) % navItemsToSearch.length);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setHighlightedIndex(
+          (prev) =>
+            (prev - 1 + navItemsToSearch.length) % navItemsToSearch.length
+        );
+      } else if (e.key === "Enter" && highlightedIndex > -1) {
+        e.preventDefault();
+        router.push(navItemsToSearch[highlightedIndex].link);
+        if (onCloseModal) onCloseModal();
+      }
     }
   };
 
@@ -187,13 +221,17 @@ export default function Search({ onCloseModal, tasks }: SearchProps) {
             <h3 className="text-xs font-semibold text-text-low uppercase tracking-wider mb-2">
               Navigation
             </h3>
-            <ul className="space-y-1">
-              {navItemsToSearch.map((item) => (
+            <ul ref={navListRef} className="space-y-1">
+              {navItemsToSearch.map((item, index) => (
                 <li key={item.label}>
                   <Link
                     href={item.link}
                     onClick={handleItemClick}
-                    className="flex items-center justify-between w-full p-2.5 hover:bg-background-500 rounded-md text-left group"
+                    className={`flex items-center justify-between w-full p-2.5 rounded-md text-left group ${
+                      index === highlightedIndex
+                        ? "bg-background-500"
+                        : "hover:bg-background-500"
+                    }`}
                   >
                     <div className="flex items-center gap-3">
                       <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-text-low group-hover:text-primary-400">

@@ -7,9 +7,9 @@ import { getTasksByUserId } from "@/app/_lib/tasks";
 import UserInfoCard from "@/app/_components/UserInfoCard";
 import { redirect } from "next/navigation";
 import { getRecentUserActivity } from "@/app/_lib/activity";
-import { calculateTaskPoints } from "@/app/utils";
 import { ActivityLog, Task } from "@/app/_types/types";
 import { authOptions } from "@/app/_lib/auth";
+import { loadNotesByUserId } from "@/app/_lib/notes";
 
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions);
@@ -18,17 +18,14 @@ export default async function ProfilePage() {
   }
   const userId = session.user.id;
 
-  const [tasks, userDocSnap, recentActivityLogs] = await Promise.all([
+  const [tasks, userDocSnap, recentActivityLogs, notes] = await Promise.all([
     getTasksByUserId(userId),
     getDoc(doc(db, "users", userId)),
     getRecentUserActivity(userId, 7),
+    loadNotesByUserId(userId),
   ]);
   const userData = userDocSnap.exists() ? userDocSnap.data() : null;
 
-  const totalPoints = (tasks as Task[]).reduce(
-    (acc, task) => acc + calculateTaskPoints(task),
-    0
-  );
   const memberSince = userData?.createdAt?.toDate
     ? userData.createdAt.toDate()
     : undefined;
@@ -37,10 +34,14 @@ export default async function ProfilePage() {
     displayName: userData?.displayName || session.user.name,
     email: userData?.email || session.user.email,
     photoURL: userData?.photoURL || session.user.image,
-    rewardPoints: totalPoints,
+    rewardPoints: userData?.rewardPoints || 0,
     memberSince,
-    // Add any other profile data needed by UserInfoCard or ProfileTabs
+    id: userId,
+    notifyReminders: userData?.notifyReminders ?? true,
+    notifyAchievements: userData?.notifyAchievements ?? true,
+    notesCount: notes.length,
   };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8">
       <div className="mb-6 md:mb-8">
@@ -55,6 +56,7 @@ export default async function ProfilePage() {
         <ProfileTabs
           tasks={tasks as Task[]}
           activityLogs={recentActivityLogs as ActivityLog[]}
+          userProfileData={userProfileData}
         />
       </div>
     </div>

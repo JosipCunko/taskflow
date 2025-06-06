@@ -12,8 +12,10 @@ import { adminAuth, adminDb } from "@/app/_lib/admin";
 import { Timestamp } from "firebase-admin/firestore";
 
 // Define a combined type for user objects that will hold rewardPoints
-type UserWithRewardPoints = (NextAuthUser | AdapterUser) & {
+type UserWithExtendedData = (NextAuthUser | AdapterUser) & {
   rewardPoints?: number;
+  notifyReminders?: boolean;
+  notifyAchievements?: boolean;
 };
 
 interface FirebaseUser {
@@ -78,7 +80,9 @@ export const authOptions: NextAuthOptions = {
           // Firestore user creation/update for Firebase authenticated users
           const userDocRef = adminDb.collection("users").doc(firebaseUser.uid);
           const userDocSnap = await userDocRef.get();
-          let rewardPoints = 0; // Default for new user
+          let rewardPoints = 0;
+          let notifyReminders = true;
+          let notifyAchievements = true;
 
           if (!userDocSnap.exists) {
             await userDocRef.set({
@@ -89,10 +93,16 @@ export const authOptions: NextAuthOptions = {
               provider: "firebase", // Indicate provider
               createdAt: Timestamp.now(),
               rewardPoints: 0, // Initialize rewardPoints
+              notifyReminders: true,
+              notifyAchievements: true,
             });
           } else {
             // Existing user, fetch their rewardPoints
-            rewardPoints = userDocSnap.data()?.rewardPoints || 0;
+            const userData = userDocSnap.data();
+            rewardPoints = userData?.rewardPoints || 0;
+            notifyReminders = userData?.notifyReminders ?? true;
+            notifyAchievements = userData?.notifyAchievements ?? true;
+
             await userDocRef.update({
               displayName: firebaseUser.name,
               photoURL: firebaseUser.picture,
@@ -100,12 +110,14 @@ export const authOptions: NextAuthOptions = {
             });
           }
           // Ensure the returned user object shape matches NextAuthUser & your extended User type
-          const returnedUser: UserWithRewardPoints = {
+          const returnedUser: UserWithExtendedData = {
             id: firebaseUser.uid,
             name: firebaseUser.name,
             email: firebaseUser.email,
             image: firebaseUser.picture,
             rewardPoints: rewardPoints,
+            notifyReminders: notifyReminders,
+            notifyAchievements: notifyAchievements,
           };
           return returnedUser as NextAuthUser;
         } catch (error) {
@@ -124,7 +136,9 @@ export const authOptions: NextAuthOptions = {
         // For OAuth providers like GitHub
         const userDocRef = adminDb.collection("users").doc(user.id); // Use NextAuth user.id (which can be provider's ID)
         const userDocSnap = await userDocRef.get();
-        let rewardPoints = 0; // Default for new user
+        let rewardPoints = 0;
+        let notifyReminders = true;
+        let notifyAchievements = true;
 
         if (!userDocSnap.exists) {
           // New user via OAuth, create their document in Firestore
@@ -136,7 +150,9 @@ export const authOptions: NextAuthOptions = {
               photoURL: user.image,
               provider: account.provider,
               createdAt: Timestamp.now(),
-              rewardPoints: 0, // Initialize rewardPoints
+              rewardPoints: 0,
+              notifyReminders: true,
+              notifyAchievements: true,
             });
             console.log(
               `New user document created in Firestore via NextAuth OAuth (${account.provider}):`,
@@ -152,7 +168,11 @@ export const authOptions: NextAuthOptions = {
         } else {
           // Existing OAuth user, update last login or other details if needed
           // Fetch existing rewardPoints
-          rewardPoints = userDocSnap.data()?.rewardPoints || 0;
+          const userData = userDocSnap.data();
+          rewardPoints = userData?.rewardPoints || 0;
+          notifyReminders = userData?.notifyReminders ?? true;
+          notifyAchievements = userData?.notifyAchievements ?? true;
+
           try {
             await userDocRef.update({
               displayName: user.name, // Update name/image in case it changed on provider
@@ -166,7 +186,10 @@ export const authOptions: NextAuthOptions = {
           }
         }
         // Attach rewardPoints to the user object to be used in the JWT callback
-        (user as UserWithRewardPoints).rewardPoints = rewardPoints;
+        const extendedUser = user as UserWithExtendedData;
+        extendedUser.rewardPoints = rewardPoints;
+        extendedUser.notifyReminders = notifyReminders;
+        extendedUser.notifyAchievements = notifyAchievements;
       }
       return true; // Allow sign-in
     },
@@ -190,15 +213,14 @@ export const authOptions: NextAuthOptions = {
         token.provider = account.provider;
 
         // User object from signIn/authorize should have rewardPoints by now
-        const userWithRewards = user as UserWithRewardPoints;
+        const userWithRewards = user as UserWithExtendedData;
         if (typeof userWithRewards.rewardPoints === "number") {
           token.rewardPoints = userWithRewards.rewardPoints;
         } else {
-          // const userDocRef = adminDb.collection("users").doc(user.id);
-          // const userDocSnap = await userDocRef.get();
-          // token.rewardPoints = userDocSnap.exists() ? userDocSnap.data()?.rewardPoints || 0 : 0;
           token.rewardPoints = 0; // Defaulting to 0 if not on user object for now
         }
+        token.notifyReminders = userWithRewards.notifyReminders ?? true;
+        token.notifyAchievements = userWithRewards.notifyAchievements ?? true;
       }
       // For subsequent JWT calls (e.g., session refresh), user and account are undefined.
       // If rewardPoints can change and need to be fresh in JWT always, fetch here using token.uid.
@@ -215,12 +237,9 @@ export const authOptions: NextAuthOptions = {
         // provider is string | undefined on JWT and Session.user
         if (token.provider) session.user.provider = token.provider;
 
-        // rewardPoints is number | undefined on JWT and Session.user
-        if (typeof token.rewardPoints === "number") {
-          session.user.rewardPoints = token.rewardPoints;
-        } else {
-          session.user.rewardPoints = undefined; // Or 0 as a default if preferred
-        }
+        session.user.rewardPoints = token.rewardPoints;
+        session.user.notifyReminders = token.notifyReminders;
+        session.user.notifyAchievements = token.notifyAchievements;
       }
       return session;
     },

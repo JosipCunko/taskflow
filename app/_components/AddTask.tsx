@@ -109,7 +109,8 @@ const ShowMoreDetailsContent = ({
   };
 
   return (
-    <div className="flex flex-col gap-10 p-6 items-center bg-background-650 rounded-lg">
+    //!!! SEE IF THE DESIGN STILL BREAKS OM MOBILE
+    <div className="flex flex-col gap-10 p-6 items-center bg-background-650 rounded-lg max-h-[85vh] overflow-y-auto">
       <h3 className="text-lg font-semibold text-text-high mb-1">
         Customize Task
       </h3>

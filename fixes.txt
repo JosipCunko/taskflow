@@ -1,1 +1,1 @@
-Also, will the signOut function from auth.ts work also with email and password provider as it is with google provider?
+/today page needs crutial changes. Not showing repeating tasks. Ugly design for the visual representation of the day in time(hours). 

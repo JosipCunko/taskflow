@@ -282,12 +282,14 @@ export const navItemsToSearch = [
   {
     icon: Calendar,
     label: "Today",
+    command: ["Ctrl", "F1"],
     link: "/webapp/today",
     command: ["Ctrl","F1"],
   },
   {
     icon: FileText,
     label: "Notes",
+    command: ["Ctrl", "F2"],
     link: "/webapp/notes",
     command: ["Ctrl","F2"],
   },
@@ -542,10 +544,11 @@ export function generateTaskTypes(allTasks: Task[]): TaskCategories {
 /*Stats */
 export const calculateTaskPoints = (task: Task) => {
   const delayCount = task.delayCount || 0;
-  if (task.status === "completed") {
-    return -2 * delayCount + 10;
-  } else {
+  const status = task.status as Task["status"];
+  if (status === "pending" || status === "delayed") {
     return -2 * delayCount - 8;
+  } else {
+    return -2 * delayCount + 10;
   }
 };
 

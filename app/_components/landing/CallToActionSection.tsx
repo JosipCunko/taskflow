@@ -18,7 +18,7 @@ export default function CallToActionSection() {
         </p>
         <Link
           href="/login"
-          className="inline-flex items-center justify-center text-lg font-semibold text-white bg-accent hover:bg-red-500 shadow-lg hover:shadow-accent/40 focus:ring-4 focus:ring-accent/50 rounded-lg px-10 py-4 transition-all duration-300 transform hover:scale-105"
+          className="inline-flex items-center justify-center text-lg font-semibold text-white bg-primary-600 hover:bg-primary-600 shadow-lg hover:shadow-primary-500/40 focus:ring-4 focus:ring-primary-500/50 rounded-lg px-10 py-4 transition-all duration-300 transform hover:scale-105"
         >
           Sign Up & Take Control <MoveRight className="w-5 h-5 ml-2" />
         </Link>
