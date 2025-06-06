@@ -283,11 +283,13 @@ export const navItemsToSearch = [
     icon: Calendar,
     label: "Today",
     link: "/webapp/today",
+    command: ["Ctrl","F1"],
   },
   {
     icon: FileText,
     label: "Notes",
     link: "/webapp/notes",
+    command: ["Ctrl","F2"],
   },
 ];
 export const emojiOptions: EmojiOption[] = [
