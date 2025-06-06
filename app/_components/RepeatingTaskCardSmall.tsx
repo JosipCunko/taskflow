@@ -288,7 +288,6 @@ export default function RepeatingTaskCardSmall({
       <div className="flex flex-wrap gap-2 mt-2">
         {task.duration && (
           <span className="text-2xs bg-background-500/50 px-2 py-0.5 rounded-full text-text-low">
-            {task.duration.days > 0 && `${task.duration.days} days`}
             {task.duration.hours > 0 && `${task.duration.hours} hours `}
             {task.duration.minutes > 0 && `${task.duration.minutes} minutes`}
           </span>
