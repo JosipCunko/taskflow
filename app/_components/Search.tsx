@@ -203,14 +203,14 @@ export default function Search({ onCloseModal, tasks }: SearchProps) {
                         Go to {item.label}
                       </span>
                     </div>
-                    {item?.command && item?.command.length === 2 && (
+                    {item.command && item.command.length === 2 && (
                       <span className="text-xs text-text-low opacity-0 group-hover:opacity-100 transition-opacity">
                         <kbd className="px-1.5 py-0.5 bg-background-600 rounded">
-                          {item?.command[0]}
+                          {item.command[0]}
                         </kbd>
                         <span className="mx-0.5">→</span>
                         <kbd className="px-1.5 py-0.5 bg-background-600 rounded">
-                          {item?.command[1]}
+                          {item.command[1]}
                         </kbd>
                       </span>
                     )}
