@@ -1,9 +1,9 @@
-/*
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/_lib/auth";
 import { getTasksByUserId } from "@/app/_lib/tasks";
 import { Task } from "@/app/_types/types";
 import TaskCardSmall from "@/app/_components/TaskCardSmall";
+import { isTaskDueOn } from "@/app/utils";
 
 export default async function TodayPage() {
   const session = await getServerSession(authOptions);
@@ -16,39 +16,30 @@ export default async function TodayPage() {
   }
 
   const userId = session.user.id;
-  // Fetch all tasks and then filter, or have specific fetchers.
-  // getTodaysTasksByUserId likely fetches non-repeating tasks due today based on dueDate.
-  // For repeating tasks, we need to evaluate their rules against today.
-  const allUserTasks = await getTasksByUserId(userId); // Fetch all tasks to process repeating ones
 
-  // Separate tasks for left (timed schedule) and right (other/all-day/repeating)
+  const allUserTasks = await getTasksByUserId(userId);
+
   const leftBlockTasks: Task[] = [];
   const rightBlockTasks: Task[] = [];
 
   allUserTasks.forEach((task) => {
-    if (
-      task.startTime &&
-      task.duration &&
-      (task.duration.hours > 0 || task.duration.minutes > 0) &&
-      !task.isRepeating
-    ) {
-      // Ensure it is actually due on this specific date for non-repeating tasks.
-      // For repeating, isTaskRepeatingAndDueToday already confirmed it for the current iteration.
-      if (!task.isRepeating && isTaskDueOn(task, new Date())) {
-        leftBlockTasks.push(task);
+    if (isTaskDueOn(task, new Date())) {
+      if (task.isRepeating) {
+        rightBlockTasks.push(task);
       } else if (
-        task.isRepeating &&
-        isTaskRepeatingAndDueToday(task, new Date())
+        task.startTime ||
+        (task.duration &&
+          (task.duration.hours > 0 || task.duration.minutes > 0))
       ) {
-        // This logic path for repeating tasks might be redundant if primary filter is robust
-        // but ensures repeating tasks with startime/duration if any, go to right.
+        leftBlockTasks.push(task);
+      } else {
         rightBlockTasks.push(task);
       }
-    } else {
-      rightBlockTasks.push(task);
     }
   });
 
+  console.log("Left Block Tasks:", leftBlockTasks);
+  console.log("Right Block Tasks:", rightBlockTasks);
   return (
     <div className="flex flex-col lg:flex-row gap-6 p-4 lg:p-6 bg-background-800 text-text-high min-h-screen">
       <div className="lg:w-3/5 xl:w-2/3 bg-background-700 p-4 rounded-lg shadow">
@@ -129,4 +120,4 @@ export default async function TodayPage() {
       </div>
     </div>
   );
-}*/
+}

@@ -137,6 +137,15 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
     }
   };
 
+  const endTime =
+    task.dueDate.getHours().toString().padStart(2, "0") +
+    ":" +
+    task.dueDate.getMinutes().toString().padStart(2, "0");
+  const startTime =
+    task.startTime?.hour.toString().padStart(2, "0") +
+    ":" +
+    task.startTime?.minute.toString().padStart(2, "0");
+
   return (
     <motion.div
       variants={cardVariants}
@@ -483,24 +492,23 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
               Today
             </span>
           )}
-          {task.startTime ? (
+          {task.startTime && startTime !== "00:00" ? (
             <div className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-background-500 text-text-low flex items-center gap-2">
-              <span>
-                {task.startTime.hour.toString().padStart(2, "0")}:
-                {task.startTime.minute.toString().padStart(2, "0")}
-              </span>
-              <span>-</span>
-              <span>
-                {task.dueDate.getHours().toString().padStart(2, "0")}:
-                {task.dueDate.getMinutes().toString().padStart(2, "0")}
-              </span>
+              {startTime !== endTime ? (
+                <>
+                  <span>{startTime}</span>
+                  <span>-</span>
+                  <span>{endTime}</span>
+                </>
+              ) : (
+                <span>{endTime}</span>
+              )}
             </div>
+          ) : endTime === "23:59" ? (
+            ""
           ) : (
             <div className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-background-500 text-text-low ">
-              <span>
-                {task.dueDate.getHours().toString().padStart(2, "0")}:
-                {task.dueDate.getMinutes().toString().padStart(2, "0")}
-              </span>
+              <span>{endTime}</span>
             </div>
           )}
         </div>

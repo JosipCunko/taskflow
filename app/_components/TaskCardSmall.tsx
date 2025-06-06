@@ -22,6 +22,12 @@ export default function TaskCardSmall({ task }: { task: Task }) {
         {task.description && (
           <p className="text-sm text-text-low mt-1">{task.description}</p>
         )}
+
+        {task.startTime && (
+          <p className="text-xs text-text-gray mt-1">
+            {task.startTime.hour}:{task.startTime.minute}
+          </p>
+        )}
         {task.dueDate && (
           <p className="text-xs text-text-gray mt-1">
             {format(task.dueDate, "p")}

@@ -69,6 +69,7 @@ import {
   isPast,
   parseISO,
   startOfDay,
+  startOfWeek,
 } from "date-fns";
 import { isFuture, isToday } from "date-fns";
 
@@ -738,4 +739,32 @@ export function calculateNextDueDate(
     }
   }
   return undefined;
+}
+
+export function isTaskDueOn(task: Task, date: Date): boolean {
+  if (!task.isRepeating || !task.repetitionRule) {
+    return isToday(task.dueDate);
+  }
+  //CAREFUL
+  if (task.status === "completed") return false;
+
+  const rule = task.repetitionRule;
+
+  if (rule.timesPerWeek) {
+    const weekStart = startOfWeek(date, MONDAY_START_OF_WEEK);
+    const isCurrentWeek =
+      startOfWeek(date, MONDAY_START_OF_WEEK).getTime() === weekStart.getTime();
+    return isCurrentWeek && (rule.completions || 0) < rule.timesPerWeek;
+  }
+
+  if (rule.daysOfWeek?.length) {
+    const dayOfWeek = getDay(date) as DayOfWeek;
+    return rule.daysOfWeek.includes(dayOfWeek);
+  }
+
+  if (rule.interval && rule.startDate) {
+    const daysSinceStart = differenceInDays(date, rule.startDate);
+    return daysSinceStart % rule.interval === 0;
+  }
+  return false;
 }

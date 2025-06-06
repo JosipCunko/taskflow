@@ -1,6 +1,6 @@
 import HeroSection from "@/app/_components/landing/HeroSection";
+import ImageSection from "@/app/_components/landing/ImageSection";
 import FeaturesOverview from "@/app/_components/landing/FeaturesOverview";
-import ImagePlaceholderSection from "@/app/_components/landing/ImagePlaceholderSection";
 import CallToActionSection from "@/app/_components/landing/CallToActionSection";
 import Footer from "@/app/_components/landing/Footer";
 import Navbar from "@/app/_components/landing/Navbar";
@@ -11,8 +11,8 @@ export default function LandingPage() {
       <Navbar />
       <main className="flex-grow">
         <HeroSection />
+        <ImageSection />
         <FeaturesOverview />
-        <ImagePlaceholderSection />
         <CallToActionSection />
       </main>
       <Footer />
