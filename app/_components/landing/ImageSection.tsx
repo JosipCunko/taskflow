@@ -6,14 +6,24 @@ import { Camera, X } from "lucide-react";
 
 const images = [
   {
-    src: "/addTask2.png",
+    src: "/addTask.png",
     alt: "A user adds a new task to their list in the TaskFlow application.",
     title: "Add New Task",
+  },
+  {
+    src: "/calendar.png",
+    alt: "A user views their calendar in the TaskFlow application.",
+    title: "View Your Calendar",
   },
   {
     src: "/customizeTask.png",
     alt: "A user customizes a task, setting a due date and duration.",
     title: "Customize Your Tasks",
+  },
+  {
+    src: "/layout.png",
+    alt: "Visible app layout and the dashboard.",
+    title: "Amazing app layout and useful dashboard",
   },
   {
     src: "/profile.png",
@@ -26,9 +36,14 @@ const images = [
     title: "Manage Your Tasks",
   },
   {
-    src: "/layout.png",
-    alt: "Visible app layout and the dashboard.",
-    title: "Amazing app layout and useful dashboard",
+    src: "/today.png",
+    alt: "A user views their tasks for the current day in the TaskFlow application.",
+    title: "Tasks for Today",
+  },
+  {
+    src: "/repetitionRules.png",
+    alt: "A user sets up repetition rules for a task in the TaskFlow application.",
+    title: "Repetition Rules",
   },
 ];
 
