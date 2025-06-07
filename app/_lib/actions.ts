@@ -44,7 +44,7 @@ export async function updateTaskStatusAction(
     }
 
     revalidatePath("/tasks");
-    return { success: true, message: `Task marked as ${newStatus}.` };
+    return { success: true, message: `Task marked as ${newStatus}` };
   } catch (err) {
     const error = err as ActionError;
     return {
@@ -85,7 +85,7 @@ export async function updateTaskExperienceAction(
     revalidatePath("/tasks");
     return {
       success: true,
-      message: `Task experience marked as ${newExperience}.`,
+      message: `Task experience marked as ${newExperience}`,
     };
   } catch (err) {
     const error = err as ActionError;
@@ -122,14 +122,14 @@ export async function delayTaskAction(
     const updatedTask = await updateTask(taskId, {
       dueDate: newDueDate,
       status: "delayed",
-      delayCount,
+      delayCount: delayCount + 1,
     });
 
     if (userId && updatedTask) {
       await logUserActivity(userId, {
         type: "TASK_DELAYED",
         taskId,
-        activityColor: "#00c853",
+        activityColor: "#cf6679",
         activityIcon: "CircleCheckBig",
         taskSnapshot: {
           title: updatedTask.title,
@@ -145,7 +145,7 @@ export async function delayTaskAction(
       success: true,
       message: `Task delayed to ${
         delayOption === "nextWeek" ? "next week" : "tomorrow"
-      }.`,
+      }`,
     };
   } catch (err) {
     const error = err as ActionError;
@@ -156,7 +156,8 @@ export async function delayTaskAction(
 export async function rescheduleTaskAction(
   formData: FormData,
   hour: number,
-  min: number
+  min: number,
+  delayCount: number
 ): Promise<ActionResult> {
   const taskId = formData.get("taskId") as string;
   const newDueDateString = formData.get("newDueDate") as string;
@@ -176,7 +177,8 @@ export async function rescheduleTaskAction(
   try {
     const updatedTask = await updateTask(taskId, {
       dueDate: newDueDate,
-      status: "pending",
+      status: "delayed",
+      delayCount: delayCount + 1,
     });
 
     if (userId && updatedTask) {
@@ -260,7 +262,7 @@ export async function togglePriorityAction(
     revalidatePath("/tasks");
     return {
       success: true,
-      message: `Task priority ${newIsPriority ? "added" : "removed"}.`,
+      message: `Task priority ${newIsPriority ? "added" : "removed"}`,
     };
   } catch (err) {
     const error = err as ActionError;

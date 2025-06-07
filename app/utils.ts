@@ -1,5 +1,4 @@
 import {
-  Sunrise,
   AlarmClock,
   Dumbbell,
   Timer,
@@ -191,44 +190,6 @@ const ACTIVITY_ICONS = [
   },
 ];
 
-/**App features showcased in the landing page */
-export const FEATURES = [
-  {
-    icon: Timer,
-    label: "Organization",
-    description:
-      "Organize your life, dont miss on any events and tasks in your life",
-  },
-  {
-    icon: Activity,
-    label: "Management",
-    description: "Manage all upcoming and completed tasks",
-  },
-  {
-    icon: Heart,
-    label: "Priority",
-    description:
-      "Prioritize your tasks so the most important ones get done as soon as possible with the most energy",
-  },
-  {
-    icon: Sunrise,
-    label: "Seize the day",
-    description:
-      "Get up early so you can complete all of your tasks for the day",
-  },
-  {
-    icon: AlarmClock,
-    label: "Alarm Clock",
-    description: "Set up reminders for each task",
-  },
-  {
-    id: "dumbbell",
-    icon: Dumbbell,
-    label: "Dumbbell",
-    description: "Improve yourself with discipline and dedication",
-  },
-];
-
 /* Color picker */
 export const colorsColorPicker = [
   "#86efac",
@@ -327,10 +288,19 @@ export const CardSpecificIcons = {
   ExperienceBest: BicepsFlexed,
   Time: Clock,
 };
-/*Actually, label === icon, but I will leave it only for ClipboardList*/
+/*Task icon calculator - matches by id, displayName, or label*/
 export const getTaskIconByName = (name: string | undefined): LucideIcon => {
   if (!name) return ClipboardList;
-  const found =
+
+  // Try to find by id first (most common case)
+  const foundById =
+    TASK_ICONS.find((item) => item.id.toLowerCase() === name.toLowerCase()) ||
+    ACTIVITY_ICONS.find((item) => item.id.toLowerCase() === name.toLowerCase());
+
+  if (foundById) return foundById.icon;
+
+  // Fallback to displayName matching
+  const foundByDisplayName =
     TASK_ICONS.find(
       (item) => item.icon.displayName?.toLowerCase() === name.toLowerCase()
     ) ||
@@ -338,7 +308,18 @@ export const getTaskIconByName = (name: string | undefined): LucideIcon => {
       (item) => item.icon.displayName?.toLowerCase() === name.toLowerCase()
     );
 
-  return found ? found.icon : ClipboardList;
+  if (foundByDisplayName) return foundByDisplayName.icon;
+
+  // Final fallback to label matching
+  const foundByLabel =
+    TASK_ICONS.find(
+      (item) => item.label.toLowerCase() === name.toLowerCase()
+    ) ||
+    ACTIVITY_ICONS.find(
+      (item) => item.label.toLowerCase() === name.toLowerCase()
+    );
+
+  return foundByLabel ? foundByLabel.icon : ClipboardList;
 };
 
 export function getStatusStyles(status: "completed" | "delayed" | "pending") {
@@ -541,9 +522,27 @@ export function generateTaskTypes(allTasks: Task[]): TaskCategories {
 /*Stats */
 /*Stats */
 export const calculateTaskPoints = (task: Task) => {
-  const delayCount = task.delayCount || 0;
+  const delayCount = task.delayCount;
   const status = task.status as Task["status"];
-  if (status === "pending" || status === "delayed") {
+  const isMissed = isPast(task.dueDate);
+
+  if (status === "pending" && !isMissed) return 0;
+  else if (status === "delayed" || (isMissed && status === "pending")) {
+    return -2 * delayCount - 8;
+  } else if (task.status === "completed" && task.completedAt) {
+    return -2 * delayCount + 10;
+  } else {
+    throw new Error("Something went wrong with task points calculation");
+  }
+};
+
+export const calculatePotentialTaskPoints = (task: Task) => {
+  const delayCount = task.delayCount || 0;
+  const isMissed = isPast(task.dueDate);
+
+  if (task.status === "completed") {
+    return calculateTaskPoints(task);
+  } else if (isMissed || task.status === "delayed") {
     return -2 * delayCount - 8;
   } else {
     return -2 * delayCount + 10;

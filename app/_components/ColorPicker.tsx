@@ -17,7 +17,7 @@ export default function ColorPicker({
       >
         Task color
       </label>
-      <div className="grid grid-cols-10 gap-2 mb-4">
+      <div className="grid grid-cols-8 sm:grid-cols-10 gap-2 mb-4">
         {colorsColorPicker.map((color) => (
           <button
             type="button"

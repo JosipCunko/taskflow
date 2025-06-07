@@ -100,10 +100,10 @@ export default function ClientWebappLayout({
         }
       >
         {/* Sidebar might need session if it has user-specific actions like logout */}
-        <Sidebar tasks={tasks} />
+        <Sidebar />
       </motion.div>
       <main className="flex-1 overflow-y-auto flex flex-col">
-        <TopSidebar session={session} />
+        <TopSidebar session={session} tasks={tasks} />
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 relative">
           {children}
         </div>

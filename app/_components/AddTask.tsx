@@ -110,7 +110,7 @@ const ShowMoreDetailsContent = ({
 
   return (
     //!!! SEE IF THE DESIGN STILL BREAKS OM MOBILE
-    <div className="flex flex-col gap-10 p-6 items-center bg-background-650 rounded-lg max-h-[85vh] overflow-y-auto">
+    <div className="flex flex-col gap-10 p-3 sm:p-6 items-center bg-background-650 rounded-lg max-h-[85vh] overflow-y-auto">
       <h3 className="text-lg font-semibold text-text-high mb-1">
         Customize Task
       </h3>
@@ -408,7 +408,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto px-4 bg-background-700 rounded-2xl shadow">
+    <div className="w-full mx-auto max-w-md px-4 bg-background-700 rounded-2xl shadow">
       <form action={handleSubmit}>
         <div>
           <div className="mb-4">

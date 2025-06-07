@@ -1,45 +1,182 @@
-import { format } from "date-fns";
-import { CardSpecificIcons, getTaskIconByName } from "../utils";
+import {
+  CardSpecificIcons,
+  getStatusStyles,
+  getTaskIconByName,
+} from "../utils";
 import { Task } from "../_types/types";
+import DurationCalculator from "./DurationCalculator";
 
 export default function TaskCardSmall({ task }: { task: Task }) {
   const IconComponent = getTaskIconByName(task.icon);
-  return (
-    <li
-      className="flex items-start space-x-3 p-3 mb-3 bg-background-700 rounded-md shadow hover:shadow-lg hover:bg-background-625 transition-all cursor-default"
-      style={{
-        borderLeft: `4px solid ${task.color}`,
-      }}
-    >
-      <div className="flex-shrink-0 mt-0.5">
-        <IconComponent
-          className="w-5 h-5"
-          style={{ color: task.color || "var(--color-text-medium)" }}
-        />
-      </div>
-      <div>
-        <h4 className="font-semibold text-text-high">{task.title}</h4>
-        {task.description && (
-          <p className="text-sm text-text-low mt-1">{task.description}</p>
-        )}
 
-        {task.startTime && (
-          <p className="text-xs text-text-gray mt-1">
-            {task.startTime.hour}:{task.startTime.minute}
-          </p>
-        )}
-        {task.dueDate && (
-          <p className="text-xs text-text-gray mt-1">
-            {format(task.dueDate, "p")}
-          </p>
-        )}
-        {task.duration && (
-          <span className="mt-2 text-xs flex items-center gap-1.5 ">
-            <CardSpecificIcons.Time size={12} />
-            {task.duration.hours ? <span>{task.duration.hours}h</span> : ""}
-            {task.duration.minutes ? <span>{task.duration.minutes}m</span> : ""}
-          </span>
-        )}
+  // Only calculate time strings if startTime exists
+  const startTime = task.startTime
+    ? `${String(task.startTime.hour).padStart(2, "0")}:${String(
+        task.startTime.minute
+      ).padStart(2, "0")}`
+    : null;
+
+  const endTime =
+    task.startTime && task.duration
+      ? (() => {
+          const endHour = task.startTime.hour + (task.duration.hours || 0);
+          const endMinute =
+            task.startTime.minute + (task.duration.minutes || 0);
+          const finalHour = endMinute >= 60 ? endHour + 1 : endHour;
+          const finalMinute = endMinute >= 60 ? endMinute - 60 : endMinute;
+          return `${String(finalHour).padStart(2, "0")}:${String(
+            finalMinute
+          ).padStart(2, "0")}`;
+        })()
+      : null;
+
+  const statusInfo = getStatusStyles(task.status);
+
+  return (
+    <li className="group relative overflow-hidden list-none cursor-default">
+      {/* Animated gradient background overlay */}
+      <div
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+        style={{
+          background: `linear-gradient(135deg, ${task.color}08, ${task.color}15, transparent)`,
+        }}
+      />
+
+      {/* Main card container */}
+      <div className="relative bg-gradient-to-br from-background-700 via-background-650 to-background-600 backdrop-blur-sm rounded-xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] hover:border-primary-500/30">
+        {/* Header section with time and icon */}
+        <div className="flex items-start justify-between mb-4">
+          {/* Time display with modern styling */}
+          <div className="flex flex-col items-start">
+            <div className="bg-background-800/80 px-3 py-2 rounded-lg   min-w-[85px] text-center">
+              {(() => {
+                // No start time - show "Any time"
+                if (!startTime) {
+                  return (
+                    <span className="text-xs font-medium text-text-low tracking-wide">
+                      Any time
+                    </span>
+                  );
+                }
+
+                // Don't show meaningless time ranges (e.g., 00:00 to 23:59)
+                const isAllDayTask =
+                  startTime === "00:00" &&
+                  (endTime === "23:59" || !task.duration);
+
+                if (isAllDayTask) {
+                  return (
+                    <span className="text-xs font-medium text-text-low tracking-wide">
+                      Any time
+                    </span>
+                  );
+                }
+
+                return (
+                  <div className="space-y-1">
+                    <span className="text-sm font-bold text-text-high block">
+                      {startTime}
+                    </span>
+                    {endTime && endTime !== startTime && (
+                      <>
+                        <div className="w-4 h-px bg-text-low mx-auto opacity-60" />
+                        <span className="text-sm font-bold text-text-high block">
+                          {endTime}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* Task icon with enhanced styling */}
+          <div className="relative">
+            <div
+              className="p-3 rounded-xl shadow-md border border-background-500/30 backdrop-blur-sm hover:scale-110 transition-transform duration-200"
+              style={{
+                backgroundColor: `${task.color}15`,
+                boxShadow: `0 4px 12px ${task.color}20`,
+              }}
+            >
+              <IconComponent size={24} style={{ color: task.color }} />
+            </div>
+
+            {/* Floating notification dot for priority/reminder */}
+            {(task.isPriority || task.isReminder) && (
+              <div
+                className="absolute -top-1 -right-1 w-3 h-3 rounded-full animate-pulse"
+                style={{
+                  backgroundColor:
+                    task.status === "completed"
+                      ? "#10b981"
+                      : task.status === "pending"
+                      ? "#f59e0b"
+                      : "#ff0000",
+                }}
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Task title with improved typography */}
+        <div className="mb-4">
+          <h4 className="text-lg font-bold text-text-high leading-tight  line-clamp-2">
+            {task.title}
+          </h4>
+        </div>
+
+        {/* Status and feature badges with modern design */}
+        <div className="flex flex-wrap gap-2">
+          {/* Status badge */}
+          <div
+            className={`inline-flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-medium border backdrop-blur-sm ${statusInfo.bgColorClass} ${statusInfo.colorClass} shadow-sm`}
+          >
+            <statusInfo.icon size={14} className={statusInfo.colorClass} />
+            <span>{statusInfo.text}</span>
+            {task.status === "delayed" && task.delayCount > 0 && (
+              <span
+                className={`ml-1 font-bold ${statusInfo.colorClass} bg-current/20 px-1.5 py-0.5 rounded-full text-xs`}
+              >
+                {task.delayCount}
+              </span>
+            )}
+          </div>
+
+          {/* Duration calculator */}
+          <DurationCalculator task={task} />
+
+          {/* Priority badge */}
+          {task.isPriority && (
+            <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-medium bg-gradient-to-r from-orange-500/15 to-amber-500/15 text-orange-400 border border-orange-500/30 shadow-sm backdrop-blur-sm">
+              <CardSpecificIcons.Priority size={14} />
+              <span>Priority</span>
+            </div>
+          )}
+
+          {/* Reminder badge */}
+          {task.isReminder && (
+            <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-medium bg-gradient-to-r from-purple-500/15 to-violet-500/15 text-purple-400 border border-purple-500/30 shadow-sm backdrop-blur-sm">
+              <CardSpecificIcons.Reminder size={14} />
+              <span>Reminder</span>
+            </div>
+          )}
+        </div>
+
+        {/* Subtle bottom glow effect */}
+        <div
+          className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-3/4 h-2 opacity-50 group-hover:opacity-80 transition-opacity duration-300"
+          style={{
+            background: `linear-gradient(90deg, transparent, ${task.color}, transparent)`,
+          }}
+        />
+        <div
+          className="absolute top-0 left-1/2 transform -translate-x-1/2 w-3/4 h-2 opacity-50 group-hover:opacity-80 transition-opacity duration-300"
+          style={{
+            background: `linear-gradient(90deg, transparent, ${task.color}, transparent)`,
+          }}
+        />
       </div>
     </li>
   );

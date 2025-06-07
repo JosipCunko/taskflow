@@ -1,19 +1,25 @@
-"use client";
-
 type StreakBarProps = {
   points: number;
   maxPoints?: number;
 };
 
-export default function StreakBar({ points, maxPoints = 100 }: StreakBarProps) {
+export default function StreakBar({ points, maxPoints }: StreakBarProps) {
+  // Calculate progressive goal: 100 → 200 → 300... max 1000
+  const calculateGoal = (currentPoints: number): number => {
+    if (currentPoints >= 1000) return 1000;
+    return Math.ceil((currentPoints + 1) / 100) * 100; // Calculate next 100-point milestone
+  };
+
+  const currentGoal = maxPoints || calculateGoal(points);
+
   // Calculate percentage, ensuring it stays between 0 and 100
-  const percentage = Math.min(Math.max((points / maxPoints) * 100, 0), 100);
+  const percentage = Math.min(Math.max((points / currentGoal) * 100, 0), 100);
 
   // Determine color based on points
   let color = "bg-yellow-400";
-  if (points < 0) {
+  if (points === 0) {
     color = "bg-red-500";
-  } else if (points > maxPoints * 0.8) {
+  } else if (points > currentGoal * 0.8) {
     color = "bg-green-500";
   }
 
@@ -21,7 +27,9 @@ export default function StreakBar({ points, maxPoints = 100 }: StreakBarProps) {
     <div className="w-full space-y-2">
       <div className="flex justify-between text-sm">
         <span className="font-medium">Reward Points</span>
-        <span className="font-bold">{points}</span>
+        <span className="font-bold">
+          {points} / {currentGoal}
+        </span>
       </div>
       <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
         <div
@@ -30,12 +38,18 @@ export default function StreakBar({ points, maxPoints = 100 }: StreakBarProps) {
         />
       </div>
       <div className="text-xs text-gray-500">
-        {percentage >= 80 ? (
-          <span>Great job! Keep up the good work.</span>
+        {currentGoal >= 1000 && points >= 1000 ? (
+          <span>
+            🏆 Maximum level achieved! You&apos;re a productivity master!
+          </span>
+        ) : percentage >= 80 ? (
+          <span>
+            Almost there! {currentGoal - points} points to next milestone.
+          </span>
         ) : percentage >= 40 ? (
-          <span>You&apos;re making progress!</span>
+          <span>You&apos;re making progress! Keep going!</span>
         ) : (
-          <span>Complete more tasks to increase your points.</span>
+          <span>Complete more tasks to reach {currentGoal} points.</span>
         )}
       </div>
     </div>

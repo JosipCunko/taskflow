@@ -1,21 +1,8 @@
 "use client";
-import {
-  BarChart3,
-  Bell,
-  Clock,
-  Settings,
-  Star,
-  Trophy,
-  Zap,
-} from "lucide-react";
-import { useMemo, useState } from "react";
+import { BarChart3, Bell, Settings, Trophy } from "lucide-react";
+import { useState } from "react";
 import { ActivityLog, Task, userProfileType } from "../_types/types";
-import {
-  calculateConsistencyStats,
-  calculateTimeManagementStats,
-  generateTaskTypes,
-  getTaskIconByName,
-} from "../utils";
+import { getTaskIconByName } from "../utils";
 import { formatDistanceToNowStrict } from "date-fns";
 import TaskCardSmall from "./TaskCardSmall";
 import Checkbox from "./reusable/Checkbox";
@@ -23,25 +10,14 @@ import { updateUser } from "../_lib/user";
 import { handleToast } from "../utils";
 
 export default function ProfileTabs({
-  tasks,
   activityLogs,
   userProfileData,
 }: {
-  tasks: Task[];
   activityLogs: ActivityLog[];
   userProfileData: userProfileType;
 }) {
   const [activeTab, setActiveTab] = useState<"overview" | "settings">(
     "overview"
-  );
-  const categorizedTasks = useMemo(() => generateTaskTypes(tasks), [tasks]);
-  const timeManagementStats = useMemo(
-    () => calculateTimeManagementStats(tasks || []),
-    [tasks]
-  );
-  const consistencyStats = useMemo(
-    () => calculateConsistencyStats(categorizedTasks.completedTasks),
-    [categorizedTasks.completedTasks]
   );
 
   const [isLoading, setIsLoading] = useState(false);
@@ -99,102 +75,6 @@ export default function ProfileTabs({
 
       {activeTab === "overview" && (
         <div className="space-y-6 animate-fadeIn">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            <div className="bg-background-600 rounded-lg p-4 sm:p-6 border border-divider shadow-md">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-base sm:text-lg font-semibold text-text-high">
-                  Task Master
-                </h3>
-                <Star className="text-yellow-400" size={20} />
-              </div>
-              <div className="space-y-1.5 text-sm">
-                <div className="flex justify-between items-center">
-                  <span className="text-text-low">Completed Tasks</span>
-                  <span className="font-semibold text-text-high">
-                    {categorizedTasks.completedTasks?.length || 0}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-text-low">Success Rate</span>
-                  <span className="font-semibold text-text-high">
-                    {timeManagementStats.totalRelevantTasksForTiming > 0
-                      ? `${Math.round(
-                          (categorizedTasks.completedTasks?.length /
-                            timeManagementStats.totalRelevantTasksForTiming) *
-                            100
-                        )}%`
-                      : "N/A"}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-background-600 rounded-lg p-4 sm:p-6 border border-divider shadow-md">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-base sm:text-lg font-semibold text-text-high">
-                  Time Wizard
-                </h3>
-                <Clock className="text-blue-400" size={20} />
-              </div>
-              <div className="space-y-1.5 text-sm">
-                <div className="flex justify-between items-center">
-                  <span className="text-text-low">On-time Tasks</span>
-                  <span className="font-semibold text-text-high">
-                    {timeManagementStats.onTimeTasksCount}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-text-low">Average Delay</span>
-                  <span className="font-semibold text-text-high">
-                    {timeManagementStats.averageDelayDays > 0
-                      ? `${timeManagementStats.averageDelayDays} day(s)`
-                      : "None"}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-text-low">On-time Rate</span>
-                  <span className="font-semibold text-text-high">
-                    {timeManagementStats.onTimeCompletionRate}%
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-background-600 rounded-lg p-4 sm:p-6 border border-divider shadow-md">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-base sm:text-lg font-semibold text-text-high">
-                  Consistency King
-                </h3>
-                <Zap className="text-green-400" size={20} />
-              </div>
-              <div className="space-y-1.5 text-sm">
-                <div className="flex justify-between items-center">
-                  <span className="text-text-low">Current Streak</span>
-                  <span className="font-semibold text-text-high">
-                    {consistencyStats.currentStreakDays} day(s)
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-text-low">Best Streak</span>
-                  <span className="font-semibold text-text-high">
-                    {consistencyStats.bestStreakDays} day(s)
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-text-low">Today&apos;s Progress</span>
-                  <span className="font-semibold text-text-high">
-                    {categorizedTasks.todaysTasks?.length > 0 &&
-                    categorizedTasks.pendingTodayTasks?.length > 0 // Check if there are any tasks for today before calculating
-                      ? `${categorizedTasks.completedTodayTasks?.length} / ${categorizedTasks.todaysTasks?.length}`
-                      : categorizedTasks.todaysTasks?.length === 0
-                      ? "No tasks today"
-                      : "All done!"}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Recent Activity */}
           <div className="bg-background-600 rounded-lg p-4 sm:p-6 border border-divider shadow-md">
             <h3 className="text-lg font-semibold mb-4 text-text-high">

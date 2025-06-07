@@ -1,1 +1,0 @@
-/today page needs crutial changes. Not showing repeating tasks. Ugly design for the visual representation of the day in time(hours). 

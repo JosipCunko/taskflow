@@ -8,8 +8,8 @@ export default function InboxPage() {
           <Inbox className="w-8 h-8 mr-3 text-primary-500" />
           Inbox
         </h1>
-        <p className="text-text-low flex items-center gap-2">
-          Inbox functionality comming up... <Smile className="w-4 h-4" />
+        <p className="text-text-low flex items-center mt-4 gap-2">
+          Inbox functionality coming up... <Smile className="w-4 h-4" />
         </p>
       </div>
     </div>

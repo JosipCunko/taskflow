@@ -25,12 +25,11 @@ const images = [
     alt: "The user tasks page, displaying tasks and settings.",
     title: "Manage Your Tasks",
   },
-  /*
   {
-    src: "/today.png",
-    alt: "The user today page, displaying tasks and settings.",
-    title: "Manage Your Today's Schedule",
-  },*/
+    src: "/layout.png",
+    alt: "Visible app layout and the dashboard.",
+    title: "Amazing app layout and useful dashboard",
+  },
 ];
 
 export default function ImageSection() {

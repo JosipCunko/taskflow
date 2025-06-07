@@ -15,12 +15,32 @@ import {
   getDoc,
   deleteField,
   FieldValue,
-  increment, // Import FieldValue.increment
+  increment,
   // DocumentSnapshot, // For createdAt, updatedAt
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { RepetitionRule, SearchedTask, Task } from "@/app/_types/types";
 import { calculateTaskPoints } from "@/app/utils";
+
+async function updateUserRewardPoints(
+  userId: string,
+  pointsDiff: number
+): Promise<void> {
+  if (!userId || typeof pointsDiff !== "number" || pointsDiff === 0) {
+    // No user or no change, do nothing
+    return;
+  }
+  try {
+    const userDocRef = doc(db, "users", userId);
+    // Atomically increment/decrement the user's rewardPoints
+    // If the field doesn't exist, increment starts it at pointsDiff
+    await updateDoc(userDocRef, {
+      rewardPoints: increment(pointsDiff),
+    });
+  } catch (error) {
+    console.error(`Error updating reward points for user ${userId}:`, error);
+  }
+}
 
 // Define a type for the data structure being written to Firestore for a new task
 interface TaskFirestoreData {
@@ -45,28 +65,6 @@ interface TaskFirestoreData {
 }
 
 const TASKS_COLLECTION = "tasks";
-const USERS_COLLECTION = "users"; // For updating rewardPoints
-
-// Helper to update user reward points
-const updateUserRewardPoints = async (
-  userId: string,
-  pointsDiff: number
-): Promise<void> => {
-  if (!userId || typeof pointsDiff !== "number" || pointsDiff === 0) {
-    // No user or no change, do nothing
-    return;
-  }
-  try {
-    const userDocRef = doc(db, USERS_COLLECTION, userId);
-    // Atomically increment/decrement the user's rewardPoints
-    // If the field doesn't exist, increment starts it at pointsDiff
-    await updateDoc(userDocRef, {
-      rewardPoints: increment(pointsDiff),
-    });
-  } catch (error) {
-    console.error(`Error updating reward points for user ${userId}:`, error);
-  }
-};
 
 // Helper to convert Firestore doc to Task object
 /**
@@ -169,128 +167,6 @@ export const getTasksByUserId = async (
 };
 
 /**
- * Fetches tasks for a given user ID that are due today.
- * @param {string} userId - The ID of the user.
- * @returns {Promise<Task[]>} An array of tasks due today.
- */
-export const getTodaysTasksByUserId = async (
-  userId: string
-): Promise<Task[]> => {
-  if (!userId) return [];
-
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0); // Start of today
-
-  const todayEnd = new Date();
-  todayEnd.setHours(23, 59, 59, 999); // End of today
-
-  try {
-    const tasksCollectionRef = collection(db, TASKS_COLLECTION);
-    /* When querying or writing dates, you need to convert JS Date objects to Firestore Timestamp objects. */
-    const q = query(
-      tasksCollectionRef,
-      where("userId", "==", userId),
-      where("dueDate", ">=", Timestamp.fromDate(todayStart)),
-      where("dueDate", "<=", Timestamp.fromDate(todayEnd)),
-      orderBy("dueDate", "asc")
-    );
-
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map((docSnapshot) => fromFirestore(docSnapshot));
-  } catch (error) {
-    console.error(`Error fetching today's tasks:`, error);
-    throw error;
-  }
-};
-
-/**
- * Fetches tasks for a given user ID that are upcoming (today and one week from now).
- * @param {string} userId - The ID of the user.
- * @returns {Promise<Task[]>} An array of upcoming tasks.
- */
-export const getUpcomingTasksByUserId = async (
-  userId: string
-): Promise<Task[]> => {
-  if (!userId) return [];
-
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-
-  const oneWeekFromNowEnd = new Date(todayStart);
-  oneWeekFromNowEnd.setDate(todayStart.getDate() + 7);
-  oneWeekFromNowEnd.setHours(23, 59, 59, 999); // End of one week from now
-
-  try {
-    const tasksCollectionRef = collection(db, TASKS_COLLECTION);
-    const q = query(
-      tasksCollectionRef,
-      where("userId", "==", userId),
-      where("dueDate", ">=", Timestamp.fromDate(todayStart)),
-      where("dueDate", "<=", Timestamp.fromDate(oneWeekFromNowEnd)),
-      orderBy("dueDate", "asc")
-    );
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map((docSnapshot) => fromFirestore(docSnapshot));
-  } catch (error) {
-    console.error("Error fetching upcoming tasks:", error);
-    throw error;
-  }
-};
-
-/**
- * Fetches missed and delayed tasks for a user.
- * Missed: due date is in the past and status is not 'completed'.
- * Delayed: status is 'delayed'.
- * @param {string} userId - The ID of the user.
- * @returns {Promise<{missedTasks: Task[], delayedTasks: Task[]}>}
- */
-export const getMissedAndDelayedTasksByUserId = async (
-  userId: string
-): Promise<{ missedTasks: Task[]; delayedTasks: Task[] }> => {
-  if (!userId) return { missedTasks: [], delayedTasks: [] };
-
-  const now = new Date();
-  const yesterdayEnd = new Date(now);
-  yesterdayEnd.setDate(now.getDate() - 1);
-  yesterdayEnd.setHours(23, 59, 59, 999);
-
-  try {
-    const tasksCollectionRef = collection(db, TASKS_COLLECTION);
-
-    // Query for missed tasks (due in the past, not completed)
-    const missedQuery = query(
-      tasksCollectionRef,
-      where("userId", "==", userId),
-      where("dueDate", "<", Timestamp.fromDate(now)), // Due date is in the past
-      where("status", "!=", "completed") // Not completed
-    );
-    const missedSnapshot = await getDocs(missedQuery);
-    // Filter out tasks that are marked as 'delayed' because they are handled separately
-    const missedTasks = missedSnapshot.docs
-      .map((docSnapshot) => fromFirestore(docSnapshot))
-      .filter((task) => task.status !== "delayed");
-
-    // Query for delayed tasks
-    const delayedQuery = query(
-      tasksCollectionRef,
-      where("userId", "==", userId),
-      where("status", "==", "delayed")
-    );
-    const delayedSnapshot = await getDocs(delayedQuery);
-    const delayedTasks = delayedSnapshot.docs.map((docSnapshot) =>
-      fromFirestore(docSnapshot)
-    );
-
-    return { missedTasks, delayedTasks };
-  } catch (error) {
-    console.error("Error fetching missed and delayed tasks:", error);
-    throw error;
-  }
-};
-
-// --- CRUD Operations for Tasks ---
-
-/**
  * Creates a new task in Firestore.
  * @param {Omit<Task, 'id' | 'createdAt' | 'updatedAt'>} taskData - Data for the new task.
  * @returns {Promise<Task>}
@@ -347,12 +223,6 @@ export const createTask = async (
     const createdTask = fromFirestore(
       createdDocSnap as QueryDocumentSnapshot<DocumentData>
     );
-
-    // Calculate points for the newly created task and update user
-    if (createdTask.userId) {
-      const pointsNew = calculateTaskPoints(createdTask);
-      await updateUserRewardPoints(createdTask.userId, pointsNew);
-    }
 
     return createdTask;
   } catch (error) {
@@ -445,7 +315,7 @@ export const updateTask = async (
 
     await updateDoc(taskRef, updateData);
 
-    const updatedDocSnap = await getDoc(taskRef); // Re-fetch the updated document
+    const updatedDocSnap = await getDoc(taskRef);
     if (!updatedDocSnap.exists()) {
       throw new Error("Task not found after update");
     }

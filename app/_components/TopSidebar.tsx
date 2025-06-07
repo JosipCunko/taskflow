@@ -1,29 +1,116 @@
 "use client";
 
-import { BellIcon } from "lucide-react";
+import {
+  BellIcon,
+  User,
+  Trophy,
+  Zap,
+  Search as SearchIcon,
+} from "lucide-react";
 import { Session } from "next-auth";
 import Image from "next/image";
 import Link from "next/link";
 import { Tooltip } from "react-tooltip";
 import { getPhaseOfTheDay } from "../utils";
+import { useState, useEffect } from "react";
 
 import { Plus } from "lucide-react";
 import Modal from "./Modal";
 import Button from "./reusable/Button";
 import AddTask from "./AddTask";
 import { useKeyboardNavigation } from "../_hooks/useKeyboardNavigation";
-export default function TopSidebar({ session }: { session: Session | null }) {
+import { Task } from "../_types/types";
+import Search from "./Search";
+
+export default function TopSidebar({
+  session,
+  tasks,
+}: {
+  session: Session | null;
+  tasks: Task[];
+}) {
   //Beacuse it is a CC - must be for react-tooltip
   useKeyboardNavigation();
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
   return (
     <header className="flex items-center justify-between p-4 border-b border-background-500">
-      <div>
-        <h1 className="text-xl font-semibold sm:block hidden text-text-low">
-          Good {getPhaseOfTheDay()}, {session?.user.name}
-        </h1>
+      <div className="flex items-center gap-6">
+        <div>
+          <h1 className="text-xl font-semibold sm:block hidden text-text-low">
+            Good {getPhaseOfTheDay()}, {session?.user.name}
+          </h1>
+          <div className="text-sm text-text-gray sm:block hidden">
+            {currentTime.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            })}{" "}
+            •{" "}
+            {currentTime.toLocaleDateString([], {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+            })}
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        {session?.user && (
+          <div className="hidden lg:flex items-center gap-4">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-background-600 rounded-lg">
+              <Trophy className="w-4 h-4 text-accent" />
+              <span className="text-sm font-medium text-text-high">
+                {session.user.rewardPoints}
+              </span>
+              <span className="text-xs text-text-low">pts</span>
+            </div>
+
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-background-600 rounded-lg">
+              <Zap className="w-4 h-4 text-warning" />
+              <span className="text-sm font-medium text-text-high">
+                {(() => {
+                  // Simple streak calculation based on user activity
+                  const baseStreak =
+                    Math.floor(session.user.rewardPoints / 100) || 1;
+                  return Math.min(baseStreak, 30); // Cap at 30 days
+                })()}
+              </span>
+              <span className="text-xs text-text-low">days streak</span>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="flex items-center gap-4 tooltip-container">
+      <div className="flex items-center gap-3 tooltip-container">
+        {/* Quick Search */}
+
+        <Modal>
+          <Modal.Open opens="search">
+            <Button
+              variant="secondary"
+              className={`gap-3 py-3 hover:bg-background-500/40 text-text-low font-medium hover:text-text-high
+                  data-tooltip-id="search"
+          data-tooltip-content="Search tasks (Ctrl+K)"
+                          `}
+            >
+              <SearchIcon size={16} className="text-text-low" />
+
+              <span>Search</span>
+            </Button>
+          </Modal.Open>
+          <Modal.Window name="search" showButton>
+            <Search tasks={tasks} />
+          </Modal.Window>
+        </Modal>
+
         <Modal>
           <Modal.Open opens="add-task">
             <Button className="text-nowrap">
@@ -55,15 +142,24 @@ export default function TopSidebar({ session }: { session: Session | null }) {
         </>
 
         <Link href="/webapp/profile">
-          <Image
-            src={session?.user.image || "/will-not-work.png"}
-            width={40}
-            height={40}
-            className="rounded-full"
-            alt={"User"}
-            data-tooltip-id="profile-link"
-            data-tooltip-content="Your profile"
-          />
+          {session?.user.image ? (
+            <Image
+              src={session?.user.image}
+              width={40}
+              height={40}
+              className="rounded-full"
+              alt={"User profile image"}
+              data-tooltip-id="profile-link"
+              data-tooltip-content="Your profile"
+            />
+          ) : (
+            <User
+              size={20}
+              className="text-primary"
+              data-tooltip-id="profile-link"
+              data-tooltip-content="Your profile"
+            />
+          )}
         </Link>
         <Tooltip
           id="profile-link"

@@ -13,18 +13,35 @@ import { Timestamp } from "firebase-admin/firestore";
 
 // Define a combined type for user objects that will hold rewardPoints
 type UserWithExtendedData = (NextAuthUser | AdapterUser) & {
-  rewardPoints?: number;
-  notifyReminders?: boolean;
-  notifyAchievements?: boolean;
+  rewardPoints: number;
+  notifyReminders: boolean;
+  notifyAchievements: boolean;
 };
 
 interface FirebaseUser {
-  // Define the expected structure from Firebase ID token
   uid: string;
   email?: string | null;
   name?: string | null;
   picture?: string | null;
   email_verified?: boolean;
+}
+
+interface FirestoreUserData {
+  uid: string;
+  provider: string;
+  createdAt: Timestamp;
+  rewardPoints: number;
+  notifyReminders: boolean;
+  notifyAchievements: boolean;
+  email?: string | null;
+  displayName?: string | null;
+  photoURL?: string | null;
+}
+
+interface FirestoreUpdateData {
+  lastLoginAt: Timestamp;
+  displayName?: string | null;
+  photoURL?: string | null;
 }
 
 /**
@@ -85,17 +102,27 @@ export const authOptions: NextAuthOptions = {
           let notifyAchievements = true;
 
           if (!userDocSnap.exists) {
-            await userDocRef.set({
+            // Filter out undefined values before setting the document
+            const newUserData: Partial<FirestoreUserData> = {
               uid: firebaseUser.uid, // This is Firebase UID
-              email: firebaseUser.email,
-              displayName: firebaseUser.name,
-              photoURL: firebaseUser.picture,
-              provider: "firebase", // Indicate provider
+              provider: "firebase",
               createdAt: Timestamp.now(),
-              rewardPoints: 0, // Initialize rewardPoints
+              rewardPoints: 0,
               notifyReminders: true,
               notifyAchievements: true,
-            });
+            };
+
+            if (firebaseUser.email !== undefined) {
+              newUserData.email = firebaseUser.email;
+            }
+            if (firebaseUser.name !== undefined) {
+              newUserData.displayName = firebaseUser.name;
+            }
+            if (firebaseUser.picture !== undefined) {
+              newUserData.photoURL = firebaseUser.picture;
+            }
+
+            await userDocRef.set(newUserData);
           } else {
             // Existing user, fetch their rewardPoints
             const userData = userDocSnap.data();
@@ -103,14 +130,22 @@ export const authOptions: NextAuthOptions = {
             notifyReminders = userData?.notifyReminders ?? true;
             notifyAchievements = userData?.notifyAchievements ?? true;
 
-            await userDocRef.update({
-              displayName: firebaseUser.name,
-              photoURL: firebaseUser.picture,
+            // Filter out undefined values before updating the document
+            const updateData: Partial<FirestoreUpdateData> = {
               lastLoginAt: Timestamp.now(),
-            });
+            };
+
+            if (firebaseUser.name !== undefined) {
+              updateData.displayName = firebaseUser.name;
+            }
+            if (firebaseUser.picture !== undefined) {
+              updateData.photoURL = firebaseUser.picture;
+            }
+
+            await userDocRef.update(updateData);
           }
           // Ensure the returned user object shape matches NextAuthUser & your extended User type
-          const returnedUser: UserWithExtendedData = {
+          const returnedUser = {
             id: firebaseUser.uid,
             name: firebaseUser.name,
             email: firebaseUser.email,
@@ -143,17 +178,27 @@ export const authOptions: NextAuthOptions = {
         if (!userDocSnap.exists) {
           // New user via OAuth, create their document in Firestore
           try {
-            await userDocRef.set({
+            // Filter out undefined values before setting the document
+            const newUserData: Partial<FirestoreUserData> = {
               uid: user.id, // Store NextAuth user.id (e.g., GitHub user ID string)
-              email: user.email,
-              displayName: user.name,
-              photoURL: user.image,
               provider: account.provider,
               createdAt: Timestamp.now(),
               rewardPoints: 0,
               notifyReminders: true,
               notifyAchievements: true,
-            });
+            };
+
+            if (user.email !== undefined) {
+              newUserData.email = user.email;
+            }
+            if (user.name !== undefined) {
+              newUserData.displayName = user.name;
+            }
+            if (user.image !== undefined) {
+              newUserData.photoURL = user.image;
+            }
+
+            await userDocRef.set(newUserData);
             console.log(
               `New user document created in Firestore via NextAuth OAuth (${account.provider}):`,
               user.id
@@ -174,12 +219,19 @@ export const authOptions: NextAuthOptions = {
           notifyAchievements = userData?.notifyAchievements ?? true;
 
           try {
-            await userDocRef.update({
-              displayName: user.name, // Update name/image in case it changed on provider
-              photoURL: user.image,
+            // Filter out undefined values before updating the document
+            const updateData: Partial<FirestoreUpdateData> = {
               lastLoginAt: Timestamp.now(),
-              // rewardPoints are managed by task updates
-            });
+            };
+
+            if (user.name !== undefined) {
+              updateData.displayName = user.name;
+            }
+            if (user.image !== undefined) {
+              updateData.photoURL = user.image;
+            }
+
+            await userDocRef.update(updateData);
           } catch (dbError) {
             console.error("Firestore error during OAuth user update:", dbError);
             // Don't prevent sign-in for update failures, but log it.
@@ -221,10 +273,24 @@ export const authOptions: NextAuthOptions = {
         }
         token.notifyReminders = userWithRewards.notifyReminders ?? true;
         token.notifyAchievements = userWithRewards.notifyAchievements ?? true;
+      } else if (token.uid) {
+        // For subsequent JWT calls, fetch fresh rewardPoints from database
+        // This ensures rewardPoints are always up-to-date
+        try {
+          const userDocRef = adminDb.collection("users").doc(token.uid);
+          const userDocSnap = await userDocRef.get();
+
+          if (userDocSnap.exists) {
+            const userData = userDocSnap.data();
+            token.rewardPoints = userData?.rewardPoints || 0;
+            token.notifyReminders = userData?.notifyReminders ?? true;
+            token.notifyAchievements = userData?.notifyAchievements ?? true;
+          }
+        } catch (error) {
+          console.error("Error fetching user data in JWT callback:", error);
+          // Keep existing values if fetch fails
+        }
       }
-      // For subsequent JWT calls (e.g., session refresh), user and account are undefined.
-      // If rewardPoints can change and need to be fresh in JWT always, fetch here using token.uid.
-      // For now, assuming rewardPoints are set at login and updated in session by client-side triggers.
       return token;
     },
     async session({ session, token }: { session: Session; token: JWT }) {
@@ -237,9 +303,10 @@ export const authOptions: NextAuthOptions = {
         // provider is string | undefined on JWT and Session.user
         if (token.provider) session.user.provider = token.provider;
 
-        session.user.rewardPoints = token.rewardPoints;
-        session.user.notifyReminders = token.notifyReminders;
-        session.user.notifyAchievements = token.notifyAchievements;
+        // Ensure required properties are always set with proper defaults
+        session.user.rewardPoints = token.rewardPoints ?? 0;
+        session.user.notifyReminders = token.notifyReminders ?? true;
+        session.user.notifyAchievements = token.notifyAchievements ?? true;
       }
       return session;
     },

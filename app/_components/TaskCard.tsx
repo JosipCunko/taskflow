@@ -7,7 +7,7 @@ import {
   handleToast,
   getStatusStyles,
 } from "../utils";
-import { formatDate, formatDateTime } from "../utils";
+import { formatDate } from "../utils";
 import { Task } from "../_types/types";
 import { format, isPast, isSameDay, isToday, isValid } from "date-fns";
 import { useFormStatus } from "react-dom";
@@ -23,14 +23,8 @@ import {
 } from "../_lib/actions";
 import { useOutsideClick } from "../_hooks/useOutsideClick";
 import EmojiExperience from "./EmojiExperience";
-import {
-  ChevronDown,
-  ChevronUp,
-  Clock,
-  Repeat,
-  Tag,
-  Timer,
-} from "lucide-react";
+import { ChevronDown, ChevronUp, Repeat, Tag } from "lucide-react";
+import DurationCalculator from "./DurationCalculator";
 
 function ActionSubmitButton({
   children,
@@ -213,24 +207,6 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
                     </form>
                   </li>
                 )}
-                {!task.isRepeating && task.status === "completed" && (
-                  <li>
-                    <form
-                      action={async (formData: FormData) => {
-                        const res = await updateTaskStatusAction(formData);
-                        handleToast(res, () => setIsDropdownOpen(false));
-                      }}
-                    >
-                      <input type="hidden" name="taskId" value={task.id} />
-                      <input type="hidden" name="newStatus" value="pending" />
-                      <ActionSubmitButton
-                        Icon={CardSpecificIcons.StatusPending}
-                      >
-                        Mark as Pending
-                      </ActionSubmitButton>
-                    </form>
-                  </li>
-                )}
 
                 {/* ---: Action: Delay --- */}
                 {!task.isRepeating && task.status !== "completed" && (
@@ -346,7 +322,8 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
                           task.startTime?.hour ??
                             new Date(task.dueDate).getHours(),
                           task.startTime?.minute ??
-                            new Date(task.dueDate).getMinutes()
+                            new Date(task.dueDate).getMinutes(),
+                          task.delayCount
                         );
                         handleToast(res, () => setIsDropdownOpen(false));
                       }}
@@ -453,7 +430,7 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
       {/* Main Content: Description, Due Date, Status, Indicators */}
       <div className="p-4 space-y-3">
         {task.description && (
-          <div className="text-sm text-text-default">
+          <div className="text-sm text-text-gray">
             <p
               className={`leading-relaxed ${
                 !isDescriptionExpanded ? "line-clamp-2" : ""
@@ -464,7 +441,7 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
             {task.description.length > 100 && ( // Rough check if description is long enough to warrant expander
               <button
                 onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                className="text-xs text-primary-500 hover:text-primary-400 mt-1 flex items-center"
+                className="text-xs text-primary-600 hover:text-primary-400 mt-1 flex items-center"
               >
                 {isDescriptionExpanded ? "Show Less" : "Show More"}
                 {isDescriptionExpanded ? (
@@ -564,16 +541,7 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
         </div>
 
         {/* Duration */}
-        {task.duration &&
-          (task.duration.hours > 0 || task.duration.minutes > 0) && (
-            <div className="flex items-center space-x-1.5 text-xs px-2.5 py-1.5 rounded-md bg-indigo-500/10 text-indigo-400 w-fit">
-              <Timer size={14} />
-              <span>
-                {task.duration.hours > 0 && `${task.duration.hours}h `}
-                {task.duration.minutes > 0 && `${task.duration.minutes}m`}
-              </span>
-            </div>
-          )}
+        <DurationCalculator task={task} />
 
         {/* Tags */}
         {task.tags && task.tags.length > 0 && (
@@ -593,12 +561,9 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
       {/* Footer: Dates & Experience */}
       <div className="px-4 py-2.5 bg-background-main/50 border-t border-divider text-xs text-text-low space-y-1 rounded-b-lg">
         <div className="flex justify-between items-center">
-          <div
-            className="flex items-center"
-            title={`Created: ${formatDateTime(task.createdAt)}`}
-          >
-            <Clock size={12} className="mr-1 opacity-70" />
+          <div className="flex items-center">
             <span>
+              Created:{" "}
               {formatDate(task.createdAt, { day: "numeric", month: "short" })}
             </span>
           </div>
@@ -606,8 +571,8 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
           <div className="flex items-center space-x-2">
             {getExperienceIcon()}
             {task.completedAt && (
-              <span title={`Completed: ${formatDateTime(task.completedAt)}`}>
-                Done:{" "}
+              <span>
+                Completed:{" "}
                 {formatDate(task.completedAt, {
                   day: "numeric",
                   month: "short",
@@ -617,10 +582,7 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
           </div>
         </div>
 
-        <p
-          className="text-right opacity-60 text-[11px]"
-          title={`Last updated: ${formatDateTime(task.updatedAt)}`}
-        >
+        <p className="text-right opacity-60 text-[11px]">
           Updated:{" "}
           {formatDate(task.updatedAt, {
             day: "numeric",

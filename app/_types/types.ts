@@ -19,6 +19,7 @@ export interface Task {
   dueDate: Date; // Stored as Timestamp in Firestore, converted to Date in app
   startTime?: { hour: number; minute: number }; // NEW: Time of day for the task
   completedAt?: Date;
+  /**Delayed is pending but rescheduled */
   status: "pending" | "completed" | "delayed";
 
   isRepeating?: boolean;

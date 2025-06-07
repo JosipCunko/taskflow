@@ -294,7 +294,7 @@ export default function RepeatingTaskCardSmall({
         )}
 
         <div
-          className={`flex items-center space-x-1 px-2 py-1  rounded-full ${statusInfo.bgColorClass}`}
+          className={`flex items-center space-x-1.5 px-2.5 py-1.5 text-xs rounded-md ${statusInfo.bgColorClass}`}
         >
           <statusInfo.icon size={14} className={statusInfo.colorClass} />
           <span className={statusInfo.colorClass}>{statusInfo.text}</span>
@@ -307,13 +307,13 @@ export default function RepeatingTaskCardSmall({
 
         <div className="flex flex-wrap gap-2 items-center">
           {task.isPriority && (
-            <div className="flex items-center space-x-1 text-xs px-2 py-1 rounded-full bg-orange-500/10 text-orange-400">
+            <div className="flex items-center space-x-1.5 text-xs px-2.5 py-1.5 rounded-md bg-orange-500/10 text-orange-400">
               <CardSpecificIcons.Priority size={14} />
               <span>Priority</span>
             </div>
           )}
           {task.isReminder && (
-            <div className="flex items-center space-x-1 text-xs px-2 py-1 rounded-full bg-purple-500/10 text-purple-400">
+            <div className="flex items-center space-x-1.5 text-xs px-2.5 py-1.5 rounded-md bg-purple-500/10 text-purple-400">
               <CardSpecificIcons.Reminder size={14} />
               <span>Reminder Set</span>
             </div>
@@ -325,7 +325,7 @@ export default function RepeatingTaskCardSmall({
             {task.tags.map((tag) => (
               <span
                 key={tag}
-                className="text-xs px-2 py-0.5 bg-tag-bg text-tag-text rounded-full flex items-center bg-background-500"
+                className="text-xs px-2.5 py-1.5 bg-tag-bg text-tag-text rounded-md flex items-center bg-background-500"
               >
                 <CardSpecificIcons.Tag size={12} className="mr-2 opacity-70" />{" "}
                 {tag}

@@ -47,14 +47,14 @@ export default function RepetitionRulesModal({
   };
 
   return (
-    <div className="p-6 bg-background-650 rounded-lg shadow-xl max-w-md w-full mx-auto space-y-6">
-      <h3 className="text-xl font-semibold text-text-high text-center mb-4">
+    <div className="p-6 bg-background-650 rounded-lg shadow-xl w-full space-y-6">
+      <h3 className="text-xl font-semibold text-text-high text-center mb-4 text-nowrap px-10">
         Set Repetition Rules
       </h3>
 
       <div className="space-y-2">
         <p className="block text-sm font-medium text-text-low">Repeat task:</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {(["interval", "daysOfWeek", "timesPerWeek"] as const).map((type) => {
             let label = "";
             if (type === "interval") label = "Every X Days";
@@ -64,7 +64,7 @@ export default function RepetitionRulesModal({
             return (
               <label
                 key={type}
-                className={`flex items-center justify-center p-3 rounded-md border cursor-pointer transition-all text-center
+                className={`flex items-center justify-center p-3 rounded-md border cursor-pointer transition-all text-center 
                             ${
                               activeRepetitionType === type
                                 ? "bg-primary-500 border-primary-600 text-white"

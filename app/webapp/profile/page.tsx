@@ -3,11 +3,10 @@ import { db } from "@/app/_lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { User } from "lucide-react";
 import { getServerSession } from "next-auth";
-import { getTasksByUserId } from "@/app/_lib/tasks";
 import UserInfoCard from "@/app/_components/UserInfoCard";
 import { redirect } from "next/navigation";
 import { getRecentUserActivity } from "@/app/_lib/activity";
-import { ActivityLog, Task } from "@/app/_types/types";
+import { ActivityLog } from "@/app/_types/types";
 import { authOptions } from "@/app/_lib/auth";
 import { loadNotesByUserId } from "@/app/_lib/notes";
 
@@ -18,8 +17,7 @@ export default async function ProfilePage() {
   }
   const userId = session.user.id;
 
-  const [tasks, userDocSnap, recentActivityLogs, notes] = await Promise.all([
-    getTasksByUserId(userId),
+  const [userDocSnap, recentActivityLogs, notes] = await Promise.all([
     getDoc(doc(db, "users", userId)),
     getRecentUserActivity(userId, 7),
     loadNotesByUserId(userId),
@@ -41,7 +39,7 @@ export default async function ProfilePage() {
     notifyAchievements: userData?.notifyAchievements ?? true,
     notesCount: notes.length,
   };
-
+  console.log(userProfileData);
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8">
       <div className="mb-6 md:mb-8">
@@ -54,7 +52,6 @@ export default async function ProfilePage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
         <UserInfoCard userProfile={userProfileData} />{" "}
         <ProfileTabs
-          tasks={tasks as Task[]}
           activityLogs={recentActivityLogs as ActivityLog[]}
           userProfileData={userProfileData}
         />

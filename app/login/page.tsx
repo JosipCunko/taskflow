@@ -1,5 +1,5 @@
 "use client";
-
+import Link from "next/link";
 import { useState, FormEvent, useEffect } from "react";
 import { useSession, signIn } from "next-auth/react";
 import Button from "../_components/reusable/Button";
@@ -14,6 +14,8 @@ import Loader from "../_components/Loader";
 import { useRouter } from "next/navigation";
 import PasswordGenerator from "../_components/PasswordGenerator";
 import { Tooltip } from "react-tooltip";
+import AnimatedBackground from "../_components/animations/AnimatedBackground";
+import { motion } from "framer-motion";
 
 export default function LoginPage() {
   const { status } = useSession();
@@ -105,16 +107,32 @@ export default function LoginPage() {
     <div className="flex min-h-screen bg-background-600">
       <div className="w-full md:w-1/2 flex flex-col p-8">
         <div className="flex-grow flex flex-col justify-center max-w-md mx-auto w-full">
-          <h1 className="text-2xl font-bold text-text-high mb-1">
+          <motion.h1
+            className="text-2xl font-bold text-text-high mb-1"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
             {isSignUp ? "Create an Account" : "Welcome back"}
-          </h1>
-          <p className="text-text-low text-sm mb-8">
+          </motion.h1>
+          <motion.p
+            className="text-text-low text-sm mb-8"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+          >
             {isSignUp
               ? "Fill in the details to create your account"
               : "Sign in to your account"}
-          </p>
+          </motion.p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <motion.form
+            onSubmit={handleSubmit}
+            className="space-y-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+          >
             {isSignUp && (
               <Input
                 type="text"
@@ -148,11 +166,13 @@ export default function LoginPage() {
                 required
                 className="w-full"
               />
-              <PasswordGenerator
-                setCurrentPassword={setPassword}
-                length={12}
-                customClassName="absolute top-2 right-2"
-              />
+              {isSignUp && (
+                <PasswordGenerator
+                  setCurrentPassword={setPassword}
+                  length={12}
+                  customClassName="absolute top-2 right-2"
+                />
+              )}
               <Tooltip
                 id="password-generator"
                 place="top"
@@ -161,7 +181,7 @@ export default function LoginPage() {
               />
             </div>
             {error && (
-              <p className="text-sm text-red-500 bg-red-100 border border-red-300 p-2 rounded">
+              <p className="text-sm text-red-500 bg-background-600 p-2 rounded">
                 {error}
               </p>
             )}
@@ -184,7 +204,7 @@ export default function LoginPage() {
                 ? "Create Account"
                 : "Sign In"}
             </Button>
-          </form>
+          </motion.form>
 
           <div className="my-6 flex items-center">
             <div className="flex-grow border-t border-background-500"></div>
@@ -284,30 +304,45 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-4 text-center">
-            <p className="text-text-low text-sm">
+            <Link
+              href="https://mail.google.com/mail/u/0/#inbox?compose=GTvVlcSBmlxplnNQddBtBVZtqsdsWbWLKmLbtjTBPQfpgjwrQNldzkbMXXWrXdScSHsmmJMMCgKsq"
+              className="text-text-low text-sm"
+            >
               Having troubles when signing in?{" "}
               <span className="underline text-primary-500 cursor-pointer">
                 Contact me
               </span>
-            </p>
+            </Link>
           </div>
         </div>
       </div>
 
-      <div className="hidden md:flex md:w-1/2 bg-background-700 items-center justify-center p-8">
-        <div className="max-w-md">
-          <p className="text-xl text-text-low mb-6 italic">
+      <div className="hidden md:flex md:w-1/2 bg-background-700 items-center justify-center p-8 relative overflow-hidden">
+        <AnimatedBackground />
+
+        <div className="max-w-md relative z-10">
+          <motion.p
+            className="text-xl text-text-low mb-6 italic"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+          >
             Taskflow team is doing some awesome stuff, with a focus on
             productivity, seamless collaboration, and efficient task management.
             Organize your work, track progress, and manage tasks effortlessly
             with intuitive tools designed for teams.
-          </p>
-          <div className="flex items-center">
+          </motion.p>
+          <motion.div
+            className="flex items-center"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.5 }}
+          >
             <div className="w-10 h-10 bg-background-500 rounded-full flex items-center justify-center mr-3">
               <User color="#cbd5e1" />
             </div>
             <span className="text-text-low">Josip Čunko </span>
-          </div>
+          </motion.div>
         </div>
       </div>
     </div>

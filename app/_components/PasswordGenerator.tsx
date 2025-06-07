@@ -1,5 +1,3 @@
-"use client";
-
 import Button from "./reusable/Button";
 import { RefreshCw } from "lucide-react";
 

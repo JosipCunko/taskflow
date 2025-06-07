@@ -122,7 +122,7 @@ export default function Search({ onCloseModal, tasks }: SearchProps) {
   };
 
   return (
-    <div className="w-full">
+    <div className="min-w-[18rem]">
       <div
         className={`flex items-center gap-4 p-2 relative rounded-md 
            border-background-500 bg-background-700 border-1 `}
@@ -197,7 +197,7 @@ export default function Search({ onCloseModal, tasks }: SearchProps) {
                             {task.title}
                           </span>
                           {task.description && (
-                            <span className="block text-xs text-text-gray truncate">
+                            <span className="block text-xs text-text-gray truncate max-w-[200px]">
                               {task.description}
                             </span>
                           )}
@@ -237,7 +237,7 @@ export default function Search({ onCloseModal, tasks }: SearchProps) {
                       <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center text-text-low group-hover:text-primary-400">
                         <item.icon size={18} />
                       </span>
-                      <span className="text-sm text-text-high group-hover:text-primary-400">
+                      <span className="text-sm text-text-high group-hover:text-primary-400 text-nowrap">
                         Go to {item.label}
                       </span>
                     </div>

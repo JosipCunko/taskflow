@@ -85,7 +85,7 @@ function Window({ children, name, showButton = undefined }: WindowProps) {
       className="fixed inset-0 rounded-xl backdrop-blur-lg z-[999] p-0 " // adjusted backdrop-blur and z-index
     >
       <div
-        className="fixed top-[50%] left-[50%] rounded-lg shadow-lg bg-background-700 p-4"
+        className="fixed top-[50%] left-[50%] rounded-lg shadow-lg bg-background-700 p-4 "
         style={{
           transform: "translate(-50%, -50%)",
           transition: "transform 0.3s ease-out, opacity 0.3s ease-out",

@@ -128,7 +128,7 @@ export default function CalendarPage() {
 
             {!isLoading && selectedDate ? (
               tasksForSelectedDay.length > 0 ? (
-                <ul className="space-y-0 max-h-[60vh] overflow-y-auto pr-1">
+                <ul className="space-y-3 max-h-[60vh] pr-1">
                   {tasksForSelectedDay.map((task) => (
                     <TaskCardSmall key={task.id} task={task} />
                   ))}

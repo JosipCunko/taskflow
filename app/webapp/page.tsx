@@ -21,6 +21,7 @@ import { getServerSession } from "next-auth";
 import TaskCardSmall from "../_components/TaskCardSmall";
 import {
   calculateTaskPoints,
+  calculatePotentialTaskPoints,
   generateTaskTypes,
   calculateTimeManagementStats,
   calculateConsistencyStats,
@@ -64,14 +65,19 @@ export default async function DashboardPage() {
   const timeManagementStats = calculateTimeManagementStats(regularTasks);
   const consistencyStats = calculateConsistencyStats(completedTasks);
 
-  const totalPoints = regularTasks.reduce(
-    (acc, task) => acc + calculateTaskPoints(task),
-    0
-  );
+  const totalPoints = session.user.rewardPoints;
   const todayPoints = todaysTasks.reduce(
     (acc: number, task: Task) => acc + calculateTaskPoints(task),
     0
   );
+
+  // Calculate potential points available today (for incomplete tasks)
+  const potentialTodayPoints = [...todaysTasks, ...repeatingTasksDueToday]
+    .filter((task) => task.status !== "completed")
+    .reduce(
+      (acc: number, task: Task) => acc + calculatePotentialTaskPoints(task),
+      0
+    );
 
   return (
     <div className="p-6 space-y-8">
@@ -101,7 +107,11 @@ export default async function DashboardPage() {
           title="Reward Points"
           value={totalPoints}
           icon={<Trophy className="text-accent" size={24} />}
-          subtitle={`${todayPoints >= 0 ? "+" : ""}${todayPoints} today`}
+          subtitle={
+            potentialTodayPoints > 0
+              ? `${potentialTodayPoints} pts available today`
+              : "No points available today"
+          }
         />
         <DashboardCard
           title="Current Streak"
@@ -132,10 +142,10 @@ export default async function DashboardPage() {
           subtitle="Knowledge base"
         />
         <DashboardCard
-          title="Priority Tasks"
-          value={priorityTasks.length}
-          icon={<Star className="text-warning" size={24} />}
-          subtitle="Needs attention"
+          title="Missed Tasks"
+          value={missedTasks.length}
+          icon={<AlertTriangle className="text-error" size={24} />}
+          subtitle="Need attention"
         />
         <DashboardCard
           title="Repeating Tasks"
@@ -145,7 +155,7 @@ export default async function DashboardPage() {
         />
       </div>
 
-      {/* Today's Overview and Priority Tasks */}
+      {/* Today's Progress and Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <section className="bg-background-700 rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
@@ -184,10 +194,10 @@ export default async function DashboardPage() {
                     <p className="text-sm text-text-low">Pending</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold">
-                      {todaysTasks.length + repeatingTasksDueToday.length}
+                    <p className="text-2xl font-bold text-accent">
+                      {potentialTodayPoints}
                     </p>
-                    <p className="text-sm text-text-low">Total today</p>
+                    <p className="text-sm text-text-low">Points available</p>
                   </div>
                 </div>
                 {repeatingTasksDueToday.length > 0 && (
@@ -396,7 +406,9 @@ export default async function DashboardPage() {
             <div className="text-center py-8">
               <CheckCircle2 className="w-12 h-12 text-success mx-auto mb-2" />
               <p className="text-text-low">All tasks are up to date!</p>
-              <p className="text-sm text-text-gray">You&apos;re doing great!</p>
+              <p className="text-sm text-text-gray">
+                There are no missed or delayed tasks! You&apos;re doing great!
+              </p>
             </div>
           )}
         </div>

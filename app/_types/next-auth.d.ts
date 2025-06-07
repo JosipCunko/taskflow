@@ -10,9 +10,9 @@ declare module "next-auth" {
       /** The user's Firebase UID. */
       id: string;
       provider?: string;
-      rewardPoints?: number;
-      notifyReminders?: boolean;
-      notifyAchievements?: boolean;
+      rewardPoints: number;
+      notifyReminders: boolean;
+      notifyAchievements: boolean;
     } & DefaultSession["user"]; // Keep existing properties like name, email, image
   }
 
@@ -23,10 +23,10 @@ declare module "next-auth" {
    */
   interface User extends DefaultUser {
     // id is already part of DefaultUser
-    provider?: string;
-    rewardPoints?: number;
-    notifyReminders?: boolean;
-    notifyAchievements?: boolean;
+    provider: string;
+    rewardPoints: number;
+    notifyReminders: boolean;
+    notifyAchievements: boolean;
   }
 }
 
@@ -36,9 +36,9 @@ declare module "next-auth/jwt" {
     /** Firebase UID */
     uid: string;
     provider?: string;
-    rewardPoints?: number;
-    notifyReminders?: boolean;
-    notifyAchievements?: boolean;
+    rewardPoints: number;
+    notifyReminders: boolean;
+    notifyAchievements: boolean;
     // name, email, picture are often included by default if available from provider
   }
 }

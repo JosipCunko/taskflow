@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
 import { ComponentProps, useState } from "react";
+
+// NOT USED
 function Step({ step, currentStep }: { step: number; currentStep: number }) {
   const status =
     currentStep === step

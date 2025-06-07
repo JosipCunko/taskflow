@@ -6,20 +6,15 @@ import {
   CheckSquare,
   User,
   Calendar,
-  Search as SearchIcon,
   Home,
   Inbox,
   ChartColumn,
   FileText,
   CalendarArrowUp,
 } from "lucide-react";
-import Search from "@/app/_components/Search";
-import Button from "./reusable/Button";
 import Image from "next/image";
-import Modal from "./Modal";
-import { Task } from "../_types/types";
 
-export default function Sidebar({ tasks }: { tasks: Task[] }) {
+export default function Sidebar() {
   const pathname = usePathname();
 
   const navItems = {
@@ -29,7 +24,6 @@ export default function Sidebar({ tasks }: { tasks: Task[] }) {
         href: "/webapp/",
         icon: Home,
       },
-      { label: "Search", icon: SearchIcon, href: "" },
       { label: "Inbox", icon: Inbox, href: "/webapp/inbox" },
     ],
     tasks: [
@@ -69,7 +63,7 @@ export default function Sidebar({ tasks }: { tasks: Task[] }) {
   };
 
   return (
-    <aside className="w-64 h-full bg-background-700 flex flex-col">
+    <aside className="w-64 sm:h-full h-[90%] bg-background-700 flex flex-col overflow-y-scroll">
       <div className="p-4">
         <div className="grid place-items-center">
           <Image src="/logo.png" alt="Taskflow" width={200} height={200} />
@@ -89,44 +83,25 @@ export default function Sidebar({ tasks }: { tasks: Task[] }) {
                 const isActive = pathname === item?.href;
                 return (
                   <li key={item.href}>
-                    {item.label === "Search" ? (
-                      <Modal>
-                        <Modal.Open opens="search">
-                          <Button
-                            variant="sidebar"
-                            className={`gap-3 py-3 hover:bg-background-500/40 text-text-low font-medium hover:text-text-high
-                          `}
-                          >
-                            <item.icon size={20} />
-
-                            <span>{item.label}</span>
-                          </Button>
-                        </Modal.Open>
-                        <Modal.Window name="search" showButton>
-                          <Search tasks={tasks} />
-                        </Modal.Window>
-                      </Modal>
-                    ) : (
-                      <Link
-                        href={item.href}
-                        className={`
+                    <Link
+                      href={item.href}
+                      className={`
                           flex items-center gap-3 px-4 py-3 rounded-md transition-colors ${
                             isActive
                               ? "bg-background-500 text-primary"
                               : "text-text-low hover:bg-background-500/40 hover:text-text-high"
                           } `}
-                      >
-                        <div className="relative">
-                          {item?.label === "Today" && (
-                            <span className="absolute top-[6px] left-[5px] text-[9px] font-bold">
-                              {String(new Date().getDate()).padStart(2, "0")}
-                            </span>
-                          )}
-                          <item.icon size={20} />
-                        </div>
-                        <span>{item.label}</span>
-                      </Link>
-                    )}
+                    >
+                      <div className="relative">
+                        {item?.label === "Today" && (
+                          <span className="absolute top-[6px] left-[5px] text-[9px] font-bold">
+                            {String(new Date().getDate()).padStart(2, "0")}
+                          </span>
+                        )}
+                        <item.icon size={20} />
+                      </div>
+                      <span>{item.label}</span>
+                    </Link>
                   </li>
                 );
               })}
