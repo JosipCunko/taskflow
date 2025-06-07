@@ -30,10 +30,12 @@ import { Task } from "../_types/types";
 import RepeatingTaskCardSmall from "../_components/RepeatingTaskCardSmall";
 import { loadNotesByUserId } from "../_lib/notes";
 import { isTaskDueOn } from "../utils";
+import { redirect } from "next/navigation";
+import NotificationSummary from "../_components/NotificationSummary";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
-  if (!session) return null;
+  if (!session) redirect("/login");
   const userId = session.user.id;
 
   const [allTasks, notes] = await Promise.all([
@@ -156,7 +158,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Today's Progress and Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <section className="bg-background-700 rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-text-low flex items-center">
@@ -245,6 +247,9 @@ export default async function DashboardPage() {
             )}
           </div>
         </section>
+
+        {/* Notification Summary */}
+        <NotificationSummary userId={userId} />
       </div>
 
       {/* Performance Insights */}

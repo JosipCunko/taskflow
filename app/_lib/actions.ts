@@ -7,11 +7,18 @@ import {
   Task,
   RepetitionRule,
 } from "../_types/types";
-import { createTask, deleteTask, getTaskByTaskId, updateTask } from "./tasks";
+import {
+  createTask,
+  deleteTask,
+  getTaskByTaskId,
+  updateTask,
+  getTasksByUserId,
+} from "./tasks";
 import { getServerSession } from "next-auth";
 import { logUserActivity } from "./activity";
 import { authOptions } from "./auth";
 import { format } from "date-fns";
+import { generateNotificationsForUser } from "./notifications";
 
 export async function updateTaskStatusAction(
   formData: FormData
@@ -43,7 +50,19 @@ export async function updateTaskStatusAction(
       });
     }
 
+    // Generate notifications after task status change
+    if (userId) {
+      try {
+        const allTasks = await getTasksByUserId(userId);
+        await generateNotificationsForUser(userId, allTasks);
+      } catch (notificationError) {
+        console.error("Error generating notifications:", notificationError);
+        // Don't fail the main action if notification generation fails
+      }
+    }
+
     revalidatePath("/tasks");
+    revalidatePath("/webapp/inbox");
     return { success: true, message: `Task marked as ${newStatus}` };
   } catch (err) {
     const error = err as ActionError;
@@ -369,7 +388,19 @@ export async function createTaskAction(
         activityIcon: "CircleCheckBig",
       });
     }
+    // Generate notifications after task creation
+    if (session.user.id) {
+      try {
+        const allTasks = await getTasksByUserId(session.user.id);
+        await generateNotificationsForUser(session.user.id, allTasks);
+      } catch (notificationError) {
+        console.error("Error generating notifications:", notificationError);
+        // Don't fail the main action if notification generation fails
+      }
+    }
+
     revalidatePath("/tasks");
+    revalidatePath("/webapp/inbox");
     return {
       success: true,
       message: "Task created successfully",

@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  BellIcon,
-  User,
-  Trophy,
-  Zap,
-  Search as SearchIcon,
-} from "lucide-react";
+import { User, Trophy, Zap, Search as SearchIcon } from "lucide-react";
 import { Session } from "next-auth";
 import Image from "next/image";
 import Link from "next/link";
@@ -21,6 +15,7 @@ import AddTask from "./AddTask";
 import { useKeyboardNavigation } from "../_hooks/useKeyboardNavigation";
 import { Task } from "../_types/types";
 import Search from "./Search";
+import NotificationBell from "./NotificationBell";
 
 export default function TopSidebar({
   session,
@@ -90,20 +85,15 @@ export default function TopSidebar({
       </div>
 
       <div className="flex items-center gap-3 tooltip-container">
-        {/* Quick Search */}
-
         <Modal>
           <Modal.Open opens="search">
             <Button
               variant="secondary"
-              className={`gap-3 py-3 hover:bg-background-500/40 text-text-low font-medium hover:text-text-high
-                  data-tooltip-id="search"
-          data-tooltip-content="Search tasks (Ctrl+K)"
-                          `}
+              className={`gap-3 py-3 hover:bg-background-500/40 text-text-low font-medium hover:text-text-high`}
             >
               <SearchIcon size={16} className="text-text-low" />
 
-              <span>Search</span>
+              <span className="hidden sm:block">Search</span>
             </Button>
           </Modal.Open>
           <Modal.Window name="search" showButton>
@@ -124,22 +114,7 @@ export default function TopSidebar({
           </Modal.Window>
         </Modal>
 
-        <>
-          <div
-            className="p-1.5 rounded-full hover:bg-background-500 transition-colors relative"
-            data-tooltip-id="notifications"
-            data-tooltip-content="Your notifications"
-          >
-            <BellIcon size={20} />
-            <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full"></span>
-          </div>
-          <Tooltip
-            id="notifications"
-            place="left"
-            className="tooltip-diff-arrow"
-            classNameArrow="tooltip-arrow"
-          />
-        </>
+        <NotificationBell />
 
         <Link href="/webapp/profile">
           {session?.user.image ? (

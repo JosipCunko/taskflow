@@ -1,5 +1,4 @@
 import {
-  AlarmClock,
   Dumbbell,
   Timer,
   Activity,
@@ -35,16 +34,22 @@ import {
   BellPlus,
   ArrowRightLeft,
   ChartColumn,
-  BellRing,
   BookOpen,
   Code,
   Gamepad2,
   Phone,
-  Award,
   BicepsFlexed,
   CircleCheckBig,
   CircleX,
   CalendarArrowUp,
+  AlertTriangle,
+  Target,
+  Trophy,
+  Info,
+  TrendingUp,
+  PartyPopper,
+  Pizza,
+  Volleyball,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import {
@@ -54,6 +59,8 @@ import {
   Task,
   TaskCategories,
   TimeManagementStats,
+  NotificationType,
+  NotificationPriority,
 } from "./_types/types";
 import {
   addDays,
@@ -85,9 +92,9 @@ export const TASK_ICONS = [
     label: "Activity",
   },
   {
-    id: "AlarmClock",
-    icon: AlarmClock,
-    label: "Alarm Clock",
+    id: "Pizza",
+    icon: Pizza,
+    label: "Pizza",
   },
   {
     id: "Apple",
@@ -95,9 +102,9 @@ export const TASK_ICONS = [
     label: "Apple",
   },
   {
-    id: "Award",
-    icon: Award,
-    label: "Award",
+    id: "Volleyball",
+    icon: Volleyball,
+    label: "Volleyball",
   },
   {
     id: "dumbbell",
@@ -110,9 +117,9 @@ export const TASK_ICONS = [
     label: "Timer",
   },
   {
-    id: "BellRing",
-    icon: BellRing,
-    label: "BellRing",
+    id: "PartyPopper",
+    icon: PartyPopper,
+    label: "Party Popper",
   },
   {
     id: "heart",
@@ -770,3 +777,115 @@ export function isTaskDueOn(task: Task, date: Date): boolean {
   }
   return false;
 }
+
+/**
+ * Notification utility functions
+ */
+
+export const getNotificationIcon = (type: NotificationType) => {
+  const iconMap = {
+    TASK_AT_RISK: AlertTriangle,
+    TASK_OVERDUE: Clock,
+    TASK_DUE_SOON: Calendar,
+    STREAK_AT_RISK: Zap,
+    STREAK_MILESTONE: Trophy,
+    PRIORITY_TASK_PENDING: Target,
+    ACHIEVEMENT_UNLOCKED: Trophy,
+    WEEKLY_SUMMARY: TrendingUp,
+    TASK_REMINDER: Bell,
+    CONSISTENCY_ALERT: Target,
+    POINTS_MILESTONE: Trophy,
+    SYSTEM_UPDATE: Info,
+  };
+
+  return iconMap[type] || Bell;
+};
+
+export const getNotificationStyles = (priority: NotificationPriority) => {
+  const styleMap = {
+    LOW: {
+      borderColor: "border-gray-300",
+      bgColor: "bg-gray-50",
+      textColor: "text-gray-700",
+      iconColor: "text-gray-500",
+    },
+    MEDIUM: {
+      borderColor: "border-blue-300",
+      bgColor: "bg-blue-50",
+      textColor: "text-blue-800",
+      iconColor: "text-blue-600",
+    },
+    HIGH: {
+      borderColor: "border-orange-300",
+      bgColor: "bg-orange-50",
+      textColor: "text-orange-800",
+      iconColor: "text-orange-600",
+    },
+    URGENT: {
+      borderColor: "border-red-300",
+      bgColor: "bg-red-50",
+      textColor: "text-red-800",
+      iconColor: "text-red-600",
+    },
+  };
+
+  return styleMap[priority];
+};
+
+export const getNotificationTypeLabel = (type: NotificationType): string => {
+  const labelMap = {
+    TASK_AT_RISK: "Task at Risk",
+    TASK_OVERDUE: "Overdue Task",
+    TASK_DUE_SOON: "Due Soon",
+    STREAK_AT_RISK: "Streak at Risk",
+    STREAK_MILESTONE: "Streak Milestone",
+    PRIORITY_TASK_PENDING: "Priority Task",
+    ACHIEVEMENT_UNLOCKED: "Achievement",
+    WEEKLY_SUMMARY: "Weekly Summary",
+    TASK_REMINDER: "Reminder",
+    CONSISTENCY_ALERT: "Consistency Alert",
+    POINTS_MILESTONE: "Points Milestone",
+    SYSTEM_UPDATE: "System Update",
+  };
+
+  return labelMap[type] || "Notification";
+};
+
+export const formatNotificationTime = (date: Date): string => {
+  const now = new Date();
+  const diffInMinutes = Math.floor(
+    (now.getTime() - date.getTime()) / (1000 * 60)
+  );
+
+  if (diffInMinutes < 1) return "Just now";
+  if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (diffInHours < 24) return `${diffInHours}h ago`;
+
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (diffInDays < 7) return `${diffInDays}d ago`;
+
+  return formatDate(date, { month: "short", day: "numeric" });
+};
+
+export const getPriorityBadgeStyles = (priority: NotificationPriority) => {
+  const badgeMap = {
+    LOW: "bg-gray-100 text-gray-800 border-gray-200",
+    MEDIUM: "bg-blue-100 text-blue-800 border-blue-200",
+    HIGH: "bg-orange-100 text-orange-800 border-orange-200",
+    URGENT: "bg-red-100 text-red-800 border-red-200",
+  };
+
+  return badgeMap[priority];
+};
+
+export const shouldShowNotificationBadge = (unreadCount: number): boolean => {
+  return unreadCount > 0;
+};
+
+export const formatNotificationCount = (count: number): string => {
+  if (count === 0) return "";
+  if (count > 99) return "99+";
+  return count.toString();
+};

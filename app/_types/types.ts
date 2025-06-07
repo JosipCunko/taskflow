@@ -141,3 +141,67 @@ export interface Note {
   content: string;
   updatedAt: Date;
 }
+
+export type NotificationType =
+  | "TASK_AT_RISK" // Repeating task missed multiple times
+  | "TASK_OVERDUE" // Task is overdue
+  | "TASK_DUE_SOON" // Task due in next 24 hours
+  | "STREAK_AT_RISK" // Current streak about to be broken
+  | "STREAK_MILESTONE" // Achieved new streak milestone
+  | "PRIORITY_TASK_PENDING" // High priority task still pending
+  | "ACHIEVEMENT_UNLOCKED" // New achievement earned
+  | "WEEKLY_SUMMARY" // Weekly performance summary
+  | "TASK_REMINDER" // General task reminder
+  | "CONSISTENCY_ALERT" // Consistency dropping alert
+  | "POINTS_MILESTONE" // Reward points milestone reached
+  | "SYSTEM_UPDATE"; // System announcements
+
+export type NotificationPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  priority: NotificationPriority;
+  title: string;
+  message: string;
+  actionText?: string; // e.g., "View Task", "Complete Now"
+  actionUrl?: string; // URL to navigate to when action is clicked
+  taskId?: string; // Related task ID if applicable
+  isRead: boolean;
+  isArchived: boolean;
+  createdAt: Date;
+  readAt?: Date;
+  data?: Record<string, unknown>; // Additional data for the notification
+  expiresAt?: Date; // Optional expiration date
+}
+
+export interface NotificationSettings {
+  userId: string;
+  emailNotifications: boolean;
+  pushNotifications: boolean;
+  inAppNotifications: boolean;
+  notificationTypes: {
+    [K in NotificationType]: {
+      enabled: boolean;
+      emailEnabled: boolean;
+      frequency?: "IMMEDIATE" | "DAILY" | "WEEKLY";
+    };
+  };
+  quietHours: {
+    enabled: boolean;
+    startTime: string; // HH:MM format
+    endTime: string; // HH:MM format
+  };
+  updatedAt: Date;
+}
+
+export interface NotificationStats {
+  totalUnread: number;
+  unreadByPriority: {
+    [K in NotificationPriority]: number;
+  };
+  unreadByType: {
+    [K in NotificationType]?: number;
+  };
+}
