@@ -21,7 +21,7 @@ const images = [
     title: "Customize Your Tasks",
   },
   {
-    src: "/layout.png",
+    src: "/layout2.png",
     alt: "Visible app layout and the dashboard.",
     title: "Amazing app layout and useful dashboard",
   },
@@ -31,7 +31,7 @@ const images = [
     title: "Manage Your Profile",
   },
   {
-    src: "/tasks.png",
+    src: "/tasks2.png",
     alt: "The user tasks page, displaying tasks and settings.",
     title: "Manage Your Tasks",
   },
@@ -39,6 +39,11 @@ const images = [
     src: "/today.png",
     alt: "A user views their tasks for the current day in the TaskFlow application.",
     title: "Tasks for Today",
+  },
+  {
+    src: "/inbox.png",
+    alt: "A user views their inbox in the TaskFlow application.",
+    title: "Inbox",
   },
   {
     src: "/repetitionRules.png",
