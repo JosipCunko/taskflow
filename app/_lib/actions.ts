@@ -327,10 +327,14 @@ export async function createTaskAction(
   const isStartTimeSpecified =
     startTime && (startTime.hour !== 0 || startTime.minute !== 0);
 
+  const isEndTimeDefault =
+    dueDate.getHours() === 23 && dueDate.getMinutes() === 59;
+
   if (
     duration &&
     (duration.hours > 0 || duration.minutes > 0) &&
-    !isStartTimeSpecified
+    !isStartTimeSpecified &&
+    !isEndTimeDefault // IMPORTANT: Don't calculate startTime if endTime is default
   ) {
     const dueDateObj = new Date(dueDate);
     const durationInMinutes = duration.hours * 60 + duration.minutes;

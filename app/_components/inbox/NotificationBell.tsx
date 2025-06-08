@@ -32,10 +32,30 @@ export default function NotificationBell() {
 
     fetchStats();
 
-    // Set up polling to update stats every minute
-    const interval = setInterval(fetchStats, 60000);
+    // Set up more frequent polling (every 10 seconds)
+    const interval = setInterval(fetchStats, 10000);
 
-    return () => clearInterval(interval);
+    // Also update when page gains focus
+    const handleFocus = () => {
+      fetchStats();
+    };
+
+    window.addEventListener("focus", handleFocus);
+
+    // Listen for storage events (when notifications are updated in other tabs)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "notifications-updated") {
+        fetchStats();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("storage", handleStorageChange);
+    };
   }, [session?.user?.id]);
 
   if (!session?.user?.id || isLoading) {

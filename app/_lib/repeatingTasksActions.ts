@@ -1,13 +1,15 @@
 "use server";
 
-import { differenceInDays, isSameDay, isSameWeek, startOfWeek } from "date-fns";
+import {
+  differenceInDays,
+  isSameDay,
+  isSameWeek,
+  startOfWeek,
+  addDays,
+} from "date-fns";
 import type { Task, ActionResult } from "@/app/_types/types";
 import { updateTask } from "./tasks";
-import {
-  calculateNextDueDate,
-  isTaskDueOn,
-  MONDAY_START_OF_WEEK,
-} from "../utils";
+import { isTaskDueOn, MONDAY_START_OF_WEEK } from "../utils";
 
 export async function completeRepeatingTaskWithTimesPerWeek(
   task: Task,
@@ -195,7 +197,9 @@ export async function completeRepeatingTaskWithInterval(
     };
   }
 
-  const nextDueDate = calculateNextDueDate(task, completionDate) as Date;
+  // Calculate next due date directly from completion date + interval
+  // This ensures the next due date is always exactly `interval` days from completion
+  const nextDueDate = addDays(completionDate, rule.interval);
 
   const updates: Partial<Task> = {
     repetitionRule: {
@@ -204,7 +208,7 @@ export async function completeRepeatingTaskWithInterval(
     },
     dueDate: nextDueDate,
     completedAt: completionDate,
-    status: "completed",
+    status: "pending", // Reset status to pending for the next occurrence
   };
 
   try {

@@ -6,7 +6,7 @@ import {
   getNotificationsByUserId,
   getNotificationStats,
 } from "@/app/_lib/notifications";
-import InboxContent from "../../_components/InboxContent";
+import InboxContent from "../../_components/inbox/InboxContent";
 import { Inbox } from "lucide-react";
 
 export default async function InboxPage() {

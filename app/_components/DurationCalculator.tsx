@@ -2,18 +2,34 @@ import { Task } from "../_types/types";
 import { CardSpecificIcons } from "../utils";
 
 export default function DurationCalculator({ task }: { task: Task }) {
-  // Calculate duration if not provided in task object
+  // Use explicit duration if provided
   let calculatedDuration = task.duration;
 
+  // Only calculate duration from times if no explicit duration and reasonable start time is set
   if (!calculatedDuration && task.startTime) {
     const startTimeInMinutes = task.startTime.hour * 60 + task.startTime.minute;
     const endTimeInMinutes =
       task.dueDate.getHours() * 60 + task.dueDate.getMinutes();
 
-    if (endTimeInMinutes > startTimeInMinutes) {
+    // Don't show duration for these edge cases:
+    // 1. If start time is 00:00 (likely default)
+    // 2. If end time is 23:59 (likely default)
+    // 3. If duration would be unreasonably long (>12 hours)
+    // 4. If start time equals end time
+    const isStartTimeDefault = startTimeInMinutes === 0;
+    const isEndTimeDefault = endTimeInMinutes === 23 * 60 + 59;
+    const startEqualsEnd = startTimeInMinutes === endTimeInMinutes;
+
+    if (
+      !isStartTimeDefault &&
+      !isEndTimeDefault &&
+      !startEqualsEnd &&
+      endTimeInMinutes > startTimeInMinutes
+    ) {
       const totalMinutes = endTimeInMinutes - startTimeInMinutes;
 
-      if (totalMinutes < 20 * 60) {
+      // Only show duration if it's reasonable (between 1 minutes and 12 hours)
+      if (totalMinutes >= 1 && totalMinutes <= 12 * 60) {
         calculatedDuration = {
           hours: Math.floor(totalMinutes / 60),
           minutes: totalMinutes % 60,

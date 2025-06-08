@@ -28,16 +28,10 @@ export default function NotificationCard({
   const [isHovered, setIsHovered] = useState(false);
   const Icon = getNotificationIcon(notification.type);
   const styles = getNotificationStyles(notification.priority);
-
   const handleCardClick = () => {
     if (!notification.isRead && onMarkAsRead) {
       onMarkAsRead(notification.id);
     }
-
-    //CHANGE LATER
-    //if (notification.actionUrl) {
-    //  router.push(notification.actionUrl);
-    //}
   };
 
   const handleArchive = (e: React.MouseEvent) => {
@@ -109,7 +103,6 @@ export default function NotificationCard({
             </span>
           </div>
 
-          {/* Actions and metadata */}
           <div className="flex items-center justify-between mt-3">
             <div className="flex items-center gap-4">
               <span className="flex items-center gap-1 text-xs text-gray-500">
@@ -118,19 +111,22 @@ export default function NotificationCard({
               </span>
 
               {notification.actionText && notification.actionUrl && (
-                <button
+                <a
+                  href={notification.actionUrl}
                   className={`
                     flex items-center gap-1 text-xs font-medium transition-colors
                     ${styles.textColor} hover:underline
                   `}
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleCardClick();
+                    if (!notification.isRead && onMarkAsRead) {
+                      onMarkAsRead(notification.id);
+                    }
                   }}
                 >
                   {notification.actionText}
                   <ExternalLink size={12} />
-                </button>
+                </a>
               )}
             </div>
 

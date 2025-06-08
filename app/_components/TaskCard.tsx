@@ -23,7 +23,7 @@ import {
 } from "../_lib/actions";
 import { useOutsideClick } from "../_hooks/useOutsideClick";
 import EmojiExperience from "./EmojiExperience";
-import { ChevronDown, ChevronUp, Repeat, Tag } from "lucide-react";
+import { ChevronDown, ChevronUp, Tag } from "lucide-react";
 import DurationCalculator from "./DurationCalculator";
 
 function ActionSubmitButton({
@@ -191,7 +191,7 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
                 className="absolute right-0 mt-2 w-60 bg-background-600 border border-divider shadow-xl rounded-lg p-1.5 z-50 origin-top-right focus:outline-none"
               >
                 {/* ---: Action: Mark as Completed/Pending --- */}
-                {!task.isRepeating && task.status !== "completed" && (
+                {task.status !== "completed" && (
                   <li>
                     <form
                       action={async (formData: FormData) => {
@@ -209,7 +209,7 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
                 )}
 
                 {/* ---: Action: Delay --- */}
-                {!task.isRepeating && task.status !== "completed" && (
+                {task.status !== "completed" && (
                   <>
                     {!isSameDay(
                       task.dueDate,
@@ -313,7 +313,7 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
                 )}
 
                 {/* ---: Action: Reschedule (with date input) --- */}
-                {!task.isRepeating && task.status !== "completed" && (
+                {task.status !== "completed" && (
                   <li className="px-1.5 py-1.5 group">
                     <form
                       action={async (formData: FormData) => {
@@ -356,7 +356,7 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
                 )}
 
                 {/* ---: Action: Toggle Priority --- */}
-                {!task.isRepeating && task.status !== "completed" && (
+                {task.status !== "completed" && (
                   <li>
                     <form
                       action={async (formData: FormData) => {
@@ -383,7 +383,7 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
                   </li>
                 )}
                 {/* Emoji experience */}
-                {!task.isRepeating && task.status === "completed" && (
+                {task.status === "completed" && (
                   <li>
                     <form
                       action={async (formData: FormData) => {
@@ -469,25 +469,39 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
               Today
             </span>
           )}
-          {task.startTime && startTime !== "00:00" ? (
-            <div className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-background-500 text-text-low flex items-center gap-2">
-              {startTime !== endTime ? (
-                <>
-                  <span>{startTime}</span>
-                  <span>-</span>
-                  <span>{endTime}</span>
-                </>
-              ) : (
+          {(() => {
+            const hasStartTime = task.startTime && startTime !== "00:00";
+            const isEndTimeDefault = endTime === "23:59";
+            const startEqualsEnd = startTime === endTime;
+
+            if (!hasStartTime && isEndTimeDefault) {
+              return null;
+            }
+
+            if (hasStartTime && isEndTimeDefault) {
+              return (
+                <div className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-background-500 text-text-low">
+                  From {startTime}
+                </div>
+              );
+            }
+
+            if (!hasStartTime || startEqualsEnd) {
+              return (
+                <div className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-background-500 text-text-low">
+                  To {endTime}
+                </div>
+              );
+            }
+
+            return (
+              <div className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-background-500 text-text-low flex items-center gap-1">
+                <span>{startTime}</span>
+                <span>-</span>
                 <span>{endTime}</span>
-              )}
-            </div>
-          ) : endTime === "23:59" ? (
-            ""
-          ) : (
-            <div className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-background-500 text-text-low ">
-              <span>{endTime}</span>
-            </div>
-          )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Status Badge & Delay Count */}
@@ -521,21 +535,6 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
             <div className="flex items-center space-x-1.5 text-xs px-2.5 py-1.5 rounded-md bg-purple-500/10 text-purple-400">
               <CardSpecificIcons.Reminder size={14} />
               <span>Reminder</span>
-            </div>
-          )}
-
-          {/* Repeating Task Indicator */}
-          {task.isRepeating && (
-            <div className="flex items-center space-x-1.5 text-xs px-2.5 py-1.5 rounded-md bg-teal-500/10 text-teal-400">
-              <Repeat size={14} />
-              <span>
-                Repeating
-                {task.repetitionRule?.frequency &&
-                  ` (${
-                    task.repetitionRule.frequency.charAt(0).toUpperCase() +
-                    task.repetitionRule.frequency.slice(1)
-                  })`}
-              </span>
             </div>
           )}
         </div>

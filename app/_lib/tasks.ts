@@ -20,7 +20,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { RepetitionRule, SearchedTask, Task } from "@/app/_types/types";
-import { calculateTaskPoints } from "@/app/utils";
+import { calculateTaskPoints, isTaskAtRisk } from "@/app/utils";
 
 async function updateUserRewardPoints(
   userId: string,
@@ -74,7 +74,7 @@ const TASKS_COLLECTION = "tasks";
  */
 const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Task => {
   const data = snapshot.data();
-  return {
+  const task = {
     id: snapshot.id,
     userId: data.userId,
     title: data.title,
@@ -109,6 +109,14 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Task => {
         }
       : undefined,
   } as Task;
+
+  // Add risk calculation for all tasks
+  const taskWithRisk = {
+    ...task,
+    risk: isTaskAtRisk(task),
+  };
+
+  return taskWithRisk;
 };
 
 export const getTaskByTaskId = async (taskId: string): Promise<Task | null> => {

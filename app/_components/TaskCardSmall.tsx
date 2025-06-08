@@ -2,9 +2,11 @@ import {
   CardSpecificIcons,
   getStatusStyles,
   getTaskIconByName,
+  formatDate,
 } from "../utils";
 import { Task } from "../_types/types";
 import DurationCalculator from "./DurationCalculator";
+import { Calendar } from "lucide-react";
 
 export default function TaskCardSmall({ task }: { task: Task }) {
   const IconComponent = getTaskIconByName(task.icon);
@@ -42,9 +44,7 @@ export default function TaskCardSmall({ task }: { task: Task }) {
         }}
       />
 
-      {/* Main card container */}
       <div className="relative bg-gradient-to-br from-background-700 via-background-650 to-background-600 backdrop-blur-sm rounded-xl p-5 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] hover:border-primary-500/30">
-        {/* Header section with time and icon */}
         <div className="flex items-start justify-between mb-4">
           {/* Time display with modern styling */}
           <div className="flex flex-col items-start">
@@ -91,7 +91,6 @@ export default function TaskCardSmall({ task }: { task: Task }) {
             </div>
           </div>
 
-          {/* Task icon with enhanced styling */}
           <div className="relative">
             <div
               className="p-3 rounded-xl shadow-md border border-background-500/30 backdrop-blur-sm hover:scale-110 transition-transform duration-200"
@@ -120,16 +119,20 @@ export default function TaskCardSmall({ task }: { task: Task }) {
           </div>
         </div>
 
-        {/* Task title with improved typography */}
-        <div className="mb-4">
+        <div className="mb-3">
           <h4 className="text-lg font-bold text-text-high leading-tight  line-clamp-2">
             {task.title}
           </h4>
         </div>
 
-        {/* Status and feature badges with modern design */}
+        <div className="mb-4">
+          <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-background-800/60 text-text-low border border-background-500/40">
+            <Calendar size={12} />
+            <span>Due {formatDate(task.dueDate)}</span>
+          </div>
+        </div>
+
         <div className="flex flex-wrap gap-2">
-          {/* Status badge */}
           <div
             className={`inline-flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-medium border backdrop-blur-sm ${statusInfo.bgColorClass} ${statusInfo.colorClass} shadow-sm`}
           >
@@ -144,10 +147,8 @@ export default function TaskCardSmall({ task }: { task: Task }) {
             )}
           </div>
 
-          {/* Duration calculator */}
           <DurationCalculator task={task} />
 
-          {/* Priority badge */}
           {task.isPriority && (
             <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-medium bg-gradient-to-r from-orange-500/15 to-amber-500/15 text-orange-400 border border-orange-500/30 shadow-sm backdrop-blur-sm">
               <CardSpecificIcons.Priority size={14} />
@@ -155,7 +156,6 @@ export default function TaskCardSmall({ task }: { task: Task }) {
             </div>
           )}
 
-          {/* Reminder badge */}
           {task.isReminder && (
             <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-medium bg-gradient-to-r from-purple-500/15 to-violet-500/15 text-purple-400 border border-purple-500/30 shadow-sm backdrop-blur-sm">
               <CardSpecificIcons.Reminder size={14} />

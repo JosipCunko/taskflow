@@ -110,7 +110,7 @@ const ShowMoreDetailsContent = ({
 
   return (
     //!!! SEE IF THE DESIGN STILL BREAKS OM MOBILE
-    <div className="flex flex-col gap-10 p-3 sm:p-6 items-center bg-background-650 rounded-lg w-[20rem] sm:w-full max-h-[85vh] overflow-y-auto">
+    <div className="flex flex-col gap-10 p-3 sm:p-6 items-center bg-background-650 rounded-lg w-[24rem] sm:w-full max-h-[85vh] overflow-y-auto">
       <h3 className="text-lg font-semibold text-text-high mb-1">
         Customize Task
       </h3>
@@ -175,9 +175,7 @@ const ShowMoreDetailsContent = ({
         )}
       </div>
 
-      <Button onClick={handleDone} variant="primary">
-        Done
-      </Button>
+      <Button onClick={handleDone}>Done</Button>
     </div>
   );
 };
@@ -187,6 +185,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
   const [timeEnd, setTimeEnd] = useState<number[]>([23, 59]);
   const [startTime, setStartTime] = useState<number[]>([0, 0]);
   const [isTimeEndDisabled, setIsTimeEndDisabled] = useState(false);
+  const [timeMode, setTimeMode] = useState<"duration" | "endTime">("duration");
 
   const [isPriority, setIsPriority] = useState(false);
   const [isReminder, setIsReminder] = useState(false);
@@ -252,7 +251,11 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
   }, [isRepeatingTask]);
 
   useEffect(() => {
-    if (isDurationSpecified && isStartTimeSpecified) {
+    if (
+      timeMode === "duration" &&
+      isDurationSpecified &&
+      isStartTimeSpecified
+    ) {
       const startDateForCalc = new Date(selectedDate);
       startDateForCalc.setHours(startTime[0], startTime[1], 0, 0);
 
@@ -261,6 +264,8 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
 
       setTimeEnd([getHours(endDateCalc), getMinutes(endDateCalc)]);
       setIsTimeEndDisabled(true);
+    } else if (timeMode === "endTime" && isStartTimeSpecified) {
+      setIsTimeEndDisabled(false);
     } else {
       setIsTimeEndDisabled(false);
     }
@@ -268,11 +273,19 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
     startTime,
     duration,
     selectedDate,
-    setTimeEnd,
     isDurationSpecified,
     isStartTimeSpecified,
-    setIsTimeEndDisabled,
+    timeMode,
   ]);
+
+  useEffect(() => {
+    if (timeMode === "endTime" && isStartTimeSpecified) {
+      if (timeEnd[0] === 23 && timeEnd[1] === 59) {
+        const newEndHour = Math.min(startTime[0] + 1, 23);
+        setTimeEnd([newEndHour, startTime[1]]);
+      }
+    }
+  }, [timeMode, isStartTimeSpecified]); // Removed timeEnd and startTime from deps to prevent infinite loop
 
   const handleRepetitionDone = () => {
     if (activeRepetitionType === "none") {
@@ -408,7 +421,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
   };
 
   return (
-    <div className="w-[20rem] sm:w-[26rem] mx-auto px-4 bg-background-700 rounded-2xl shadow">
+    <div className="w-[22rem] sm:w-[26rem] mx-auto px-4 bg-background-700 rounded-2xl shadow">
       <form action={handleSubmit}>
         <div>
           <div className="mb-4">
@@ -573,7 +586,114 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
           </Modal.Window>
         </ModalContext.Provider>
 
-        {!isStartTimeSpecified ? (
+        {isStartTimeSpecified && (
+          <div className="mt-3 p-4 bg-background-600 rounded-lg border border-background-500">
+            <h4 className="text-sm font-medium text-text-high mb-3">
+              How would you like to set the task time?
+            </h4>
+
+            <div className="space-y-3">
+              {/* Radio option 1: Set duration */}
+              <div className="flex items-start space-x-3">
+                <input
+                  type="radio"
+                  id="duration-mode"
+                  name="timeMode"
+                  value="duration"
+                  checked={timeMode === "duration"}
+                  onChange={() => setTimeMode("duration")}
+                  className="mt-1 text-primary-500 border-background-400 focus:ring-primary-500"
+                />
+                <div className="flex-1">
+                  <label
+                    htmlFor="duration-mode"
+                    className="text-sm font-medium text-text-low cursor-pointer"
+                  >
+                    Set task duration
+                  </label>
+                  <p className="text-xs text-text-gray mt-1">
+                    Specify how long the task takes, end time will be calculated
+                    automatically
+                  </p>
+
+                  {timeMode === "duration" && (
+                    <div className="mt-2">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          name="durationHours"
+                          value={duration[0].toString().padStart(2, "0")}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                            const newHour = parseInt(e.target.value, 10);
+                            setDuration([
+                              isNaN(newHour)
+                                ? 0
+                                : Math.max(0, Math.min(23, newHour)),
+                              duration[1],
+                            ]);
+                          }}
+                          className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none w-16"
+                        />
+                        <span className="text-text-medium">h</span>
+                        <Input
+                          type="number"
+                          name="durationMinutes"
+                          value={duration[1].toString().padStart(2, "0")}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                            const newMin = parseInt(e.target.value, 10);
+                            setDuration([
+                              duration[0],
+                              isNaN(newMin)
+                                ? 0
+                                : Math.max(0, Math.min(59, newMin)),
+                            ]);
+                          }}
+                          className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none w-16"
+                        />
+                        <span className="text-text-medium">m</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Radio option 2: Specify end time */}
+              <div className="flex items-start space-x-3">
+                <input
+                  type="radio"
+                  id="endtime-mode"
+                  name="timeMode"
+                  value="endTime"
+                  checked={timeMode === "endTime"}
+                  onChange={() => setTimeMode("endTime")}
+                  className="mt-1 text-primary-500 border-background-400 focus:ring-primary-500"
+                />
+                <div className="flex-1">
+                  <label
+                    htmlFor="endtime-mode"
+                    className="text-sm font-medium text-text-low cursor-pointer"
+                  >
+                    Specify when the task ends
+                  </label>
+                  <p className="text-xs text-text-gray mt-1">
+                    Set the exact time when the task should end
+                  </p>
+
+                  {timeMode === "endTime" && (
+                    <div className="mt-2">
+                      <p className="text-xs text-text-gray">
+                        You can set the end time in the &quot;Customize
+                        Task&quot; section above
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {!isStartTimeSpecified && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
             <div>
               <label
@@ -611,19 +731,6 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
                   className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 />
               </div>
-            </div>
-          </div>
-        ) : (
-          <div className="mb-6 text-sm text-text-gray p-3 bg-background-600 rounded-md border border-background-500 flex flex-col gap-3">
-            <div>
-              <p className="font-medium text-text-medium">
-                Duration Input Hidden
-              </p>
-              <p className="mt-1 text-xs">
-                Duration input is hidden because a start time is set. If a
-                duration was previously set, it helps calculate the end time.
-                Otherwise, set the end time manually via &apos;Ends at&apos;.
-              </p>
             </div>
           </div>
         )}

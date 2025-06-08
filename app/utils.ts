@@ -720,31 +720,62 @@ export function calculateNextDueDate(
 
   if (rule.timesPerWeek) {
     // For times per week, due date is always end of week
-    return endOfWeek(currentDate, MONDAY_START_OF_WEEK);
+    return startOfDay(endOfWeek(currentDate, MONDAY_START_OF_WEEK));
   }
 
   if (rule.daysOfWeek?.length) {
     const today = getDay(currentDate) as DayOfWeek;
-    let nextDueDay = today;
+
+    if (rule.daysOfWeek.includes(today) && task.status !== "completed") {
+      // Check if task was already completed today
+      if (
+        rule.lastInstanceCompletedDate &&
+        isToday(rule.lastInstanceCompletedDate)
+      ) {
+        // Already completed today, find next occurrence
+        let nextDueDay = (today + 1) % 7;
+        while (!rule.daysOfWeek.includes(nextDueDay as DayOfWeek)) {
+          nextDueDay = (nextDueDay + 1) % 7;
+        }
+        const daysUntilNext = (nextDueDay - today + 7) % 7;
+        return startOfDay(addDays(currentDate, daysUntilNext));
+      } else {
+        return startOfDay(currentDate);
+      }
+    }
+
+    // Find next scheduled day
+    let nextDueDay = (today + 1) % 7;
     while (!rule.daysOfWeek.includes(nextDueDay as DayOfWeek)) {
       nextDueDay = (nextDueDay + 1) % 7;
     }
     const daysUntilNext = (nextDueDay - today + 7) % 7;
-    return addDays(currentDate, daysUntilNext);
+    return startOfDay(addDays(currentDate, daysUntilNext));
   }
 
   if (rule.interval && rule.startDate) {
-    const daysSinceStart = differenceInDays(currentDate, rule.startDate);
-    const isDueToday =
-      task.status === "completed"
-        ? false
-        : daysSinceStart % rule.interval === 0;
+    const startDate = startOfDay(rule.startDate);
+    const current = startOfDay(currentDate);
 
-    if (isDueToday) {
-      return addDays(currentDate, rule.interval);
+    // If current date is before start date, next due date is the start date
+    if (isBefore(current, startDate)) {
+      return startDate;
+    }
+
+    const daysSinceStart = differenceInDays(current, startDate);
+    const isDueToday = daysSinceStart % rule.interval === 0;
+
+    if (isDueToday && task.status !== "completed") {
+      // If due today and not completed, next occurrence is after the interval
+      return addDays(
+        startDate,
+        Math.ceil((daysSinceStart + rule.interval) / rule.interval) *
+          rule.interval
+      );
     } else {
-      const daysUntilNext = rule.interval - (daysSinceStart % rule.interval);
-      return addDays(currentDate, daysUntilNext);
+      // Calculate the next occurrence from the start date
+      const nextCycleNumber = Math.floor(daysSinceStart / rule.interval) + 1;
+      return addDays(startDate, nextCycleNumber * rule.interval);
     }
   }
   return undefined;
@@ -889,3 +920,39 @@ export const formatNotificationCount = (count: number): string => {
   if (count > 99) return "99+";
   return count.toString();
 };
+
+export function isTaskAtRisk(
+  task: Task,
+  currentDate: Date = new Date()
+): boolean {
+  if (task.status !== "pending") return false;
+
+  if (!task.isRepeating) {
+    const oneHourBeforeDue = new Date(task.dueDate.getTime() - 60 * 60 * 1000);
+    return currentDate >= oneHourBeforeDue;
+  }
+
+  // For repeating tasks
+  const rule = task.repetitionRule;
+  if (!rule) return false;
+
+  if (rule.interval) {
+    const oneHourBeforeDue = new Date(task.dueDate.getTime() - 60 * 60 * 1000);
+    return currentDate >= oneHourBeforeDue;
+  }
+
+  // if days remaining of the week is close to timesPerWeek number
+  if (rule.timesPerWeek) {
+    const remainingCompletions = rule.timesPerWeek - (rule.completions || 0);
+    const daysLeftInWeek = 7 - getDay(currentDate);
+    return remainingCompletions >= daysLeftInWeek;
+  }
+
+  // risk is always on the dueDate
+  if (rule.daysOfWeek?.length) {
+    const todayDayOfWeek = getDay(currentDate) as DayOfWeek;
+    return rule.daysOfWeek.includes(todayDayOfWeek);
+  }
+
+  return false;
+}

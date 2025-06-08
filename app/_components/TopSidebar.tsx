@@ -15,7 +15,7 @@ import AddTask from "./AddTask";
 import { useKeyboardNavigation } from "../_hooks/useKeyboardNavigation";
 import { Task } from "../_types/types";
 import Search from "./Search";
-import NotificationBell from "./NotificationBell";
+import NotificationBell from "./inbox/NotificationBell";
 
 export default function TopSidebar({
   session,
@@ -26,14 +26,29 @@ export default function TopSidebar({
 }) {
   //Beacuse it is a CC - must be for react-tooltip
   useKeyboardNavigation();
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentTime, setCurrentTime] = useState(() => new Date());
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
+    // Update to the next minute boundary
+    const now = new Date();
+    const msUntilNextMinute =
+      (60 - now.getSeconds()) * 1000 - now.getMilliseconds();
 
-    return () => clearInterval(timer);
+    let timer: NodeJS.Timeout;
+
+    const initialTimeout = setTimeout(() => {
+      setCurrentTime(new Date());
+
+      // Then update every minute
+      timer = setInterval(() => {
+        setCurrentTime(new Date());
+      }, 60000);
+    }, msUntilNextMinute);
+
+    return () => {
+      clearTimeout(initialTimeout);
+      if (timer) clearInterval(timer);
+    };
   }, []);
 
   return (

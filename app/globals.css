@@ -47,8 +47,19 @@
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-corner {
   background-color: transparent;
+}
+
+/* Remove scrollbar arrow buttons */
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+::-webkit-scrollbar-button:start:decrement,
+::-webkit-scrollbar-button:end:increment {
+  display: none;
 }
 
 @layer components {
@@ -61,6 +72,72 @@ input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+/* Prevent zoom on input focus for mobile devices */
+@media screen and (max-width: 767px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+    transform-origin: left top;
+    transform: scale(1);
+  }
+}
+
+/* Ensure all inputs maintain consistent sizing */
+input,
+textarea,
+select {
+  -webkit-text-size-adjust: 100%;
+  -moz-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Always show scrollbars for better UX */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-divider) transparent;
+}
+
+.overflow-y-auto,
+.overflow-auto,
+.overflow-x-auto {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-divider) transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar,
+.overflow-auto::-webkit-scrollbar,
+.overflow-x-auto::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track,
+.overflow-auto::-webkit-scrollbar-track,
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb,
+.overflow-auto::-webkit-scrollbar-thumb,
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: var(--color-divider);
+  border-radius: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover,
+.overflow-auto::-webkit-scrollbar-thumb:hover,
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-low);
+}
+
+.overflow-y-auto::-webkit-scrollbar-button,
+.overflow-auto::-webkit-scrollbar-button,
+.overflow-x-auto::-webkit-scrollbar-button {
+  display: none;
 }
 
 /* Tooltip */
@@ -192,5 +269,16 @@ input[type="number"]::-webkit-outer-spin-button {
   }
   &:user-invalid {
     border-color: var(--color-error);
+  }
+}
+
+/* Custom breakpoint for better mobile experience */
+@media (min-width: 480px) {
+  .xs\:inline {
+    display: inline !important;
+  }
+
+  .xs\:hidden {
+    display: none !important;
   }
 }

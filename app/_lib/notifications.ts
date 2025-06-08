@@ -22,7 +22,7 @@ import {
   NotificationPriority,
   NotificationStats,
   Task,
-} from "@/app/_types/types";
+} from "../_types/types";
 import {
   isAfter,
   isToday,
@@ -31,6 +31,7 @@ import {
   differenceInDays,
   differenceInHours,
 } from "date-fns";
+import { getUserPreferences } from "./user";
 
 const NOTIFICATIONS_COLLECTION = "notifications";
 
@@ -305,10 +306,16 @@ export const generateOverdueTaskNotifications = async (
   userId: string,
   tasks: Task[]
 ): Promise<void> => {
+  const userPrefs = await getUserPreferences(userId);
+  if (!userPrefs?.notifyReminders) {
+    return;
+  }
+
   const now = new Date();
   const overdueTasks = tasks.filter(
     (task) =>
       task.status === "pending" &&
+      task.isReminder &&
       isBefore(task.dueDate, now) &&
       !isToday(task.dueDate)
   );
@@ -358,11 +365,17 @@ export const generateDueSoonNotifications = async (
   userId: string,
   tasks: Task[]
 ): Promise<void> => {
+  const userPrefs = await getUserPreferences(userId);
+  if (!userPrefs?.notifyReminders) {
+    return;
+  }
+
   const tomorrow = addDays(new Date(), 1);
   const dueSoonTasks = tasks.filter(
     (task) =>
-      (task.status === "pending" && isToday(task.dueDate)) ||
-      (isBefore(task.dueDate, tomorrow) && isAfter(task.dueDate, new Date()))
+      task.isReminder &&
+      ((task.status === "pending" && isToday(task.dueDate)) ||
+        (isBefore(task.dueDate, tomorrow) && isAfter(task.dueDate, new Date())))
   );
 
   for (const task of dueSoonTasks) {
@@ -402,6 +415,11 @@ export const generateAchievementNotification = async (
   achievementType: string,
   achievementData: Record<string, unknown>
 ): Promise<void> => {
+  const userPrefs = await getUserPreferences(userId);
+  if (!userPrefs?.notifyAchievements) {
+    return;
+  }
+
   const achievementTitles: Record<string, string> = {
     streak_milestone: "🔥 Streak Milestone!",
     points_milestone: "🏆 Points Milestone!",

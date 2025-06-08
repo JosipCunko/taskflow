@@ -6,7 +6,7 @@ import {
   NotificationStats,
   NotificationType,
 } from "@/app/_types/types";
-import NotificationCard from "@/app/_components/NotificationCard";
+import NotificationCard from "@/app/_components/inbox/NotificationCard";
 import {
   markAsReadAction,
   markAllAsReadAction,
@@ -24,7 +24,7 @@ import {
   Clock,
   Trophy,
 } from "lucide-react";
-import Button from "./reusable/Button";
+import Button from "../reusable/Button";
 
 interface InboxContentProps {
   initialNotifications: Notification[];
@@ -45,7 +45,6 @@ export default function InboxContent({
   const [searchQuery, setSearchQuery] = useState("");
   const [isPending, startTransition] = useTransition();
 
-  // Auto-generate notifications when component mounts
   useEffect(() => {
     const generateNotifications = async () => {
       try {
@@ -58,10 +57,8 @@ export default function InboxContent({
     generateNotifications();
   }, []);
 
-  // Filter and sort notifications
   const filteredNotifications = notifications
     .filter((notification) => {
-      // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         return (
@@ -72,7 +69,6 @@ export default function InboxContent({
       return true;
     })
     .filter((notification) => {
-      // Type filter
       switch (filter) {
         case "all":
           return true;
@@ -106,15 +102,83 @@ export default function InboxContent({
     });
 
   const handleMarkAsRead = async (notificationId: string) => {
-    startTransition(async () => {
-      const result = await markAsReadAction(notificationId);
-      handleToast(result);
+    // Optimistic update first
+    setNotifications((prev) =>
+      prev.map((n) =>
+        n.id === notificationId ? { ...n, isRead: true, readAt: new Date() } : n
+      )
+    );
+    updateStats();
 
-      if (result.success) {
+    localStorage.setItem("notifications-updated", Date.now().toString());
+
+    try {
+      const result = await markAsReadAction(notificationId);
+      if (!result.success) {
+        handleToast(result);
+        // Revert optimistic update on failure
         setNotifications((prev) =>
           prev.map((n) =>
             n.id === notificationId
-              ? { ...n, isRead: true, readAt: new Date() }
+              ? { ...n, isRead: false, readAt: undefined }
+              : n
+          )
+        );
+        updateStats();
+        // Trigger notification bell update again after revert
+        localStorage.setItem("notifications-updated", Date.now().toString());
+      }
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      // Revert optimistic update on error
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.id === notificationId
+            ? { ...n, isRead: false, readAt: undefined }
+            : n
+        )
+      );
+      updateStats();
+      // Trigger notification bell update again after revert
+      localStorage.setItem("notifications-updated", Date.now().toString());
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    const unreadIds = notifications.filter((n) => !n.isRead).map((n) => n.id);
+    if (unreadIds.length === 0) return;
+
+    // Optimistic update first
+    setNotifications((prev) =>
+      prev.map((n) => ({ ...n, isRead: true, readAt: new Date() }))
+    );
+    updateStats();
+
+    // Trigger notification bell update
+    localStorage.setItem("notifications-updated", Date.now().toString());
+
+    startTransition(async () => {
+      try {
+        const result = await markAllAsReadAction(unreadIds);
+        if (!result.success) {
+          handleToast(result);
+          // Revert optimistic update on failure
+          setNotifications((prev) =>
+            prev.map((n) =>
+              unreadIds.includes(n.id)
+                ? { ...n, isRead: false, readAt: undefined }
+                : n
+            )
+          );
+          updateStats();
+        }
+      } catch (error) {
+        console.error("Error marking all notifications as read:", error);
+        // Revert optimistic update on error
+        setNotifications((prev) =>
+          prev.map((n) =>
+            unreadIds.includes(n.id)
+              ? { ...n, isRead: false, readAt: undefined }
               : n
           )
         );
@@ -123,53 +187,57 @@ export default function InboxContent({
     });
   };
 
-  const handleMarkAllAsRead = async () => {
-    const unreadIds = notifications.filter((n) => !n.isRead).map((n) => n.id);
-    if (unreadIds.length === 0) return;
-
-    startTransition(async () => {
-      const result = await markAllAsReadAction(unreadIds);
-      handleToast(result);
-
-      if (result.success) {
-        setNotifications((prev) =>
-          prev.map((n) => ({ ...n, isRead: true, readAt: new Date() }))
-        );
-        updateStats();
-      }
-    });
-  };
-
   const handleArchive = async (notificationId: string) => {
-    startTransition(async () => {
-      const result = await archiveNotificationAction(notificationId);
-      handleToast(result);
+    // Optimistic update
+    setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+    updateStats();
 
-      if (result.success) {
-        setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
-        updateStats();
+    try {
+      const result = await archiveNotificationAction(notificationId);
+      if (!result.success) {
+        handleToast(result);
+        // We would need to revert, but since we removed it from the list,
+        // it's better to just refresh the data
+        window.location.reload();
       }
-    });
+    } catch (error) {
+      console.error("Error archiving notification:", error);
+      window.location.reload();
+    }
   };
 
   const handleDelete = async (notificationId: string) => {
-    startTransition(async () => {
-      const result = await deleteNotificationAction(notificationId);
-      handleToast(result);
+    // Optimistic update
+    setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+    updateStats();
 
-      if (result.success) {
-        setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
-        updateStats();
+    try {
+      const result = await deleteNotificationAction(notificationId);
+      if (!result.success) {
+        handleToast(result);
+        window.location.reload();
       }
-    });
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+      window.location.reload();
+    }
   };
 
   const handleRefresh = async () => {
     startTransition(async () => {
-      const result = await generateNotificationsAction();
-      if (result.success) {
-        // Refresh the page to get updated notifications
-        window.location.reload();
+      try {
+        const result = await generateNotificationsAction();
+        if (result.success) {
+          window.location.reload(); // Keep reload only for refresh since we're generating new notifications
+        } else {
+          handleToast(result);
+        }
+      } catch (error) {
+        console.error("Error refreshing notifications:", error);
+        handleToast({
+          success: false,
+          error: "Failed to refresh notifications",
+        });
       }
     });
   };
@@ -216,9 +284,9 @@ export default function InboxContent({
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div className="flex flex-wrap gap-2">
-          {/* Filter buttons */}
+      <div className="space-y-4">
+        {/* Filter buttons */}
+        <div className="flex flex-wrap gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-background-500">
           {filterOptions.map((option) => {
             const Icon = option.icon;
             const count =
@@ -236,7 +304,7 @@ export default function InboxContent({
                 onClick={() => setFilter(option.value)}
                 variant="secondary"
                 className={`
-                  text-nowrap gap-2 px-3 py-2 rounded-lg text-sm
+                  flex-shrink-0 text-nowrap gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm min-w-fit
                   ${
                     filter === option.value
                       ? "bg-primary-500/90 text-white"
@@ -244,12 +312,17 @@ export default function InboxContent({
                   }
                 `}
               >
-                <Icon size={16} />
-                {option.label}
+                <Icon size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
+                <span className="hidden xs:inline whitespace-nowrap">
+                  {option.label}
+                </span>
+                <span className="xs:hidden whitespace-nowrap">
+                  {option.label.slice(0, 3)}
+                </span>
                 {count > 0 && (
                   <span
                     className={`
-                    px-1.5 py-0.5 rounded-full text-xs
+                    px-1 sm:px-1.5 py-0.5 rounded-full text-xs whitespace-nowrap
                     ${
                       filter === option.value
                         ? "bg-white/20"
@@ -265,9 +338,10 @@ export default function InboxContent({
           })}
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Search and Actions */}
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
           {/* Search */}
-          <div className="relative">
+          <div className="relative flex-1 sm:max-w-xs">
             <Search
               className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-low"
               size={16}
@@ -277,39 +351,48 @@ export default function InboxContent({
               placeholder="Search notifications..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 bg-background-700 border border-background-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full pl-10 pr-4 py-2 bg-background-700 border border-background-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
 
-          {/* Sort */}
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortType)}
-            className="px-3 py-2 bg-background-700 border border-background-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-          >
-            <option value="newest">Newest First</option>
-            <option value="oldest">Oldest First</option>
-            <option value="priority">Priority</option>
-          </select>
+          {/* Sort and Actions */}
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            {/* Sort */}
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortType)}
+              className="flex-shrink-0 px-2 sm:px-3 py-2 bg-background-700 border border-background-600 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 min-w-fit"
+            >
+              <option value="newest">Newest</option>
+              <option value="oldest">Oldest</option>
+              <option value="priority">Priority</option>
+            </select>
 
-          {/* Actions */}
-          <Button
-            onClick={handleMarkAllAsRead}
-            disabled={isPending || stats.totalUnread === 0}
-            className="disabled:opacity-50 disabled:cursor-not-allowed text-nowrap "
-          >
-            <CheckCircle2 size={16} />
-            Mark All Read
-          </Button>
+            {/* Actions */}
+            <Button
+              onClick={handleMarkAllAsRead}
+              disabled={isPending || stats.totalUnread === 0}
+              className="flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed text-nowrap px-2 sm:px-3 py-2 text-xs sm:text-sm gap-1 sm:gap-2 min-w-fit"
+            >
+              <CheckCircle2 size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
+              <span className="hidden sm:inline">Mark All Read</span>
+              <span className="sm:hidden">Read All</span>
+            </Button>
 
-          <button
-            onClick={handleRefresh}
-            disabled={isPending}
-            className="flex items-center gap-2 px-3 py-2 bg-background-700 text-text-low rounded-lg text-sm font-medium hover:bg-background-600 disabled:opacity-50 transition-colors"
-          >
-            <RefreshCw size={16} className={isPending ? "animate-spin" : ""} />
-            Refresh
-          </button>
+            <button
+              onClick={handleRefresh}
+              disabled={isPending}
+              className="flex-shrink-0 flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 bg-background-700 text-text-low rounded-lg text-xs sm:text-sm font-medium hover:bg-background-600 disabled:opacity-50 transition-colors min-w-fit"
+            >
+              <RefreshCw
+                size={14}
+                className={`sm:w-4 sm:h-4 flex-shrink-0 ${
+                  isPending ? "animate-spin" : ""
+                }`}
+              />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+          </div>
         </div>
       </div>
 

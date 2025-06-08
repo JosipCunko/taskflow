@@ -148,12 +148,13 @@ export default async function TodayPage() {
         </div>
 
         {/* Repeating Tasks Today */}
-        {todaysRepeatingTasks.length > 0 && (
+        {todaysRepeatingTasks.filter((task) => task.status !== "completed")
+          .length > 0 && (
           <div className="bg-background-700 p-6 rounded-lg shadow">
             <h2 className="text-xl font-semibold mb-4 text-primary-500">
               Repeating Tasks Due Today
             </h2>
-            <div className="space-y-3">
+            <div className="space-y-3 max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-background-500 scrollbar-track-transparent">
               {todaysRepeatingTasks
                 .filter((task) => task.status !== "completed")
                 .map((task) => (

@@ -30,8 +30,9 @@ import { Task } from "../_types/types";
 import RepeatingTaskCardSmall from "../_components/RepeatingTaskCardSmall";
 import { loadNotesByUserId } from "../_lib/notes";
 import { isTaskDueOn } from "../utils";
+import { isSameDay } from "date-fns";
 import { redirect } from "next/navigation";
-import NotificationSummary from "../_components/NotificationSummary";
+import NotificationSummary from "../_components/inbox/NotificationSummary";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -74,12 +75,53 @@ export default async function DashboardPage() {
   );
 
   // Calculate potential points available today (for incomplete tasks)
-  const potentialTodayPoints = [...todaysTasks, ...repeatingTasksDueToday]
-    .filter((task) => task.status !== "completed")
-    .reduce(
-      (acc: number, task: Task) => acc + calculatePotentialTaskPoints(task),
-      0
-    );
+  // For regular tasks: exclude completed tasks
+  // For repeating tasks: exclude if already completed today or can't be completed today
+  const incompleteTodayTasks = todaysTasks.filter(
+    (task) => task.status !== "completed"
+  );
+
+  const incompleteRepeatingTasksDueToday = repeatingTasksDueToday.filter(
+    (task) => {
+      // If task is marked as completed, it can't earn more points today
+      if (task.status === "completed") return false;
+
+      // Check if this repeating task was already completed today
+      const rule = task.repetitionRule;
+      if (rule?.lastInstanceCompletedDate) {
+        const today = new Date();
+        const lastCompleted = rule.lastInstanceCompletedDate;
+
+        // If interval task was completed today, it's not available for more points
+        if (rule.interval && isSameDay(lastCompleted, today)) {
+          return false;
+        }
+
+        // If times per week task has reached its limit for this week
+        if (rule.timesPerWeek && rule.completions >= rule.timesPerWeek) {
+          return false;
+        }
+
+        // If days of week task has been completed for all required days this week
+        if (
+          rule.daysOfWeek?.length &&
+          rule.completions >= rule.daysOfWeek.length
+        ) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+  );
+
+  const potentialTodayPoints = [
+    ...incompleteTodayTasks,
+    ...incompleteRepeatingTasksDueToday,
+  ].reduce(
+    (acc: number, task: Task) => acc + calculatePotentialTaskPoints(task),
+    0
+  );
 
   return (
     <div className="p-6 space-y-8">
@@ -102,7 +144,7 @@ export default async function DashboardPage() {
           }`}
           icon={<Clock className="text-primary" size={24} />}
           subtitle={`${
-            pendingTodayTasks.length + repeatingTasksDueToday.length
+            pendingTodayTasks.length + incompleteRepeatingTasksDueToday.length
           } pending`}
         />
         <DashboardCard
@@ -191,7 +233,8 @@ export default async function DashboardPage() {
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-bold text-warning">
-                      {pendingTodayTasks.length + repeatingTasksDueToday.length}
+                      {pendingTodayTasks.length +
+                        incompleteRepeatingTasksDueToday.length}
                     </p>
                     <p className="text-sm text-text-low">Pending</p>
                   </div>
@@ -455,7 +498,7 @@ export default async function DashboardPage() {
               {repeatingTasksDueToday.length} due today
             </span>
           </div>
-          <div className="space-y-3 max-h-64 overflow-y-auto">
+          <div className="space-y-3 max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-background-500 scrollbar-track-transparent">
             {repeatingTasks.map((task: Task) => (
               <RepeatingTaskCardSmall key={task.id} notProcessedTask={task} />
             ))}

@@ -82,14 +82,14 @@ function Window({ children, name, showButton = undefined }: WindowProps) {
 
   return createPortal(
     <div
-      className="fixed inset-0 rounded-xl backdrop-blur-lg z-[999] p-0 " // adjusted backdrop-blur and z-index
+      className="fixed inset-0 rounded-xl backdrop-blur-lg z-[999] p-4 overflow-y-auto flex items-center justify-center" // Added overflow-y-auto and flex centering
     >
       <div
         className="fixed top-[50%] left-[50%] rounded-lg shadow-lg bg-background-700 p-4 "
         style={{
           transform: "translate(-50%, -50%)",
           transition: "transform 0.3s ease-out, opacity 0.3s ease-out",
-          opacity: 1, // Start with opacity 1 if no complex entry animation
+          opacity: 1,
         }}
       >
         <div>{cloneElement(children, { onCloseModal: close })}</div>

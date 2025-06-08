@@ -16,6 +16,7 @@ type UserWithExtendedData = (NextAuthUser | AdapterUser) & {
   rewardPoints: number;
   notifyReminders: boolean;
   notifyAchievements: boolean;
+  achievements: { id: string; unlockedAt: Date }[];
 };
 
 interface FirebaseUser {
@@ -33,6 +34,7 @@ interface FirestoreUserData {
   rewardPoints: number;
   notifyReminders: boolean;
   notifyAchievements: boolean;
+  achievements: { id: string; unlockedAt: Timestamp }[];
   email?: string | null;
   displayName?: string | null;
   photoURL?: string | null;

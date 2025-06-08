@@ -173,15 +173,10 @@ export default function Search({ onCloseModal, tasks }: SearchProps) {
 
                 return (
                   <li key={task.id}>
-                    {/*
-                    Ideally, this Link would navigate to a specific task view
-                    For now, it's a placeholder. You might also make the whole
-                    <li> a button that, onClick, navigates and closes the modal.
-                  */}
                     <Link
-                      href={`/tasks`}
+                      href={`/webapp/tasks`}
                       onClick={handleItemClick}
-                      className={`flex items-center justify-between w-full p-2.5 hover:bg-background-500 rounded-md text-left  group border-l-4`}
+                      className={`flex items-center justify-between w-full p-2.5 hover:bg-background-500 rounded-md text-left group border-l-4`}
                       style={{
                         borderLeftColor: task.color,
                         transition: "border-color 0.2s",
