@@ -8,6 +8,7 @@ import {
   Check,
   AlertTriangle,
 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 
 import type { Task, DayOfWeek, ActionResult } from "@/app/_types/types";
 import {
@@ -18,6 +19,7 @@ import {
   getStatusStyles,
   getTaskIconByName,
   handleToast,
+  getStartAndEndTime,
 } from "../utils";
 import Button from "./reusable/Button";
 import {
@@ -25,13 +27,55 @@ import {
   completeRepeatingTaskWithInterval,
   completeRepeatingTaskWithTimesPerWeek,
 } from "../_lib/repeatingTasksActions";
-import { FormEvent, useMemo } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import {
   loadRepeatingTaskWithDaysOfWeek,
   loadRepeatingTaskWithInterval,
   loadRepeatingTaskWithTimesPerWeek,
 } from "../_lib/repeatingTasks";
 import DurationCalculator from "./DurationCalculator";
+import {
+  deleteTaskAction,
+  togglePriorityAction,
+  updateTaskExperienceAction,
+} from "../_lib/actions";
+import { useFormStatus } from "react-dom";
+import { useOutsideClick } from "../_hooks/useOutsideClick";
+import EmojiExperience from "./EmojiExperience";
+
+function ActionSubmitButton({
+  children,
+  className,
+  Icon,
+  classNameIcon,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  Icon?: React.ElementType;
+  classNameIcon?: string;
+}) {
+  const { pending } = useFormStatus();
+  return (
+    <Button
+      type="submit"
+      disabled={pending}
+      variant="secondary"
+      className={`w-full text-left px-2.5 py-2.5 text-sm text-text-gray    ${className} ${
+        pending ? "opacity-50 cursor-not-allowed" : ""
+      }`}
+    >
+      {Icon && (
+        <Icon
+          size={16}
+          className={`mr-2.5 text-text-low group-hover:text-text-high transition-colors ${
+            classNameIcon ? classNameIcon : ""
+          }`}
+        />
+      )}
+      {pending ? "Processing..." : children}
+    </Button>
+  );
+}
 
 interface RepeatingTaskCardSmallProps {
   notProcessedTask: Task & { isDueToday?: boolean; risk?: boolean };
@@ -52,6 +96,9 @@ const getDayName = (day: DayOfWeek): string => {
 export default function RepeatingTaskCardSmall({
   notProcessedTask,
 }: RepeatingTaskCardSmallProps) {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const outsideClickRef = useOutsideClick(() => setIsDropdownOpen(false));
+
   const task: Task & { isDueToday?: boolean; risk?: boolean } = useMemo(() => {
     if (notProcessedTask.repetitionRule?.interval) {
       return loadRepeatingTaskWithInterval(notProcessedTask);
@@ -76,48 +123,50 @@ export default function RepeatingTaskCardSmall({
   let nextInstanceInfo = "Next: TBD";
   const rule = task.repetitionRule;
 
+  const { startTime, endTime } = getStartAndEndTime(task);
+
   // Helper function to format time information
-  const getTimeString = () => {
-    const hasStartTime =
-      task.startTime &&
-      (task.startTime.hour !== 0 || task.startTime.minute !== 0);
+  function getTimeString() {
+    const hasStartTime = task.startTime && startTime !== "00:00";
+    const isEndTimeDefault = endTime === "23:59";
+    const isEndTimeMidnight = endTime === "00:00";
+
+    // Check if task has duration specified - if so, we should show meaningful time info
     const hasDuration =
       task.duration && (task.duration.hours > 0 || task.duration.minutes > 0);
 
+    // If no start time and no meaningful duration, don't show time info
     if (!hasStartTime && !hasDuration) {
       return "";
     }
 
-    const startTimeStr =
-      hasStartTime && task.startTime
-        ? `${task.startTime.hour
-            .toString()
-            .padStart(2, "0")}:${task.startTime.minute
-            .toString()
-            .padStart(2, "0")}`
-        : null;
-
-    // Calculate end time from start time + duration
-    let endTimeStr = null;
-    if (hasStartTime && hasDuration && task.startTime && task.duration) {
-      const startMinutes = task.startTime.hour * 60 + task.startTime.minute;
+    // If we have start time and duration, calculate proper end time
+    if (hasStartTime && hasDuration) {
+      const startMinutes = task.startTime!.hour * 60 + task.startTime!.minute;
       const durationMinutes =
-        (task.duration.hours || 0) * 60 + (task.duration.minutes || 0);
+        (task.duration!.hours || 0) * 60 + (task.duration!.minutes || 0);
       const endMinutes = startMinutes + durationMinutes;
       const endHour = Math.floor(endMinutes / 60) % 24;
       const endMinute = endMinutes % 60;
-      endTimeStr = `${endHour.toString().padStart(2, "0")}:${endMinute
+      const calculatedEndTime = `${endHour
         .toString()
-        .padStart(2, "0")}`;
+        .padStart(2, "0")}:${endMinute.toString().padStart(2, "0")}`;
+
+      return ` ${startTime} - ${calculatedEndTime}`;
     }
 
-    if (startTimeStr && endTimeStr) {
-      return ` from ${startTimeStr} to ${endTimeStr}`;
-    } else if (startTimeStr) {
-      return ` from ${startTimeStr}`;
+    // Only start time specified (no duration or end is default)
+    if (
+      hasStartTime &&
+      (isEndTimeDefault || isEndTimeMidnight || !hasDuration)
+    ) {
+      return ` from ${startTime}`;
     }
+
+    // For cases where endTime is meaningful (not default and not from creation time)
+    // This is tricky to detect, so we'll be conservative and not show arbitrary end times
     return "";
-  };
+  }
 
   if (rule) {
     const timeString = getTimeString();
@@ -282,6 +331,7 @@ export default function RepeatingTaskCardSmall({
     <div
       className={`${cardBaseClasses} ${cardStateClasses} border border-divider`}
       style={{ borderLeftColor: borderColor }}
+      ref={outsideClickRef}
     >
       <div className="flex-grow">
         <div className="flex items-start justify-between mb-2">
@@ -297,21 +347,116 @@ export default function RepeatingTaskCardSmall({
               {task.title}
             </h3>
           </div>
-          {/* Action button or Status Icon */}
-          {canCompleteToday && !isFullyCompletedForCurrentCycle && (
-            <form onSubmit={handleComplete} className="ml-2 flex-shrink-0">
-              <Button
-                type="submit"
-                variant="secondary"
-                className="p-1.5 rounded-full hover:bg-primary-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Check
-                  size={18}
-                  className="text-primary-500 group-hover:text-primary-400"
-                />
-              </Button>
-            </form>
-          )}
+          <div className="relative shrink-0 ml-2">
+            <Button
+              variant="secondary"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              aria-label="Task options"
+              className="text-text-low hover:text-text-high hover:bg-background-hover focus:ring-1 focus:ring-primary-500 p-1.5 rounded-md"
+            >
+              <CardSpecificIcons.Options size={16} />
+            </Button>
+            <AnimatePresence>
+              {isDropdownOpen && (
+                <motion.ul
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{
+                    opacity: 0,
+                    y: -10,
+                    scale: 0.95,
+                    transition: { duration: 0.15 },
+                  }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="absolute right-0 mt-2 w-60 bg-background-600 border border-divider shadow-xl rounded-lg p-1.5 z-50 origin-top-right focus:outline-none"
+                >
+                  {/* Complete Action */}
+                  {canCompleteToday && !isFullyCompletedForCurrentCycle && (
+                    <li>
+                      <form
+                        onSubmit={async (e) => {
+                          await handleComplete(e);
+                          setIsDropdownOpen(false);
+                        }}
+                      >
+                        <ActionSubmitButton Icon={Check}>
+                          Complete Task
+                        </ActionSubmitButton>
+                      </form>
+                    </li>
+                  )}
+
+                  {/* Toggle Priority */}
+                  <li>
+                    <form
+                      action={async (formData: FormData) => {
+                        const res = await togglePriorityAction(formData);
+                        handleToast(res, () => setIsDropdownOpen(false));
+                      }}
+                    >
+                      <input type="hidden" name="taskId" value={task.id} />
+                      <input
+                        type="hidden"
+                        name="currentIsPriority"
+                        value={task.isPriority.toString()}
+                      />
+                      <ActionSubmitButton
+                        Icon={
+                          task.isPriority
+                            ? CardSpecificIcons.RemovePriority
+                            : CardSpecificIcons.AddPriority
+                        }
+                      >
+                        {task.isPriority ? "Remove Priority" : "Add Priority"}
+                      </ActionSubmitButton>
+                    </form>
+                  </li>
+
+                  {/* Emoji experience for completed tasks */}
+                  {isFullyCompletedForCurrentCycle && (
+                    <li>
+                      <form
+                        action={async (formData: FormData) => {
+                          const res = await updateTaskExperienceAction(
+                            formData
+                          );
+                          handleToast(res, () => setIsDropdownOpen(false));
+                        }}
+                      >
+                        <input type="hidden" name="taskId" value={task.id} />
+                        <EmojiExperience currentExperience={task.experience} />
+                      </form>
+                    </li>
+                  )}
+
+                  <li className="my-1">
+                    <hr className="border-divider opacity-50" />
+                  </li>
+
+                  {/* Delete Action */}
+                  <li>
+                    <form
+                      action={async (formData: FormData) => {
+                        const res = await deleteTaskAction(formData);
+                        handleToast(res, () => setIsDropdownOpen(false));
+                      }}
+                    >
+                      <input type="hidden" name="taskId" value={task.id} />
+                      <ActionSubmitButton
+                        Icon={CardSpecificIcons.Delete}
+                        className="text-red-500 hover:bg-red-500/10"
+                        classNameIcon="group-hover:text-red-500"
+                      >
+                        <span className="group-hover:text-red-500">
+                          Delete Task
+                        </span>
+                      </ActionSubmitButton>
+                    </form>
+                  </li>
+                </motion.ul>
+              )}
+            </AnimatePresence>
+          </div>
           {isFullyCompletedForCurrentCycle && (
             <CheckCircle2
               size={20}

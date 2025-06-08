@@ -73,9 +73,10 @@ import {
   isBefore,
   isEqual,
   isPast,
+  isSameDay,
+  isSameWeek,
   parseISO,
   startOfDay,
-  startOfWeek,
 } from "date-fns";
 import { isFuture, isToday } from "date-fns";
 
@@ -790,21 +791,36 @@ export function isTaskDueOn(task: Task, date: Date): boolean {
 
   const rule = task.repetitionRule;
 
+  const taskStartOnDate = rule.startDate;
   if (rule.timesPerWeek) {
-    const weekStart = startOfWeek(date, MONDAY_START_OF_WEEK);
-    const isCurrentWeek =
-      startOfWeek(date, MONDAY_START_OF_WEEK).getTime() === weekStart.getTime();
-    return isCurrentWeek && (rule.completions || 0) < rule.timesPerWeek;
+    const sameWeek = isSameWeek(date, taskStartOnDate, MONDAY_START_OF_WEEK);
+    const notCompletedToday =
+      !rule.lastInstanceCompletedDate ||
+      !isSameDay(rule.lastInstanceCompletedDate, new Date());
+    return (
+      sameWeek &&
+      notCompletedToday &&
+      (rule.completions || 0) < rule.timesPerWeek
+    );
   }
+  if (rule.daysOfWeek.length) {
+    const sameWeek = isSameWeek(date, taskStartOnDate, MONDAY_START_OF_WEEK);
 
-  if (rule.daysOfWeek?.length) {
     const dayOfWeek = getDay(date) as DayOfWeek;
-    return rule.daysOfWeek.includes(dayOfWeek);
+    const isScheduledToday = rule.daysOfWeek.includes(dayOfWeek);
+    const notCompletedToday =
+      !rule.lastInstanceCompletedDate ||
+      !isSameDay(rule.lastInstanceCompletedDate, new Date());
+    return sameWeek && isScheduledToday && notCompletedToday;
   }
 
   if (rule.interval && rule.startDate) {
     const daysSinceStart = differenceInDays(date, rule.startDate);
-    return daysSinceStart % rule.interval === 0;
+    const isDueToday = daysSinceStart % rule.interval === 0;
+    const notCompletedToday =
+      !rule.lastInstanceCompletedDate ||
+      !isSameDay(rule.lastInstanceCompletedDate, new Date());
+    return isDueToday && notCompletedToday;
   }
   return false;
 }
@@ -955,4 +971,16 @@ export function isTaskAtRisk(
   }
 
   return false;
+}
+
+export function getStartAndEndTime(task: Task) {
+  const endTime =
+    task.dueDate.getHours().toString().padStart(2, "0") +
+    ":" +
+    task.dueDate.getMinutes().toString().padStart(2, "0");
+  const startTime =
+    task.startTime?.hour.toString().padStart(2, "0") +
+    ":" +
+    task.startTime?.minute.toString().padStart(2, "0");
+  return { startTime, endTime };
 }

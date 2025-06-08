@@ -51,7 +51,7 @@ export function preCreateRepeatingTask(
         interval: undefined,
         daysOfWeek: [],
         lastInstanceCompletedDate: undefined,
-        startDate: startOfDay(startOfWeek(taskStartDate)),
+        startDate: startOfDay(startOfWeek(taskStartDate, MONDAY_START_OF_WEEK)),
         completions: 0,
       },
     };
@@ -66,7 +66,7 @@ export function preCreateRepeatingTask(
         timesPerWeek: undefined,
         interval: undefined,
         lastInstanceCompletedDate: undefined,
-        startDate: startOfDay(startOfWeek(taskStartDate)),
+        startDate: startOfDay(startOfWeek(taskStartDate, MONDAY_START_OF_WEEK)),
         completions: 0,
       },
     };
@@ -74,8 +74,7 @@ export function preCreateRepeatingTask(
 }
 
 export function loadRepeatingTaskWithTimesPerWeek(
-  task: Task,
-  currentDate: Date = new Date()
+  task: Task
 ): Task & Partial<{ risk: boolean; isDueToday: boolean }> {
   if (!task.isRepeating || !task.repetitionRule) {
     return task;
@@ -85,19 +84,20 @@ export function loadRepeatingTaskWithTimesPerWeek(
   if (!rule.timesPerWeek || rule.timesPerWeek <= 0) {
     return task;
   }
+  const currentDate = new Date();
 
-  const weekStart = startOfWeek(currentDate, MONDAY_START_OF_WEEK);
+  const taskStartOnDate = rule.startDate;
+  const weekStart = startOfWeek(taskStartOnDate, MONDAY_START_OF_WEEK);
   const fullyCompleted = rule.completions === rule.timesPerWeek;
 
   const loadedTask = {
     ...task,
     status: fullyCompleted ? "completed" : "pending",
-    dueDate: startOfDay(endOfWeek(currentDate, MONDAY_START_OF_WEEK)),
+    dueDate: startOfDay(endOfWeek(taskStartOnDate, MONDAY_START_OF_WEEK)),
     isDueToday: isTaskDueOn(task, currentDate),
     repetitionRule: {
       ...rule,
-      startDate: startOfDay(weekStart),
-      completions: !isSameWeek(rule.startDate, weekStart, MONDAY_START_OF_WEEK)
+      completions: !isSameWeek(taskStartOnDate, weekStart, MONDAY_START_OF_WEEK)
         ? 0
         : rule.completions,
     },
@@ -112,19 +112,19 @@ export function loadRepeatingTaskWithTimesPerWeek(
 }
 
 export function loadRepeatingTaskWithDaysOfWeek(
-  task: Task,
-  currentDate: Date = new Date()
+  task: Task
 ): Task & Partial<{ isDueToday: boolean; risk: boolean }> {
   if (!task.isRepeating || !task.repetitionRule) {
     return task;
   }
-
+  const currentDate = new Date();
   const rule = task.repetitionRule;
   if (rule.daysOfWeek.length === 0) {
     return task;
   }
 
-  const weekStart = startOfWeek(currentDate, MONDAY_START_OF_WEEK);
+  const taskStartOnDate = rule.startDate;
+  const weekStart = startOfWeek(taskStartOnDate, MONDAY_START_OF_WEEK);
   const fullyCompleted = rule.daysOfWeek.length === rule.completions;
 
   const nextDueDate = calculateNextDueDate(task, currentDate);
@@ -135,8 +135,7 @@ export function loadRepeatingTaskWithDaysOfWeek(
     dueDate: nextDueDate as Date,
     repetitionRule: {
       ...rule,
-      startDate: startOfDay(weekStart),
-      completions: !isSameWeek(rule.startDate, weekStart, MONDAY_START_OF_WEEK)
+      completions: !isSameWeek(taskStartOnDate, weekStart, MONDAY_START_OF_WEEK)
         ? 0
         : rule.completions,
     },
@@ -152,13 +151,12 @@ export function loadRepeatingTaskWithDaysOfWeek(
 }
 
 export function loadRepeatingTaskWithInterval(
-  task: Task,
-  currentDate: Date = new Date()
+  task: Task
 ): Task & Partial<{ isDueToday: boolean; nextDueDate: Date; risk: boolean }> {
   if (!task.isRepeating || !task.repetitionRule) {
     return task;
   }
-
+  const currentDate = new Date();
   const rule = task.repetitionRule;
   if (!rule.interval || !rule.startDate) {
     return task;

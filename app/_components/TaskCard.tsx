@@ -6,6 +6,7 @@ import {
   CardSpecificIcons,
   handleToast,
   getStatusStyles,
+  getStartAndEndTime,
 } from "../utils";
 import { formatDate } from "../utils";
 import { Task } from "../_types/types";
@@ -131,14 +132,7 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
     }
   };
 
-  const endTime =
-    task.dueDate.getHours().toString().padStart(2, "0") +
-    ":" +
-    task.dueDate.getMinutes().toString().padStart(2, "0");
-  const startTime =
-    task.startTime?.hour.toString().padStart(2, "0") +
-    ":" +
-    task.startTime?.minute.toString().padStart(2, "0");
+  const { startTime, endTime } = getStartAndEndTime(task);
 
   return (
     <motion.div
@@ -539,7 +533,6 @@ export default function TaskCard({ task, index = 0 }: TaskCardProps) {
           )}
         </div>
 
-        {/* Duration */}
         <DurationCalculator task={task} />
 
         {/* Tags */}

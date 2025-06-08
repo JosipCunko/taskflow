@@ -129,7 +129,7 @@ export default function RepetitionRulesModal({
   ];
 
   return (
-    <div className="p-2 bg-background-650 rounded-2xl shadow-2xl w-full max-w-2xl mx-auto space-y-8 min-w-[24rem]">
+    <div className="p-2 bg-background-650 rounded-2xl shadow-2xl w-full max-w-2xl mx-auto space-y-8 min-w-[24rem] overflow-y-auto">
       <div className="text-center">
         <h3 className="text-2xl font-bold text-text-high mb-2">
           Set Repetition Rules

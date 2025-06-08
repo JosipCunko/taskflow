@@ -1,12 +1,6 @@
 "use server";
 
-import {
-  differenceInDays,
-  isSameDay,
-  isSameWeek,
-  startOfWeek,
-  addDays,
-} from "date-fns";
+import { differenceInDays, isSameWeek, startOfWeek, addDays } from "date-fns";
 import type { Task, ActionResult } from "@/app/_types/types";
 import { updateTask } from "./tasks";
 import { isTaskDueOn, MONDAY_START_OF_WEEK } from "../utils";
@@ -30,13 +24,10 @@ export async function completeRepeatingTaskWithTimesPerWeek(
     };
   }
 
-  if (
-    rule.lastInstanceCompletedDate &&
-    isSameDay(rule.lastInstanceCompletedDate, completionDate)
-  ) {
+  if (!isTaskDueOn(task, completionDate)) {
     return {
       success: false,
-      error: "Task already completed today",
+      error: "Task is not scheduled for today",
     };
   }
 
@@ -106,15 +97,6 @@ export async function completeRepeatingTaskWithDaysOfWeek(
     };
   }
 
-  if (
-    rule.lastInstanceCompletedDate &&
-    isSameDay(rule.lastInstanceCompletedDate, completionDate)
-  ) {
-    return {
-      success: false,
-      error: "Task already completed today",
-    };
-  }
   const weekStart = startOfWeek(completionDate, MONDAY_START_OF_WEEK);
 
   if (
@@ -176,16 +158,6 @@ export async function completeRepeatingTaskWithInterval(
     };
   }
 
-  // Check if already completed today
-  if (
-    rule.lastInstanceCompletedDate &&
-    isSameDay(rule.lastInstanceCompletedDate, completionDate)
-  ) {
-    return {
-      success: false,
-      error: "Task already completed today",
-    };
-  }
   const daysSinceStart = differenceInDays(completionDate, rule.startDate);
 
   if (!isTaskDueOn(task, completionDate)) {
