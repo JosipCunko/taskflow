@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/_lib/auth";
 import { redirect } from "next/navigation";
@@ -35,32 +34,7 @@ export default async function InboxPage() {
         </p>
       </div>
 
-      <Suspense fallback={<InboxSkeleton />}>
-        <InboxContent
-          initialNotifications={notifications}
-          initialStats={stats}
-        />
-      </Suspense>
-    </div>
-  );
-}
-
-function InboxSkeleton() {
-  return (
-    <div className="space-y-4">
-      {[...Array(5)].map((_, i) => (
-        <div key={i} className="animate-pulse">
-          <div className="bg-background-700 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <div className="w-5 h-5 bg-background-600 rounded"></div>
-              <div className="flex-1">
-                <div className="h-4 bg-background-600 rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-background-600 rounded w-1/2"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
+      <InboxContent initialNotifications={notifications} initialStats={stats} />
     </div>
   );
 }

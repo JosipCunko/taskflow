@@ -180,7 +180,7 @@ export async function completeRepeatingTaskWithInterval(
     },
     dueDate: nextDueDate,
     completedAt: completionDate,
-    status: "pending", // Reset status to pending for the next occurrence
+    status: "completed", // It's completed for today. The loader will reset it to pending tomorrow.
   };
 
   try {

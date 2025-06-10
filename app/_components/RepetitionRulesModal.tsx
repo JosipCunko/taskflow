@@ -129,192 +129,213 @@ export default function RepetitionRulesModal({
   ];
 
   return (
-    <div className="p-2 bg-background-650 rounded-2xl shadow-2xl w-full max-w-2xl mx-auto space-y-8 min-w-[24rem] overflow-y-auto">
-      <div className="text-center">
-        <h3 className="text-2xl font-bold text-text-high mb-2">
+    <div className="bg-background-650 rounded-2xl shadow-2xl w-full max-w-2xl mx-auto min-w-[24rem] flex flex-col max-h-[90vh] sm:max-h-[85vh]">
+      {/* Fixed Header */}
+      <div className="text-center p-4 sm:p-6 border-b border-divider/20 flex-shrink-0">
+        <h3 className="text-xl sm:text-2xl font-bold text-text-high mb-2">
           Set Repetition Rules
         </h3>
-        <p className="text-text-low">
+        <p className="text-text-low text-sm sm:text-base">
           Choose how often this task should repeat
         </p>
       </div>
 
-      {/* Repetition Type Selection */}
-      <div className="space-y-4">
-        <p className="text-lg font-semibold text-text-high">Repeat Pattern</p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {(["interval", "daysOfWeek", "timesPerWeek"] as const).map((type) => {
-            let label = "";
-            let description = "";
-            if (type === "interval") {
-              label = "Every X Days";
-              description = "Repeat every few days";
-            } else if (type === "daysOfWeek") {
-              label = "Specific Days";
-              description = "Certain days of week";
-            } else if (type === "timesPerWeek") {
-              label = "X Times/Week";
-              description = "Flexible weekly goal";
-            }
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4 sm:space-y-6">
+        {/* Repetition Type Selection */}
+        <div className="space-y-4">
+          <p className="text-lg font-semibold text-text-high">Repeat Pattern</p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            {(["interval", "daysOfWeek", "timesPerWeek"] as const).map(
+              (type) => {
+                let label = "";
+                let description = "";
+                if (type === "interval") {
+                  label = "Every X Days";
+                  description = "Repeat every few days";
+                } else if (type === "daysOfWeek") {
+                  label = "Specific Days";
+                  description = "Certain days of week";
+                } else if (type === "timesPerWeek") {
+                  label = "X Times/Week";
+                  description = "Flexible weekly goal";
+                }
 
-            return (
-              <label
-                key={type}
-                className={`flex flex-col items-center p-6 rounded-xl border-2 cursor-pointer transition-all text-center group
+                return (
+                  <label
+                    key={type}
+                    className={`flex flex-col items-center p-4 sm:p-6 rounded-xl border-2 cursor-pointer transition-all text-center group
                             ${
                               activeRepetitionType === type
                                 ? "bg-primary-500/10 border-primary-500 text-primary-500"
                                 : "bg-background-500 border-background-700 text-text-low hover:border-primary-400 hover:bg-background-450"
                             }`}
-              >
-                <input
-                  type="radio"
-                  name="repetitionTypeModal"
-                  value={type}
-                  checked={activeRepetitionType === type}
-                  onChange={() => setActiveRepetitionType(type)}
-                  className="sr-only"
-                />
-                <span className="text-base font-semibold mb-1">{label}</span>
-                <span className="text-xs opacity-80">{description}</span>
-              </label>
-            );
-          })}
+                  >
+                    <input
+                      type="radio"
+                      name="repetitionTypeModal"
+                      value={type}
+                      checked={activeRepetitionType === type}
+                      onChange={() => setActiveRepetitionType(type)}
+                      className="sr-only"
+                    />
+                    <span className="text-base font-semibold mb-1">
+                      {label}
+                    </span>
+                    <span className="text-xs opacity-80">{description}</span>
+                  </label>
+                );
+              }
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Conditional Configuration */}
-      {activeRepetitionType === "interval" && (
-        <div className="p-6 bg-background-500/50 rounded-xl  animate-fadeInQuick">
-          <NumberControl
-            label="Repeat every"
-            value={intervalValue}
-            setValue={setIntervalValue}
-            min={1}
-            max={30}
-            suffix={intervalValue === 1 ? "day" : "days"}
-          />
-        </div>
-      )}
+        {/* Conditional Configuration */}
+        {activeRepetitionType === "interval" && (
+          <div className="p-4 sm:p-6 bg-background-500/50 rounded-xl animate-fadeInQuick">
+            <NumberControl
+              label="Repeat every"
+              value={intervalValue}
+              setValue={setIntervalValue}
+              min={1}
+              max={30}
+              suffix={intervalValue === 1 ? "day" : "days"}
+            />
+          </div>
+        )}
 
-      {activeRepetitionType === "daysOfWeek" && (
-        <div className="p-6 bg-background-500/50 rounded-xl  animate-fadeInQuick">
-          <div className="space-y-4">
-            <div className="text-center">
-              <p className="text-lg font-semibold text-text-high mb-2">
-                Select Days
-              </p>
-              <p className="text-sm text-text-low">
-                Choose which days of the week
-              </p>
-            </div>
+        {activeRepetitionType === "daysOfWeek" && (
+          <div className="p-4 sm:p-6 bg-background-500/50 rounded-xl animate-fadeInQuick">
+            <div className="space-y-4">
+              <div className="text-center">
+                <p className="text-lg font-semibold text-text-high mb-2">
+                  Select Days
+                </p>
+                <p className="text-sm text-text-low">
+                  Choose which days of the week
+                </p>
+              </div>
 
-            <div className="grid grid-cols-7 gap-2">
-              {dayLabels.map((dayLabel, index) => {
-                const dayValue = ((index + 1) % 7) as DayOfWeek;
-                const isSelected = selectedDaysOfWeek.includes(dayValue);
-                return (
-                  <button
-                    type="button"
-                    key={dayLabel}
-                    onClick={() =>
-                      setSelectedDaysOfWeek(
-                        selectedDaysOfWeek.includes(dayValue)
-                          ? selectedDaysOfWeek.filter((d) => d !== dayValue)
-                          : [...selectedDaysOfWeek, dayValue].sort(
-                              (a, b) => a - b
-                            )
-                      )
-                    }
-                    className={`aspect-square flex flex-col items-center justify-center rounded-xl border-2 transition-all text-sm font-medium
+              <div className="grid grid-cols-7 gap-2">
+                {dayLabels.map((dayLabel, index) => {
+                  const dayValue = ((index + 1) % 7) as DayOfWeek;
+                  const isSelected = selectedDaysOfWeek.includes(dayValue);
+                  return (
+                    <button
+                      type="button"
+                      key={dayLabel}
+                      onClick={() =>
+                        setSelectedDaysOfWeek(
+                          selectedDaysOfWeek.includes(dayValue)
+                            ? selectedDaysOfWeek.filter((d) => d !== dayValue)
+                            : [...selectedDaysOfWeek, dayValue].sort(
+                                (a, b) => a - b
+                              )
+                        )
+                      }
+                      className={`aspect-square flex flex-col items-center justify-center rounded-xl border-2 transition-all text-sm font-medium
                                 ${
                                   isSelected
                                     ? "border-primary-500 text-white shadow-lg transform scale-105"
                                     : "bg-background-600 text-text-low border-background-700 hover:border-primary-400 hover:bg-background-550"
                                 }`}
-                    style={{
-                      backgroundColor: isSelected
-                        ? dayColors[index]
-                        : undefined,
-                      borderColor: isSelected ? dayColors[index] : undefined,
-                    }}
-                  >
-                    <span className="text-xs mb-1">{dayLabel}</span>
-                    <div
-                      className={`w-2 h-2 rounded-full ${
-                        isSelected ? "bg-white" : "bg-text-gray"
-                      }`}
-                    />
-                  </button>
-                );
-              })}
-            </div>
+                      style={{
+                        backgroundColor: isSelected
+                          ? dayColors[index]
+                          : undefined,
+                        borderColor: isSelected ? dayColors[index] : undefined,
+                      }}
+                    >
+                      <span className="text-xs mb-1">{dayLabel}</span>
+                      <div
+                        className={`w-2 h-2 rounded-full ${
+                          isSelected ? "bg-white" : "bg-text-gray"
+                        }`}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
 
-            <div className="text-center">
+              <div className="text-center">
+                <p className="text-sm text-text-gray">
+                  Selected:{" "}
+                  {selectedDaysOfWeek.length > 0
+                    ? selectedDaysOfWeek.map((d) => dayLabels[d]).join(", ")
+                    : "None"}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeRepetitionType === "timesPerWeek" && (
+          <div className="p-4 sm:p-6 bg-background-500/50 rounded-xl animate-fadeInQuick">
+            <NumberControl
+              label="Complete this many times per week"
+              value={timesPerWeekValue}
+              setValue={setTimesPerWeekValue}
+              min={1}
+              max={7}
+              suffix={timesPerWeekValue === 1 ? "time" : "times"}
+            />
+            <div className="mt-4 text-center">
               <p className="text-sm text-text-gray">
-                Selected:{" "}
-                {selectedDaysOfWeek.length > 0
-                  ? selectedDaysOfWeek.map((d) => dayLabels[d]).join(", ")
-                  : "None"}
+                You can complete this task on any day of the week
               </p>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {activeRepetitionType === "timesPerWeek" && (
-        <div className="p-6 bg-background-500/50 rounded-xl animate-fadeInQuick">
-          <NumberControl
-            label="Complete this many times per week"
-            value={timesPerWeekValue}
-            setValue={setTimesPerWeekValue}
-            min={1}
-            max={7}
-            suffix={timesPerWeekValue === 1 ? "time" : "times"}
-          />
-          <div className="mt-4 text-center">
-            <p className="text-sm text-text-gray">
-              You can complete this task on any day of the week
-            </p>
-          </div>
-        </div>
-      )}
+        {/* Start Date */}
+        {activeRepetitionType !== "none" && (
+          <div className="pt-2 sm:pt-6">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="text-center">
+                <p className="text-lg font-semibold text-text-high mb-1">
+                  Start Date
+                </p>
+                <p className="text-sm text-text-low">
+                  When should this pattern begin?
+                </p>
+              </div>
 
-      {/* Start Date */}
-      {activeRepetitionType !== "none" && (
-        <div className="pt-6 ">
-          <div className="space-y-4">
-            <div className="text-center">
-              <p className="text-lg font-semibold text-text-high mb-1">
-                Start Date
-              </p>
-              <p className="text-sm text-text-low">
-                When should this pattern begin?
-              </p>
-            </div>
-
-            <div className="max-w-xs mx-auto">
-              <Input
-                name="modalRepetitionStartDate"
-                type="date"
-                id="modalRepetitionStartDate"
-                value={format(repetitionTaskStartDate, "yyyy-MM-dd")}
-                onChange={(e) =>
-                  setRepetitionTaskStartDate(
-                    new Date(e.target.value + "T00:00:00")
-                  )
-                }
-                className="w-full bg-background-550 text-center text-lg py-3 rounded-xl"
-              />
+              <div className="max-w-xs mx-auto">
+                <Input
+                  name="modalRepetitionStartDate"
+                  type="date"
+                  id="modalRepetitionStartDate"
+                  value={format(repetitionTaskStartDate, "yyyy-MM-dd")}
+                  onChange={(e) => {
+                    // Create date with local timezone to avoid timezone shifts
+                    const [year, month, day] = e.target.value
+                      .split("-")
+                      .map(Number);
+                    const localDate = new Date(
+                      year,
+                      month - 1,
+                      day,
+                      0,
+                      0,
+                      0,
+                      0
+                    );
+                    setRepetitionTaskStartDate(localDate);
+                  }}
+                  className="w-full bg-background-550 text-center text-base sm:text-lg py-3 rounded-xl"
+                />
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      <div className="flex justify-end space-x-4 -mt-5">
-        <Button type="button" onClick={handleDone}>
-          Done
-        </Button>
+      <div className="p-4 sm:p-6 border-t border-divider/20 flex-shrink-0">
+        <div className="flex justify-end">
+          <Button type="button" onClick={handleDone}>
+            Done
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -61,16 +61,16 @@ function CompletedTaskCardSkeleton() {
 export default function CompletedSkeleton() {
   return (
     <div className="container mx-auto p-6 h-full overflow-auto animate-pulse">
-      {/* Header */}
       <div className="mb-8 md:mb-8">
-        <h1 className="text-3xl sm:text-4xl font-bold text-primary-400 flex items-center">
-          <SquareCheckBig className="w-8 h-8 mr-3 text-primary-500" />
+        <h1 className="text-3xl sm:text-4xl  font-bold text-primary-400 flex items-center">
+          <SquareCheckBig className="w-8 h-8 mr-3 text-primary-500 " />
           Completed tasks
         </h1>
-        <div className="h-4 w-64 bg-background-500 rounded mt-1" />
+        <p className="text-text-low mt-1 text-sm sm:text-base">
+          Manage and review your completed tasks.
+        </p>
       </div>
 
-      {/* Completed Tasks Grid */}
       <div className="mt-8">
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

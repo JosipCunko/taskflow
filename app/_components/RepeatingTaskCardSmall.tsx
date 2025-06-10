@@ -125,6 +125,39 @@ export default function RepeatingTaskCardSmall({
 
   const { startTime, endTime } = getStartAndEndTime(task);
 
+  const getExperienceIcon = () => {
+    if (!task.completedAt || !task.experience) return null;
+    const commonClasses = "w-5 h-5";
+    switch (task.experience) {
+      case "good":
+        return (
+          <CardSpecificIcons.ExperienceGood
+            className={`${commonClasses} text-green-400`}
+          />
+        );
+      case "okay":
+        return (
+          <CardSpecificIcons.ExperienceOkay
+            className={`${commonClasses} text-yellow-400`}
+          />
+        );
+      case "bad":
+        return (
+          <CardSpecificIcons.ExperienceBad
+            className={`${commonClasses} text-red-400`}
+          />
+        );
+      case "best":
+        return (
+          <CardSpecificIcons.ExperienceBest
+            className={`${commonClasses} text-yellow-400`} // Assuming best is also yellow, or choose another color
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
   // Helper function to format time information
   function getTimeString() {
     const hasStartTime = task.startTime && startTime !== "00:00";
@@ -329,7 +362,7 @@ export default function RepeatingTaskCardSmall({
 
   return (
     <div
-      className={`${cardBaseClasses} ${cardStateClasses} border border-divider`}
+      className={`${cardBaseClasses} ${cardStateClasses} border relative border-divider`}
       style={{ borderLeftColor: borderColor }}
       ref={outsideClickRef}
     >
@@ -470,7 +503,7 @@ export default function RepeatingTaskCardSmall({
             size={12}
             className="inline mr-1.5 opacity-80 flex-shrink-0"
           />
-          <span className="truncate">{repetitionSummary}</span>
+          <span>{repetitionSummary}</span>
         </p>
 
         {/* Progress Bar for weekly tasks */}
@@ -544,6 +577,11 @@ export default function RepeatingTaskCardSmall({
           </div>
         )}
       </div>
+      {task.experience && (
+        <div className="absolute bottom-3 right-3 text-lg opacity-80">
+          {getExperienceIcon()}
+        </div>
+      )}
 
       <div className="flex items-center justify-between text-xs text-text-low mt-3 pt-2 border-t border-divider/30">
         <div className="flex items-center gap-1">

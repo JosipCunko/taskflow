@@ -23,11 +23,22 @@ TaskFlow is a modern, feature-rich task management application designed to help 
 - **Priority Tags**: Special "focus" tag for highlighting critical tasks.
 - **Icon Selection**: Choose from a wide range of task icons for better visual organization.
 
-### 3. Smart Reminders & Notifications
+### 3. Advanced Notification System
 
-- **Flexible Reminders**: Set up task reminders with customizable timing.
-- **Snooze Feature**: "Remind me again in X minutes" functionality.
-- **Dismiss Options**: Multiple ways to handle task notifications.
+- **Smart Notifications**: Intelligent, contextual alerts based on task behavior and patterns.
+- **Multiple Notification Types**:
+  - Task at Risk - Repeating tasks delayed multiple times
+  - Task Overdue - Tasks past their due date
+  - Task Due Soon - Tasks due within 24 hours
+  - Streak at Risk/Milestone - Consistency tracking alerts
+  - Priority Task Pending - High-priority task alerts
+  - Achievement Unlocked - Milestone celebrations
+  - Weekly Summary - Performance insights
+  - System Updates - Important announcements
+- **Priority Levels**: URGENT, HIGH, MEDIUM, LOW with color-coded indicators
+- **Real-time Inbox**: Comprehensive notification management with filtering and search
+- **Automatic Generation**: Notifications created based on task status changes and time triggers
+- **Smart Cleanup**: Expired notifications automatically removed
 
 ### 4. Progress Tracking & Analytics
 
@@ -87,6 +98,7 @@ TaskFlow is a modern, feature-rich task management application designed to help 
 - **Calendar**: Calendar view of tasks.
 - **Completed**: View of completed tasks.
 - **Notes**: Dedicated section for managing personal notes.
+- **Inbox**: Real-time notification management center.
 - **Profile**: User settings and preferences.
 - **Login**: Secure authentication page with multiple sign-in options.
 
@@ -97,6 +109,11 @@ TaskFlow is a modern, feature-rich task management application designed to help 
 - **Dashboard Cards**: Quick overview of task statistics and progress.
 - **Progress Tracking**: Visual indicators of task completion and streaks.
 - **Analytics Panels**: Detailed performance metrics and statistics.
+- **Notification System**:
+  - Notification Bell with real-time count display
+  - Notification Cards with rich content and actions
+  - Inbox Page with filtering and search capabilities
+  - Dashboard integration with priority alerts
 
 ## 🔒 Security Features
 
@@ -133,6 +150,127 @@ TaskFlow is a modern, feature-rich task management application designed to help 
     # or yarn dev
     ```
     Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## 🔔 Notification System Deep Dive
+
+### Architecture
+
+The notification system provides intelligent, contextual alerts to help users stay productive. It automatically generates notifications based on task behavior, deadlines, and user patterns.
+
+### Database Schemas
+
+#### Task Schema
+
+```typescript
+interface Task {
+  id: string;
+  userId: string;
+  title: string;
+  description?: string;
+  icon: string;
+  color: string;
+  isPriority: boolean;
+  isReminder: boolean;
+  delayCount: number;
+  tags?: string[];
+  createdAt: Date;
+  updatedAt: Date;
+  experience?: "bad" | "okay" | "good" | "best";
+  dueDate: Date;
+  startTime?: { hour: number; minute: number };
+  completedAt?: Date;
+  status: "pending" | "completed" | "delayed";
+  isRepeating?: boolean;
+  repetitionRule?: RepetitionRule;
+  duration?: {
+    hours: number;
+    minutes: number;
+  };
+}
+```
+
+#### Notification Schema
+
+```typescript
+interface Notification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  priority: NotificationPriority;
+  title: string;
+  message: string;
+  actionText?: string;
+  actionUrl?: string;
+  taskId?: string;
+  isRead: boolean;
+  isArchived: boolean;
+  createdAt: Date;
+  readAt?: Date;
+  data?: Record<string, unknown>;
+  expiresAt?: Date;
+}
+```
+
+### Notification Types & Rules
+
+| Type                      | Trigger                            | Priority    | Expiration      |
+| ------------------------- | ---------------------------------- | ----------- | --------------- |
+| **Task at Risk**          | Repeating task with delayCount ≥ 3 | HIGH        | 7 days          |
+| **Task Overdue**          | Past due date                      | HIGH/URGENT | 14 days         |
+| **Task Due Soon**         | Due within 24 hours                | HIGH/MEDIUM | 1 day after due |
+| **Streak at Risk**        | Consistency about to break         | HIGH        | 3 days          |
+| **Streak Milestone**      | New streak achievement             | MEDIUM      | 30 days         |
+| **Priority Task Pending** | High-priority task needs attention | HIGH        | 7 days          |
+| **Achievement Unlocked**  | New milestones reached             | MEDIUM      | 30 days         |
+| **Weekly Summary**        | Performance insights               | LOW         | 7 days          |
+
+### Key Features
+
+- **Automatic Generation**: Created on task operations and daily checks
+- **Smart Prioritization**: Priority based on urgency and importance
+- **Batch Operations**: Mark all as read, bulk actions
+- **Real-time Updates**: Live notification count and status
+- **Contextual Actions**: Direct links to relevant tasks/pages
+- **Performance Optimized**: Pagination, indexing, and automatic cleanup
+
+### API Integration
+
+```typescript
+// Generate notifications for user
+import { generateNotificationsForUser } from "@/app/_lib/notifications";
+await generateNotificationsForUser(userId, tasks);
+
+// Create custom notification
+import { createNotification } from "@/app/_lib/notifications";
+await createNotification({
+  userId: "user123",
+  type: "TASK_OVERDUE",
+  priority: "HIGH",
+  title: "⏰ Task Overdue",
+  message: 'Your task "Complete project" is 2 days overdue',
+  actionText: "Complete Now",
+  actionUrl: "/webapp/tasks/task123",
+  taskId: "task123",
+  expiresAt: addDays(new Date(), 7),
+});
+```
+
+### Performance Considerations
+
+- **Firestore Indexes**: Optimized queries on userId, createdAt, isRead
+- **Pagination**: Limited notifications per request
+- **Expiration**: Automatic cleanup of expired notifications
+- **Caching**: Client-side notification stats caching
+
+### Recommended Firestore Indexes
+
+```
+Collection: notifications
+- userId (Ascending), createdAt (Descending)
+- userId (Ascending), isRead (Ascending), createdAt (Descending)
+- userId (Ascending), isArchived (Ascending), createdAt (Descending)
+- expiresAt (Ascending)
+```
 
 ## 📝 License
 

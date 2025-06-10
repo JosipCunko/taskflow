@@ -793,6 +793,9 @@ export function isTaskDueOn(task: Task, date: Date): boolean {
 
   const taskStartOnDate = rule.startDate;
   if (rule.timesPerWeek) {
+    // Task cannot be due before its start date
+    if (date < taskStartOnDate) return false;
+
     const sameWeek = isSameWeek(date, taskStartOnDate, MONDAY_START_OF_WEEK);
     const notCompletedToday =
       !rule.lastInstanceCompletedDate ||
@@ -804,6 +807,8 @@ export function isTaskDueOn(task: Task, date: Date): boolean {
     );
   }
   if (rule.daysOfWeek.length) {
+    if (date < taskStartOnDate) return false;
+
     const sameWeek = isSameWeek(date, taskStartOnDate, MONDAY_START_OF_WEEK);
 
     const dayOfWeek = getDay(date) as DayOfWeek;
@@ -816,6 +821,9 @@ export function isTaskDueOn(task: Task, date: Date): boolean {
 
   if (rule.interval && rule.startDate) {
     const daysSinceStart = differenceInDays(date, rule.startDate);
+
+    if (daysSinceStart < 0) return false;
+
     const isDueToday = daysSinceStart % rule.interval === 0;
     const notCompletedToday =
       !rule.lastInstanceCompletedDate ||

@@ -64,7 +64,6 @@ function TaskCardSkeleton() {
 export default function TasksSkeleton() {
   return (
     <div className="container mx-auto p-1 sm:p-6 h-full overflow-auto animate-pulse">
-      {/* Header */}
       <div className="mb-6 md:mb-8">
         <h1 className="text-3xl sm:text-4xl font-bold text-primary-400 flex items-center">
           <ChartColumn className="w-8 h-8 mr-3 text-primary-500" />
@@ -72,7 +71,6 @@ export default function TasksSkeleton() {
         </h1>
       </div>
 
-      {/* Task Grid */}
       <div className="mt-8">
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

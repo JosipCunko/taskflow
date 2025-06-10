@@ -4,13 +4,14 @@ import TaskCardSmallSkeleton from "./TaskCardSmallSkeleton";
 export default function DashboardSkeleton() {
   return (
     <div className="p-6 space-y-8 animate-pulse">
-      {/* Header */}
       <div className="mb-6 md:mb-8">
         <h1 className="text-3xl sm:text-4xl font-bold text-primary-400 flex items-center">
           <Home className="w-8 h-8 mr-3 text-primary-500" />
           Dashboard
         </h1>
-        <div className="h-4 w-80 bg-background-500 rounded mt-2"></div>
+        <p className="text-text-low mt-2">
+          Welcome back! Here&apos;s your productivity overview for today.
+        </p>
       </div>
 
       {/* Main Stats Grid */}
