@@ -77,29 +77,12 @@ export async function updateTaskExperienceAction(
 ): Promise<ActionResult> {
   const taskId = formData.get("taskId") as string;
   const newExperience = formData.get("experience") as Task["experience"];
-  const session = await getServerSession(authOptions);
-  const userId = session?.user?.id;
 
   console.log(`ACTION: Mark Task ${taskId} as ${newExperience}`);
   try {
-    const updatedTask = await updateTask(taskId, {
+    await updateTask(taskId, {
       experience: newExperience,
     });
-
-    if (userId && updatedTask) {
-      await logUserActivity(userId, {
-        type: "EXPERIENCE_RATED",
-        taskId,
-        activityColor: "#00c853",
-        activityIcon: "CircleCheckBig",
-        taskSnapshot: {
-          title: updatedTask.title,
-          description: updatedTask.description || "",
-          color: updatedTask.color,
-          icon: updatedTask.icon,
-        },
-      });
-    }
 
     revalidatePath("/tasks");
     return {

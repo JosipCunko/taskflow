@@ -28,6 +28,7 @@ export interface Task {
     hours: number;
     minutes: number;
   };
+  risk?: boolean;
 }
 export type RepetitionFrequency = "daily" | "weekly" | "monthly";
 export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
@@ -101,7 +102,6 @@ export interface ActivityLog {
     | "TASK_COMPLETED"
     | "TASK_CREATED"
     | "TASK_UPDATED"
-    | "EXPERIENCE_RATED"
     | "TASK_DELAYED"
     | "TASK_MISSED"
     | "TASK_DELETED";

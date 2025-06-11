@@ -27,7 +27,7 @@ import {
   calculateConsistencyStats,
 } from "../utils";
 import { Task } from "../_types/types";
-import RepeatingTaskCardSmall from "../_components/RepeatingTaskCardSmall";
+import RepeatingTaskCard from "../_components/RepeatingTaskCard";
 import { loadNotesByUserId } from "../_lib/notes";
 import { isTaskDueOn } from "../utils";
 import { isSameDay } from "date-fns";
@@ -500,7 +500,7 @@ export default async function DashboardPage() {
           </div>
           <div className="space-y-3 max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-background-500 scrollbar-track-transparent">
             {repeatingTasks.map((task: Task) => (
-              <RepeatingTaskCardSmall key={task.id} notProcessedTask={task} />
+              <RepeatingTaskCard key={task.id} notProcessedTask={task} />
             ))}
           </div>
         </section>

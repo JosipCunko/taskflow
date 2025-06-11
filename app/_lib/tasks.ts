@@ -103,7 +103,7 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Task => {
     repetitionRule: data.repetitionRule
       ? {
           ...data.repetitionRule,
-          startDate: data.repetitionRule.startDate?.toDate(),
+          startDate: data.repetitionRule.startDate.toDate(),
           lastInstanceCompletedDate:
             data.repetitionRule.lastInstanceCompletedDate?.toDate(),
         }
@@ -215,10 +215,6 @@ export const createTask = async (
       taskToCreateFirebase.experience = taskData.experience;
     }
     if (taskData.repetitionRule) {
-      // Ensure repetitionRule's date fields are Timestamps if necessary before storing
-      // For now, assuming it can be stored directly if sub-fields are basic types or Timestamps.
-      // If RepetitionRule contains Date objects that need to be Timestamps, convert them here.
-      // Example: if (taskData.repetitionRule.startDate instanceof Date) { ... convert ... }
       taskToCreateFirebase.repetitionRule = taskData.repetitionRule;
     }
 

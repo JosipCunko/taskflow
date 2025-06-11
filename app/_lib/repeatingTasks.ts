@@ -10,7 +10,6 @@ import {
 import { DayOfWeek, RepetitionFrequency, Task } from "../_types/types";
 import {
   calculateNextDueDate,
-  isTaskDueOn,
   isTaskAtRisk,
   MONDAY_START_OF_WEEK,
 } from "../utils";
@@ -73,9 +72,7 @@ export function preCreateRepeatingTask(
   } else return { isRepeating: false, dueDate, repetitionRule: undefined };
 }
 
-export function loadRepeatingTaskWithTimesPerWeek(
-  task: Task
-): Task & Partial<{ risk: boolean; isDueToday: boolean }> {
+export function loadRepeatingTaskWithTimesPerWeek(task: Task): Task {
   if (!task.isRepeating || !task.repetitionRule) {
     return task;
   }
@@ -84,22 +81,22 @@ export function loadRepeatingTaskWithTimesPerWeek(
   if (!rule.timesPerWeek || rule.timesPerWeek <= 0) {
     return task;
   }
-  const currentDate = new Date();
 
-  const taskStartOnDate = rule.startDate;
-  const weekStart = startOfWeek(taskStartOnDate, MONDAY_START_OF_WEEK);
-  const fullyCompleted = rule.completions === rule.timesPerWeek;
+  const currentDate = new Date();
+  const today = startOfDay(currentDate);
+  const inSameWeek = isSameWeek(today, rule.startDate, MONDAY_START_OF_WEEK);
+  const currentCompletions = inSameWeek ? rule.completions || 0 : 0;
+  const fullyCompleted = currentCompletions === rule.timesPerWeek;
+  const status = fullyCompleted ? "completed" : "pending";
+  const dueDate = startOfDay(endOfWeek(today, MONDAY_START_OF_WEEK));
 
   const loadedTask = {
     ...task,
-    status: fullyCompleted ? "completed" : "pending",
-    dueDate: startOfDay(endOfWeek(taskStartOnDate, MONDAY_START_OF_WEEK)),
-    isDueToday: isTaskDueOn(task, currentDate),
+    status,
+    dueDate,
     repetitionRule: {
       ...rule,
-      completions: !isSameWeek(taskStartOnDate, weekStart, MONDAY_START_OF_WEEK)
-        ? 0
-        : rule.completions,
+      completions: currentCompletions,
     },
   } as Task;
 
@@ -111,9 +108,7 @@ export function loadRepeatingTaskWithTimesPerWeek(
   };
 }
 
-export function loadRepeatingTaskWithDaysOfWeek(
-  task: Task
-): Task & Partial<{ isDueToday: boolean; risk: boolean }> {
+export function loadRepeatingTaskWithDaysOfWeek(task: Task): Task {
   if (!task.isRepeating || !task.repetitionRule) {
     return task;
   }
@@ -123,23 +118,21 @@ export function loadRepeatingTaskWithDaysOfWeek(
     return task;
   }
 
-  const taskStartOnDate = rule.startDate;
-  const weekStart = startOfWeek(taskStartOnDate, MONDAY_START_OF_WEEK);
-  const fullyCompleted = rule.daysOfWeek.length === rule.completions;
-
+  const today = startOfDay(currentDate);
+  const inSameWeek = isSameWeek(today, rule.startDate, MONDAY_START_OF_WEEK);
+  const currentCompletions = inSameWeek ? rule.completions || 0 : 0;
+  const fullyCompleted = currentCompletions === rule.daysOfWeek.length;
   const nextDueDate = calculateNextDueDate(task, currentDate);
+  const status = fullyCompleted ? "completed" : "pending";
 
   const loadedTask = {
     ...task,
-    status: fullyCompleted ? "completed" : "pending",
+    status,
     dueDate: nextDueDate as Date,
     repetitionRule: {
       ...rule,
-      completions: !isSameWeek(taskStartOnDate, weekStart, MONDAY_START_OF_WEEK)
-        ? 0
-        : rule.completions,
+      completions: currentCompletions,
     },
-    isDueToday: isTaskDueOn(task, currentDate),
   } as Task;
 
   const isAtRisk = isTaskAtRisk(loadedTask, currentDate);
@@ -150,86 +143,57 @@ export function loadRepeatingTaskWithDaysOfWeek(
   };
 }
 
-export function loadRepeatingTaskWithInterval(
-  task: Task
-): Task & Partial<{ isDueToday: boolean; nextDueDate: Date; risk: boolean }> {
+export function loadRepeatingTaskWithInterval(task: Task): Task {
   if (!task.isRepeating || !task.repetitionRule) {
     return task;
   }
+
   const currentDate = new Date();
   const rule = task.repetitionRule;
-  if (!rule.interval || !rule.startDate) {
+  if (!rule.interval || rule.interval === 0) {
     return task;
   }
 
-  const effectiveStartDate = task.createdAt;
-  const daysSinceStart = differenceInDays(currentDate, effectiveStartDate);
+  const startDate = startOfDay(rule.startDate);
+  const today = startOfDay(currentDate);
+  const daysSinceStart = differenceInDays(today, startDate);
 
-  let isDueToday = false;
-  let newStatus = task.status;
-  let nextDueDate: Date;
+  if (daysSinceStart < 0) {
+    return {
+      ...task,
+      status: "pending",
+      dueDate: startDate,
+      risk: false,
+    };
+  }
 
-  // For daily tasks (interval = 1), always reset to today if overdue
-  if (rule.interval === 1) {
-    // Daily tasks should always be due today if not completed today
-    const wasCompletedToday =
-      rule.lastInstanceCompletedDate &&
-      isSameDay(rule.lastInstanceCompletedDate, currentDate);
+  const isScheduledToday = daysSinceStart % rule.interval === 0;
+  const completedToday =
+    rule.lastInstanceCompletedDate &&
+    isSameDay(rule.lastInstanceCompletedDate, today);
 
-    if (!wasCompletedToday) {
-      isDueToday = true;
-      newStatus = "pending";
-      nextDueDate = startOfDay(currentDate);
+  let status: "pending" | "completed" | "delayed" = task.status;
+  let dueDate = new Date(task.dueDate);
+
+  if (isScheduledToday) {
+    if (completedToday) {
+      status = "completed";
+      dueDate = calculateNextDueDate(task, currentDate) as Date;
     } else {
-      // Completed today, show as completed and next due tomorrow
-      isDueToday = true;
-      newStatus = "completed";
-      nextDueDate = startOfDay(addDays(currentDate, 1));
+      status = "pending";
+      dueDate = today;
     }
   } else {
-    // For non-daily intervals, use the original logic
-    if (daysSinceStart >= 0 && daysSinceStart % rule.interval === 0) {
-      // It's a scheduled due day
-      if (
-        task.status !== "completed" ||
-        !isSameDay(task.completedAt || new Date(0), currentDate)
-      ) {
-        isDueToday = true;
-        newStatus = "pending";
-      }
-    } else if (
-      task.status === "pending" &&
-      task.dueDate &&
-      currentDate > task.dueDate
-    ) {
-      newStatus = "pending";
-    }
-
-    // Calculate next due date for non-daily tasks
-    const cyclesPassed = Math.floor(daysSinceStart / rule.interval);
-    let nextDueCycleOffset = (cyclesPassed + 1) * rule.interval;
-
-    if (isDueToday && task.status !== "completed") {
-      nextDueCycleOffset = (cyclesPassed + 1) * rule.interval;
-    } else if (isDueToday && task.status === "completed") {
-      nextDueCycleOffset = (cyclesPassed + 1) * rule.interval;
-    } else {
-      const remainder = daysSinceStart % rule.interval;
-      if (remainder >= 0) {
-        nextDueCycleOffset = (cyclesPassed + 1) * rule.interval;
-      } else {
-        nextDueCycleOffset = rule.interval;
-      }
-    }
-    nextDueDate = addDays(effectiveStartDate, nextDueCycleOffset);
+    const nextScheduledDayOffset =
+      rule.interval - (daysSinceStart % rule.interval);
+    dueDate = addDays(today, nextScheduledDayOffset);
+    status = "pending";
   }
 
   const loadedTask = {
     ...task,
-    status: newStatus,
-    dueDate: nextDueDate,
-    isDueToday,
-    nextDueDate,
+    status,
+    dueDate,
   } as Task;
 
   const isAtRisk = isTaskAtRisk(loadedTask, currentDate);

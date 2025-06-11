@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { ChartColumn, Repeat, Clock } from "lucide-react";
 import { getTasksByUserId } from "@/app/_lib/tasks";
 import TaskCard from "@/app/_components/TaskCard";
-import RepeatingTaskCardSmall from "@/app/_components/RepeatingTaskCardSmall";
+import RepeatingTaskCard from "@/app/_components/RepeatingTaskCard";
 import { authOptions } from "@/app/_lib/auth";
 
 export default async function TasksPage() {
@@ -70,7 +70,7 @@ export default async function TasksPage() {
           {repeatingTasks.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {repeatingTasks.map((task) => (
-                <RepeatingTaskCardSmall key={task.id} notProcessedTask={task} />
+                <RepeatingTaskCard key={task.id} notProcessedTask={task} />
               ))}
             </div>
           ) : (

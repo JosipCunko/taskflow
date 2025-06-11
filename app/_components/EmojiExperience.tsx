@@ -29,7 +29,7 @@ export default function EmojiExperience({
               className={`text-4xl mb-2 transition-transform group-hover:scale-110 ${
                 currentExperience === option.id
                   ? "ring-2 ring-primary-500"
-                  : "ring-1 ring-background-500 hover:ring-background-400"
+                  : "ring-1 ring-background-500 hover:ring-primary-600"
               } rounded-full p-3`}
             >
               {<option.emoji />}

@@ -754,7 +754,7 @@ export function calculateNextDueDate(
     return startOfDay(addDays(currentDate, daysUntilNext));
   }
 
-  if (rule.interval && rule.startDate) {
+  if (rule.interval) {
     const startDate = startOfDay(rule.startDate);
     const current = startOfDay(currentDate);
 
@@ -982,13 +982,48 @@ export function isTaskAtRisk(
 }
 
 export function getStartAndEndTime(task: Task) {
+  let startTime: string;
   const endTime =
     task.dueDate.getHours().toString().padStart(2, "0") +
     ":" +
     task.dueDate.getMinutes().toString().padStart(2, "0");
-  const startTime =
-    task.startTime?.hour.toString().padStart(2, "0") +
-    ":" +
-    task.startTime?.minute.toString().padStart(2, "0");
+  if (!task?.startTime?.hour || !task?.startTime?.minute) startTime = "00:00";
+  else {
+    startTime =
+      task.startTime.hour.toString().padStart(2, "0") +
+      ":" +
+      task.startTime.minute.toString().padStart(2, "0");
+  }
   return { startTime, endTime };
+}
+
+export const getDayName = (day: DayOfWeek): string => {
+  return [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ][day];
+};
+export function getTimeString(startTime: string, endTime: string): string {
+  const hasStartTime = startTime !== "00:00";
+  const isEndTimeDefault = endTime === "23:59" || endTime === "00:00";
+  const startEqualsEnd = startTime === endTime;
+
+  if (!hasStartTime && isEndTimeDefault) {
+    return "";
+  }
+
+  if (hasStartTime && isEndTimeDefault) {
+    return ` from ${startTime}`;
+  }
+
+  if (!hasStartTime || startEqualsEnd) {
+    return ` to ${endTime}`;
+  }
+
+  return ` ${startTime} - ${endTime}`;
 }

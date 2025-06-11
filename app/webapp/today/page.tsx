@@ -5,7 +5,7 @@ import TaskCardSmall from "@/app/_components/TaskCardSmall";
 import { CardSpecificIcons, isTaskDueOn } from "@/app/utils";
 import { Clock } from "lucide-react";
 import Link from "next/link";
-import RepeatingTaskCardSmall from "@/app/_components/RepeatingTaskCardSmall";
+import RepeatingTaskCard from "@/app/_components/RepeatingTaskCard";
 
 export default async function TodayPage() {
   const session = await getServerSession(authOptions);
@@ -158,10 +158,7 @@ export default async function TodayPage() {
               {todaysRepeatingTasks
                 .filter((task) => task.status !== "completed")
                 .map((task) => (
-                  <RepeatingTaskCardSmall
-                    key={task.id}
-                    notProcessedTask={task}
-                  />
+                  <RepeatingTaskCard key={task.id} notProcessedTask={task} />
                 ))}
             </div>
           </div>
