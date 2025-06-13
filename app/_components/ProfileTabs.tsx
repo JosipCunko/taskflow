@@ -33,8 +33,6 @@ export default function ProfileTabs({
         return "Created new task";
       case "TASK_UPDATED":
         return "Updated task";
-      case "EXPERIENCE_RATED":
-        return "Rated task experience";
       case "TASK_DELAYED":
         return "Delayed task";
       case "TASK_MISSED":
