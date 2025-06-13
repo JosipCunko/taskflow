@@ -7,6 +7,7 @@ import {
   getStatusStyles,
   getStartAndEndTime,
   getTimeString,
+  getTaskDisplayStatus,
 } from "../utils";
 import { formatDate } from "../utils";
 import { Task } from "../_types/types";
@@ -60,10 +61,11 @@ export default function TaskCard({
   const TaskIcon = getTaskIconByName(task.icon);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-  const statusInfo = getStatusStyles(task.status);
+  const displayStatus = getTaskDisplayStatus(task);
+  const statusInfo = getStatusStyles(displayStatus);
   const StatusIcon = statusInfo.icon;
   const isPastDue =
-    task.status !== "completed" &&
+    displayStatus !== "completed" &&
     task.dueDate &&
     isPast(new Date(task.dueDate));
 
@@ -96,7 +98,7 @@ export default function TaskCard({
       animate="visible"
       whileHover={{ y: -3, boxShadow: "0px 6px 20px rgba(0,0,0,0.07)" }}
       layout
-      className="bg-background-secondary rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 border-l-4 z-1"
+      className="bg-background-secondary rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 border-l-4 relative "
       style={{ borderColor: task.color }}
       ref={outsideClickRef}
     >
@@ -160,7 +162,7 @@ export default function TaskCard({
         >
           <CardSpecificIcons.DueDate size={14} />
           <span>Due: {formattedDueDate}</span>
-          {isToday(task.dueDate) && task.status !== "completed" && (
+          {isToday(task.dueDate) && displayStatus !== "completed" && (
             <span className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-primary-600 text-white font-semibold">
               Today
             </span>
@@ -176,14 +178,9 @@ export default function TaskCard({
             className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-md ${statusInfo.bgColorClass} ${statusInfo.colorClass}`}
           >
             <StatusIcon size={14} />
-            <span>
-              {isPastDue &&
-              task.status !== "completed" &&
-              task.status !== "delayed"
-                ? "Missed"
-                : statusInfo.text}
-            </span>
-            {task.status === "delayed" && task.delayCount > 0 && (
+            {/*!!! CAREFUL */}
+            <span>{isPastDue ? "Missed" : statusInfo.text}</span>
+            {displayStatus === "delayed" && task.delayCount > 0 && (
               <span className="ml-1 font-semibold">({task.delayCount})</span>
             )}
           </div>

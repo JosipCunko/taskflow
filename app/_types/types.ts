@@ -46,6 +46,7 @@ export interface RepetitionRule {
   daysOfWeek: DayOfWeek[];
   timesPerWeek?: number; // For "weekly" if it's like "3 times a week, any day"
 
+  isDueToday?: boolean;
   lastInstanceCompletedDate?: Date;
   startDate: Date;
   completions: number; // 0 or 1 for daily tasks

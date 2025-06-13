@@ -1,6 +1,10 @@
 import { useFormStatus } from "react-dom";
 import Button from "./Button";
-import { CardSpecificIcons, handleToast } from "@/app/utils";
+import {
+  CardSpecificIcons,
+  handleToast,
+  getTaskDisplayStatus,
+} from "@/app/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { Task } from "@/app/_types/types";
 import { isSameDay } from "date-fns";
@@ -64,7 +68,7 @@ export default function Dropdown({
   isFullyCompletedForCurrentCycle?: boolean;
 }) {
   return (
-    <div className="relative shrink-0">
+    <div className="relative shrink-0 z-10">
       <Button
         variant="secondary"
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -85,12 +89,13 @@ export default function Dropdown({
               transition: { duration: 0.15 },
             }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="absolute right-0 mt-2 w-60 bg-background-600 border border-divider shadow-xl rounded-lg p-1.5 z-50 origin-top-right focus:outline-none"
+            className="absolute right-0 mt-2 w-60 bg-background-600 border border-divider shadow-xl rounded-lg p-1.5 z-[100] origin-top-right focus:outline-none"
           >
             {/* ---: Action: Mark as Completed/Pending --- */}
-            {(!task.isRepeating && task.status !== "completed") ||
+            {(!task.isRepeating &&
+              getTaskDisplayStatus(task) !== "completed") ||
               (task.isRepeating &&
-                task.status !== "completed" &&
+                getTaskDisplayStatus(task) !== "completed" &&
                 canCompleteToday &&
                 !isFullyCompletedForCurrentCycle && (
                   <li>
@@ -116,147 +121,154 @@ export default function Dropdown({
                 ))}
 
             {/* ---: Action: Delay --- */}
-            {!task.isRepeating && task.status !== "completed" && (
-              <>
-                {!isSameDay(
-                  task.dueDate,
-                  new Date(new Date().setDate(new Date().getDate() + 1))
-                ) && (
-                  <li>
-                    <form
-                      action={async (formData: FormData) => {
-                        const res = await delayTaskAction(
-                          formData,
-                          task.startTime?.hour ??
-                            new Date(task.dueDate).getHours(),
-                          task.startTime?.minute ??
-                            new Date(task.dueDate).getMinutes(),
-                          task.delayCount
-                        );
-                        handleToast(res, () => setIsDropdownOpen(false));
-                      }}
-                      onSubmit={() => setIsDropdownOpen(false)}
-                    >
-                      <input type="hidden" name="taskId" value={task.id} />
-                      <input
-                        type="hidden"
-                        name="delayOption"
-                        value="tomorrow"
-                      />
-                      <ActionSubmitButton
-                        Icon={CardSpecificIcons.DelayTomorrow}
+            {!task.isRepeating &&
+              getTaskDisplayStatus(task) !== "completed" && (
+                <>
+                  {!isSameDay(
+                    task.dueDate,
+                    new Date(new Date().setDate(new Date().getDate() + 1))
+                  ) && (
+                    <li>
+                      <form
+                        action={async (formData: FormData) => {
+                          const res = await delayTaskAction(
+                            formData,
+                            task.startTime?.hour ??
+                              new Date(task.dueDate).getHours(),
+                            task.startTime?.minute ??
+                              new Date(task.dueDate).getMinutes(),
+                            task.delayCount
+                          );
+                          handleToast(res, () => setIsDropdownOpen(false));
+                        }}
+                        onSubmit={() => setIsDropdownOpen(false)}
                       >
-                        Delay to Tomorrow
-                      </ActionSubmitButton>
-                    </form>
-                  </li>
-                )}
-
-                {(() => {
-                  // Calculate the start of next week (Monday)
-                  const today = new Date();
-                  const dayOfWeek = today.getDay(); // Sunday is 0, Monday is 1
-                  const daysUntilNextMonday =
-                    (dayOfWeek === 0 ? 1 : 8 - dayOfWeek) % 7;
-                  const nextMonday = new Date(today);
-                  nextMonday.setDate(
-                    today.getDate() +
-                      (daysUntilNextMonday === 0 ? 7 : daysUntilNextMonday)
-                  ); // if today is monday, jump to next monday
-                  nextMonday.setHours(0, 0, 0, 0);
-
-                  // Calculate the due date's week start (Monday)
-                  const dueDate = new Date(task.dueDate);
-                  const dueDayOfWeek = dueDate.getDay();
-                  const dueWeekMonday = new Date(dueDate);
-                  // Adjust to get to the previous Monday (or current if it's Monday)
-                  dueWeekMonday.setDate(
-                    dueDate.getDate() -
-                      (dueDayOfWeek === 0 ? 6 : dueDayOfWeek - 1)
-                  );
-                  dueWeekMonday.setHours(0, 0, 0, 0);
-
-                  // Only render if due date is not in next week
-                  if (dueWeekMonday.getTime() !== nextMonday.getTime()) {
-                    return (
-                      <li>
-                        <form
-                          action={async (formData: FormData) => {
-                            const res = await delayTaskAction(
-                              formData,
-                              task.startTime?.hour ??
-                                new Date(task.dueDate).getHours(),
-                              task.startTime?.minute ??
-                                new Date(task.dueDate).getMinutes(),
-                              task.delayCount
-                            );
-                            handleToast(res, () => setIsDropdownOpen(false));
-                          }}
+                        <input type="hidden" name="taskId" value={task.id} />
+                        <input
+                          type="hidden"
+                          name="delayOption"
+                          value="tomorrow"
+                        />
+                        <ActionSubmitButton
+                          Icon={CardSpecificIcons.DelayTomorrow}
                         >
-                          <input type="hidden" name="taskId" value={task.id} />
-                          <input
-                            type="hidden"
-                            name="delayOption"
-                            value="nextWeek"
-                          />
-                          <ActionSubmitButton
-                            Icon={CardSpecificIcons.DelayNextWeek}
-                          >
-                            Delay 1 Week
-                          </ActionSubmitButton>
-                        </form>
-                      </li>
+                          Delay to Tomorrow
+                        </ActionSubmitButton>
+                      </form>
+                    </li>
+                  )}
+
+                  {(() => {
+                    // Calculate the start of next week (Monday)
+                    const today = new Date();
+                    const dayOfWeek = today.getDay(); // Sunday is 0, Monday is 1
+                    const daysUntilNextMonday =
+                      (dayOfWeek === 0 ? 1 : 8 - dayOfWeek) % 7;
+                    const nextMonday = new Date(today);
+                    nextMonday.setDate(
+                      today.getDate() +
+                        (daysUntilNextMonday === 0 ? 7 : daysUntilNextMonday)
+                    ); // if today is monday, jump to next monday
+                    nextMonday.setHours(0, 0, 0, 0);
+
+                    // Calculate the due date's week start (Monday)
+                    const dueDate = new Date(task.dueDate);
+                    const dueDayOfWeek = dueDate.getDay();
+                    const dueWeekMonday = new Date(dueDate);
+                    // Adjust to get to the previous Monday (or current if it's Monday)
+                    dueWeekMonday.setDate(
+                      dueDate.getDate() -
+                        (dueDayOfWeek === 0 ? 6 : dueDayOfWeek - 1)
                     );
-                  }
-                  return null;
-                })()}
-              </>
-            )}
+                    dueWeekMonday.setHours(0, 0, 0, 0);
+
+                    // Only render if due date is not in next week
+                    if (dueWeekMonday.getTime() !== nextMonday.getTime()) {
+                      return (
+                        <li>
+                          <form
+                            action={async (formData: FormData) => {
+                              const res = await delayTaskAction(
+                                formData,
+                                task.startTime?.hour ??
+                                  new Date(task.dueDate).getHours(),
+                                task.startTime?.minute ??
+                                  new Date(task.dueDate).getMinutes(),
+                                task.delayCount
+                              );
+                              handleToast(res, () => setIsDropdownOpen(false));
+                            }}
+                          >
+                            <input
+                              type="hidden"
+                              name="taskId"
+                              value={task.id}
+                            />
+                            <input
+                              type="hidden"
+                              name="delayOption"
+                              value="nextWeek"
+                            />
+                            <ActionSubmitButton
+                              Icon={CardSpecificIcons.DelayNextWeek}
+                            >
+                              Delay 1 Week
+                            </ActionSubmitButton>
+                          </form>
+                        </li>
+                      );
+                    }
+                    return null;
+                  })()}
+                </>
+              )}
 
             {/* ---: Action: Reschedule (with date input) --- */}
-            {!task.isRepeating && task.status !== "completed" && (
-              <li className="px-1.5 py-1.5 group">
-                <form
-                  action={async (formData: FormData) => {
-                    const res = await rescheduleTaskAction(
-                      formData,
-                      task.startTime?.hour ?? new Date(task.dueDate).getHours(),
-                      task.startTime?.minute ??
-                        new Date(task.dueDate).getMinutes(),
-                      task.delayCount
-                    );
-                    handleToast(res, () => setIsDropdownOpen(false));
-                  }}
-                  className="space-y-1.5"
-                >
-                  <input type="hidden" name="taskId" value={task.id} />
-                  <label
-                    htmlFor={`reschedule-date-${task.id}`}
-                    className="block text-xs text-text-low px-1.5"
+            {!task.isRepeating &&
+              getTaskDisplayStatus(task) !== "completed" && (
+                <li className="px-1.5 py-1.5 group">
+                  <form
+                    action={async (formData: FormData) => {
+                      const res = await rescheduleTaskAction(
+                        formData,
+                        task.startTime?.hour ??
+                          new Date(task.dueDate).getHours(),
+                        task.startTime?.minute ??
+                          new Date(task.dueDate).getMinutes(),
+                        task.delayCount
+                      );
+                      handleToast(res, () => setIsDropdownOpen(false));
+                    }}
+                    className="space-y-1.5"
                   >
-                    Reschedule to:
-                  </label>
-                  <div className="flex items-center space-x-2 px-1.5">
-                    <input
-                      id={`reschedule-date-${task.id}`}
-                      type="date"
-                      name="newDueDate"
-                      defaultValue={
-                        new Date(task.dueDate).toISOString().split("T")[0]
-                      }
-                      className="flex-grow p-1.5 border border-divider rounded-md text-sm bg-background-input text-text-default focus:ring-primary-600 focus:border-primary-600"
-                      required
-                    />
-                    <Button type="submit" variant="secondary">
-                      Set
-                    </Button>
-                  </div>
-                </form>
-              </li>
-            )}
+                    <input type="hidden" name="taskId" value={task.id} />
+                    <label
+                      htmlFor={`reschedule-date-${task.id}`}
+                      className="block text-xs text-text-low px-1.5"
+                    >
+                      Reschedule to:
+                    </label>
+                    <div className="flex items-center space-x-2 px-1.5">
+                      <input
+                        id={`reschedule-date-${task.id}`}
+                        type="date"
+                        name="newDueDate"
+                        defaultValue={
+                          new Date(task.dueDate).toISOString().split("T")[0]
+                        }
+                        className="flex-grow p-1.5 border border-divider rounded-md text-sm bg-background-input text-text-default focus:ring-primary-600 focus:border-primary-600"
+                        required
+                      />
+                      <Button type="submit" variant="secondary">
+                        Set
+                      </Button>
+                    </div>
+                  </form>
+                </li>
+              )}
 
             {/* ---: Action: Toggle Priority --- */}
-            {task.status !== "completed" && (
+            {getTaskDisplayStatus(task) !== "completed" && (
               <li>
                 <form
                   action={async (formData: FormData) => {
@@ -283,7 +295,7 @@ export default function Dropdown({
               </li>
             )}
             {/* Emoji experience */}
-            {task.status === "completed" && (
+            {getTaskDisplayStatus(task) === "completed" && (
               <li>
                 <form
                   action={async (formData: FormData) => {

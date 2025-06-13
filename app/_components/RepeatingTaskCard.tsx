@@ -1,15 +1,14 @@
 "use client";
 
-import { isToday, isSameDay } from "date-fns";
+import { isToday } from "date-fns";
 import {
   Repeat,
   CalendarDays,
   CheckCircle2,
   AlertTriangle,
 } from "lucide-react";
-import type { Task, DayOfWeek, ActionResult } from "@/app/_types/types";
+import type { Task, ActionResult } from "@/app/_types/types";
 import {
-  calculateNextDueDate,
   CardSpecificIcons,
   errorToast,
   formatDate,
@@ -19,6 +18,8 @@ import {
   getStartAndEndTime,
   getDayName,
   getTimeString,
+  isRepeatingTaskDueToday,
+  getTaskDisplayStatus,
 } from "../utils";
 import { getExperienceIcon } from "./TaskCard";
 import {
@@ -26,12 +27,7 @@ import {
   completeRepeatingTaskWithInterval,
   completeRepeatingTaskWithTimesPerWeek,
 } from "../_lib/repeatingTasksActions";
-import { useMemo, useState } from "react";
-import {
-  loadRepeatingTaskWithDaysOfWeek,
-  loadRepeatingTaskWithInterval,
-  loadRepeatingTaskWithTimesPerWeek,
-} from "../_lib/repeatingTasks";
+import { useState } from "react";
 import DurationCalculator from "./DurationCalculator";
 import { useOutsideClick } from "../_hooks/useOutsideClick";
 import Dropdown from "./reusable/Dropdown";
@@ -43,25 +39,11 @@ export default function RepeatingTaskCard({
 }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const outsideClickRef = useOutsideClick(() => setIsDropdownOpen(false));
-
-  const task: Task = useMemo(() => {
-    if (notProcessedTask.repetitionRule?.interval) {
-      return loadRepeatingTaskWithInterval(notProcessedTask);
-    }
-    if (
-      notProcessedTask.repetitionRule?.daysOfWeek &&
-      notProcessedTask.repetitionRule.daysOfWeek.length > 0
-    ) {
-      return loadRepeatingTaskWithDaysOfWeek(notProcessedTask);
-    }
-    if (notProcessedTask.repetitionRule?.timesPerWeek) {
-      return loadRepeatingTaskWithTimesPerWeek(notProcessedTask);
-    }
-    return notProcessedTask;
-  }, [notProcessedTask]);
+  const task = notProcessedTask;
 
   const IconComponent = getTaskIconByName(task.icon) || Repeat;
-  const statusInfo = getStatusStyles(task.status);
+  const statusInfo = getStatusStyles(getTaskDisplayStatus(task));
+  console.log(getTaskDisplayStatus(task), task.title);
   let repetitionSummary = "Repeats";
   let completionFraction = "";
   let progressPercentage = 0;
@@ -73,60 +55,44 @@ export default function RepeatingTaskCard({
   if (rule) {
     const timeString = getTimeString(startTime, endTime);
 
-    if (rule.interval && rule.startDate) {
+    if (rule.interval) {
       repetitionSummary = `Every ${rule.interval} ${
         rule.interval === 1 ? "day" : "days"
       }${timeString}`;
-      if (task.dueDate) {
-        const todayCompleted =
-          isToday(task.dueDate) && task.status === "completed";
-        const todayComplete =
-          isToday(task.dueDate) && task.status !== "completed";
+      const todayComplete =
+        isToday(task.dueDate) && getTaskDisplayStatus(task) !== "completed";
 
-        nextInstanceInfo = `Next: ${
-          todayCompleted
-            ? formatDate(calculateNextDueDate(task))
-            : todayComplete
-            ? "Today"
-            : formatDate(calculateNextDueDate(task))
-        }`;
-      }
-    } else if (rule.daysOfWeek && rule.daysOfWeek.length > 0) {
+      nextInstanceInfo = `Next: ${
+        todayComplete ? "Today" : formatDate(task.dueDate)
+      }`;
+    } else if (rule.daysOfWeek.length > 0) {
       repetitionSummary = `On ${rule.daysOfWeek
         .map(getDayName)
         .join(", ")}${timeString}`;
-      if (rule.completions !== undefined) {
-        completionFraction = `${rule.completions}/${rule.daysOfWeek.length}`;
-        progressPercentage = (rule.completions / rule.daysOfWeek.length) * 100;
-      }
-      if (task.dueDate) {
-        let info = formatDate(task.dueDate);
-        const todayCompleted = isToday(
-          task.repetitionRule?.lastInstanceCompletedDate as Date
-        );
-        const todayComplete =
-          !todayCompleted &&
-          isToday(task.dueDate) &&
-          task.status !== "completed";
-        const notDueTodayComplete =
-          !todayComplete && task.status !== "completed";
+      completionFraction = `${rule.completions}/${rule.daysOfWeek.length}`;
+      progressPercentage = (rule.completions / rule.daysOfWeek.length) * 100;
+      let info = formatDate(task.dueDate);
+      const todayCompleted = isToday(
+        task.repetitionRule?.lastInstanceCompletedDate as Date
+      );
+      const todayComplete =
+        !todayCompleted &&
+        isToday(task.dueDate) &&
+        getTaskDisplayStatus(task) !== "completed";
+      const notDueTodayComplete =
+        !todayComplete && getTaskDisplayStatus(task) !== "completed";
 
-        if (todayCompleted) {
-          const nextDate = calculateNextDueDate(task) as Date;
-          info = formatDate(nextDate);
-        }
-        if (todayComplete) info = "Today";
-        if (notDueTodayComplete) info = formatDate(task.dueDate);
-        nextInstanceInfo = `Next: ${
-          info === formatDate(new Date()) ? "Starts next week" : info
-        }`;
+      if (todayCompleted || notDueTodayComplete) {
+        info = formatDate(task.dueDate);
       }
+      if (todayComplete) info = "Today";
+      nextInstanceInfo = `Next: ${
+        info === formatDate(new Date()) ? "Starts next week" : info
+      }`;
     } else if (rule.timesPerWeek) {
       repetitionSummary = `${rule.timesPerWeek} time(s) a week${timeString}`;
-      if (rule.completions !== undefined) {
-        completionFraction = `${rule.completions}/${rule.timesPerWeek}`;
-        progressPercentage = (rule.completions / rule.timesPerWeek) * 100;
-      }
+      completionFraction = `${rule.completions}/${rule.timesPerWeek}`;
+      progressPercentage = (rule.completions / rule.timesPerWeek) * 100;
       nextInstanceInfo = "This week";
     }
     if (rule.startDate) {
@@ -135,7 +101,6 @@ export default function RepeatingTaskCard({
   }
   const isFullyCompletedForCurrentCycle =
     (rule?.interval &&
-      task.status === "completed" &&
       isToday(task.repetitionRule?.lastInstanceCompletedDate as Date)) ||
     (rule?.timesPerWeek &&
       rule.completions !== 0 &&
@@ -146,35 +111,9 @@ export default function RepeatingTaskCard({
       rule.completions === rule.daysOfWeek.length);
 
   const canCompleteToday = (() => {
-    if (!isSameDay(task.dueDate, new Date())) return false;
     if (isFullyCompletedForCurrentCycle) return false;
-
-    if (rule?.interval) {
-      return (
-        !rule.lastInstanceCompletedDate ||
-        !isSameDay(rule.lastInstanceCompletedDate, new Date())
-      );
-    }
-
-    if (rule?.timesPerWeek) {
-      const completionsLeft = rule.timesPerWeek - (rule.completions || 0);
-      const notCompletedToday =
-        !rule.lastInstanceCompletedDate ||
-        !isSameDay(rule.lastInstanceCompletedDate, new Date());
-      return completionsLeft > 0 && notCompletedToday;
-    }
-
-    if (rule?.daysOfWeek?.length) {
-      const today = new Date();
-      const todayDayOfWeek = today.getDay() as DayOfWeek;
-      const isScheduledToday = rule.daysOfWeek.includes(todayDayOfWeek);
-      const notCompletedToday =
-        !rule.lastInstanceCompletedDate ||
-        !isSameDay(rule.lastInstanceCompletedDate, new Date());
-      return isScheduledToday && notCompletedToday;
-    }
-
-    return false;
+    const { isDueToday } = isRepeatingTaskDueToday(task);
+    return isDueToday;
   })();
 
   const handleComplete = async () => {
@@ -217,7 +156,7 @@ export default function RepeatingTaskCard({
 
   return (
     <div
-      className={`${cardBaseClasses} ${cardStateClasses} border relative border-divider z-1`}
+      className={`${cardBaseClasses} ${cardStateClasses} border  border-divider z-1`}
       style={{ borderLeftColor: task.color }}
       ref={outsideClickRef}
     >
@@ -272,7 +211,7 @@ export default function RepeatingTaskCard({
           </p>
         )}
       </div>
-      <div className="flex flex-wrap gap-2 mt-2">
+      <div className="flex flex-wrap gap-2 mt-2 relative">
         <div
           className={`flex items-center space-x-1.5 px-2.5 py-1.5 text-xs rounded-md ${statusInfo.bgColorClass}`}
         >
@@ -285,7 +224,7 @@ export default function RepeatingTaskCard({
                 : "Completed"
               : statusInfo.text}
           </span>
-          {task.status === "delayed" && task.delayCount > 0 && (
+          {getTaskDisplayStatus(task) === "delayed" && task.delayCount > 0 && (
             <span className={`ml-1 font-semibold ${statusInfo.colorClass}`}>
               ({task.delayCount})
             </span>
@@ -321,18 +260,18 @@ export default function RepeatingTaskCard({
             ))}
           </div>
         )}
+        {task.experience && (
+          <div className="absolute right-0 text-lg opacity-80">
+            {getExperienceIcon(task)}
+          </div>
+        )}
+        {isFullyCompletedForCurrentCycle && (
+          <CheckCircle2
+            size={20}
+            className="absolute right-7 text-green-500 flex-shrink-0 ml-2"
+          />
+        )}
       </div>
-      {task.experience && (
-        <div className="absolute bottom-3 right-3 text-lg opacity-80">
-          {getExperienceIcon(task)}
-        </div>
-      )}
-      {isFullyCompletedForCurrentCycle && (
-        <CheckCircle2
-          size={20}
-          className="absolute top-[50%] right-3 text-green-500 flex-shrink-0 ml-2"
-        />
-      )}
 
       <div className="flex items-center justify-between text-xs text-text-low mt-3 pt-2 border-t border-divider/30">
         <div className="flex items-center gap-1">

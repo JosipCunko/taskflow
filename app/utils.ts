@@ -63,20 +63,18 @@ import {
   NotificationPriority,
 } from "./_types/types";
 import {
-  addDays,
   differenceInCalendarDays,
   differenceInDays,
-  endOfWeek,
   formatISO,
   getDay,
   isAfter,
   isBefore,
   isEqual,
   isPast,
-  isSameDay,
   isSameWeek,
   parseISO,
   startOfDay,
+  isSameDay,
 } from "date-fns";
 import { isFuture, isToday } from "date-fns";
 
@@ -275,6 +273,7 @@ export const CardSpecificIcons = {
   StatusPending: Clock,
   StatusCompleted: CheckCircle2,
   StatusDelayed: XCircle,
+  StatusMissed: XCircle,
   Tag: Tag,
   Precondition: Link2,
   Points: Star,
@@ -336,14 +335,14 @@ export function getStatusStyles(status: "completed" | "delayed" | "pending") {
       return {
         icon: CardSpecificIcons.StatusCompleted,
         text: "Completed",
-        colorClass: "text-green-400", // or 'status-completed-text'
+        colorClass: "text-green-400",
         bgColorClass: "bg-green-500/10",
       };
     case "delayed":
       return {
         icon: CardSpecificIcons.StatusDelayed,
         text: "Delayed",
-        colorClass: "text-red-400", // Or 'status-delayed-text'
+        colorClass: "text-red-400",
         bgColorClass: "bg-red-500/10",
       };
     case "pending":
@@ -351,7 +350,7 @@ export function getStatusStyles(status: "completed" | "delayed" | "pending") {
       return {
         icon: CardSpecificIcons.StatusPending,
         text: "Pending",
-        colorClass: "text-yellow-400", // Or 'status-pending-text'
+        colorClass: "text-yellow-400",
         bgColorClass: "bg-yellow-500/10",
       };
   }
@@ -489,30 +488,35 @@ export function generateTaskTypes(allTasks: Task[]): TaskCategories {
     (task) =>
       isFuture(task.dueDate) &&
       !isToday(task.dueDate) &&
-      task.status !== "completed"
+      getTaskDisplayStatus(task) !== "completed"
   );
 
   const missedTasks = allTasks.filter(
     (task) =>
       isPast(task.dueDate) &&
       !isToday(task.dueDate) &&
-      task.status === "pending"
+      getTaskDisplayStatus(task) === "pending"
   );
 
   const delayedTasks = allTasks.filter(
     (task) =>
       (task.delayCount || 0) > 0 &&
-      task.status === "delayed" &&
+      getTaskDisplayStatus(task) === "delayed" &&
       isAfter(task.dueDate, todayStart)
   );
-  const completedTasks = allTasks.filter((task) => task.status === "completed");
+  const completedTasks = allTasks.filter(
+    (task) => getTaskDisplayStatus(task) === "completed"
+  );
   const completedTodayTasks = allTasks.filter(
-    (task) => isToday(task.dueDate) && task.status === "completed"
+    (task) =>
+      isToday(task.dueDate) && getTaskDisplayStatus(task) === "completed"
   );
   const pendingTodayTasks = allTasks.filter(
-    (task) => isToday(task.dueDate) && task.status === "pending"
+    (task) => isToday(task.dueDate) && getTaskDisplayStatus(task) === "pending"
   );
-  const pendingTasks = allTasks.filter((task) => task.status === "pending");
+  const pendingTasks = allTasks.filter(
+    (task) => getTaskDisplayStatus(task) === "pending"
+  );
 
   return {
     todaysTasks,
@@ -531,13 +535,13 @@ export function generateTaskTypes(allTasks: Task[]): TaskCategories {
 /*Stats */
 export const calculateTaskPoints = (task: Task) => {
   const delayCount = task.delayCount;
-  const status = task.status as Task["status"];
+  const status = getTaskDisplayStatus(task);
   const isMissed = isPast(task.dueDate);
 
   if (status === "pending" && !isMissed) return 0;
   else if (status === "delayed" || (isMissed && status === "pending")) {
     return -2 * delayCount - 8;
-  } else if (task.status === "completed" && task.completedAt) {
+  } else if (status === "completed" && task.completedAt) {
     return -2 * delayCount + 10;
   } else {
     throw new Error("Something went wrong with task points calculation");
@@ -547,10 +551,11 @@ export const calculateTaskPoints = (task: Task) => {
 export const calculatePotentialTaskPoints = (task: Task) => {
   const delayCount = task.delayCount || 0;
   const isMissed = isPast(task.dueDate);
+  const status = getTaskDisplayStatus(task);
 
-  if (task.status === "completed") {
+  if (status === "completed") {
     return calculateTaskPoints(task);
-  } else if (isMissed || task.status === "delayed") {
+  } else if (isMissed || status === "delayed") {
     return -2 * delayCount - 8;
   } else {
     return -2 * delayCount + 10;
@@ -568,7 +573,8 @@ export function calculateTimeManagementStats(
   const now = new Date();
 
   tasks.forEach((task) => {
-    if (task.status === "completed" && task.completedAt && task.dueDate) {
+    const taskStatus = getTaskDisplayStatus(task);
+    if (taskStatus === "completed" && task.completedAt && task.dueDate) {
       totalRelevantTasksForTiming++;
       const dueDateStart = startOfDay(task.dueDate);
       const completedAtStart = startOfDay(task.completedAt);
@@ -593,7 +599,7 @@ export function calculateTimeManagementStats(
       }
     } else if (
       (isPast(task.dueDate) ||
-        (task.status === "pending" &&
+        (taskStatus === "pending" &&
           isBefore(startOfDay(task.dueDate), startOfDay(now)))) &&
       task.dueDate
     ) {
@@ -709,128 +715,57 @@ export function calculateConsistencyStats(
 /*Repeating tasks */
 /*Repeating tasks */
 export const MONDAY_START_OF_WEEK = { weekStartsOn: 1 } as const;
-export function calculateNextDueDate(
-  task: Task,
-  currentDate: Date = new Date()
-): Date | undefined {
+interface RepeatingTaskDueToday {
+  isDueToday: boolean;
+  sameWeek?: boolean;
+  daysSinceStart?: number;
+}
+
+export function isRepeatingTaskDueToday(task: Task): RepeatingTaskDueToday {
   if (!task.isRepeating || !task.repetitionRule) {
-    return task.dueDate;
+    return { isDueToday: false };
+  }
+  const today = new Date();
+  const rule = task.repetitionRule;
+  if (today < rule.startDate) return { isDueToday: false };
+
+  const completedToday =
+    task.status === "completed" ||
+    (rule.lastInstanceCompletedDate && isToday(rule.lastInstanceCompletedDate));
+
+  if (completedToday) {
+    return { isDueToday: false };
   }
 
-  const rule = task.repetitionRule;
+  const notCompletedToday = !completedToday;
+  const sameWeek = isSameWeek(today, rule.startDate, MONDAY_START_OF_WEEK);
 
   if (rule.timesPerWeek) {
-    // For times per week, due date is always end of week
-    return startOfDay(endOfWeek(currentDate, MONDAY_START_OF_WEEK));
+    return {
+      isDueToday:
+        sameWeek && notCompletedToday && rule.completions < rule.timesPerWeek,
+      sameWeek,
+    };
   }
-
-  if (rule.daysOfWeek?.length) {
-    const today = getDay(currentDate) as DayOfWeek;
-
-    if (rule.daysOfWeek.includes(today) && task.status !== "completed") {
-      // Check if task was already completed today
-      if (
-        rule.lastInstanceCompletedDate &&
-        isToday(rule.lastInstanceCompletedDate)
-      ) {
-        // Already completed today, find next occurrence
-        let nextDueDay = (today + 1) % 7;
-        while (!rule.daysOfWeek.includes(nextDueDay as DayOfWeek)) {
-          nextDueDay = (nextDueDay + 1) % 7;
-        }
-        const daysUntilNext = (nextDueDay - today + 7) % 7;
-        return startOfDay(addDays(currentDate, daysUntilNext));
-      } else {
-        return startOfDay(currentDate);
-      }
-    }
-
-    // Find next scheduled day
-    let nextDueDay = (today + 1) % 7;
-    while (!rule.daysOfWeek.includes(nextDueDay as DayOfWeek)) {
-      nextDueDay = (nextDueDay + 1) % 7;
-    }
-    const daysUntilNext = (nextDueDay - today + 7) % 7;
-    return startOfDay(addDays(currentDate, daysUntilNext));
+  if (rule.daysOfWeek.length > 0) {
+    const dayOfWeek = getDay(today) as DayOfWeek;
+    const isScheduledToday = rule.daysOfWeek.includes(dayOfWeek);
+    return {
+      isDueToday: sameWeek && isScheduledToday && notCompletedToday,
+      sameWeek,
+    };
   }
 
   if (rule.interval) {
-    const startDate = startOfDay(rule.startDate);
-    const current = startOfDay(currentDate);
-
-    // If current date is before start date, next due date is the start date
-    if (isBefore(current, startDate)) {
-      return startDate;
-    }
-
-    const daysSinceStart = differenceInDays(current, startDate);
+    const daysSinceStart = differenceInDays(today, rule.startDate);
+    if (daysSinceStart < 0) return { isDueToday: false };
     const isDueToday = daysSinceStart % rule.interval === 0;
-
-    if (isDueToday && task.status !== "completed") {
-      // If due today and not completed, next occurrence is after the interval
-      return addDays(
-        startDate,
-        Math.ceil((daysSinceStart + rule.interval) / rule.interval) *
-          rule.interval
-      );
-    } else {
-      // Calculate the next occurrence from the start date
-      const nextCycleNumber = Math.floor(daysSinceStart / rule.interval) + 1;
-      return addDays(startDate, nextCycleNumber * rule.interval);
-    }
+    return {
+      isDueToday: isDueToday && notCompletedToday,
+      daysSinceStart,
+    };
   }
-  return undefined;
-}
-
-export function isTaskDueOn(task: Task, date: Date): boolean {
-  if (!task.isRepeating || !task.repetitionRule) {
-    return isToday(task.dueDate);
-  }
-  //CAREFUL
-  if (task.status === "completed") return false;
-
-  const rule = task.repetitionRule;
-
-  const taskStartOnDate = rule.startDate;
-  if (rule.timesPerWeek) {
-    // Task cannot be due before its start date
-    if (date < taskStartOnDate) return false;
-
-    const sameWeek = isSameWeek(date, taskStartOnDate, MONDAY_START_OF_WEEK);
-    const notCompletedToday =
-      !rule.lastInstanceCompletedDate ||
-      !isSameDay(rule.lastInstanceCompletedDate, new Date());
-    return (
-      sameWeek &&
-      notCompletedToday &&
-      (rule.completions || 0) < rule.timesPerWeek
-    );
-  }
-  if (rule.daysOfWeek.length) {
-    if (date < taskStartOnDate) return false;
-
-    const sameWeek = isSameWeek(date, taskStartOnDate, MONDAY_START_OF_WEEK);
-
-    const dayOfWeek = getDay(date) as DayOfWeek;
-    const isScheduledToday = rule.daysOfWeek.includes(dayOfWeek);
-    const notCompletedToday =
-      !rule.lastInstanceCompletedDate ||
-      !isSameDay(rule.lastInstanceCompletedDate, new Date());
-    return sameWeek && isScheduledToday && notCompletedToday;
-  }
-
-  if (rule.interval && rule.startDate) {
-    const daysSinceStart = differenceInDays(date, rule.startDate);
-
-    if (daysSinceStart < 0) return false;
-
-    const isDueToday = daysSinceStart % rule.interval === 0;
-    const notCompletedToday =
-      !rule.lastInstanceCompletedDate ||
-      !isSameDay(rule.lastInstanceCompletedDate, new Date());
-    return isDueToday && notCompletedToday;
-  }
-  return false;
+  return { isDueToday: false };
 }
 
 /**
@@ -949,7 +884,7 @@ export function isTaskAtRisk(
   task: Task,
   currentDate: Date = new Date()
 ): boolean {
-  if (task.status !== "pending") return false;
+  if (getTaskDisplayStatus(task) !== "pending") return false;
 
   if (!task.isRepeating) {
     const oneHourBeforeDue = new Date(task.dueDate.getTime() - 60 * 60 * 1000);
@@ -1026,4 +961,38 @@ export function getTimeString(startTime: string, endTime: string): string {
   }
 
   return ` ${startTime} - ${endTime}`;
+}
+
+export function getTaskDisplayStatus(
+  task: Task
+): "pending" | "completed" | "delayed" {
+  // For non-repeating tasks, use the stored status
+  if (!task.isRepeating) {
+    return task.status;
+  }
+  const { isDueToday } = isRepeatingTaskDueToday(task);
+  const rule = task.repetitionRule;
+  if (!rule) return task.status;
+
+  if (rule.timesPerWeek && rule.completions >= rule.timesPerWeek) {
+    return "completed";
+  }
+  if (
+    rule.daysOfWeek.length > 0 &&
+    rule.completions >= rule.daysOfWeek.length
+  ) {
+    return "completed";
+  }
+  if (
+    rule.interval &&
+    rule.lastInstanceCompletedDate &&
+    isSameDay(rule.lastInstanceCompletedDate, new Date())
+  ) {
+    return "completed";
+  }
+  // If due today and not completed, it's pending
+  if (isDueToday) {
+    return "pending";
+  }
+  return task.status;
 }
