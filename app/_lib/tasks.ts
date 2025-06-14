@@ -4,43 +4,23 @@ import {
   where,
   orderBy,
   getDocs,
-  Timestamp, // Important for date conversions
+  Timestamp,
   DocumentData,
   QueryDocumentSnapshot,
-  addDoc, // For creating tasks
+  addDoc,
   updateDoc,
   deleteDoc,
-  doc, // For referencing a specific document
+  doc,
   serverTimestamp,
   getDoc,
   deleteField,
   FieldValue,
-  increment,
   // DocumentSnapshot, // For createdAt, updatedAt
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { RepetitionRule, SearchedTask, Task } from "@/app/_types/types";
 import { calculateTaskPoints, isTaskAtRisk } from "@/app/utils";
-
-async function updateUserRewardPoints(
-  userId: string,
-  pointsDiff: number
-): Promise<void> {
-  if (!userId || typeof pointsDiff !== "number" || pointsDiff === 0) {
-    // No user or no change, do nothing
-    return;
-  }
-  try {
-    const userDocRef = doc(db, "users", userId);
-    // Atomically increment/decrement the user's rewardPoints
-    // If the field doesn't exist, increment starts it at pointsDiff
-    await updateDoc(userDocRef, {
-      rewardPoints: increment(pointsDiff),
-    });
-  } catch (error) {
-    console.error(`Error updating reward points for user ${userId}:`, error);
-  }
-}
+import { updateUserRewardPoints } from "./user";
 
 // Define a type for the data structure being written to Firestore for a new task
 interface TaskFirestoreData {

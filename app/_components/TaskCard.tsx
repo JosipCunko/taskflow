@@ -7,9 +7,8 @@ import {
   getStatusStyles,
   getStartAndEndTime,
   getTimeString,
-  getTaskDisplayStatus,
+  formatDate,
 } from "../utils";
-import { formatDate } from "../utils";
 import { Task } from "../_types/types";
 import { format, isPast, isToday, isValid } from "date-fns";
 import { useState, useMemo } from "react";
@@ -61,11 +60,10 @@ export default function TaskCard({
   const TaskIcon = getTaskIconByName(task.icon);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-  const displayStatus = getTaskDisplayStatus(task);
-  const statusInfo = getStatusStyles(displayStatus);
+  const statusInfo = getStatusStyles(task.status);
   const StatusIcon = statusInfo.icon;
   const isPastDue =
-    displayStatus !== "completed" &&
+    task.status !== "completed" &&
     task.dueDate &&
     isPast(new Date(task.dueDate));
 
@@ -125,7 +123,6 @@ export default function TaskCard({
         />
       </div>
 
-      {/* Main Content: Description, Due Date, Status, Indicators */}
       <div className="p-4 space-y-3">
         {task.description && (
           <div className="text-sm text-text-gray">
@@ -162,7 +159,7 @@ export default function TaskCard({
         >
           <CardSpecificIcons.DueDate size={14} />
           <span>Due: {formattedDueDate}</span>
-          {isToday(task.dueDate) && displayStatus !== "completed" && (
+          {isToday(task.dueDate) && task.status !== "completed" && (
             <span className="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-primary-600 text-white font-semibold">
               Today
             </span>
@@ -180,7 +177,7 @@ export default function TaskCard({
             <StatusIcon size={14} />
             {/*!!! CAREFUL */}
             <span>{isPastDue ? "Missed" : statusInfo.text}</span>
-            {displayStatus === "delayed" && task.delayCount > 0 && (
+            {task.status === "delayed" && task.delayCount > 0 && (
               <span className="ml-1 font-semibold">({task.delayCount})</span>
             )}
           </div>

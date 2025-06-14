@@ -19,14 +19,13 @@ import {
   getDayName,
   getTimeString,
   isRepeatingTaskDueToday,
-  getTaskDisplayStatus,
 } from "../utils";
 import { getExperienceIcon } from "./TaskCard";
 import {
   completeRepeatingTaskWithDaysOfWeek,
   completeRepeatingTaskWithInterval,
   completeRepeatingTaskWithTimesPerWeek,
-} from "../_lib/repeatingTasksActions";
+} from "../_lib/actions";
 import { useState } from "react";
 import DurationCalculator from "./DurationCalculator";
 import { useOutsideClick } from "../_hooks/useOutsideClick";
@@ -40,88 +39,66 @@ export default function RepeatingTaskCard({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const outsideClickRef = useOutsideClick(() => setIsDropdownOpen(false));
   const task = notProcessedTask;
+  if (!task.repetitionRule) throw new Error("Task has no repetition rule");
 
   const IconComponent = getTaskIconByName(task.icon) || Repeat;
-  const statusInfo = getStatusStyles(getTaskDisplayStatus(task));
-  console.log(getTaskDisplayStatus(task), task.title);
+  const statusInfo = getStatusStyles(task.status);
   let repetitionSummary = "Repeats";
   let completionFraction = "";
   let progressPercentage = 0;
-  let nextInstanceInfo = "Next: TBD";
+  let nextInstanceInfo = "";
   const rule = task.repetitionRule;
 
   const { startTime, endTime } = getStartAndEndTime(task);
+  const { isDueToday } = isRepeatingTaskDueToday(task);
 
-  if (rule) {
-    const timeString = getTimeString(startTime, endTime);
+  const timeString = getTimeString(startTime, endTime);
 
-    if (rule.interval) {
-      repetitionSummary = `Every ${rule.interval} ${
-        rule.interval === 1 ? "day" : "days"
-      }${timeString}`;
-      const todayComplete =
-        isToday(task.dueDate) && getTaskDisplayStatus(task) !== "completed";
-
-      nextInstanceInfo = `Next: ${
-        todayComplete ? "Today" : formatDate(task.dueDate)
-      }`;
-    } else if (rule.daysOfWeek.length > 0) {
-      repetitionSummary = `On ${rule.daysOfWeek
-        .map(getDayName)
-        .join(", ")}${timeString}`;
-      completionFraction = `${rule.completions}/${rule.daysOfWeek.length}`;
-      progressPercentage = (rule.completions / rule.daysOfWeek.length) * 100;
-      let info = formatDate(task.dueDate);
-      const todayCompleted = isToday(
-        task.repetitionRule?.lastInstanceCompletedDate as Date
-      );
-      const todayComplete =
-        !todayCompleted &&
-        isToday(task.dueDate) &&
-        getTaskDisplayStatus(task) !== "completed";
-      const notDueTodayComplete =
-        !todayComplete && getTaskDisplayStatus(task) !== "completed";
-
-      if (todayCompleted || notDueTodayComplete) {
-        info = formatDate(task.dueDate);
-      }
-      if (todayComplete) info = "Today";
-      nextInstanceInfo = `Next: ${
-        info === formatDate(new Date()) ? "Starts next week" : info
-      }`;
-    } else if (rule.timesPerWeek) {
-      repetitionSummary = `${rule.timesPerWeek} time(s) a week${timeString}`;
-      completionFraction = `${rule.completions}/${rule.timesPerWeek}`;
-      progressPercentage = (rule.completions / rule.timesPerWeek) * 100;
-      nextInstanceInfo = "This week";
-    }
-    if (rule.startDate) {
-      repetitionSummary += ` from ${formatDate(rule.startDate)}`;
-    }
+  if (rule.interval) {
+    repetitionSummary = `Every ${rule.interval} ${
+      rule.interval === 1 ? "day" : "days"
+    }${timeString}`;
+    nextInstanceInfo = `Next: ${
+      isDueToday ? "Today" : formatDate(task.dueDate)
+    }`;
+  } else if (rule.daysOfWeek.length > 0) {
+    repetitionSummary = `On ${rule.daysOfWeek
+      .map(getDayName)
+      .join(", ")}${timeString}`;
+    completionFraction = `${rule.completions}/${rule.daysOfWeek.length}`;
+    progressPercentage = (rule.completions / rule.daysOfWeek.length) * 100;
+    nextInstanceInfo = `Next: ${
+      isDueToday ? "Today" : formatDate(task.dueDate)
+    }`;
+  } else if (rule.timesPerWeek) {
+    repetitionSummary = `${rule.timesPerWeek} time(s) a week${timeString}`;
+    completionFraction = `${rule.completions}/${rule.timesPerWeek}`;
+    progressPercentage = (rule.completions / rule.timesPerWeek) * 100;
+    nextInstanceInfo = `Next: ${
+      isDueToday ? "This week" : formatDate(task.dueDate)
+    }`;
   }
+
+  if (rule.startDate) {
+    repetitionSummary += ` from ${formatDate(rule.startDate)}`;
+  }
+
   const isFullyCompletedForCurrentCycle =
-    (rule?.interval &&
-      isToday(task.repetitionRule?.lastInstanceCompletedDate as Date)) ||
-    (rule?.timesPerWeek &&
+    (rule.interval && isToday(rule.lastInstanceCompletedDate as Date)) ||
+    (rule.timesPerWeek &&
       rule.completions !== 0 &&
       rule.completions === rule.timesPerWeek) ||
-    (rule?.daysOfWeek &&
+    (rule.daysOfWeek &&
       rule.completions !== 0 &&
       rule.daysOfWeek.length > 0 &&
       rule.completions === rule.daysOfWeek.length);
 
   const canCompleteToday = (() => {
     if (isFullyCompletedForCurrentCycle) return false;
-    const { isDueToday } = isRepeatingTaskDueToday(task);
     return isDueToday;
   })();
 
   const handleComplete = async () => {
-    if (!rule) {
-      errorToast("Task has no repetition rule");
-      return;
-    }
-
     try {
       const result = await (async (): Promise<ActionResult> => {
         if (rule.interval) {
@@ -224,7 +201,7 @@ export default function RepeatingTaskCard({
                 : "Completed"
               : statusInfo.text}
           </span>
-          {getTaskDisplayStatus(task) === "delayed" && task.delayCount > 0 && (
+          {task.status === "delayed" && task.delayCount > 0 && (
             <span className={`ml-1 font-semibold ${statusInfo.colorClass}`}>
               ({task.delayCount})
             </span>
@@ -272,7 +249,6 @@ export default function RepeatingTaskCard({
           />
         )}
       </div>
-
       <div className="flex items-center justify-between text-xs text-text-low mt-3 pt-2 border-t border-divider/30">
         <div className="flex items-center gap-1">
           <CalendarDays size={12} className="opacity-70 flex-shrink-0" />

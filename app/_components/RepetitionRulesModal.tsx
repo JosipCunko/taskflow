@@ -218,7 +218,7 @@ export default function RepetitionRulesModal({
 
               <div className="grid grid-cols-7 gap-2">
                 {dayLabels.map((dayLabel, index) => {
-                  const dayValue = ((index + 1) % 7) as DayOfWeek;
+                  const dayValue = (index % 7) as DayOfWeek;
                   const isSelected = selectedDaysOfWeek.includes(dayValue);
                   return (
                     <button

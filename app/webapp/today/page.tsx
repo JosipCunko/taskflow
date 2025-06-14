@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/_lib/auth";
 import { getTasksByUserId } from "@/app/_lib/tasks";
 import TaskCardSmall from "@/app/_components/TaskCardSmall";
-import { CardSpecificIcons, getTaskDisplayStatus } from "@/app/utils";
+import { CardSpecificIcons } from "@/app/utils";
 import { Clock } from "lucide-react";
 import Link from "next/link";
 import RepeatingTaskCard from "@/app/_components/RepeatingTaskCard";
@@ -34,10 +34,10 @@ export default async function TodayPage() {
   const allTodaysTasks = [...todaysTasks, ...todaysRepeatingTasks];
 
   const scheduledTasks = allTodaysTasks.filter(
-    (task) => task.startTime && getTaskDisplayStatus(task) !== "completed"
+    (task) => task.startTime && task.status !== "completed"
   );
   const otherTasks = allTodaysTasks.filter(
-    (task) => !task.startTime && getTaskDisplayStatus(task) !== "completed"
+    (task) => !task.startTime && task.status !== "completed"
   );
 
   const now = new Date();
@@ -58,10 +58,8 @@ export default async function TodayPage() {
 
   const focusTask =
     nextUpcomingTask ||
-    allTodaysTasks.find(
-      (t) => t.isPriority && getTaskDisplayStatus(t) !== "completed"
-    ) ||
-    allTodaysTasks.find((t) => getTaskDisplayStatus(t) !== "completed");
+    allTodaysTasks.find((t) => t.isPriority && t.status !== "completed") ||
+    allTodaysTasks.find((t) => t.status !== "completed");
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 p-4 lg:p-6 bg-background-800 text-text-high min-h-screen">
@@ -149,16 +147,15 @@ export default async function TodayPage() {
         </div>
 
         {/* Repeating Tasks Today */}
-        {todaysRepeatingTasks.filter(
-          (task) => getTaskDisplayStatus(task) !== "completed"
-        ).length > 0 && (
+        {todaysRepeatingTasks.filter((task) => task.status !== "completed")
+          .length > 0 && (
           <div className="bg-background-700 p-6 rounded-lg shadow">
             <h2 className="text-xl font-semibold mb-4 text-primary-500">
               Repeating Tasks Due Today
             </h2>
             <div className="space-y-3 max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-background-500 scrollbar-track-transparent">
               {todaysRepeatingTasks
-                .filter((task) => getTaskDisplayStatus(task) !== "completed")
+                .filter((task) => task.status !== "completed")
                 .map((task) => (
                   <RepeatingTaskCard key={task.id} notProcessedTask={task} />
                 ))}

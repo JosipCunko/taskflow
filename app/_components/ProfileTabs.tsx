@@ -6,7 +6,7 @@ import { getTaskIconByName } from "../utils";
 import { formatDistanceToNowStrict } from "date-fns";
 import TaskCardSmall from "./TaskCardSmall";
 import Checkbox from "./reusable/Checkbox";
-import { updateUser } from "../_lib/user";
+import { updateUserAction } from "../_lib/actions";
 import { handleToast } from "../utils";
 
 export default function ProfileTabs({
@@ -175,7 +175,7 @@ export default function ProfileTabs({
                 checked={userProfileData.notifyReminders}
                 onChange={async (e) => {
                   setIsLoading(true);
-                  const res = await updateUser(userProfileData.id, {
+                  const res = await updateUserAction(userProfileData.id, {
                     notifyReminders: e.target.checked,
                   });
 
@@ -200,7 +200,7 @@ export default function ProfileTabs({
                 checked={userProfileData.notifyAchievements}
                 onChange={async (e) => {
                   setIsLoading(true);
-                  const res = await updateUser(userProfileData.id, {
+                  const res = await updateUserAction(userProfileData.id, {
                     notifyAchievements: e.target.checked,
                   });
 

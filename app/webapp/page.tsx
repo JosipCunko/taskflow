@@ -25,7 +25,6 @@ import {
   generateTaskTypes,
   calculateTimeManagementStats,
   calculateConsistencyStats,
-  getTaskDisplayStatus,
 } from "../utils";
 import { Task } from "../_types/types";
 import RepeatingTaskCard from "../_components/RepeatingTaskCard";
@@ -47,7 +46,7 @@ export default async function DashboardPage() {
   const regularTasks = allTasks.filter((task) => !task.isRepeating);
   const repeatingTasks = allTasks.filter((task) => task.isRepeating);
   const priorityTasks = regularTasks.filter(
-    (task) => task.isPriority && getTaskDisplayStatus(task) !== "completed"
+    (task) => task.isPriority && task.status === "completed"
   );
 
   const {
@@ -78,13 +77,13 @@ export default async function DashboardPage() {
   // For regular tasks: exclude completed tasks
   // For repeating tasks: exclude if already completed today or can't be completed today
   const incompleteTodayTasks = todaysTasks.filter(
-    (task) => getTaskDisplayStatus(task) !== "completed"
+    (task) => task.status !== "completed"
   );
 
   const incompleteRepeatingTasksDueToday = repeatingTasksDueToday.filter(
     (task) => {
       // If task is marked as completed, it can't earn more points today
-      if (getTaskDisplayStatus(task) === "completed") return false;
+      if (task.status === "completed") return false;
 
       // Check if this repeating task was already completed today
       const rule = task.repetitionRule;

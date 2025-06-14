@@ -14,7 +14,7 @@ import {
 import type { RefAttributes, ForwardRefExoticComponent } from "react";
 import { Calendar, CheckCircle } from "lucide-react";
 import type { LucideProps } from "lucide-react";
-import { format, isSameDay, addMinutes, getHours, getMinutes } from "date-fns";
+import { isSameDay, addMinutes, getHours, getMinutes } from "date-fns";
 
 import ColorPicker from "./ColorPicker";
 import {
@@ -22,6 +22,7 @@ import {
   errorToast,
   handleToast,
   TASK_ICONS,
+  formatDate,
 } from "../utils";
 import Button from "./reusable/Button";
 import IconPicker from "./IconPicker";
@@ -561,8 +562,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
                 }`}
               {activeRepetitionType === "timesPerWeek" &&
                 `Repeats ${timesPerWeek} time(s) per week`}
-              {taskStartDate &&
-                ` starting ${format(taskStartDate, "MMM d, yyyy")}`}
+              {taskStartDate && ` starting ${formatDate(taskStartDate)}`}
               <span className="ml-1">(Edit)</span>
             </button>
           )}

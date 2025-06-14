@@ -1,11 +1,27 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import {
+  isSameWeek,
+  startOfWeek,
+  addDays,
+  isBefore,
+  getDay,
+  endOfWeek,
+  addWeeks,
+  endOfDay,
+} from "date-fns";
+import {
+  formatDate,
+  isRepeatingTaskDueToday,
+  MONDAY_START_OF_WEEK,
+} from "../utils";
+
 import {
   ActionResult,
   ActionError,
   Task,
   RepetitionRule,
+  DayOfWeek,
 } from "../_types/types";
 import {
   createTask,
@@ -17,9 +33,29 @@ import {
 import { getServerSession } from "next-auth";
 import { logUserActivity } from "./activity";
 import { authOptions } from "./auth";
-import { format } from "date-fns";
 import { generateNotificationsForUser } from "./notifications";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "./firebase";
+import { User } from "next-auth";
+import { revalidatePath } from "next/cache";
 
+/* User */
+export async function updateUserAction(
+  userId: string,
+  data: Partial<User>
+): Promise<ActionResult> {
+  const userRef = doc(db, "users", userId);
+  try {
+    await updateDoc(userRef, data);
+    revalidatePath("/profile");
+    return { success: true, message: "User updated" };
+  } catch (err) {
+    const error = err as ActionError;
+    return { success: false, error: error.message || "Failed to update user" };
+  }
+}
+
+/* Update */
 export async function updateTaskStatusAction(
   formData: FormData
 ): Promise<ActionResult> {
@@ -105,11 +141,15 @@ export async function delayTaskAction(
   delayCount: number
 ): Promise<ActionResult> {
   const taskId = formData.get("taskId") as string;
-  const delayOption = formData.get("delayOption") as "tomorrow" | "nextWeek";
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
 
-  const newDueDate = new Date();
+  const delayOption = formData.get("delayOption") as "tomorrow" | "nextWeek";
+  const newDueDateString = formData.get("newDueDate") as string;
+  let newDueDate = new Date();
+  if (newDueDateString) {
+    newDueDate = new Date(newDueDateString);
+  }
   if (delayOption === "tomorrow") {
     newDueDate.setDate(newDueDate.getDate() + 1);
   } else if (delayOption === "nextWeek") {
@@ -118,7 +158,7 @@ export async function delayTaskAction(
   newDueDate.setHours(hour, min);
 
   console.log(
-    `ACTION: Delay Task ${taskId} to ${delayOption} (${newDueDate.toISOString()})`
+    `ACTION: Delay Task ${taskId} to ${delayOption} (${formatDate(newDueDate)})`
   );
   try {
     const updatedTask = await updateTask(taskId, {
@@ -152,60 +192,6 @@ export async function delayTaskAction(
   } catch (err) {
     const error = err as ActionError;
     return { success: false, error: error.message || "Failed to delay task" };
-  }
-}
-/** Similar as delayTaskAction */
-export async function rescheduleTaskAction(
-  formData: FormData,
-  hour: number,
-  min: number,
-  delayCount: number
-): Promise<ActionResult> {
-  const taskId = formData.get("taskId") as string;
-  const newDueDateString = formData.get("newDueDate") as string;
-  const session = await getServerSession(authOptions);
-  const userId = session?.user.id;
-
-  if (!newDueDateString) {
-    return { success: false, error: "New due date is required" };
-  }
-  const newDueDate = new Date(newDueDateString);
-  newDueDate.setHours(hour, min);
-
-  console.log(
-    `ACTION: Reschedule Task ${taskId} to ${newDueDate.toISOString()}`
-  );
-
-  try {
-    const updatedTask = await updateTask(taskId, {
-      dueDate: newDueDate,
-      status: "delayed",
-      delayCount: delayCount + 1,
-    });
-
-    if (userId && updatedTask) {
-      await logUserActivity(userId, {
-        type: "TASK_UPDATED",
-        taskId,
-        activityColor: "#00c853",
-        activityIcon: "CircleCheckBig",
-        taskSnapshot: {
-          title: updatedTask.title,
-          description: updatedTask.description || "",
-          color: updatedTask.color,
-          icon: updatedTask.icon,
-        },
-      });
-    }
-
-    revalidatePath("/tasks");
-    return { success: true, message: "Task rescheduled" };
-  } catch (err) {
-    const error = err as ActionError;
-    return {
-      success: false,
-      error: error.message || "Failed to reschedule task",
-    };
   }
 }
 
@@ -375,14 +361,12 @@ export async function createTaskAction(
         activityIcon: "CircleCheckBig",
       });
     }
-    // Generate notifications after task creation
     if (session.user.id) {
       try {
         const allTasks = await getTasksByUserId(session.user.id);
         await generateNotificationsForUser(session.user.id, allTasks);
       } catch (notificationError) {
         console.error("Error generating notifications:", notificationError);
-        // Don't fail the main action if notification generation fails
       }
     }
 
@@ -401,66 +385,214 @@ export async function createTaskAction(
   }
 }
 
-// Assume completeRepeatingTaskInstance is your DB logic (e.g., updating subcollection)
-// from repeatingTaskUtils.ts conceptually, but needs actual DB code
-// For a true Server Action, it would look like:
-export async function completeRepeatingTaskInstanceAction(
-  taskId: string,
-  instanceDate: Date // This should be just the date, time stripped or ignored
+/**Repeating Tasks */
+/**Repeating Tasks */
+/**Repeating Tasks */
+
+export async function completeRepeatingTaskWithInterval(
+  task: Task,
+  completionDate: Date = new Date()
 ): Promise<ActionResult> {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return { success: false, error: "Not authenticated" };
-  }
-  try {
-    // --- THIS IS WHERE YOU PUT YOUR FIRESTORE LOGIC ---
-    // 1. Fetch the main repeating task document.
-    // 2. Validate the repetition rule and if an instance is due on instanceDate.
-    // 3. Update the status of this specific instance.
-    // - If using a subcollection 'occurrences':
-    // const occurrenceRef = adminDb.doc(`tasks/${taskId}/occurrences/${format(instanceDate, 'yyyy-MM-dd')}`);
-    // await occurrenceRef.set({ date: Timestamp.fromDate(startOfDay(instanceDate)), status: 'completed', completedAt: Timestamp.now(), userId: session.user.id }, { merge: true });
-    // - If updating fields on the main task document (for 'daily' or 'X times per week'):
-    // This is more complex and depends on the rule. Refer to the conceptual logic in repeatingTaskUtils.
-    // For example, for daily task:
-    // await adminDb.doc(`tasks/${taskId}`).update({ lastInstanceCompletedDate: Timestamp.fromDate(startOfDay(instanceDate)) });
-    // For X times per week: calculate completionsThisPeriod, currentPeriodStartDate based on instanceDate, and update.
-    // IMPORTANT: Choose ONE method (subcollection OR fields on main doc) and implement consistently.
-    // Subcollection is generally more robust.
-
-    console.log(
-      `Firestore: Mark task ${taskId} instance for ${format(
-        instanceDate,
-        "yyyy-MM-dd"
-      )} as completed.`
-    );
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    await logUserActivity(session.user.id, {
-      // Log this activity
-      type: "TASK_COMPLETED",
-      taskId: taskId,
-      details: `Completed repeating task instance for ${format(
-        instanceDate,
-        "MMM d"
-      )}`,
-      taskSnapshot: {
-        id: taskId,
-        title: "Fetched Task Title" /* Fetch actual title for snapshot */,
-      },
-      activityIcon: "CheckCircle2",
-      activityColor: "var(--color-success)",
-    });
-
-    revalidatePath("/dashboard"); // Or whatever page shows these tasks
-    revalidatePath("/tasks");
-    return { success: true, message: "Instance marked complete!" };
-  } catch (error) {
-    const err = error as Error;
-    console.error("Error completing repeating task instance:", err);
+  if (!task.isRepeating || !task.repetitionRule) {
     return {
       success: false,
-      error: err.message || "Failed to complete instance",
+      error: "Task is not a repeating task",
+    };
+  }
+  const rule = task.repetitionRule;
+  if (!rule.interval || rule.interval <= 0) {
+    return {
+      success: false,
+      error: "Task is not configured for interval completion",
+    };
+  }
+
+  const { isDueToday } = isRepeatingTaskDueToday(task);
+  if (!isDueToday || isBefore(completionDate, rule.startDate)) {
+    return {
+      success: false,
+      error: "Task is not due today",
+    };
+  }
+  const originalCompletionDate = { ...completionDate } as Date;
+  // Next due date
+  completionDate.setHours(task.dueDate.getHours());
+  completionDate.setMinutes(task.dueDate.getMinutes());
+  const nextDueDate = addDays(completionDate, rule.interval);
+
+  const updates: Partial<Task> = {
+    repetitionRule: {
+      ...rule,
+      lastInstanceCompletedDate: completionDate,
+      completions: 1,
+      // startDate: rule.startDate,
+    },
+    dueDate: nextDueDate,
+    completedAt: originalCompletionDate,
+  };
+
+  try {
+    await updateTask(task.id, updates);
+    return {
+      success: true,
+      message: `Task completed. Next due on ${formatDate(nextDueDate)}`,
+    };
+  } catch (err) {
+    const error = err as Error;
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+
+export async function completeRepeatingTaskWithTimesPerWeek(
+  task: Task,
+  completionDate: Date = new Date()
+): Promise<ActionResult> {
+  if (!task.isRepeating || !task.repetitionRule) {
+    return {
+      success: false,
+      error: "Task is not a repeating task",
+    };
+  }
+  const rule = task.repetitionRule;
+
+  if (!rule.timesPerWeek || rule.timesPerWeek <= 0) {
+    return {
+      success: false,
+      error: "Task is not configured for times per week completion",
+    };
+  }
+
+  const { isDueToday } = isRepeatingTaskDueToday(task);
+  if (!isDueToday || isBefore(completionDate, rule.startDate)) {
+    return {
+      success: false,
+      error: "Task is not scheduled for today",
+    };
+  }
+
+  const weekStart = startOfWeek(completionDate, MONDAY_START_OF_WEEK);
+  if (!isSameWeek(rule.startDate, weekStart, MONDAY_START_OF_WEEK)) {
+    rule.startDate = weekStart;
+    rule.completions = 0;
+  }
+  rule.completions = rule.completions + 1;
+
+  // Next due date
+  let nextDueDate: Date;
+  let newStartDate: Date;
+  if (rule.completions === rule.timesPerWeek) {
+    const nextWeekStart = startOfWeek(
+      addWeeks(completionDate, 1),
+      MONDAY_START_OF_WEEK
+    );
+    nextDueDate = endOfDay(endOfWeek(nextWeekStart, MONDAY_START_OF_WEEK));
+    newStartDate = nextWeekStart;
+  } else {
+    nextDueDate = endOfDay(endOfWeek(completionDate, MONDAY_START_OF_WEEK));
+    newStartDate = rule.startDate;
+  }
+
+  const updates: Partial<Task> = {
+    repetitionRule: {
+      ...rule,
+      startDate: newStartDate,
+      lastInstanceCompletedDate: completionDate,
+    },
+    dueDate: nextDueDate,
+  };
+
+  if (rule.completions === rule.timesPerWeek) {
+    updates.completedAt = completionDate;
+  }
+
+  try {
+    await updateTask(task.id, updates);
+    return {
+      success: true,
+      message:
+        rule.completions === rule.timesPerWeek
+          ? "Task fully completed for this week"
+          : `Task completed (${rule.completions}/${rule.timesPerWeek} times this week)`,
+    };
+  } catch (err) {
+    const error = err as Error;
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+
+export async function completeRepeatingTaskWithDaysOfWeek(
+  task: Task,
+  completionDate: Date = new Date()
+): Promise<ActionResult> {
+  if (!task.isRepeating || !task.repetitionRule) {
+    return {
+      success: false,
+      error: "Task is not a repeating task",
+    };
+  }
+  const rule = task.repetitionRule;
+  if (rule.daysOfWeek.length === 0) {
+    return {
+      success: false,
+      error: "Task is not configured for specific days of week",
+    };
+  }
+  const { isDueToday } = isRepeatingTaskDueToday(task);
+  if (!isDueToday || isBefore(completionDate, rule.startDate)) {
+    return {
+      success: false,
+      error: "Task is not scheduled for today",
+    };
+  }
+  // Next due date
+  const today = getDay(completionDate) as DayOfWeek;
+
+  let nextDueDay = (today + 1) % 7;
+  while (!rule.daysOfWeek.includes(nextDueDay as DayOfWeek)) {
+    nextDueDay = (nextDueDay + 1) % 7;
+  }
+  const daysUntilNext = (nextDueDay - today + 7) % 7;
+  const newDueDate = addDays(completionDate, daysUntilNext);
+
+  const weekStart = startOfWeek(completionDate, MONDAY_START_OF_WEEK);
+  if (!isSameWeek(rule.startDate, weekStart, MONDAY_START_OF_WEEK)) {
+    rule.startDate = weekStart;
+    rule.completions = 0;
+  }
+  rule.completions = rule.completions + 1;
+
+  const updates: Partial<Task> = {
+    repetitionRule: {
+      ...rule,
+      lastInstanceCompletedDate: completionDate,
+    },
+    dueDate: newDueDate,
+  };
+
+  if (rule.completions === rule.daysOfWeek.length) {
+    updates.completedAt = completionDate;
+  }
+
+  try {
+    await updateTask(task.id, updates);
+    return {
+      success: true,
+      message:
+        rule.completions === rule.daysOfWeek.length
+          ? "Task fully completed for this week"
+          : `Task completed (${rule.completions}/${rule.daysOfWeek.length} days this week)`,
+    };
+  } catch (err) {
+    const error = err as Error;
+    return {
+      success: false,
+      error: error.message,
     };
   }
 }

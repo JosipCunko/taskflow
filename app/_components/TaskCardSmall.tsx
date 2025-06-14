@@ -3,7 +3,6 @@ import {
   getStatusStyles,
   getTaskIconByName,
   formatDate,
-  getTaskDisplayStatus,
 } from "../utils";
 import { Task } from "../_types/types";
 import DurationCalculator from "./DurationCalculator";
@@ -34,7 +33,7 @@ export default function TaskCardSmall({ task }: { task: Task }) {
         })()
       : null;
 
-  const statusInfo = getStatusStyles(getTaskDisplayStatus(task));
+  const statusInfo = getStatusStyles(task.status);
 
   return (
     <li className="group relative overflow-hidden list-none cursor-default">
@@ -110,9 +109,9 @@ export default function TaskCardSmall({ task }: { task: Task }) {
                 className="absolute -top-1 -right-1 w-3 h-3 rounded-full animate-pulse"
                 style={{
                   backgroundColor:
-                    getTaskDisplayStatus(task) === "completed"
+                    task.status === "completed"
                       ? "#10b981"
-                      : getTaskDisplayStatus(task) === "pending"
+                      : task.status === "pending"
                       ? isPast(task.dueDate)
                         ? "#ff0000"
                         : "#f59e0b"
@@ -142,14 +141,13 @@ export default function TaskCardSmall({ task }: { task: Task }) {
           >
             <statusInfo.icon size={14} className={statusInfo.colorClass} />
             <span>{statusInfo.text}</span>
-            {getTaskDisplayStatus(task) === "delayed" &&
-              task.delayCount > 0 && (
-                <span
-                  className={`ml-1 font-bold ${statusInfo.colorClass} bg-current/20 px-1.5 py-0.5 rounded-full text-xs`}
-                >
-                  {task.delayCount}
-                </span>
-              )}
+            {task.status === "delayed" && task.delayCount > 0 && (
+              <span
+                className={`ml-1 font-bold ${statusInfo.colorClass} bg-current/20 px-1.5 py-0.5 rounded-full text-xs`}
+              >
+                {task.delayCount}
+              </span>
+            )}
           </div>
 
           <DurationCalculator task={task} />

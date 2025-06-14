@@ -10,6 +10,8 @@ import {
 } from "next-auth";
 import { adminAuth, adminDb } from "@/app/_lib/admin";
 import { Timestamp } from "firebase-admin/firestore";
+import { Task } from "../_types/types";
+import { isRepeatingTaskDueToday, isTaskAtRisk } from "../utils";
 
 // Define a combined type for user objects that will hold rewardPoints
 type UserWithExtendedData = (NextAuthUser | AdapterUser) & {
@@ -45,7 +47,73 @@ interface FirestoreUpdateData {
   displayName?: string | null;
   photoURL?: string | null;
 }
+// Leave it here for admin access to the DB
+export async function updateUserRepeatingTasks(userId: string) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
+  const tasksRef = adminDb.collection("tasks");
+  const snapshot = await tasksRef
+    .where("userId", "==", userId)
+    .where("isRepeating", "==", true)
+    .get();
+
+  if (snapshot.empty) {
+    console.log("No repeating tasks found for user:", userId);
+    return;
+  }
+
+  const batch = adminDb.batch();
+
+  snapshot.docs.forEach((doc) => {
+    const task = doc.data() as Task;
+    const taskRef = doc.ref;
+
+    if (!task.repetitionRule) return;
+
+    const rule = task.repetitionRule;
+    const { isDueToday, sameWeek } = isRepeatingTaskDueToday(task);
+    const risk = isTaskAtRisk(task);
+
+    if (isDueToday) {
+      // reset status and completions
+      if (rule.interval) {
+        batch.update(taskRef, {
+          status: "pending",
+          "repetitionRule.completions": 0,
+          risk,
+        });
+      }
+      // reset status and completions if new week
+      else if (rule.daysOfWeek.length > 0) {
+        const updateData: {
+          status: string;
+          "repetitionRule.completions"?: number;
+          risk?: boolean;
+        } = { status: "pending", risk };
+        if (!sameWeek) {
+          updateData["repetitionRule.completions"] = 0;
+        }
+        batch.update(taskRef, updateData);
+      }
+      // reset status and completions if new week
+      else if (rule.timesPerWeek) {
+        const updateData: {
+          status: string;
+          "repetitionRule.completions"?: number;
+          risk?: boolean;
+        } = { status: "pending", risk };
+        if (!sameWeek) {
+          updateData["repetitionRule.completions"] = 0;
+        }
+        batch.update(taskRef, updateData);
+      }
+    }
+  });
+
+  await batch.commit();
+  console.log("Repeating tasks updated for user:", userId);
+}
 /**
  * CredentialsProvider: We use this because Firebase client SDK handles the OAuth dance with Google. We then pass the idToken from Firebase to this provider.
 authorize function:
@@ -102,6 +170,7 @@ export const authOptions: NextAuthOptions = {
           let rewardPoints = 0;
           let notifyReminders = true;
           let notifyAchievements = true;
+          let lastLoginAt: Timestamp | undefined;
 
           if (!userDocSnap.exists) {
             // Filter out undefined values before setting the document
@@ -131,6 +200,15 @@ export const authOptions: NextAuthOptions = {
             rewardPoints = userData?.rewardPoints || 0;
             notifyReminders = userData?.notifyReminders ?? true;
             notifyAchievements = userData?.notifyAchievements ?? true;
+            lastLoginAt = userData?.lastLoginAt as Timestamp | undefined;
+
+            // Check if it's the first login of the day
+            if (
+              !lastLoginAt ||
+              lastLoginAt.toDate().toDateString() !== new Date().toDateString()
+            ) {
+              await updateUserRepeatingTasks(firebaseUser.uid);
+            }
 
             // Filter out undefined values before updating the document
             const updateData: Partial<FirestoreUpdateData> = {
@@ -176,6 +254,7 @@ export const authOptions: NextAuthOptions = {
         let rewardPoints = 0;
         let notifyReminders = true;
         let notifyAchievements = true;
+        let lastLoginAt: Timestamp | undefined;
 
         if (!userDocSnap.exists) {
           // New user via OAuth, create their document in Firestore
@@ -219,6 +298,15 @@ export const authOptions: NextAuthOptions = {
           rewardPoints = userData?.rewardPoints || 0;
           notifyReminders = userData?.notifyReminders ?? true;
           notifyAchievements = userData?.notifyAchievements ?? true;
+          lastLoginAt = userData?.lastLoginAt as Timestamp | undefined;
+
+          // Check if it's the first login of the day
+          if (
+            !lastLoginAt ||
+            lastLoginAt.toDate().toDateString() !== new Date().toDateString()
+          ) {
+            await updateUserRepeatingTasks(user.id);
+          }
 
           try {
             // Filter out undefined values before updating the document
