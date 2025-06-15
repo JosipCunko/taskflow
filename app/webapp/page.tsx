@@ -87,23 +87,24 @@ export default async function DashboardPage() {
 
       // Check if this repeating task was already completed today
       const rule = task.repetitionRule;
-      if (rule?.lastInstanceCompletedDate) {
+
+      if (task.completedAt) {
         const today = new Date();
-        const lastCompleted = rule.lastInstanceCompletedDate;
+        const lastCompleted = task.completedAt as Date;
 
         // If interval task was completed today, it's not available for more points
-        if (rule.interval && isSameDay(lastCompleted, today)) {
+        if (rule?.interval && isSameDay(lastCompleted, today)) {
           return false;
         }
 
         // If times per week task has reached its limit for this week
-        if (rule.timesPerWeek && rule.completions >= rule.timesPerWeek) {
+        if (rule?.timesPerWeek && rule.completions >= rule.timesPerWeek) {
           return false;
         }
 
         // If days of week task has been completed for all required days this week
         if (
-          rule.daysOfWeek?.length &&
+          rule?.daysOfWeek?.length &&
           rule.completions >= rule.daysOfWeek.length
         ) {
           return false;

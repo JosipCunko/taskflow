@@ -30,7 +30,10 @@ import {
   addDays,
   differenceInDays,
   differenceInHours,
+  differenceInMinutes,
+  addMinutes,
 } from "date-fns";
+import { canCompleteRepeatingTaskNow } from "../utils";
 import { getUserPreferences } from "./user";
 
 const NOTIFICATIONS_COLLECTION = "notifications";
@@ -408,6 +411,127 @@ export const generateDueSoonNotifications = async (
 };
 
 /**
+ * Generates urgent notifications for time-sensitive repeating tasks
+ */
+export const generateTimeWindowNotifications = async (
+  userId: string,
+  tasks: Task[]
+): Promise<void> => {
+  const userPrefs = await getUserPreferences(userId);
+  if (!userPrefs?.notifyReminders) {
+    return;
+  }
+
+  const now = new Date();
+  const currentTime = now.getHours() * 60 + now.getMinutes();
+
+  // Filter tasks with specific time windows that are due today
+  const timeWindowTasks = tasks.filter((task) => {
+    if (
+      !task.isReminder ||
+      !task.isRepeating ||
+      !task.startTime ||
+      !task.duration
+    ) {
+      return false;
+    }
+
+    // Check if task is due today using our existing function
+    const { isDueToday } = canCompleteRepeatingTaskNow(task);
+    if (!isDueToday && !isToday(task.dueDate)) {
+      return false;
+    }
+
+    const startTimeInMinutes = task.startTime.hour * 60 + task.startTime.minute;
+
+    // Notify 15 minutes before start time and at start time
+    const notify15MinBefore = startTimeInMinutes - 15;
+    const notifyAtStart = startTimeInMinutes;
+
+    return (
+      currentTime >= notify15MinBefore - 2 && // 2-minute window for each notification
+      currentTime <= notifyAtStart + 2 &&
+      task.status === "pending"
+    );
+  });
+
+  for (const task of timeWindowTasks) {
+    if (!task.startTime || !task.duration) continue;
+
+    const startTimeInMinutes = task.startTime.hour * 60 + task.startTime.minute;
+    const durationInMinutes = task.duration.hours * 60 + task.duration.minutes;
+    const endTimeInMinutes = startTimeInMinutes + durationInMinutes;
+
+    const startTime = `${task.startTime.hour
+      .toString()
+      .padStart(2, "0")}:${task.startTime.minute.toString().padStart(2, "0")}`;
+    const endHour = Math.floor(endTimeInMinutes / 60);
+    const endMinute = endTimeInMinutes % 60;
+    const endTime = `${endHour.toString().padStart(2, "0")}:${endMinute
+      .toString()
+      .padStart(2, "0")}`;
+
+    let notificationType = "";
+    let title = "";
+    let message = "";
+    const priority: NotificationPriority = "URGENT";
+
+    // Determine which notification to send based on current time
+    if (
+      currentTime >= startTimeInMinutes - 32 &&
+      currentTime <= startTimeInMinutes - 28
+    ) {
+      notificationType = "TIME_WINDOW_30MIN";
+      title = "⏰ Task Starting Soon";
+      message = `"${task.title}" starts in 30 minutes (${startTime})`;
+    } else if (
+      currentTime >= startTimeInMinutes - 7 &&
+      currentTime <= startTimeInMinutes - 3
+    ) {
+      notificationType = "TIME_WINDOW_5MIN";
+      title = "🚨 Task Starting Very Soon";
+      message = `"${task.title}" starts in 5 minutes (${startTime})`;
+    } else if (
+      currentTime >= startTimeInMinutes - 2 &&
+      currentTime <= startTimeInMinutes + 2
+    ) {
+      notificationType = "TIME_WINDOW_NOW";
+      title = "🔴 Task Available NOW";
+      message = `"${task.title}" is available now! Complete by ${endTime} (${durationInMinutes} min window)`;
+    }
+
+    if (notificationType) {
+      const existingNotifications = await getNotificationsByUserId(userId);
+      const hasRecentNotification = existingNotifications.some(
+        (n) =>
+          n.type === notificationType &&
+          n.taskId === task.id &&
+          differenceInMinutes(new Date(), n.createdAt) < 10
+      );
+
+      if (!hasRecentNotification) {
+        await createNotification({
+          userId,
+          type: notificationType as "TASK_DUE_SOON",
+          priority,
+          title,
+          message,
+          actionText: "Complete Now",
+          actionUrl: `/webapp/tasks`,
+          taskId: task.id,
+          data: {
+            startTime,
+            endTime,
+            durationMinutes: durationInMinutes,
+          },
+          expiresAt: addMinutes(new Date(), durationInMinutes + 30),
+        });
+      }
+    }
+  }
+};
+
+/**
  * Generates achievement notifications
  */
 export const generateAchievementNotification = async (
@@ -481,6 +605,7 @@ export const generateNotificationsForUser = async (
       generateTaskAtRiskNotifications(userId, tasks),
       generateOverdueTaskNotifications(userId, tasks),
       generateDueSoonNotifications(userId, tasks),
+      generateTimeWindowNotifications(userId, tasks),
     ]);
   } catch (error) {
     console.error("Error generating notifications for user:", error);

@@ -11,7 +11,7 @@ import {
 import { adminAuth, adminDb } from "@/app/_lib/admin";
 import { Timestamp } from "firebase-admin/firestore";
 import { Task } from "../_types/types";
-import { isRepeatingTaskDueToday, isTaskAtRisk } from "../utils";
+import { canCompleteRepeatingTaskNow, isTaskAtRisk } from "../utils";
 
 // Define a combined type for user objects that will hold rewardPoints
 type UserWithExtendedData = (NextAuthUser | AdapterUser) & {
@@ -72,7 +72,7 @@ export async function updateUserRepeatingTasks(userId: string) {
     if (!task.repetitionRule) return;
 
     const rule = task.repetitionRule;
-    const { isDueToday, sameWeek } = isRepeatingTaskDueToday(task);
+    const { isDueToday, sameWeek } = canCompleteRepeatingTaskNow(task);
     const risk = isTaskAtRisk(task);
 
     if (isDueToday) {

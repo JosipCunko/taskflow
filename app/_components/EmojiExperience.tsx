@@ -23,7 +23,7 @@ export default function EmojiExperience({
             variant="noStyle"
             type="submit"
             name="experience"
-            value={option.id}
+            value={currentExperience === option.id ? "" : option.id}
           >
             <div
               className={`text-4xl mb-2 transition-transform group-hover:scale-110 ${

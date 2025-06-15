@@ -50,6 +50,7 @@ import {
   PartyPopper,
   Pizza,
   Volleyball,
+  BellOff,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import {
@@ -221,6 +222,8 @@ export const CardSpecificIcons = {
   Smile: Smile,
   ExperienceBest: BicepsFlexed,
   Time: Clock,
+  AddReminder: BellPlus,
+  RemoveReminder: BellOff,
 };
 /* Color picker */
 export const colorsColorPicker = [
@@ -243,7 +246,7 @@ export const colorsColorPicker = [
   "#334155",
   "#b91c1c",
   "#94a3b8",
-  "#ea580c",
+  "#31051c",
 ];
 
 /** Search feature */
@@ -373,14 +376,16 @@ export const formatDate = (
   try {
     const dateObj = typeof date === "string" ? new Date(date) : date;
     if (isNaN(dateObj.getTime())) return "Invalid Date";
-    return dateObj.toLocaleDateString(
-      undefined,
-      options || {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }
-    );
+    return dateObj
+      .toLocaleDateString(
+        undefined,
+        options || {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }
+      )
+      .slice(0, -1); // remove dot at the end (2025.)
   } catch (error) {
     console.error("Error formatting date:", date, error);
     return "Error Date";
@@ -863,55 +868,80 @@ export function getStartAndEndTime(task: Task) {
 /*Repeating tasks */
 /*Repeating tasks */
 export const MONDAY_START_OF_WEEK = { weekStartsOn: 1 } as const;
-interface RepeatingTaskDueToday {
-  isDueToday: boolean;
+interface RepeatingTaskAvailability {
+  canCompleteNow: boolean;
   sameWeek?: boolean;
+  isDueToday: boolean;
 }
 
-export function isRepeatingTaskDueToday(task: Task): RepeatingTaskDueToday {
+export function canCompleteRepeatingTaskNow(
+  task: Task
+): RepeatingTaskAvailability {
   if (!task.isRepeating || !task.repetitionRule) {
-    return { isDueToday: false };
+    return { canCompleteNow: false, isDueToday: false };
   }
   const today = new Date();
   const rule = task.repetitionRule;
-  if (today < rule.startDate) return { isDueToday: false };
+  if (today < rule.startDate)
+    return { canCompleteNow: false, isDueToday: false };
 
   const completedToday =
     task.status === "completed" ||
-    (rule.lastInstanceCompletedDate && isToday(rule.lastInstanceCompletedDate));
+    (task.completedAt && isToday(task.completedAt as Date));
 
   if (completedToday) {
-    return { isDueToday: false };
+    return { canCompleteNow: false, isDueToday: false };
   }
 
   const notCompletedToday = !completedToday;
   const sameWeek = isSameWeek(today, rule.startDate, MONDAY_START_OF_WEEK);
 
+  // Check if task is scheduled for today first
+  let isScheduledToday = false;
+
   if (rule.timesPerWeek) {
-    return {
-      isDueToday:
-        sameWeek && notCompletedToday && rule.completions < rule.timesPerWeek,
-      sameWeek,
-    };
-  }
-  if (rule.daysOfWeek.length > 0) {
+    isScheduledToday = sameWeek && rule.completions < rule.timesPerWeek;
+  } else if (rule.daysOfWeek.length > 0) {
     const dayOfWeek = getDay(today) as DayOfWeek;
-    const isScheduledToday = rule.daysOfWeek.includes(dayOfWeek);
+    isScheduledToday = sameWeek && rule.daysOfWeek.includes(dayOfWeek);
+  } else if (rule.interval) {
+    const daysSinceStart = differenceInDays(today, rule.startDate);
+    if (daysSinceStart < 0) return { canCompleteNow: false, isDueToday: false };
+    isScheduledToday = daysSinceStart % rule.interval === 0;
+  }
+
+  if (!isScheduledToday || !notCompletedToday) {
+    return { canCompleteNow: false, sameWeek, isDueToday: false };
+  }
+
+  // If task has specific time window (startTime + duration), check if we're in that window
+  if (task.startTime && task.duration) {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const currentTimeInMinutes = currentHour * 60 + currentMinute;
+
+    const startTimeInMinutes = task.startTime.hour * 60 + task.startTime.minute;
+    const durationInMinutes = task.duration.hours * 60 + task.duration.minutes;
+    const endTimeInMinutes = startTimeInMinutes + durationInMinutes;
+
+    const isInTimeWindow =
+      currentTimeInMinutes >= startTimeInMinutes &&
+      currentTimeInMinutes <= endTimeInMinutes;
+
     return {
-      isDueToday: sameWeek && isScheduledToday && notCompletedToday,
+      canCompleteNow: isInTimeWindow,
       sameWeek,
+      isDueToday: true,
     };
   }
 
-  if (rule.interval) {
-    const daysSinceStart = differenceInDays(today, rule.startDate);
-    if (daysSinceStart < 0) return { isDueToday: false };
-    const isDueToday = daysSinceStart % rule.interval === 0;
-    return {
-      isDueToday: isDueToday && notCompletedToday,
-    };
-  }
-  return { isDueToday: false };
+  // If no specific time window, task is available all day
+  return {
+    canCompleteNow: true,
+    sameWeek,
+    isDueToday: true,
+  };
 }
 
 export const getDayName = (day: DayOfWeek): string => {

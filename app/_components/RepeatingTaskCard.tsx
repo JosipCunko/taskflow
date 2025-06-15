@@ -18,7 +18,7 @@ import {
   getStartAndEndTime,
   getDayName,
   getTimeString,
-  isRepeatingTaskDueToday,
+  canCompleteRepeatingTaskNow,
 } from "../utils";
 import { getExperienceIcon } from "./TaskCard";
 import {
@@ -50,7 +50,10 @@ export default function RepeatingTaskCard({
   const rule = task.repetitionRule;
 
   const { startTime, endTime } = getStartAndEndTime(task);
-  const { isDueToday } = isRepeatingTaskDueToday(task);
+  const { canCompleteNow } = canCompleteRepeatingTaskNow(task);
+
+  // For display purposes, check if task is due today regardless of time window
+  const isDueToday = isToday(task.dueDate);
 
   const timeString = getTimeString(startTime, endTime);
 
@@ -71,11 +74,17 @@ export default function RepeatingTaskCard({
       isDueToday ? "Today" : formatDate(task.dueDate)
     }`;
   } else if (rule.timesPerWeek) {
-    repetitionSummary = `${rule.timesPerWeek} time(s) a week${timeString}`;
+    repetitionSummary = `${rule.timesPerWeek} time${
+      rule.timesPerWeek > 1 ? "s" : ""
+    } a week${timeString}`;
     completionFraction = `${rule.completions}/${rule.timesPerWeek}`;
     progressPercentage = (rule.completions / rule.timesPerWeek) * 100;
     nextInstanceInfo = `Next: ${
-      isDueToday ? "This week" : formatDate(task.dueDate)
+      isDueToday
+        ? "This week"
+        : formatDate(rule.startDate)
+            .split(".")
+            .join(`. - ${formatDate(task.dueDate).split(".")[0]}`)
     }`;
   }
 
@@ -84,7 +93,7 @@ export default function RepeatingTaskCard({
   }
 
   const isFullyCompletedForCurrentCycle =
-    (rule.interval && isToday(rule.lastInstanceCompletedDate as Date)) ||
+    (rule.interval && isToday(task.completedAt as Date)) ||
     (rule.timesPerWeek &&
       rule.completions !== 0 &&
       rule.completions === rule.timesPerWeek) ||
@@ -95,7 +104,7 @@ export default function RepeatingTaskCard({
 
   const canCompleteToday = (() => {
     if (isFullyCompletedForCurrentCycle) return false;
-    return isDueToday;
+    return canCompleteNow;
   })();
 
   const handleComplete = async () => {
@@ -133,7 +142,7 @@ export default function RepeatingTaskCard({
 
   return (
     <div
-      className={`${cardBaseClasses} ${cardStateClasses} border  border-divider z-1`}
+      className={`${cardBaseClasses} ${cardStateClasses} relative border border-divider z-1`}
       style={{ borderLeftColor: task.color }}
       ref={outsideClickRef}
     >
@@ -188,25 +197,30 @@ export default function RepeatingTaskCard({
           </p>
         )}
       </div>
-      <div className="flex flex-wrap gap-2 mt-2 relative">
+      <div className="flex flex-wrap gap-2 mt-2">
         <div
           className={`flex items-center space-x-1.5 px-2.5 py-1.5 text-xs rounded-md ${statusInfo.bgColorClass}`}
         >
           <statusInfo.icon size={14} className={statusInfo.colorClass} />
-          <span className={statusInfo.colorClass}>
-            {statusInfo.text === "Completed"
-              ? rule?.lastInstanceCompletedDate &&
-                isToday(rule.lastInstanceCompletedDate)
-                ? "Completed Today ✨"
-                : "Completed"
-              : statusInfo.text}
-          </span>
+          <span className={statusInfo.colorClass}>{statusInfo.text}</span>
+
           {task.status === "delayed" && task.delayCount > 0 && (
             <span className={`ml-1 font-semibold ${statusInfo.colorClass}`}>
               ({task.delayCount})
             </span>
           )}
         </div>
+        {!rule.interval && task.completedAt && isToday(task.completedAt) && (
+          <div
+            className={
+              "flex items-center space-x-1.5 px-2.5 py-1.5 text-xs rounded-md bg-green-500/10"
+            }
+          >
+            <CheckCircle2 size={14} className="text-green-400" />
+            <span className="text-green-400">Completed Today ✨</span>
+          </div>
+        )}
+
         <DurationCalculator task={task} />
 
         <div className="flex flex-wrap gap-2 items-center">
@@ -238,14 +252,14 @@ export default function RepeatingTaskCard({
           </div>
         )}
         {task.experience && (
-          <div className="absolute right-0 text-lg opacity-80">
+          <div className="absolute bottom-10 right-2 text-lg opacity-80">
             {getExperienceIcon(task)}
           </div>
         )}
         {isFullyCompletedForCurrentCycle && (
           <CheckCircle2
             size={20}
-            className="absolute right-7 text-green-500 flex-shrink-0 ml-2"
+            className="absolute bottom-2 right-2 text-green-500 flex-shrink-0 ml-2"
           />
         )}
       </div>

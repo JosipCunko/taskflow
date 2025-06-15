@@ -4,7 +4,6 @@ import {
   isSameWeek,
   startOfWeek,
   addDays,
-  isBefore,
   getDay,
   endOfWeek,
   addWeeks,
@@ -12,7 +11,7 @@ import {
 } from "date-fns";
 import {
   formatDate,
-  isRepeatingTaskDueToday,
+  canCompleteRepeatingTaskNow,
   MONDAY_START_OF_WEEK,
 } from "../utils";
 
@@ -113,8 +112,6 @@ export async function updateTaskExperienceAction(
 ): Promise<ActionResult> {
   const taskId = formData.get("taskId") as string;
   const newExperience = formData.get("experience") as Task["experience"];
-
-  console.log(`ACTION: Mark Task ${taskId} as ${newExperience}`);
   try {
     await updateTask(taskId, {
       experience: newExperience,
@@ -123,7 +120,6 @@ export async function updateTaskExperienceAction(
     revalidatePath("/tasks");
     return {
       success: true,
-      message: `Task experience marked as ${newExperience}`,
     };
   } catch (err) {
     const error = err as ActionError;
@@ -241,10 +237,6 @@ export async function togglePriorityAction(
   const currentTask = await getTaskByTaskId(taskId);
   if (!currentTask) return { success: false, error: "Task not found" };
   const newIsPriority = !currentTask.isPriority;
-
-  console.log(
-    `ACTION: Toggle Priority for Task ${taskId}. New priority: ${newIsPriority}`
-  );
   try {
     await updateTask(taskId, { isPriority: newIsPriority });
     revalidatePath("/tasks");
@@ -257,6 +249,29 @@ export async function togglePriorityAction(
     return {
       success: false,
       error: error.message || "Failed to toggle priority",
+    };
+  }
+}
+export async function toggleReminderAction(
+  formData: FormData
+): Promise<ActionResult> {
+  const taskId = formData.get("taskId") as string;
+  const currentTask = await getTaskByTaskId(taskId);
+  if (!currentTask) return { success: false, error: "Task not found" };
+  const newIsReminder = !currentTask.isReminder;
+
+  try {
+    await updateTask(taskId, { isReminder: newIsReminder });
+    revalidatePath("/tasks");
+    return {
+      success: true,
+      message: `Task reminder ${newIsReminder ? "added" : "removed"}`,
+    };
+  } catch (err) {
+    const error = err as ActionError;
+    return {
+      success: false,
+      error: error.message || "Failed to toggle reminder",
     };
   }
 }
@@ -407,14 +422,14 @@ export async function completeRepeatingTaskWithInterval(
     };
   }
 
-  const { isDueToday } = isRepeatingTaskDueToday(task);
-  if (!isDueToday || isBefore(completionDate, rule.startDate)) {
+  const { canCompleteNow } = canCompleteRepeatingTaskNow(task);
+  if (!canCompleteNow) {
     return {
       success: false,
-      error: "Task is not due today",
+      error: "Task is not available for completion right now",
     };
   }
-  const originalCompletionDate = { ...completionDate } as Date;
+  const originalCompletionDate = new Date(completionDate);
   // Next due date
   completionDate.setHours(task.dueDate.getHours());
   completionDate.setMinutes(task.dueDate.getMinutes());
@@ -423,10 +438,10 @@ export async function completeRepeatingTaskWithInterval(
   const updates: Partial<Task> = {
     repetitionRule: {
       ...rule,
-      lastInstanceCompletedDate: completionDate,
       completions: 1,
       // startDate: rule.startDate,
     },
+    status: "completed",
     dueDate: nextDueDate,
     completedAt: originalCompletionDate,
   };
@@ -465,11 +480,11 @@ export async function completeRepeatingTaskWithTimesPerWeek(
     };
   }
 
-  const { isDueToday } = isRepeatingTaskDueToday(task);
-  if (!isDueToday || isBefore(completionDate, rule.startDate)) {
+  const { canCompleteNow } = canCompleteRepeatingTaskNow(task);
+  if (!canCompleteNow) {
     return {
       success: false,
-      error: "Task is not scheduled for today",
+      error: "Task is not available for completion right now",
     };
   }
 
@@ -499,13 +514,14 @@ export async function completeRepeatingTaskWithTimesPerWeek(
     repetitionRule: {
       ...rule,
       startDate: newStartDate,
-      lastInstanceCompletedDate: completionDate,
     },
+    completedAt: completionDate,
     dueDate: nextDueDate,
   };
 
   if (rule.completions === rule.timesPerWeek) {
     updates.completedAt = completionDate;
+    updates.status = "completed";
   }
 
   try {
@@ -543,11 +559,11 @@ export async function completeRepeatingTaskWithDaysOfWeek(
       error: "Task is not configured for specific days of week",
     };
   }
-  const { isDueToday } = isRepeatingTaskDueToday(task);
-  if (!isDueToday || isBefore(completionDate, rule.startDate)) {
+  const { canCompleteNow } = canCompleteRepeatingTaskNow(task);
+  if (!canCompleteNow) {
     return {
       success: false,
-      error: "Task is not scheduled for today",
+      error: "Task is not available for completion right now",
     };
   }
   // Next due date
@@ -570,13 +586,14 @@ export async function completeRepeatingTaskWithDaysOfWeek(
   const updates: Partial<Task> = {
     repetitionRule: {
       ...rule,
-      lastInstanceCompletedDate: completionDate,
     },
+    completedAt: completionDate,
     dueDate: newDueDate,
   };
 
   if (rule.completions === rule.daysOfWeek.length) {
     updates.completedAt = completionDate;
+    updates.status = "completed";
   }
 
   try {

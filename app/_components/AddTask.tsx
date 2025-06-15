@@ -14,7 +14,7 @@ import {
 import type { RefAttributes, ForwardRefExoticComponent } from "react";
 import { Calendar, CheckCircle } from "lucide-react";
 import type { LucideProps } from "lucide-react";
-import { isSameDay, addMinutes, getHours, getMinutes } from "date-fns";
+import { isSameDay } from "date-fns";
 
 import ColorPicker from "./ColorPicker";
 import {
@@ -79,11 +79,10 @@ const ShowMoreDetailsContent = ({
   selectedDate,
   setSelectedDate,
   timeEnd,
-  setTimeEnd,
+  handleTimeEndChange,
   startTime,
-  setStartTime,
+  handleStartTimeChange,
   isRepeatingTask,
-  isTimeEndDisabled,
 }: {
   selectedColor: string;
   setSelectedColor: (s: string) => void;
@@ -99,11 +98,10 @@ const ShowMoreDetailsContent = ({
   selectedDate: Date;
   setSelectedDate: (date: Date) => void;
   timeEnd: number[];
-  setTimeEnd: (time: number[]) => void;
+  handleTimeEndChange: (time: number[]) => void;
   startTime: number[];
-  setStartTime: (time: number[]) => void;
+  handleStartTimeChange: (time: number[]) => void;
   isRepeatingTask: boolean;
-  isTimeEndDisabled?: boolean;
 }) => {
   const handleDone = () => {
     onCloseModal?.();
@@ -125,55 +123,83 @@ const ShowMoreDetailsContent = ({
             selectedIcon={selectedIcon}
             setSelectedIcon={setSelectedIcon}
           />
+          {!isRepeatingTask && (
+            <div className="grid place-items-center">
+              <DatePicker date={selectedDate} setDate={setSelectedDate} />
+            </div>
+          )}
+
           <div className="flex flex-col gap-1 text-sm mt-4">
             <label className="text-sm text-nowrap font-medium text-text-low">
               Starts at:
             </label>
-            <div className="flex items-center gap-2 p-1 ">
+            <div className="flex items-center gap-2">
               <Input
                 type="number"
                 name="startTimeHour"
                 value={startTime[0].toString().padStart(2, "0")}
                 onChange={(e: ChangeEvent<HTMLInputElement>) => {
                   const newHour = parseInt(e.target.value, 10);
-                  setStartTime([
+                  handleStartTimeChange([
                     isNaN(newHour) ? 0 : Math.max(0, Math.min(23, newHour)),
                     startTime[1],
                   ]);
                 }}
-                className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none w-16"
               />
-              <span className="font-bold text-text-medium">:</span>
+              <span className="text-text-gray">h</span>
               <Input
                 type="number"
                 name="startTimeMinute"
                 value={startTime[1].toString().padStart(2, "0")}
                 onChange={(e: ChangeEvent<HTMLInputElement>) => {
                   const newMin = parseInt(e.target.value, 10);
-                  setStartTime([
+                  handleStartTimeChange([
                     startTime[0],
                     isNaN(newMin) ? 0 : Math.max(0, Math.min(59, newMin)),
                   ]);
                 }}
-                className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none w-16"
               />
+              <span className="text-text-gray">m</span>
+            </div>
+          </div>
+          <div className="flex flex-col gap-1 text-sm mt-4">
+            <label className="text-sm font-medium text-text-low text-nowrap">
+              Ends at:
+            </label>
+            <div className="flex items-center gap-2 p-1">
+              <Input
+                type="number"
+                name="endTimeHour"
+                value={timeEnd[0].toString().padStart(2, "0")}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                  const newHour = parseInt(e.target.value, 10);
+                  handleTimeEndChange([
+                    isNaN(newHour) ? 0 : Math.max(0, Math.min(23, newHour)),
+                    timeEnd[1],
+                  ]);
+                }}
+                className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none w-16"
+              />
+              <span className="text-text-gray">h</span>
+              <Input
+                type="number"
+                name="endTimeMinute"
+                value={timeEnd[1].toString().padStart(2, "0")}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                  const newMin = parseInt(e.target.value, 10);
+                  handleTimeEndChange([
+                    timeEnd[0],
+                    isNaN(newMin) ? 0 : Math.max(0, Math.min(59, newMin)),
+                  ]);
+                }}
+                className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none w-16"
+              />
+              <span className="text-text-gray">m</span>
             </div>
           </div>
         </div>
-
-        {!isRepeatingTask && (
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1">
-              <DatePicker
-                date={selectedDate}
-                setDate={setSelectedDate}
-                endTime={timeEnd}
-                setEndTime={setTimeEnd}
-                timeInputsDisabled={isTimeEndDisabled}
-              />
-            </div>
-          </div>
-        )}
       </div>
 
       <Button onClick={handleDone}>Done</Button>
@@ -185,8 +211,6 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [timeEnd, setTimeEnd] = useState<number[]>([23, 59]);
   const [startTime, setStartTime] = useState<number[]>([0, 0]);
-  const [isTimeEndDisabled, setIsTimeEndDisabled] = useState(false);
-  const [timeMode, setTimeMode] = useState<"duration" | "endTime">("duration");
 
   const [isPriority, setIsPriority] = useState(false);
   const [isReminder, setIsReminder] = useState(false);
@@ -233,7 +257,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
     [startTime]
   );
   const isDurationSpecified = useMemo(
-    () => duration[0] > 0 || duration[1] > 0,
+    () => duration[0] !== 0 || duration[1] !== 0,
     [duration]
   );
 
@@ -251,42 +275,88 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
     }
   }, [isRepeatingTask]);
 
-  useEffect(() => {
-    if (
-      timeMode === "duration" &&
-      isDurationSpecified &&
-      isStartTimeSpecified
-    ) {
-      const startDateForCalc = new Date(selectedDate);
-      startDateForCalc.setHours(startTime[0], startTime[1], 0, 0);
+  const handleDurationChange = (newDuration: number[]) => {
+    setDuration(newDuration);
 
-      const durationTotalMinutes = duration[0] * 60 + duration[1];
-      const endDateCalc = addMinutes(startDateForCalc, durationTotalMinutes);
+    if (isStartTimeSpecified) {
+      const totalMinutes =
+        startTime[0] * 60 + startTime[1] + newDuration[0] * 60 + newDuration[1];
+      const endHour = Math.floor(totalMinutes / 60) % 24;
+      const endMinute = totalMinutes % 60;
 
-      setTimeEnd([getHours(endDateCalc), getMinutes(endDateCalc)]);
-      setIsTimeEndDisabled(true);
-    } else if (timeMode === "endTime" && isStartTimeSpecified) {
-      setIsTimeEndDisabled(false);
-    } else {
-      setIsTimeEndDisabled(false);
-    }
-  }, [
-    startTime,
-    duration,
-    selectedDate,
-    isDurationSpecified,
-    isStartTimeSpecified,
-    timeMode,
-  ]);
-
-  useEffect(() => {
-    if (timeMode === "endTime" && isStartTimeSpecified) {
-      if (timeEnd[0] === 23 && timeEnd[1] === 59) {
-        const newEndHour = Math.min(startTime[0] + 1, 23);
-        setTimeEnd([newEndHour, startTime[1]]);
+      if (endHour === startTime[0] && endMinute === startTime[1]) {
+        setTimeEnd([23, 59]);
+      } else {
+        setTimeEnd([endHour, endMinute]);
       }
     }
-  }, [timeMode, isStartTimeSpecified]); // Removed timeEnd and startTime from deps to prevent infinite loop
+  };
+
+  const handleStartTimeChange = (newStartTime: number[]) => {
+    setStartTime(newStartTime);
+
+    const isStartTimeSpecified = newStartTime[0] !== 0 || newStartTime[1] !== 0;
+    const isEndTimeDefault = timeEnd[0] === 23 && timeEnd[1] === 59;
+
+    if (!isStartTimeSpecified) {
+      setDuration([0, 0]);
+    }
+
+    if (isStartTimeSpecified && isDurationSpecified) {
+      const totalMinutes =
+        newStartTime[0] * 60 + newStartTime[1] + duration[0] * 60 + duration[1];
+      const endHour = Math.floor(totalMinutes / 60) % 24;
+      const endMinute = totalMinutes % 60;
+      setTimeEnd([endHour, endMinute]);
+    } else if (
+      isStartTimeSpecified &&
+      !isEndTimeDefault &&
+      !isDurationSpecified
+    ) {
+      const startTotalMinutes = newStartTime[0] * 60 + newStartTime[1];
+      const endTotalMinutes = timeEnd[0] * 60 + timeEnd[1];
+      let durationMinutes = endTotalMinutes - startTotalMinutes;
+
+      if (durationMinutes < 0) {
+        durationMinutes += 24 * 60;
+      }
+
+      const durationHours = Math.floor(durationMinutes / 60);
+      const remainingMinutes = durationMinutes % 60;
+      setDuration([durationHours, remainingMinutes]);
+    }
+  };
+
+  const handleEndTimeChange = (newTimeEnd: number[]) => {
+    setTimeEnd(newTimeEnd);
+
+    const isEndTimeDefault = newTimeEnd[0] === 23 && newTimeEnd[1] === 59;
+
+    if (isEndTimeDefault) {
+      setDuration([0, 0]);
+    }
+
+    if (!isEndTimeDefault && isStartTimeSpecified) {
+      const startTotalMinutes = startTime[0] * 60 + startTime[1];
+      const endTotalMinutes = newTimeEnd[0] * 60 + newTimeEnd[1];
+      let durationMinutes = endTotalMinutes - startTotalMinutes;
+
+      if (durationMinutes < 0) {
+        durationMinutes += 24 * 60;
+      }
+
+      const durationHours = Math.floor(durationMinutes / 60);
+      const remainingMinutes = durationMinutes % 60;
+      setDuration([durationHours, remainingMinutes]);
+    } else if (!isEndTimeDefault && isDurationSpecified) {
+      //Calculate startTime
+      const totalMinutes =
+        newTimeEnd[0] * 60 + newTimeEnd[1] - duration[0] * 60 - duration[1];
+      const startHour = Math.floor(totalMinutes / 60) % 24;
+      const startMinute = totalMinutes % 60;
+      setStartTime([startHour, startMinute]);
+    }
+  };
 
   const handleRepetitionDone = () => {
     if (activeRepetitionType === "none") {
@@ -521,11 +591,10 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
               selectedDate={selectedDate}
               setSelectedDate={setSelectedDate}
               timeEnd={timeEnd}
-              setTimeEnd={setTimeEnd}
+              handleTimeEndChange={handleEndTimeChange}
               startTime={startTime}
-              setStartTime={setStartTime}
+              handleStartTimeChange={handleStartTimeChange}
               isRepeatingTask={isRepeatingTask}
-              isTimeEndDisabled={isTimeEndDisabled}
             />
           </Modal.Window>
         </ModalContext.Provider>
@@ -586,154 +655,52 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
           </Modal.Window>
         </ModalContext.Provider>
 
-        {isStartTimeSpecified && (
-          <div className="mt-3 p-4 bg-background-600 rounded-lg border border-background-500">
-            <h4 className="text-sm font-medium text-text-high mb-3">
-              How would you like to set the task time?
-            </h4>
+        <div className="mt-3 p-4 bg-background-600 rounded-lg border border-background-500">
+          <h4 className="text-sm font-medium text-text-high mb-3">
+            How would you like to set the task time?
+          </h4>
 
-            <div className="space-y-3">
-              {/* Radio option 1: Set duration */}
-              <div className="flex items-start space-x-3">
-                <input
-                  type="radio"
-                  id="duration-mode"
-                  name="timeMode"
-                  value="duration"
-                  checked={timeMode === "duration"}
-                  onChange={() => setTimeMode("duration")}
-                  className="mt-1 text-primary-500 border-background-400 focus:ring-primary-500"
-                />
-                <div className="flex-1">
-                  <label
-                    htmlFor="duration-mode"
-                    className="text-sm font-medium text-text-low cursor-pointer"
-                  >
-                    Set task duration
-                  </label>
-                  <p className="text-xs text-text-gray mt-1">
-                    Specify how long the task takes, end time will be calculated
-                    automatically
-                  </p>
+          <div className="flex items-start space-x-3">
+            <div className="flex-1">
+              <p className="text-xs text-text-gray text-pretty mt-1">
+                Specify how long the task takes
+              </p>
 
-                  {timeMode === "duration" && (
-                    <div className="mt-2">
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          name="durationHours"
-                          value={duration[0].toString().padStart(2, "0")}
-                          onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                            const newHour = parseInt(e.target.value, 10);
-                            setDuration([
-                              isNaN(newHour)
-                                ? 0
-                                : Math.max(0, Math.min(23, newHour)),
-                              duration[1],
-                            ]);
-                          }}
-                          className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none w-16"
-                        />
-                        <span className="text-text-medium">h</span>
-                        <Input
-                          type="number"
-                          name="durationMinutes"
-                          value={duration[1].toString().padStart(2, "0")}
-                          onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                            const newMin = parseInt(e.target.value, 10);
-                            setDuration([
-                              duration[0],
-                              isNaN(newMin)
-                                ? 0
-                                : Math.max(0, Math.min(59, newMin)),
-                            ]);
-                          }}
-                          className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none w-16"
-                        />
-                        <span className="text-text-medium">m</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Radio option 2: Specify end time */}
-              <div className="flex items-start space-x-3">
-                <input
-                  type="radio"
-                  id="endtime-mode"
-                  name="timeMode"
-                  value="endTime"
-                  checked={timeMode === "endTime"}
-                  onChange={() => setTimeMode("endTime")}
-                  className="mt-1 text-primary-500 border-background-400 focus:ring-primary-500"
-                />
-                <div className="flex-1">
-                  <label
-                    htmlFor="endtime-mode"
-                    className="text-sm font-medium text-text-low cursor-pointer"
-                  >
-                    Specify when the task ends
-                  </label>
-                  <p className="text-xs text-text-gray mt-1">
-                    Set the exact time when the task should end
-                  </p>
-
-                  {timeMode === "endTime" && (
-                    <div className="mt-2">
-                      <p className="text-xs text-text-gray">
-                        You can set the end time in the &quot;Customize
-                        Task&quot; section above
-                      </p>
-                    </div>
-                  )}
+              <div className="mt-2">
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    name="durationHours"
+                    value={duration[0].toString().padStart(2, "0")}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                      const newHour = parseInt(e.target.value, 10);
+                      handleDurationChange([
+                        isNaN(newHour) ? 0 : Math.max(0, Math.min(23, newHour)),
+                        duration[1],
+                      ]);
+                    }}
+                    className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none w-16"
+                  />
+                  <span className="text-text-gray">h</span>
+                  <Input
+                    type="number"
+                    name="durationMinutes"
+                    value={duration[1].toString().padStart(2, "0")}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                      const newMin = parseInt(e.target.value, 10);
+                      handleDurationChange([
+                        duration[0],
+                        isNaN(newMin) ? 0 : Math.max(0, Math.min(59, newMin)),
+                      ]);
+                    }}
+                    className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none w-16"
+                  />
+                  <span className="text-text-gray">m</span>
                 </div>
               </div>
             </div>
           </div>
-        )}
-
-        {!isStartTimeSpecified && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-            <div>
-              <label
-                htmlFor="durationHours"
-                className="text-sm font-medium text-text-low block mb-1"
-              >
-                Duration (optional)
-              </label>
-              <div className="flex items-center gap-2 p-1 ">
-                <Input
-                  type="number"
-                  name="durationHours"
-                  value={duration[0].toString().padStart(2, "0")}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                    const newHour = parseInt(e.target.value, 10);
-                    setDuration([
-                      isNaN(newHour) ? 0 : Math.max(0, Math.min(23, newHour)),
-                      duration[1],
-                    ]);
-                  }}
-                  className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                />
-                <span className="font-bold text-text-medium">:</span>
-                <Input
-                  type="number"
-                  name="durationMinutes"
-                  value={duration[1].toString().padStart(2, "0")}
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                    const newMin = parseInt(e.target.value, 10);
-                    setDuration([
-                      duration[0],
-                      isNaN(newMin) ? 0 : Math.max(0, Math.min(59, newMin)),
-                    ]);
-                  }}
-                  className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none appearance-none [-moz-appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                />
-              </div>
-            </div>
-          </div>
-        )}
+        </div>
 
         <div className="flex justify-between items-center mt-5">
           <div></div>

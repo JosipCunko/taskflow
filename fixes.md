@@ -1,24 +1,36 @@
-ACTION: Delete Task 2t6gieva9AhbQJfad7iL
-Task 2t6gieva9AhbQJfad7iL not found for deletion.
-Error deleting task: Error: Task not found for deletion point calculation.
-at deleteTask (app_lib\tasks.ts:334:12)
-at async deleteTaskAction (app_lib\actions.ts:210:24)
-332 | if (!taskDocSnap.exists()) {
-333 | console.warn(`Task ${taskId} not found for deletion.`);
-
-> 334 | throw new Error("Task not found for deletion point calculation.");
-
-      |            ^
-
-335 | }
-336 |
-337 | const taskOld = fromFirestore(
-POST /webapp/tasks 200 in 711ms
-
 # New feature in AddTask
 
-Specify the time also for the dueDate, default is 23:59 (end of a day)
+## These actions are performed / set state values by user in order:
 
-# Fixes
+1. Duration is defined, startTime is undefined, endTime is undefined
+   normally set duration, startTime is set at 00:00 (beginning of a day), set endTime to 23:59 (end of a day)
+   task can be completed at any time of a day (basically startTime until endTime)
 
-lastInstanceCompletedAt == completedAt
+2. Duration is defined, startTime is defined, endTime is undefined
+   normally set duration and startTime, endTime is calculated based on a startTime + duration
+   task can be completed from startTime to endTime
+
+3. Duration is defined, startTime is defined, endTime is defined
+   ! Will never be the case if executed in this order, action 2. will ocur (calc the endTime)
+
+4. Duration is undefined, startTime is defined, endTime is undefined
+   dont set duration, set normally startTime, set endTime to 23:59 (end of a day)
+   task can be completed any time from startTime until the end of a day (23:59)
+
+5. Duration is undefined, startTime is defined, endTime is defined
+   calculate the duration using endTime - startTime, normally set startTime and endTime
+   task can be completed any time from startTime until endTime
+
+6. Duration is undefined, startTime is undefined, endTime is defined
+   dont set duration, startTime is set at 00:00 (beginning of a day), normally set endTime
+   task can be completed at any time of a day until endTime (basically startTime until endTime)
+
+7. Duration is undefined, startTime is undefined, endTime is undefined
+   dont set duration, set startTime to 00:00 (beginning of a day) and endTime to 23:59 (end of a day)
+   task can be completed at any time of a day (basically startTime until endTime)
+
+8. Duration is defined, startTime is undefined, endTime is defined
+   normally set duration and endTime but dont calculate startTime, it should stay at 00:00
+   task can be completed until endTime (basically startTime until endTime)
+
+handleDurationChange is being called only when both number are specified in the any duration field (hour || min)

@@ -7,6 +7,7 @@ import { isSameDay } from "date-fns";
 import {
   delayTaskAction,
   updateTaskStatusAction,
+  toggleReminderAction,
   togglePriorityAction,
   updateTaskExperienceAction,
   deleteTaskAction,
@@ -273,6 +274,33 @@ export default function Dropdown({
                     }
                   >
                     {task.isPriority ? "Remove Priority" : "Add Priority"}
+                  </ActionSubmitButton>
+                </form>
+              </li>
+            )}
+            {/* ---: Action: Toggle Reminder --- */}
+            {task.status !== "completed" && (
+              <li>
+                <form
+                  action={async (formData: FormData) => {
+                    const res = await toggleReminderAction(formData);
+                    handleToast(res, () => setIsDropdownOpen(false));
+                  }}
+                >
+                  <input type="hidden" name="taskId" value={task.id} />
+                  <input
+                    type="hidden"
+                    name="currentIsReminder"
+                    value={task.isReminder.toString()}
+                  />
+                  <ActionSubmitButton
+                    Icon={
+                      task.isReminder
+                        ? CardSpecificIcons.RemoveReminder
+                        : CardSpecificIcons.AddReminder
+                    }
+                  >
+                    {task.isReminder ? "Remove Reminder" : "Add Reminder"}
                   </ActionSubmitButton>
                 </form>
               </li>

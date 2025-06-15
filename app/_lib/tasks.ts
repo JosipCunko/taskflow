@@ -63,19 +63,29 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Task => {
     color: data.color,
     isPriority: data.isPriority || false,
     isReminder: data.isReminder || false,
-    dueDate: data.dueDate ? (data.dueDate as Timestamp).toDate() : new Date(),
+    dueDate: data.dueDate
+      ? data.dueDate instanceof Date
+        ? data.dueDate
+        : (data.dueDate as Timestamp).toDate()
+      : new Date(),
     startTime: data.startTime || undefined,
     status: data.status || "pending",
     delayCount: data.delayCount || 0,
     tags: data.tags || [],
     createdAt: data.createdAt
-      ? (data.createdAt as Timestamp).toDate()
+      ? data.createdAt instanceof Date
+        ? data.createdAt
+        : (data.createdAt as Timestamp).toDate()
       : new Date(),
     updatedAt: data.updatedAt
-      ? (data.updatedAt as Timestamp).toDate()
+      ? data.updatedAt instanceof Date
+        ? data.updatedAt
+        : (data.updatedAt as Timestamp).toDate()
       : new Date(),
     completedAt: data.completedAt
-      ? (data.completedAt as Timestamp).toDate()
+      ? data.completedAt instanceof Date
+        ? data.completedAt
+        : (data.completedAt as Timestamp).toDate()
       : undefined,
     experience: data.experience,
     duration: data.duration || undefined,
@@ -83,9 +93,10 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Task => {
     repetitionRule: data.repetitionRule
       ? {
           ...data.repetitionRule,
-          startDate: data.repetitionRule.startDate.toDate(),
-          lastInstanceCompletedDate:
-            data.repetitionRule.lastInstanceCompletedDate?.toDate(),
+          startDate:
+            data.repetitionRule.startDate instanceof Date
+              ? data.repetitionRule.startDate
+              : data.repetitionRule.startDate.toDate(),
         }
       : undefined,
   } as Task;
