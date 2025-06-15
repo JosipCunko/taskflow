@@ -307,33 +307,6 @@ export async function createTaskAction(
   const title = String(formData.get("title"));
   const description = String(formData.get("description") || "");
 
-  let finalStartTime = startTime;
-  const isStartTimeSpecified =
-    startTime && (startTime.hour !== 0 || startTime.minute !== 0);
-
-  const isEndTimeDefault =
-    dueDate.getHours() === 23 && dueDate.getMinutes() === 59;
-
-  if (
-    duration &&
-    (duration.hours > 0 || duration.minutes > 0) &&
-    !isStartTimeSpecified &&
-    !isEndTimeDefault // IMPORTANT: Don't calculate startTime if endTime is default
-  ) {
-    const dueDateObj = new Date(dueDate);
-    const durationInMinutes = duration.hours * 60 + duration.minutes;
-    const startDateObj = new Date(
-      dueDateObj.getTime() - durationInMinutes * 60 * 1000
-    );
-
-    finalStartTime = {
-      hour: startDateObj.getHours(),
-      minute: startDateObj.getMinutes(),
-    };
-  } else if (!isStartTimeSpecified) {
-    finalStartTime = undefined;
-  }
-
   const newTaskData: Omit<
     Task,
     "id" | "createdAt" | "updatedAt" | "delayCount" | "status"
@@ -346,7 +319,7 @@ export async function createTaskAction(
     isPriority,
     isReminder,
     dueDate,
-    startTime: finalStartTime,
+    startTime,
     tags: tags || [],
     isRepeating: isRepeating || false,
   };

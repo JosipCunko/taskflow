@@ -1,4 +1,4 @@
-# New feature in AddTask
+# Done
 
 ## These actions are performed / set state values by user in order:
 
@@ -32,5 +32,7 @@
 8. Duration is defined, startTime is undefined, endTime is defined
    normally set duration and endTime but dont calculate startTime, it should stay at 00:00
    task can be completed until endTime (basically startTime until endTime)
+
+# Fixes
 
 handleDurationChange is being called only when both number are specified in the any duration field (hour || min)

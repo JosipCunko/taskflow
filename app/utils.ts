@@ -915,15 +915,18 @@ export function canCompleteRepeatingTaskNow(
   }
 
   // If task has specific time window (startTime + duration), check if we're in that window
-  if (task.startTime && task.duration) {
+  const { startTime, endTime } = getStartAndEndTime(task);
+
+  if (startTime && endTime) {
     const now = new Date();
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
     const currentTimeInMinutes = currentHour * 60 + currentMinute;
 
-    const startTimeInMinutes = task.startTime.hour * 60 + task.startTime.minute;
-    const durationInMinutes = task.duration.hours * 60 + task.duration.minutes;
-    const endTimeInMinutes = startTimeInMinutes + durationInMinutes;
+    const startTimeInMinutes =
+      Number(startTime.split(":")[0]) * 60 + Number(startTime.split(":")[1]);
+    const endTimeInMinutes =
+      Number(endTime.split(":")[0]) * 60 + Number(endTime.split(":")[1]);
 
     const isInTimeWindow =
       currentTimeInMinutes >= startTimeInMinutes &&
