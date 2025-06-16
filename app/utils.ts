@@ -416,14 +416,12 @@ export function getStatusStyles(status: "completed" | "delayed" | "pending") {
 /* Date functions */
 /* Date functions */
 /* Date functions */
-export function getPhaseOfTheDay() {
-  const date = new Date();
-  const hours = date.getHours();
-  if (hours >= 6 && hours < 14) return "morning";
-  if (hours >= 14 && hours < 18) return "afternoon";
-  if (hours >= 18 && hours < 22) return "evening";
-  if (hours >= 22 || (hours >= 0 && hours < 6)) return "night";
-}
+export const getPhaseOfTheDay = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return "morning";
+  if (hour < 18) return "afternoon";
+  return "evening";
+};
 
 export const formatDate = (
   date: Date | string | undefined,
@@ -433,6 +431,21 @@ export const formatDate = (
   try {
     const dateObj = typeof date === "string" ? new Date(date) : date;
     if (isNaN(dateObj.getTime())) return "Invalid Date";
+
+    // Check for relative dates first
+    const now = new Date();
+    const today = startOfDay(now);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(today.getDate() + 1);
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+
+    const givenDate = startOfDay(dateObj);
+
+    if (isEqual(givenDate, today)) return "Today";
+    if (isEqual(givenDate, tomorrow)) return "Tomorrow";
+    if (isEqual(givenDate, yesterday)) return "Yesterday";
+
     return dateObj.toLocaleDateString(
       undefined,
       options || {

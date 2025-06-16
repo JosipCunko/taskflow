@@ -94,7 +94,7 @@ export default function Sidebar() {
                     >
                       <div className="relative">
                         {item?.label === "Today" && (
-                          <span className="absolute top-[6px] left-[5px] text-[9px] font-bold">
+                          <span className="absolute top-[6.5px] left-[5px] text-[9px] font-bold">
                             {String(new Date().getDate()).padStart(2, "0")}
                           </span>
                         )}

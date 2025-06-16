@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
 import {
   CheckSquare,
   Calendar,
@@ -33,39 +32,6 @@ const productivityIcons = [
 ];
 
 export default function HeroAnimatedBackground() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return (
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Static icons during SSR to prevent hydration mismatch */}
-        {productivityIcons.map((item, i) => (
-          <div
-            key={i}
-            className="absolute opacity-30"
-            style={{
-              transform: `translateX(${item.startX}px) translateY(${item.startY}px)`,
-            }}
-          >
-            <div
-              className="p-3 rounded-xl backdrop-blur-sm border border-white/10"
-              style={{
-                backgroundColor: `${item.color}20`,
-                boxShadow: `0 0 20px ${item.color}30`,
-              }}
-            >
-              <item.Icon size={28} style={{ color: item.color }} />
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       {productivityIcons.map((item, i) => (
@@ -102,7 +68,7 @@ export default function HeroAnimatedBackground() {
             duration: 20 + i * 2,
             repeat: Infinity,
             ease: "easeInOut",
-            delay: i * 0.5,
+            delay: i * 0.1,
           }}
         >
           <div
