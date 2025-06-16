@@ -348,13 +348,6 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
       const durationHours = Math.floor(durationMinutes / 60);
       const remainingMinutes = durationMinutes % 60;
       setDuration([durationHours, remainingMinutes]);
-    } else if (!isEndTimeDefault && isDurationSpecified) {
-      //Calculate startTime
-      const totalMinutes =
-        newTimeEnd[0] * 60 + newTimeEnd[1] - duration[0] * 60 - duration[1];
-      const startHour = Math.floor(totalMinutes / 60) % 24;
-      const startMinute = totalMinutes % 60;
-      setStartTime([startHour, startMinute]);
     }
   };
 

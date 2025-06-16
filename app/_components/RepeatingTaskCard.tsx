@@ -1,11 +1,12 @@
 "use client";
 
-import { isToday } from "date-fns";
+import { isToday, isSameWeek } from "date-fns";
 import {
   Repeat,
   CalendarDays,
   CheckCircle2,
   AlertTriangle,
+  FileText,
 } from "lucide-react";
 import type { Task, ActionResult } from "@/app/_types/types";
 import {
@@ -58,7 +59,7 @@ export default function RepeatingTaskCard({
   const timeString = getTimeString(startTime, endTime);
 
   if (rule.interval) {
-    repetitionSummary = `Every ${rule.interval} ${
+    repetitionSummary = `Every ${rule.interval === 1 ? "" : rule.interval} ${
       rule.interval === 1 ? "day" : "days"
     }${timeString}`;
     nextInstanceInfo = `Next: ${
@@ -79,13 +80,15 @@ export default function RepeatingTaskCard({
     } a week${timeString}`;
     completionFraction = `${rule.completions}/${rule.timesPerWeek}`;
     progressPercentage = (rule.completions / rule.timesPerWeek) * 100;
-    nextInstanceInfo = `Next: ${
-      isDueToday
-        ? "This week"
-        : formatDate(rule.startDate)
-            .split(".")
-            .join(`. - ${formatDate(task.dueDate).split(".")[0]}`)
-    }`;
+    const isThisWeek = isSameWeek(new Date(), task.dueDate, {
+      weekStartsOn: 1,
+    });
+
+    nextInstanceInfo = isThisWeek
+      ? "Complete this week"
+      : `Week from ${formatDate(rule.startDate)} to ${formatDate(
+          task.dueDate
+        )}`;
   }
 
   if (rule.startDate) {
@@ -142,11 +145,11 @@ export default function RepeatingTaskCard({
 
   return (
     <div
-      className={`${cardBaseClasses} ${cardStateClasses} relative border border-divider z-1`}
-      style={{ borderLeftColor: task.color }}
+      className={`${cardBaseClasses} ${cardStateClasses} relative border border-divider`}
+      style={{ borderLeftColor: task.color, zIndex: isDropdownOpen ? 50 : 0 }}
       ref={outsideClickRef}
     >
-      <div className="flex-grow">
+      <div className="flex-grow ">
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2 min-w-0">
             <div
@@ -176,6 +179,13 @@ export default function RepeatingTaskCard({
           />
           <span>{repetitionSummary}</span>
         </p>
+
+        {task.description && (
+          <p className="mt-2 flex items-start gap-1.5 text-xs text-text-low">
+            <FileText size={14} className="mt-0.5 flex-shrink-0 opacity-70" />
+            <span className="italic">{task.description}</span>
+          </p>
+        )}
 
         {/* Progress Bar for weekly tasks */}
         {(rule?.timesPerWeek ||

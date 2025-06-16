@@ -11,7 +11,17 @@ import {
 import { adminAuth, adminDb } from "@/app/_lib/admin";
 import { Timestamp } from "firebase-admin/firestore";
 import { Task } from "../_types/types";
-import { canCompleteRepeatingTaskNow, isTaskAtRisk } from "../utils";
+import { isTaskAtRisk, MONDAY_START_OF_WEEK } from "../utils";
+import {
+  addDays,
+  differenceInDays,
+  endOfWeek,
+  isPast,
+  isSameWeek,
+  isToday,
+  startOfDay,
+  startOfWeek,
+} from "date-fns";
 
 // Define a combined type for user objects that will hold rewardPoints
 type UserWithExtendedData = (NextAuthUser | AdapterUser) & {
@@ -47,10 +57,18 @@ interface FirestoreUpdateData {
   displayName?: string | null;
   photoURL?: string | null;
 }
+
+type TaskUpdatePayload = {
+  status?: "pending" | "completed" | "delayed";
+  dueDate?: Date;
+  risk?: boolean;
+  "repetitionRule.completions"?: number;
+  "repetitionRule.startDate"?: Date;
+};
+
 // Leave it here for admin access to the DB
 export async function updateUserRepeatingTasks(userId: string) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = startOfDay(new Date());
 
   const tasksRef = adminDb.collection("tasks");
   const snapshot = await tasksRef
@@ -68,46 +86,70 @@ export async function updateUserRepeatingTasks(userId: string) {
   snapshot.docs.forEach((doc) => {
     const task = doc.data() as Task;
     const taskRef = doc.ref;
-
-    if (!task.repetitionRule) return;
-
     const rule = task.repetitionRule;
-    const { isDueToday, sameWeek } = canCompleteRepeatingTaskNow(task);
-    const risk = isTaskAtRisk(task);
 
-    if (isDueToday) {
-      // reset status and completions
-      if (rule.interval) {
-        batch.update(taskRef, {
-          status: "pending",
-          "repetitionRule.completions": 0,
-          risk,
-        });
-      }
-      // reset status and completions if new week
-      else if (rule.daysOfWeek.length > 0) {
-        const updateData: {
-          status: string;
-          "repetitionRule.completions"?: number;
-          risk?: boolean;
-        } = { status: "pending", risk };
-        if (!sameWeek) {
-          updateData["repetitionRule.completions"] = 0;
+    if (!rule) return;
+
+    const updates: TaskUpdatePayload = {};
+
+    // --- Logic for tasks whose due date has passed ---
+    if (isPast(task.dueDate)) {
+      updates.status = "pending";
+
+      if (rule.interval && rule.interval > 0) {
+        // For interval tasks, calculate the next due date from today
+        const daysSinceStart = differenceInDays(today, rule.startDate);
+        if (daysSinceStart >= 0) {
+          const cyclesSinceStart = Math.floor(daysSinceStart / rule.interval);
+          const nextDueDate = addDays(
+            rule.startDate,
+            (cyclesSinceStart + 1) * rule.interval
+          );
+          updates.dueDate = nextDueDate;
         }
-        batch.update(taskRef, updateData);
+      } else if (
+        rule.timesPerWeek ||
+        (rule.daysOfWeek && rule.daysOfWeek.length > 0)
+      ) {
+        // For weekly tasks, if due date is past, reset to the current week
+        updates["repetitionRule.completions"] = 0;
+        updates["repetitionRule.startDate"] = startOfWeek(
+          today,
+          MONDAY_START_OF_WEEK
+        );
+        updates.dueDate = endOfWeek(today, MONDAY_START_OF_WEEK);
       }
-      // reset status and completions if new week
-      else if (rule.timesPerWeek) {
-        const updateData: {
-          status: string;
-          "repetitionRule.completions"?: number;
-          risk?: boolean;
-        } = { status: "pending", risk };
-        if (!sameWeek) {
-          updateData["repetitionRule.completions"] = 0;
-        }
-        batch.update(taskRef, updateData);
-      }
+    } else if (isToday(task.dueDate) && task.status === "completed") {
+      // Logic for tasks due today but already marked complete (e.g., a daily task from yesterday)
+      updates.status = "pending";
+    } else if (
+      (rule.timesPerWeek || (rule.daysOfWeek && rule.daysOfWeek.length > 0)) &&
+      !isSameWeek(today, rule.startDate, MONDAY_START_OF_WEEK)
+    ) {
+      // Logic for weekly tasks that have rolled into a new week but their due date hasn't passed
+      updates["repetitionRule.completions"] = 0;
+      updates["repetitionRule.startDate"] = startOfWeek(
+        today,
+        MONDAY_START_OF_WEEK
+      );
+      updates.dueDate = endOfWeek(today, MONDAY_START_OF_WEEK);
+    }
+
+    if (Object.keys(updates).length > 0) {
+      // To calculate risk, we need a Task object with the updated values.
+      const tempRule = {
+        ...rule,
+        completions: updates["repetitionRule.completions"] ?? rule.completions,
+        startDate: updates["repetitionRule.startDate"] ?? rule.startDate,
+      };
+      const tempTask = {
+        ...task,
+        ...updates,
+        repetitionRule: tempRule,
+      };
+
+      updates.risk = isTaskAtRisk(tempTask);
+      batch.update(taskRef, updates);
     }
   });
 

@@ -97,7 +97,7 @@ export default function TaskCard({
       whileHover={{ y: -3, boxShadow: "0px 6px 20px rgba(0,0,0,0.07)" }}
       layout
       className="bg-background-secondary rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 border-l-4 relative "
-      style={{ borderColor: task.color }}
+      style={{ borderColor: task.color, zIndex: isDropdownOpen ? 50 : 1 }}
       ref={outsideClickRef}
     >
       {/* Header: Icon, Title, Options */}

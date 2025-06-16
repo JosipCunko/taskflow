@@ -64,8 +64,8 @@ export default async function DashboardPage() {
     isToday(task.dueDate)
   );
 
-  const timeManagementStats = calculateTimeManagementStats(regularTasks);
-  const consistencyStats = calculateConsistencyStats(completedTasks);
+  const timeManagementStats = calculateTimeManagementStats(allTasks);
+  const consistencyStats = calculateConsistencyStats(allTasks);
 
   const totalPoints = session.user.rewardPoints;
   const todayPoints = todaysTasks.reduce(

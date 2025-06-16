@@ -1,8 +1,8 @@
-import { format } from "date-fns";
+import { endOfWeek, format, startOfWeek } from "date-fns";
 import Input from "./reusable/Input";
 import Button from "./reusable/Button";
 import type { DayOfWeek } from "../_types/types";
-import { infoToast } from "../utils";
+import { formatDate, infoToast, MONDAY_START_OF_WEEK } from "../utils";
 import { Plus, Minus } from "lucide-react";
 
 interface RepetitionRulesModalProps {
@@ -118,14 +118,14 @@ export default function RepetitionRulesModal({
   };
 
   const dayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const dayColors = [
-    "#ef4444",
-    "#f97316",
-    "#eab308",
-    "#22c55e",
-    "#3b82f6",
-    "#8b5cf6",
-    "#ec4899",
+  const dayLabelsLong = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
   ];
 
   return (
@@ -241,9 +241,11 @@ export default function RepetitionRulesModal({
                                 }`}
                       style={{
                         backgroundColor: isSelected
-                          ? dayColors[index]
+                          ? "var(--color-primary-500)"
                           : undefined,
-                        borderColor: isSelected ? dayColors[index] : undefined,
+                        borderColor: isSelected
+                          ? "var(--color-primary-500)"
+                          : undefined,
                       }}
                     >
                       <span className="text-xs mb-1">{dayLabel}</span>
@@ -259,10 +261,10 @@ export default function RepetitionRulesModal({
 
               <div className="text-center">
                 <p className="text-sm text-text-gray">
-                  Selected:{" "}
                   {selectedDaysOfWeek.length > 0
-                    ? selectedDaysOfWeek.map((d) => dayLabels[d]).join(", ")
-                    : "None"}
+                    ? "You can completed the task on: " +
+                      selectedDaysOfWeek.map((d) => dayLabelsLong[d]).join(", ")
+                    : "Selected: None"}
                 </p>
               </div>
             </div>
@@ -296,7 +298,10 @@ export default function RepetitionRulesModal({
                   Start Date
                 </p>
                 <p className="text-sm text-text-low">
-                  When should this pattern begin?
+                  {activeRepetitionType === "daysOfWeek" ||
+                  activeRepetitionType === "timesPerWeek"
+                    ? "In which week should this task be completed?"
+                    : "When should this task start repeating on?"}
                 </p>
               </div>
 
@@ -324,6 +329,19 @@ export default function RepetitionRulesModal({
                   }}
                   className="w-full bg-background-550 text-center text-base sm:text-lg py-3 rounded-xl"
                 />
+                {(activeRepetitionType === "daysOfWeek" ||
+                  activeRepetitionType === "timesPerWeek") && (
+                  <p className="text-sm text-text-gray ml-2">
+                    Week from{" "}
+                    {formatDate(
+                      startOfWeek(repetitionTaskStartDate, MONDAY_START_OF_WEEK)
+                    )}
+                    {" - "}
+                    {formatDate(
+                      endOfWeek(repetitionTaskStartDate, MONDAY_START_OF_WEEK)
+                    )}
+                  </p>
+                )}
               </div>
             </div>
           </div>

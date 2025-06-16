@@ -62,6 +62,11 @@ export async function updateTaskStatusAction(
   const newStatus = formData.get("newStatus") as Task["status"];
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
+
+  if (!userId) {
+    return { success: false, error: "User not authenticated" };
+  }
+
   console.log(`ACTION: Mark Task ${taskId} as ${newStatus}`);
 
   try {
@@ -107,11 +112,16 @@ export async function updateTaskStatusAction(
     };
   }
 }
+
 export async function updateTaskExperienceAction(
   formData: FormData
 ): Promise<ActionResult> {
   const taskId = formData.get("taskId") as string;
   const newExperience = formData.get("experience") as Task["experience"];
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return { success: false, error: "User not authenticated" };
+  }
   try {
     await updateTask(taskId, {
       experience: newExperience,
@@ -139,6 +149,10 @@ export async function delayTaskAction(
   const taskId = formData.get("taskId") as string;
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
+
+  if (!userId) {
+    return { success: false, error: "User not authenticated" };
+  }
 
   const delayOption = formData.get("delayOption") as "tomorrow" | "nextWeek";
   const newDueDateString = formData.get("newDueDate") as string;
@@ -197,7 +211,7 @@ export async function deleteTaskAction(
   const taskId = formData.get("taskId") as string;
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
-    throw new Error("User not authenticated");
+    return { success: false, error: "User not authenticated" };
   }
 
   console.log(`ACTION: Delete Task ${taskId}`);
@@ -234,6 +248,10 @@ export async function togglePriorityAction(
   formData: FormData
 ): Promise<ActionResult> {
   const taskId = formData.get("taskId") as string;
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return { success: false, error: "User not authenticated" };
+  }
   const currentTask = await getTaskByTaskId(taskId);
   if (!currentTask) return { success: false, error: "Task not found" };
   const newIsPriority = !currentTask.isPriority;
@@ -252,10 +270,15 @@ export async function togglePriorityAction(
     };
   }
 }
+
 export async function toggleReminderAction(
   formData: FormData
 ): Promise<ActionResult> {
   const taskId = formData.get("taskId") as string;
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return { success: false, error: "User not authenticated" };
+  }
   const currentTask = await getTaskByTaskId(taskId);
   if (!currentTask) return { success: false, error: "Task not found" };
   const newIsReminder = !currentTask.isReminder;
@@ -289,19 +312,13 @@ export async function createTaskAction(
   duration: { hours: number; minutes: number } | undefined,
   isRepeating: boolean,
   repetitionRule: RepetitionRule | undefined
-) {
-  // Must pass authOptions
+): Promise<ActionResult> {
   const session = await getServerSession(authOptions);
-  // const cookieStore = cookies();
-  // const jwt = (await cookieStore).get("next-auth.session-token");
-
-  if (!session || !session.user || !session.user.id) {
-    console.error("User not authenticated or user ID missing from session");
-    return {
-      success: false,
-      error: "User not authenticated",
-    };
+  if (!session?.user?.id) {
+    throw new Error("User not authenticated");
   }
+  //const cookieStore = cookies();
+  // const jwt = (await cookieStore).get("next-auth.session-token");
   const userId = session.user.id;
 
   const title = String(formData.get("title"));
@@ -381,6 +398,10 @@ export async function completeRepeatingTaskWithInterval(
   task: Task,
   completionDate: Date = new Date()
 ): Promise<ActionResult> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return { success: false, error: "User not authenticated" };
+  }
   if (!task.isRepeating || !task.repetitionRule) {
     return {
       success: false,
@@ -403,19 +424,23 @@ export async function completeRepeatingTaskWithInterval(
     };
   }
   const originalCompletionDate = new Date(completionDate);
-  // Next due date
-  completionDate.setHours(task.dueDate.getHours());
-  completionDate.setMinutes(task.dueDate.getMinutes());
-  const nextDueDate = addDays(completionDate, rule.interval);
+
+  // Preserve original time for next due date, calculating from completion date
+  const nextDueDate = new Date(completionDate);
+  const originalDueDate = new Date(task.dueDate);
+  nextDueDate.setHours(originalDueDate.getHours());
+  nextDueDate.setMinutes(originalDueDate.getMinutes());
+  nextDueDate.setSeconds(originalDueDate.getSeconds());
+
+  const finalDueDate = addDays(nextDueDate, rule.interval);
 
   const updates: Partial<Task> = {
     repetitionRule: {
       ...rule,
-      completions: 1,
-      // startDate: rule.startDate,
+      completions: 1, // For interval tasks, completion is a reset
     },
     status: "completed",
-    dueDate: nextDueDate,
+    dueDate: finalDueDate,
     completedAt: originalCompletionDate,
   };
 
@@ -423,7 +448,7 @@ export async function completeRepeatingTaskWithInterval(
     await updateTask(task.id, updates);
     return {
       success: true,
-      message: `Task completed. Next due on ${formatDate(nextDueDate)}`,
+      message: `Task completed. Next due on ${formatDate(finalDueDate)}`,
     };
   } catch (err) {
     const error = err as Error;
@@ -438,6 +463,10 @@ export async function completeRepeatingTaskWithTimesPerWeek(
   task: Task,
   completionDate: Date = new Date()
 ): Promise<ActionResult> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return { success: false, error: "User not authenticated" };
+  }
   if (!task.isRepeating || !task.repetitionRule) {
     return {
       success: false,
@@ -466,9 +495,9 @@ export async function completeRepeatingTaskWithTimesPerWeek(
     rule.startDate = weekStart;
     rule.completions = 0;
   }
-  rule.completions = rule.completions + 1;
+  rule.completions += 1;
 
-  // Next due date
+  // Next due date for "times per week" is the end of the week or next week
   let nextDueDate: Date;
   let newStartDate: Date;
   if (rule.completions === rule.timesPerWeek) {
@@ -519,6 +548,10 @@ export async function completeRepeatingTaskWithDaysOfWeek(
   task: Task,
   completionDate: Date = new Date()
 ): Promise<ActionResult> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return { success: false, error: "User not authenticated" };
+  }
   if (!task.isRepeating || !task.repetitionRule) {
     return {
       success: false,
@@ -541,20 +574,31 @@ export async function completeRepeatingTaskWithDaysOfWeek(
   }
   // Next due date
   const today = getDay(completionDate) as DayOfWeek;
+  const sortedDays = [...rule.daysOfWeek].sort((a, b) => a - b);
 
-  let nextDueDay = (today + 1) % 7;
-  while (!rule.daysOfWeek.includes(nextDueDay as DayOfWeek)) {
-    nextDueDay = (nextDueDay + 1) % 7;
+  let nextDueDay = sortedDays.find((day) => day > today);
+
+  if (nextDueDay === undefined) {
+    // if no day found, take the first day of next week
+    nextDueDay = sortedDays[0];
   }
-  const daysUntilNext = (nextDueDay - today + 7) % 7;
+
+  const daysUntilNext =
+    nextDueDay > today ? nextDueDay - today : 7 - today + nextDueDay;
+
+  // Calculate new due date but preserve original time
   const newDueDate = addDays(completionDate, daysUntilNext);
+  const originalDueDate = new Date(task.dueDate);
+  newDueDate.setHours(originalDueDate.getHours());
+  newDueDate.setMinutes(originalDueDate.getMinutes());
+  newDueDate.setSeconds(originalDueDate.getSeconds());
 
   const weekStart = startOfWeek(completionDate, MONDAY_START_OF_WEEK);
   if (!isSameWeek(rule.startDate, weekStart, MONDAY_START_OF_WEEK)) {
     rule.startDate = weekStart;
     rule.completions = 0;
   }
-  rule.completions = rule.completions + 1;
+  rule.completions += 1;
 
   const updates: Partial<Task> = {
     repetitionRule: {

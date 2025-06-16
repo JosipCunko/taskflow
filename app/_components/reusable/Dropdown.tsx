@@ -64,7 +64,7 @@ export default function Dropdown({
   isFullyCompletedForCurrentCycle?: boolean;
 }) {
   return (
-    <div className="relative shrink-0 z-10">
+    <div className="relative shrink-0">
       <Button
         variant="secondary"
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -85,7 +85,7 @@ export default function Dropdown({
               transition: { duration: 0.15 },
             }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="absolute right-0 mt-2 w-60 bg-background-600 border border-divider shadow-xl rounded-lg p-1.5 z-[100] origin-top-right focus:outline-none"
+            className="absolute right-0 mt-2 w-60 bg-background-600 border border-divider shadow-xl rounded-lg p-1.5 z-[100] origin-top-right focus:outline-none "
           >
             {/* ---: Action: Mark as Completed--- */}
             {task.status !== "completed" &&

@@ -150,7 +150,6 @@ export const getTasksByUserId = async (
       tasksCollectionRef,
       where("userId", "==", userId),
       orderBy("dueDate", "asc")
-      // Might want other orderings, e.g., orderBy("createdAt", "desc")
     );
 
     const querySnapshot = await getDocs(q);

@@ -1,7 +1,6 @@
 import {
   Dumbbell,
   Timer,
-  Activity,
   Heart,
   User,
   Home,
@@ -51,6 +50,16 @@ import {
   Pizza,
   Volleyball,
   BellOff,
+  Utensils,
+  Bed,
+  Bike,
+  Sandwich,
+  Coffee,
+  TvMinimal,
+  Camera,
+  Notebook,
+  Hamburger,
+  Gift,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import {
@@ -78,7 +87,6 @@ import {
 } from "date-fns";
 import { isFuture, isToday } from "date-fns";
 
-/** Possible task icons to set in the IconPicker*/
 export const TASK_ICONS = [
   {
     id: "user",
@@ -86,65 +94,14 @@ export const TASK_ICONS = [
     label: "User",
   },
   {
-    id: "Activity",
-    icon: Activity,
-    label: "Activity",
-  },
-  {
-    id: "Pizza",
-    icon: Pizza,
-    label: "Pizza",
-  },
-  {
-    id: "Apple",
-    icon: Apple,
-    label: "Apple",
-  },
-  {
-    id: "Volleyball",
-    icon: Volleyball,
-    label: "Volleyball",
-  },
-  {
-    id: "dumbbell",
-    icon: Dumbbell,
-    label: "Dumbbell",
-  },
-  {
-    id: "timer",
-    icon: Timer,
-    label: "Timer",
-  },
-  {
-    id: "PartyPopper",
-    icon: PartyPopper,
-    label: "Party Popper",
-  },
-  {
-    id: "heart",
-    icon: Heart,
-    label: "Heart",
-  },
-
-  {
     id: "home",
     icon: Home,
     label: "Home",
   },
   {
-    id: "BookOpen",
-    icon: BookOpen,
-    label: "Book",
-  },
-  {
-    id: "Briefcase",
-    icon: Briefcase,
-    label: "Briefcase",
-  },
-  {
-    id: "Star",
-    icon: Star,
-    label: "Star",
+    id: "heart",
+    icon: Heart,
+    label: "Heart",
   },
   {
     id: "Smile",
@@ -152,19 +109,59 @@ export const TASK_ICONS = [
     label: "Smile",
   },
   {
-    id: "laptop",
-    icon: Laptop,
-    label: "Laptop",
+    id: "Sleep",
+    icon: Bed,
+    label: "Sleep",
   },
   {
-    id: "file-text",
-    icon: FileText,
-    label: "File",
+    id: "Food",
+    icon: Utensils,
+    label: "Food",
   },
   {
-    id: "Phone",
-    icon: Phone,
-    label: "Phone",
+    id: "Apple",
+    icon: Apple,
+    label: "Apple",
+  },
+  {
+    id: "Pizza",
+    icon: Pizza,
+    label: "Pizza",
+  },
+  {
+    id: "Hamburger",
+    icon: Hamburger,
+    label: "Hamburger",
+  },
+  {
+    id: "Sandwich",
+    icon: Sandwich,
+    label: "Sandwich",
+  },
+  {
+    id: "Coffee",
+    icon: Coffee,
+    label: "Coffee",
+  },
+  {
+    id: "dumbbell",
+    icon: Dumbbell,
+    label: "Dumbbell",
+  },
+  {
+    id: "Bike",
+    icon: Bike,
+    label: "Bike",
+  },
+  {
+    id: "Volleyball",
+    icon: Volleyball,
+    label: "Volleyball",
+  },
+  {
+    id: "Briefcase",
+    icon: Briefcase,
+    label: "Briefcase",
   },
   {
     id: "Code",
@@ -172,14 +169,75 @@ export const TASK_ICONS = [
     label: "Code",
   },
   {
-    id: "shopping-cart",
-    icon: ShoppingCart,
-    label: "Shopping Cart",
+    id: "Phone",
+    icon: Phone,
+    label: "Phone",
+  },
+  {
+    id: "BookOpen",
+    icon: BookOpen,
+    label: "Book",
+  },
+  {
+    id: "file-text",
+    icon: FileText,
+    label: "File",
+  },
+  {
+    id: "Notebook",
+    icon: Notebook,
+    label: "Notebook",
+  },
+  {
+    id: "Camera",
+    icon: Camera,
+    label: "Camera",
+  },
+  {
+    id: "TvMinimal",
+    icon: TvMinimal,
+    label: "Tv",
   },
   {
     id: "Gamepad",
     icon: Gamepad2,
     label: "Gamepad",
+  },
+  {
+    id: "laptop",
+    icon: Laptop,
+    label: "Laptop",
+  },
+  {
+    id: "PartyPopper",
+    icon: PartyPopper,
+    label: "Party Popper",
+  },
+
+  {
+    id: "timer",
+    icon: Timer,
+    label: "Timer",
+  },
+  {
+    id: "Star",
+    icon: Star,
+    label: "Star",
+  },
+  {
+    id: "Trophy",
+    icon: Trophy,
+    label: "Trophy",
+  },
+  {
+    id: "shopping-cart",
+    icon: ShoppingCart,
+    label: "Shopping Cart",
+  },
+  {
+    id: "Gift",
+    icon: Gift,
+    label: "Gift",
   },
 ];
 const ACTIVITY_ICONS = [
@@ -225,28 +283,27 @@ export const CardSpecificIcons = {
   AddReminder: BellPlus,
   RemoveReminder: BellOff,
 };
-/* Color picker */
 export const colorsColorPicker = [
-  "#86efac",
-  "#bae6fd",
-  "#0e7490",
-  "#a3e635",
-  "#14b8a6",
-  "#fbbf24",
-  "#10b981",
-  "#22d3ee",
-  "#4d7c0f",
-  "#d97706",
-  "#4f46e5",
-  "#f87171",
+  "var(--color-primary-500)",
+  "#0c4a6e",
   "#3b82f6",
-  "#d946ef",
-  "#fb923c",
-  "#78716c",
+  "#1e40af",
+  "#8b5cf6",
+  "#5b21b6",
+  "#f59e0b",
+  "#92400e",
+  "#ef4444",
+  "#991b1b",
+  "#84cc16",
+  "#10b981",
+  "#0f766e",
+  "#365314",
+  "#ec4899",
+  "#be185d",
+  "#f97316",
+  "#c2410c",
+  "#64748b",
   "#334155",
-  "#b91c1c",
-  "#94a3b8",
-  "#31051c",
 ];
 
 /** Search feature */
@@ -376,16 +433,13 @@ export const formatDate = (
   try {
     const dateObj = typeof date === "string" ? new Date(date) : date;
     if (isNaN(dateObj.getTime())) return "Invalid Date";
-    return dateObj
-      .toLocaleDateString(
-        undefined,
-        options || {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }
-      )
-      .slice(0, -1); // remove dot at the end (2025.)
+    return dateObj.toLocaleDateString(
+      undefined,
+      options || {
+        month: "long",
+        day: "numeric",
+      }
+    );
   } catch (error) {
     console.error("Error formatting date:", date, error);
     return "Error Date";
@@ -615,39 +669,37 @@ export function calculateTimeManagementStats(
   let delayedAndCompletedCount = 0;
   let totalRelevantTasksForTiming = 0;
 
-  const now = new Date();
-
   tasks.forEach((task) => {
-    if (task.status === "completed" && task.completedAt && task.dueDate) {
+    // Only regular tasks that are completed are considered for on-time stats
+    if (
+      !task.isRepeating &&
+      task.status === "completed" &&
+      task.completedAt &&
+      task.dueDate
+    ) {
       totalRelevantTasksForTiming++;
       const dueDateStart = startOfDay(task.dueDate);
       const completedAtStart = startOfDay(task.completedAt);
 
-      // Completed on or before the due date
       if (
         isBefore(completedAtStart, dueDateStart) ||
         isEqual(completedAtStart, dueDateStart)
       ) {
         onTimeTasksCount++;
       } else {
-        // Completed after due date
-        //Needs to be original due
-        const effectiveDueDate = task.dueDate
-          ? startOfDay(task.dueDate)
-          : dueDateStart;
-        const delay = differenceInDays(completedAtStart, effectiveDueDate);
+        const delay = differenceInDays(completedAtStart, dueDateStart);
         if (delay > 0) {
           totalDelayDays += delay;
           delayedAndCompletedCount++;
         }
       }
     } else if (
-      (isPast(task.dueDate) ||
-        (task.status === "pending" &&
-          isBefore(startOfDay(task.dueDate), startOfDay(now)))) &&
-      task.dueDate
+      !task.isRepeating &&
+      isPast(task.dueDate) &&
+      !isToday(task.dueDate) &&
+      task.status === "pending"
     ) {
-      // Consider missed tasks as not on-time
+      // Consider missed non-repeating tasks as not on-time
       totalRelevantTasksForTiming++;
     }
   });
@@ -669,9 +721,11 @@ export function calculateTimeManagementStats(
   };
 }
 
-export function calculateConsistencyStats(
-  completedTasks: Task[]
-): ConsistencyStats {
+export function calculateConsistencyStats(tasks: Task[]): ConsistencyStats {
+  const completedTasks = tasks.filter(
+    (task) => task.status === "completed" && task.completedAt
+  );
+
   if (!completedTasks || completedTasks.length === 0) {
     return { currentStreakDays: 0, bestStreakDays: 0 };
   }
@@ -679,11 +733,9 @@ export function calculateConsistencyStats(
   // Get unique days on which tasks were completed, sorted chronologically
   const completionDays = Array.from(
     new Set(
-      completedTasks
-        .filter((task) => task.completedAt) // Ensure completedAt exists
-        .map((task) =>
-          formatISO(startOfDay(task.completedAt!), { representation: "date" })
-        ) // 'yyyy-MM-dd'
+      completedTasks.map((task) =>
+        formatISO(startOfDay(task.completedAt!), { representation: "date" })
+      ) // 'yyyy-MM-dd'
     )
   ).sort(); // Sorts strings chronologically
 
