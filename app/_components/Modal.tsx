@@ -94,10 +94,8 @@ function Window({ children, name, showButton = undefined }: WindowProps) {
       >
         <div>{cloneElement(children, { onCloseModal: close })}</div>
 
-        {/* For the "Show More" modal, we want a "Done" button inside its content, so showButton will be false. */}
         {showButton && (
           <div className="px-6 pb-4 pt-2 flex justify-start">
-            {/* Ensure button is positioned nicely */}
             <Button variant="secondary" onClick={close}>
               Cancel
             </Button>

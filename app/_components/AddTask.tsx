@@ -1,8 +1,4 @@
 "use client";
-/*
- dueDate Parameter: You pass dueDate but then overwrite it for timesPerWeek and daysOfWeek with endOfWeek(new Date(), MONDAY_START_OF_WEEK). For interval tasks, you use the passed dueDate. This is a bit inconsistent. The dueDate for the first instance of a repeating task can be a user choice. The subsequent due dates are then calculated.
- */
-
 import {
   useContext,
   useState,
@@ -23,16 +19,18 @@ import {
   handleToast,
   TASK_ICONS,
   formatDate,
+  CardSpecificIcons,
 } from "../utils";
 import Button from "./reusable/Button";
 import IconPicker from "./IconPicker";
 import DatePicker from "./DatePicker";
 import Input from "./reusable/Input";
+import AnimatedPlaceholderInput from "./reusable/AnimatedPlaceholderInput";
 import Modal, { ModalContext } from "./Modal";
 import { createTaskAction } from "../_lib/actions";
 import TagInput from "./TagInput";
 import { DayOfWeek } from "../_types/types";
-import Checkbox from "./reusable/Checkbox";
+import SwitchComponent from "./reusable/Switch";
 import { preCreateRepeatingTask } from "../_lib/repeatingTasks";
 import RepetitionRulesModal from "./RepetitionRulesModal";
 
@@ -44,9 +42,11 @@ interface InjectedShowMoreTriggerButtonProps {
   opens: string;
   onClick?: () => void;
 }
-const ShowMoreTriggerButton = (props: InjectedShowMoreTriggerButtonProps) => {
+const ShowMoreTriggerButton = ({
+  opens,
+  onClick,
+}: InjectedShowMoreTriggerButtonProps) => {
   const context = useContext(ModalContext);
-  const { opens, onClick } = props;
   const isOpen = context ? context.openName === opens : false;
 
   return (
@@ -108,96 +108,94 @@ const ShowMoreDetailsContent = ({
   };
 
   return (
-    //!!! SEE IF THE DESIGN STILL BREAKS OM MOBILE
-    <div className="flex flex-col gap-10 p-3 sm:p-6 items-center bg-background-650 rounded-lg w-[24rem] sm:w-full max-h-[85vh] overflow-y-auto">
+    <div className="flex flex-col gap-10 p-3 sm:p-6 items-center bg-background-650 rounded-lg  max-h-[85vh] overflow-y-auto">
       <h3 className="text-lg font-semibold text-text-high mb-1">
         Customize Task
       </h3>
-      <div className="flex lg:flex-row flex-col gap-6 md:gap-10 justify-center">
-        <div className="flex flex-col gap-4">
-          <ColorPicker
-            selectedColor={selectedColor}
-            setSelectedColor={setSelectedColor}
-          />
-          <IconPicker
-            selectedIcon={selectedIcon}
-            setSelectedIcon={setSelectedIcon}
-          />
-          {!isRepeatingTask && (
-            <div className="grid place-items-center">
-              <DatePicker date={selectedDate} setDate={setSelectedDate} />
-            </div>
-          )}
 
-          <div className="flex flex-col gap-1 text-sm mt-4">
-            <label className="text-sm text-nowrap font-medium text-text-low">
-              Starts at:
-            </label>
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                name="startTimeHour"
-                value={startTime[0].toString().padStart(2, "0")}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                  const newHour = parseInt(e.target.value, 10);
-                  handleStartTimeChange([
-                    isNaN(newHour) ? 0 : Math.max(0, Math.min(23, newHour)),
-                    startTime[1],
-                  ]);
-                }}
-                className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none w-16"
-              />
-              <span className="text-text-gray">h</span>
-              <Input
-                type="number"
-                name="startTimeMinute"
-                value={startTime[1].toString().padStart(2, "0")}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                  const newMin = parseInt(e.target.value, 10);
-                  handleStartTimeChange([
-                    startTime[0],
-                    isNaN(newMin) ? 0 : Math.max(0, Math.min(59, newMin)),
-                  ]);
-                }}
-                className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none w-16"
-              />
-              <span className="text-text-gray">m</span>
-            </div>
+      <div className="flex flex-col gap-4">
+        <ColorPicker
+          selectedColor={selectedColor}
+          setSelectedColor={setSelectedColor}
+        />
+        <IconPicker
+          selectedIcon={selectedIcon}
+          setSelectedIcon={setSelectedIcon}
+        />
+        {!isRepeatingTask && (
+          <div className="grid place-items-center">
+            <DatePicker date={selectedDate} setDate={setSelectedDate} />
           </div>
-          <div className="flex flex-col gap-1 text-sm mt-4">
-            <label className="text-sm font-medium text-text-low text-nowrap">
-              Ends at:
-            </label>
-            <div className="flex items-center gap-2 p-1">
-              <Input
-                type="number"
-                name="endTimeHour"
-                value={timeEnd[0].toString().padStart(2, "0")}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                  const newHour = parseInt(e.target.value, 10);
-                  handleTimeEndChange([
-                    isNaN(newHour) ? 0 : Math.max(0, Math.min(23, newHour)),
-                    timeEnd[1],
-                  ]);
-                }}
-                className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none w-16"
-              />
-              <span className="text-text-gray">h</span>
-              <Input
-                type="number"
-                name="endTimeMinute"
-                value={timeEnd[1].toString().padStart(2, "0")}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                  const newMin = parseInt(e.target.value, 10);
-                  handleTimeEndChange([
-                    timeEnd[0],
-                    isNaN(newMin) ? 0 : Math.max(0, Math.min(59, newMin)),
-                  ]);
-                }}
-                className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none w-16"
-              />
-              <span className="text-text-gray">m</span>
-            </div>
+        )}
+
+        <div className="flex flex-col gap-1 text-sm mt-4">
+          <label className="text-sm text-nowrap font-medium text-text-low">
+            Starts at:
+          </label>
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              name="startTimeHour"
+              value={startTime[0].toString().padStart(2, "0")}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                const newHour = parseInt(e.target.value, 10);
+                handleStartTimeChange([
+                  isNaN(newHour) ? 0 : Math.max(0, Math.min(23, newHour)),
+                  startTime[1],
+                ]);
+              }}
+              className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none w-16"
+            />
+            <span className="text-text-gray">h</span>
+            <Input
+              type="number"
+              name="startTimeMinute"
+              value={startTime[1].toString().padStart(2, "0")}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                const newMin = parseInt(e.target.value, 10);
+                handleStartTimeChange([
+                  startTime[0],
+                  isNaN(newMin) ? 0 : Math.max(0, Math.min(59, newMin)),
+                ]);
+              }}
+              className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none w-16"
+            />
+            <span className="text-text-gray">m</span>
+          </div>
+        </div>
+        <div className="flex flex-col gap-1 text-sm mt-4">
+          <label className="text-sm font-medium text-text-low text-nowrap">
+            Ends at:
+          </label>
+          <div className="flex items-center gap-2 p-1">
+            <Input
+              type="number"
+              name="endTimeHour"
+              value={timeEnd[0].toString().padStart(2, "0")}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                const newHour = parseInt(e.target.value, 10);
+                handleTimeEndChange([
+                  isNaN(newHour) ? 0 : Math.max(0, Math.min(23, newHour)),
+                  timeEnd[1],
+                ]);
+              }}
+              className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none w-16"
+            />
+            <span className="text-text-gray">h</span>
+            <Input
+              type="number"
+              name="endTimeMinute"
+              value={timeEnd[1].toString().padStart(2, "0")}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                const newMin = parseInt(e.target.value, 10);
+                handleTimeEndChange([
+                  timeEnd[0],
+                  isNaN(newMin) ? 0 : Math.max(0, Math.min(59, newMin)),
+                ]);
+              }}
+              className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none w-16"
+            />
+            <span className="text-text-gray">m</span>
           </div>
         </div>
       </div>
@@ -208,6 +206,9 @@ const ShowMoreDetailsContent = ({
 };
 
 export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
+  const [isPending, startTransition] = useTransition();
+  const [isTitleFocused, setIsTitleFocused] = useState(false);
+
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [timeEnd, setTimeEnd] = useState<number[]>([23, 59]);
   const [startTime, setStartTime] = useState<number[]>([0, 0]);
@@ -238,6 +239,15 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
   const openShowMore = (name: string) => setShowMoreOpenName(name);
   const closeShowMore = () => setShowMoreOpenName("");
 
+  const showMoreModalContextValue = useMemo(
+    () => ({
+      openName: showMoreOpenName,
+      open: openShowMore,
+      close: closeShowMore,
+    }),
+    [showMoreOpenName]
+  );
+
   const [repetitionModalOpenName, setRepetitionModalOpenName] =
     useState<string>("");
   const openRepetitionModal = (name: string) =>
@@ -250,15 +260,6 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
       close: closeRepetitionModal,
     }),
     [repetitionModalOpenName]
-  );
-
-  const isStartTimeSpecified = useMemo(
-    () => startTime[0] !== 0 || startTime[1] !== 0,
-    [startTime]
-  );
-  const isDurationSpecified = useMemo(
-    () => duration[0] !== 0 || duration[1] !== 0,
-    [duration]
   );
 
   useEffect(() => {
@@ -274,6 +275,15 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
       }
     }
   }, [isRepeatingTask]);
+
+  const isStartTimeSpecified = useMemo(
+    () => startTime[0] !== 0 || startTime[1] !== 0,
+    [startTime]
+  );
+  const isDurationSpecified = useMemo(
+    () => duration[0] !== 0 || duration[1] !== 0,
+    [duration]
+  );
 
   const handleDurationChange = (newDuration: number[]) => {
     setDuration(newDuration);
@@ -351,56 +361,25 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
     }
   };
 
-  const handleRepetitionDone = () => {
-    if (activeRepetitionType === "none") {
-      setIsRepeatingTask(false);
-    } else {
-      closeRepetitionModal();
-    }
-  };
-
-  const showMoreModalContextValue = useMemo(
-    () => ({
-      openName: showMoreOpenName,
-      open: openShowMore,
-      close: closeShowMore,
-    }),
-    [showMoreOpenName]
-  );
-
-  const [isPending, startTransition] = useTransition();
-
   const handleSubmit = async (formData: FormData) => {
     startTransition(async () => {
       try {
         const title = formData.get("title") as string;
         const endHour = timeEnd[0];
         const endMinute = timeEnd[1];
-
-        if (
-          !title ||
-          endHour === undefined ||
-          endMinute === undefined ||
-          !selectedColor ||
-          !selectedIcon
-        ) {
+        if (!title || !selectedColor || !selectedIcon) {
           throw new Error("Missing some required fields.");
         }
 
         const baseDueDate = new Date(selectedDate);
-        baseDueDate.setHours(endHour, endMinute, 0, 0);
-
-        const durationDetails =
-          duration[0] > 0 || duration[1] > 0
-            ? { hours: duration[0], minutes: duration[1] }
-            : undefined;
-
+        baseDueDate.setHours(endHour, endMinute);
+        const durationObject = { hours: duration[0], minutes: duration[1] };
         const taskTimeObject = { hour: startTime[0], minute: startTime[1] };
 
         if (isRepeatingTask && activeRepetitionType !== "none") {
           let argInterval: number | undefined;
           let argTimesPerWeek: number | undefined;
-          let argDaysOfWeek: DayOfWeek[] | undefined;
+          let argDaysOfWeek: DayOfWeek[] = [];
 
           switch (activeRepetitionType) {
             case "interval":
@@ -410,30 +389,15 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
               argTimesPerWeek = timesPerWeek > 0 ? timesPerWeek : undefined;
               break;
             case "daysOfWeek":
-              argDaysOfWeek =
-                selectedDaysOfWeek.length > 0 ? selectedDaysOfWeek : undefined;
-              if (!argDaysOfWeek) {
-                errorToast(
-                  "Please select days for 'Specific Days' repetition or choose a different type."
-                );
-                setIsRepeatingTask(false);
-                setActiveRepetitionType("none");
-                return;
-              }
+              argDaysOfWeek = selectedDaysOfWeek;
               break;
           }
 
-          const repetitionArgs = {
-            interval: argInterval,
-            timesPerWeek: argTimesPerWeek,
-            daysOfWeek: argDaysOfWeek || [],
-          };
-
           const { dueDate: firstInstanceDueDate, repetitionRule } =
             preCreateRepeatingTask(
-              repetitionArgs.interval,
-              repetitionArgs.timesPerWeek,
-              repetitionArgs.daysOfWeek,
+              argInterval,
+              argTimesPerWeek,
+              argDaysOfWeek,
               baseDueDate,
               taskStartDate
             );
@@ -447,7 +411,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
             firstInstanceDueDate as Date,
             taskTimeObject,
             tags,
-            durationDetails,
+            durationObject,
             true,
             repetitionRule
           );
@@ -464,7 +428,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
             baseDueDate,
             taskTimeObject,
             tags,
-            durationDetails,
+            durationObject,
             false,
             undefined
           );
@@ -495,11 +459,15 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
             >
               Task name
             </label>
-            <Input
+            <AnimatedPlaceholderInput
               type="text"
               id="title"
               name="title"
-              placeholder="e.q. Buy barbecue sauce tommorow"
+              isFocused={isTitleFocused}
+              onBlur={(e) => setIsTitleFocused(e.target.value.length > 0)}
+              onChange={() => {
+                setIsTitleFocused(true);
+              }}
               required
             />
           </div>
@@ -521,7 +489,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
           setTags={setTags}
           placeholder="e.g. family, gym"
         />
-        <div className="flex items-center space-x-2 mt-4 mb-6 ">
+        <div className="flex items-center space-x-2 my-4 ">
           {!isRepeatingTask && (
             <Button
               variant="tag"
@@ -592,13 +560,12 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
           </Modal.Window>
         </ModalContext.Provider>
         <div className="pt-4 ">
-          <Checkbox
+          <SwitchComponent
             id="isRepeating"
             name="isRepeating"
             label="Make this a repeating task"
             checked={isRepeatingTask}
-            onChange={(e) => {
-              const checked = e.target.checked;
+            onCheckedChange={(checked) => {
               setIsRepeatingTask(checked);
               if (!checked) {
                 setActiveRepetitionType("none");
@@ -606,11 +573,12 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
             }}
           />
           {isRepeatingTask && activeRepetitionType !== "none" && (
-            <button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={() => openRepetitionModal("repetition-rules")}
-              className="mt-2 text-sm text-primary-500 hover:text-primary-400 underline text-left w-full"
+              className="mt-2 text-sm text-primary-500 hover:text-primary-400  text-left w-full"
             >
+              <CardSpecificIcons.Edit size={20} />
               {activeRepetitionType === "interval" &&
                 `Repeats every ${interval} day(s)`}
               {activeRepetitionType === "daysOfWeek" &&
@@ -623,10 +591,11 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
                     .join(", ") || "selected days"
                 }`}
               {activeRepetitionType === "timesPerWeek" &&
-                `Repeats ${timesPerWeek} time(s) per week`}
+                `Repeats ${timesPerWeek} time${
+                  timesPerWeek === 1 ? "" : "s"
+                } per week`}
               {taskStartDate && ` starting ${formatDate(taskStartDate)}`}
-              <span className="ml-1">(Edit)</span>
-            </button>
+            </Button>
           )}
         </div>
 
@@ -643,7 +612,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
               setSelectedDaysOfWeek={setSelectedDaysOfWeek}
               repetitionTaskStartDate={taskStartDate}
               setRepetitionTaskStartDate={setTaskStartDate}
-              onDone={handleRepetitionDone}
+              onDone={closeRepetitionModal}
             />
           </Modal.Window>
         </ModalContext.Provider>

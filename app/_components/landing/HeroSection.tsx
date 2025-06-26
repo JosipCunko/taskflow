@@ -8,7 +8,6 @@ import HeroAnimatedBackground from "../animations/HeroAnimatedBackground";
 export default function HeroSection() {
   return (
     <header className="relative py-20 md:py-32 lg:py-40 text-center bg-gradient-to-br from-background-700 via-background-650 to-background-600 overflow-hidden">
-      {/* Spectacular Hero Animated Background */}
       <HeroAnimatedBackground />
 
       <div className="container mx-auto px-6 relative z-10">

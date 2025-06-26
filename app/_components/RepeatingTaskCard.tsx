@@ -30,7 +30,7 @@ import {
 import { useState } from "react";
 import DurationCalculator from "./DurationCalculator";
 import { useOutsideClick } from "../_hooks/useOutsideClick";
-import Dropdown from "./reusable/Dropdown";
+import Dropdown from "./Dropdown";
 
 export default function RepeatingTaskCard({
   notProcessedTask,
@@ -95,6 +95,7 @@ export default function RepeatingTaskCard({
     repetitionSummary += ` from ${formatDate(rule.startDate)}`;
   }
 
+  /*
   const isFullyCompletedForCurrentCycle =
     (rule.interval && isToday(task.completedAt as Date)) ||
     (rule.timesPerWeek &&
@@ -104,11 +105,8 @@ export default function RepeatingTaskCard({
       rule.completions !== 0 &&
       rule.daysOfWeek.length > 0 &&
       rule.completions === rule.daysOfWeek.length);
-
-  const canCompleteToday = (() => {
-    if (isFullyCompletedForCurrentCycle) return false;
-    return canCompleteNow;
-  })();
+      */
+  const isFullyCompletedForCurrentCycle = task.status === "completed";
 
   const handleComplete = async () => {
     try {
@@ -166,9 +164,8 @@ export default function RepeatingTaskCard({
             task={task}
             isDropdownOpen={isDropdownOpen}
             setIsDropdownOpen={setIsDropdownOpen}
-            canCompleteToday={canCompleteToday}
+            canComplete={canCompleteNow}
             handleComplete={handleComplete}
-            isFullyCompletedForCurrentCycle={isFullyCompletedForCurrentCycle}
           />
         </div>
 
@@ -181,7 +178,7 @@ export default function RepeatingTaskCard({
         </p>
 
         {task.description && (
-          <p className="mt-2 flex items-start gap-1.5 text-xs text-text-low">
+          <p className="my-2 flex items-start gap-1.5 text-xs text-text-low">
             <FileText size={14} className="mt-0.5 flex-shrink-0 opacity-70" />
             <span className="italic">{task.description}</span>
           </p>

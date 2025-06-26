@@ -1,9 +1,15 @@
 import { useFormStatus } from "react-dom";
-import Button from "./Button";
-import { CardSpecificIcons, handleToast } from "@/app/utils";
+import Button from "./reusable/Button";
+import {
+  CardSpecificIcons,
+  handleToast,
+  canCompleteRepeatingTaskNow,
+  getStartAndEndTime,
+  formatDate,
+} from "@/app/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { Task } from "@/app/_types/types";
-import { isSameDay } from "date-fns";
+import { isSameDay, isToday, format, isTomorrow } from "date-fns";
 import {
   delayTaskAction,
   updateTaskStatusAction,
@@ -12,27 +18,30 @@ import {
   updateTaskExperienceAction,
   deleteTaskAction,
 } from "@/app/_lib/actions";
-import EmojiExperience from "../EmojiExperience";
+import EmojiExperience from "./EmojiExperience";
 
 function ActionSubmitButton({
   children,
   className,
   Icon,
   classNameIcon,
+  disabled: propDisabled = false,
 }: {
   children: React.ReactNode;
   className?: string;
   Icon?: React.ElementType;
   classNameIcon?: string;
+  disabled?: boolean;
 }) {
   const { pending } = useFormStatus();
+  const isDisabled = pending || propDisabled;
   return (
     <Button
       type="submit"
-      disabled={pending}
+      disabled={isDisabled}
       variant="secondary"
       className={`w-full text-left px-2.5 py-2.5 text-sm text-text-gray ${className} ${
-        pending ? "opacity-50 cursor-not-allowed" : ""
+        isDisabled ? "opacity-50 cursor-not-allowed" : ""
       }`}
     >
       {Icon && (
@@ -48,21 +57,133 @@ function ActionSubmitButton({
   );
 }
 
+function getCompletionAvailabilityInfo(task: Task, canComplete?: boolean) {
+  // If task is completed today, show completion message
+  if (task.completedAt && isToday(task.completedAt)) {
+    return {
+      text: "Already completed today",
+      canComplete: false,
+      icon: CardSpecificIcons.MarkComplete,
+    };
+  }
+
+  // If task is already completed (but not today)
+  if (task.status === "completed") {
+    return {
+      text: "Already completed",
+      canComplete: false,
+      icon: CardSpecificIcons.MarkComplete,
+    };
+  }
+
+  // For repeating tasks, use the advanced logic
+  if (task.isRepeating) {
+    const { canCompleteNow, isDueToday } = canCompleteRepeatingTaskNow(task);
+    const { startTime, endTime } = getStartAndEndTime(task);
+
+    if (canCompleteNow) {
+      return {
+        text: "Complete",
+        canComplete: true,
+        icon: CardSpecificIcons.MarkComplete,
+      };
+    }
+
+    // If task is due today but not available right now due to time window
+    if (isDueToday && startTime && endTime) {
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      const currentTimeInMinutes = currentHour * 60 + currentMinute;
+
+      const startTimeInMinutes =
+        Number(startTime.split(":")[0]) * 60 + Number(startTime.split(":")[1]);
+      const endTimeInMinutes =
+        Number(endTime.split(":")[0]) * 60 + Number(endTime.split(":")[1]);
+
+      if (currentTimeInMinutes < startTimeInMinutes) {
+        return {
+          text: `Available from ${startTime}`,
+          canComplete: false,
+          icon: CardSpecificIcons.MarkComplete,
+        };
+      } else if (currentTimeInMinutes > endTimeInMinutes) {
+        return {
+          text: `Was available until ${endTime}`,
+          canComplete: false,
+          icon: CardSpecificIcons.MarkComplete,
+        };
+      }
+    }
+
+    // If task is not due today, show when it will be available
+    if (!isDueToday) {
+      const nextDueDate = new Date(task.dueDate);
+      if (isTomorrow(nextDueDate)) {
+        return {
+          text: "Can complete tomorrow",
+          canComplete: false,
+          icon: CardSpecificIcons.MarkComplete,
+        };
+      } else {
+        return {
+          text: `Available ${formatDate(nextDueDate)}`,
+          canComplete: false,
+          icon: CardSpecificIcons.MarkComplete,
+        };
+      }
+    }
+
+    // Fallback for repeating tasks
+    return {
+      text: "Not available now",
+      canComplete: false,
+      icon: CardSpecificIcons.MarkComplete,
+    };
+  }
+
+  // For regular tasks, use the canComplete prop or default behavior
+  if (canComplete === false) {
+    // Check if it's tomorrow
+    if (isTomorrow(task.dueDate)) {
+      return {
+        text: "Can complete tomorrow",
+        canComplete: false,
+        icon: CardSpecificIcons.MarkComplete,
+      };
+    }
+
+    // For future dates
+    return {
+      text: `Available ${format(task.dueDate, "MMM d")}`,
+      canComplete: false,
+      icon: CardSpecificIcons.MarkComplete,
+    };
+  }
+
+  // Default case - can complete
+  return {
+    text: "Complete",
+    canComplete: canComplete === undefined || canComplete === true,
+    icon: CardSpecificIcons.MarkComplete,
+  };
+}
+
 export default function Dropdown({
   isDropdownOpen,
   setIsDropdownOpen,
   task,
-  canCompleteToday = undefined,
+  canComplete = undefined,
   handleComplete = undefined,
-  isFullyCompletedForCurrentCycle = undefined,
 }: {
   isDropdownOpen: boolean;
   setIsDropdownOpen: (isDropdownOpen: boolean) => void;
   task: Task;
-  canCompleteToday?: boolean;
+  canComplete?: boolean;
   handleComplete?: () => void;
-  isFullyCompletedForCurrentCycle?: boolean;
 }) {
+  const completionInfo = getCompletionAvailabilityInfo(task, canComplete);
+
   return (
     <div className="relative shrink-0">
       <Button
@@ -87,29 +208,32 @@ export default function Dropdown({
             transition={{ duration: 0.2, ease: "easeOut" }}
             className="absolute right-0 mt-2 w-60 bg-background-600 border border-divider shadow-xl rounded-lg p-1.5 z-[100] origin-top-right focus:outline-none "
           >
-            {/* ---: Action: Mark as Completed--- */}
-            {task.status !== "completed" &&
-              canCompleteToday &&
-              !isFullyCompletedForCurrentCycle && (
-                <li>
-                  <form
-                    action={
-                      !task.isRepeating
-                        ? async (formData: FormData) => {
-                            const res = await updateTaskStatusAction(formData);
-                            handleToast(res, () => setIsDropdownOpen(false));
-                          }
-                        : handleComplete
-                    }
-                  >
-                    <input type="hidden" name="taskId" value={task.id} />
-                    <input type="hidden" name="newStatus" value="completed" />
-                    <ActionSubmitButton Icon={CardSpecificIcons.MarkComplete}>
-                      Mark as Completed
-                    </ActionSubmitButton>
-                  </form>
-                </li>
-              )}
+            {/* ---: Action: Mark as Completed  --- */}
+            <li>
+              <form
+                action={
+                  completionInfo.canComplete
+                    ? !task.isRepeating
+                      ? async (formData: FormData) => {
+                          const res = await updateTaskStatusAction(formData);
+                          handleToast(res, () => setIsDropdownOpen(false));
+                        }
+                      : handleComplete
+                    : async () => {
+                        // No-op for disabled state
+                      }
+                }
+              >
+                <input type="hidden" name="taskId" value={task.id} />
+                <input type="hidden" name="newStatus" value="completed" />
+                <ActionSubmitButton
+                  Icon={completionInfo.icon}
+                  disabled={!completionInfo.canComplete}
+                >
+                  {completionInfo.text}
+                </ActionSubmitButton>
+              </form>
+            </li>
 
             {/* ---: Action: Delay --- */}
             {!task.isRepeating && task.status !== "completed" && (
@@ -123,10 +247,7 @@ export default function Dropdown({
                       action={async (formData: FormData) => {
                         const res = await delayTaskAction(
                           formData,
-                          task.startTime?.hour ??
-                            new Date(task.dueDate).getHours(),
-                          task.startTime?.minute ??
-                            new Date(task.dueDate).getMinutes(),
+                          task.dueDate,
                           task.delayCount
                         );
                         handleToast(res, () => setIsDropdownOpen(false));
@@ -180,10 +301,7 @@ export default function Dropdown({
                           action={async (formData: FormData) => {
                             const res = await delayTaskAction(
                               formData,
-                              task.startTime?.hour ??
-                                new Date(task.dueDate).getHours(),
-                              task.startTime?.minute ??
-                                new Date(task.dueDate).getMinutes(),
+                              task.dueDate,
                               task.delayCount
                             );
                             handleToast(res, () => setIsDropdownOpen(false));
@@ -216,9 +334,7 @@ export default function Dropdown({
                   action={async (formData: FormData) => {
                     const res = await delayTaskAction(
                       formData,
-                      task.startTime?.hour ?? new Date(task.dueDate).getHours(),
-                      task.startTime?.minute ??
-                        new Date(task.dueDate).getMinutes(),
+                      task.dueDate,
                       task.delayCount
                     );
                     handleToast(res, () => setIsDropdownOpen(false));

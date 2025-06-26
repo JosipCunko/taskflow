@@ -17,8 +17,8 @@ import {
   differenceInDays,
   endOfWeek,
   isPast,
+  isSameDay,
   isSameWeek,
-  isToday,
   startOfDay,
   startOfWeek,
 } from "date-fns";
@@ -92,26 +92,112 @@ export async function updateUserRepeatingTasks(userId: string) {
 
     const updates: TaskUpdatePayload = {};
 
-    // --- Logic for tasks whose due date has passed ---
-    if (isPast(task.dueDate)) {
-      updates.status = "pending";
+    if (rule.interval && rule.interval > 0) {
+      // Convert Firestore Timestamps to Date objects for interval tasks only
+      const taskDueDate =
+        task.dueDate instanceof Date
+          ? task.dueDate
+          : (task.dueDate as Timestamp).toDate();
+      const taskCompletedAt = task.completedAt
+        ? task.completedAt instanceof Date
+          ? task.completedAt
+          : (task.completedAt as Timestamp).toDate()
+        : undefined;
+      const ruleStartDate =
+        rule.startDate instanceof Date
+          ? rule.startDate
+          : (rule.startDate as Timestamp).toDate();
 
-      if (rule.interval && rule.interval > 0) {
-        // For interval tasks, calculate the next due date from today
-        const daysSinceStart = differenceInDays(today, rule.startDate);
-        if (daysSinceStart >= 0) {
-          const cyclesSinceStart = Math.floor(daysSinceStart / rule.interval);
-          const nextDueDate = addDays(
-            rule.startDate,
-            (cyclesSinceStart + 1) * rule.interval
+      // For interval tasks, we need to check two scenarios:
+      // 1. Completed tasks that need to be reset for the next interval
+      // 2. Overdue tasks that need to be moved to the correct date
+
+      if (task.status === "completed" && taskCompletedAt) {
+        const daysSinceCompletion = differenceInDays(today, taskCompletedAt);
+
+        // If enough time has passed since completion, reset for next instance
+        if (daysSinceCompletion >= rule.interval) {
+          updates.status = "pending";
+
+          // Calculate the next due date: completion date + interval
+          const nextDueDate = addDays(taskCompletedAt, rule.interval);
+
+          // If next due date is in the past or today, set it to today
+          if (isPast(nextDueDate) || isSameDay(nextDueDate, today)) {
+            const todayDueDate = new Date(today);
+            todayDueDate.setHours(
+              taskDueDate.getHours(),
+              taskDueDate.getMinutes(),
+              taskDueDate.getSeconds()
+            );
+            updates.dueDate = todayDueDate;
+          } else {
+            // Set to the calculated future due date
+            nextDueDate.setHours(
+              taskDueDate.getHours(),
+              taskDueDate.getMinutes(),
+              taskDueDate.getSeconds()
+            );
+            updates.dueDate = nextDueDate;
+          }
+        }
+      }
+      // For pending/overdue tasks, update to the correct schedule
+      else if (isPast(taskDueDate) && task.status !== "completed") {
+        updates.status = "pending";
+
+        // Find the next due date based on the interval pattern from start date
+        const daysSinceStart = differenceInDays(today, ruleStartDate);
+        const cyclesSinceStart = Math.floor(daysSinceStart / rule.interval);
+        const nextDueDate = addDays(
+          ruleStartDate,
+          (cyclesSinceStart + 1) * rule.interval
+        );
+
+        // If next due date is in the past or today, set it to today
+        if (isPast(nextDueDate) || isSameDay(nextDueDate, today)) {
+          const todayDueDate = new Date(today);
+          todayDueDate.setHours(
+            taskDueDate.getHours(),
+            taskDueDate.getMinutes(),
+            taskDueDate.getSeconds()
+          );
+          updates.dueDate = todayDueDate;
+        } else {
+          // Set to the calculated future due date
+          nextDueDate.setHours(
+            taskDueDate.getHours(),
+            taskDueDate.getMinutes(),
+            taskDueDate.getSeconds()
           );
           updates.dueDate = nextDueDate;
         }
-      } else if (
-        rule.timesPerWeek ||
-        (rule.daysOfWeek && rule.daysOfWeek.length > 0)
-      ) {
+      }
+    } else if (
+      rule.timesPerWeek ||
+      (rule.daysOfWeek && rule.daysOfWeek.length > 0)
+    ) {
+      // Convert dates for weekly tasks
+      const taskDueDate =
+        task.dueDate instanceof Date
+          ? task.dueDate
+          : (task.dueDate as Timestamp).toDate();
+      const ruleStartDate =
+        rule.startDate instanceof Date
+          ? rule.startDate
+          : (rule.startDate as Timestamp).toDate();
+
+      if (isPast(taskDueDate)) {
         // For weekly tasks, if due date is past, reset to the current week
+        updates.status = "pending";
+        updates["repetitionRule.completions"] = 0;
+        updates["repetitionRule.startDate"] = startOfWeek(
+          today,
+          MONDAY_START_OF_WEEK
+        );
+        updates.dueDate = endOfWeek(today, MONDAY_START_OF_WEEK);
+      } else if (!isSameWeek(today, ruleStartDate, MONDAY_START_OF_WEEK)) {
+        // Logic for weekly tasks that have rolled into a new week but their due date hasn't passed
         updates["repetitionRule.completions"] = 0;
         updates["repetitionRule.startDate"] = startOfWeek(
           today,
@@ -119,20 +205,6 @@ export async function updateUserRepeatingTasks(userId: string) {
         );
         updates.dueDate = endOfWeek(today, MONDAY_START_OF_WEEK);
       }
-    } else if (isToday(task.dueDate) && task.status === "completed") {
-      // Logic for tasks due today but already marked complete (e.g., a daily task from yesterday)
-      updates.status = "pending";
-    } else if (
-      (rule.timesPerWeek || (rule.daysOfWeek && rule.daysOfWeek.length > 0)) &&
-      !isSameWeek(today, rule.startDate, MONDAY_START_OF_WEEK)
-    ) {
-      // Logic for weekly tasks that have rolled into a new week but their due date hasn't passed
-      updates["repetitionRule.completions"] = 0;
-      updates["repetitionRule.startDate"] = startOfWeek(
-        today,
-        MONDAY_START_OF_WEEK
-      );
-      updates.dueDate = endOfWeek(today, MONDAY_START_OF_WEEK);
     }
 
     if (Object.keys(updates).length > 0) {
@@ -406,8 +478,7 @@ export const authOptions: NextAuthOptions = {
         token.notifyReminders = userWithRewards.notifyReminders ?? true;
         token.notifyAchievements = userWithRewards.notifyAchievements ?? true;
       } else if (token.uid) {
-        // For subsequent JWT calls, fetch fresh rewardPoints from database
-        // This ensures rewardPoints are always up-to-date
+        // For subsequent JWT calls, fetch fresh data and update lastLoginAt
         try {
           const userDocRef = adminDb.collection("users").doc(token.uid);
           const userDocSnap = await userDocRef.get();
@@ -417,10 +488,44 @@ export const authOptions: NextAuthOptions = {
             token.rewardPoints = userData?.rewardPoints || 0;
             token.notifyReminders = userData?.notifyReminders ?? true;
             token.notifyAchievements = userData?.notifyAchievements ?? true;
+
+            const lastLoginAt = userData?.lastLoginAt as Timestamp | undefined;
+
+            // Check if we need to update lastLoginAt and run daily tasks update
+            // Only update if it's a new day, or if there's no lastLoginAt, or if it's been more than 5 minutes
+            const now = new Date();
+            const shouldUpdateLastLogin =
+              !lastLoginAt ||
+              lastLoginAt.toDate().toDateString() !== now.toDateString() ||
+              now.getTime() - lastLoginAt.toDate().getTime() > 5 * 60 * 1000; // 5 minutes
+
+            if (shouldUpdateLastLogin) {
+              // Update lastLoginAt in database
+              await userDocRef.update({
+                lastLoginAt: Timestamp.now(),
+              });
+
+              // Run daily tasks update only if it's the first login of the day
+              if (
+                !lastLoginAt ||
+                lastLoginAt.toDate().toDateString() !== now.toDateString()
+              ) {
+                await updateUserRepeatingTasks(token.uid);
+                console.log(
+                  `Updated lastLoginAt and ran daily tasks update for user ${token.uid} via JWT callback`
+                );
+              } else {
+                console.log(
+                  `Updated lastLoginAt for user ${token.uid} via JWT callback`
+                );
+              }
+            }
           }
         } catch (error) {
-          console.error("Error fetching user data in JWT callback:", error);
-          // Keep existing values if fetch fails
+          console.error(
+            "Error fetching/updating user data in JWT callback:",
+            error
+          );
         }
       }
       return token;

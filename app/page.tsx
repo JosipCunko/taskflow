@@ -1,5 +1,6 @@
 import HeroSection from "@/app/_components/landing/HeroSection";
 import ImageSection from "@/app/_components/landing/ImageSection";
+import StatsSection from "@/app/_components/landing/StatsSection";
 import FeaturesOverview from "@/app/_components/landing/FeaturesOverview";
 import CallToActionSection from "@/app/_components/landing/CallToActionSection";
 import Footer from "@/app/_components/landing/Footer";
@@ -12,6 +13,7 @@ export default function LandingPage() {
       <main className="flex-grow">
         <HeroSection />
         <ImageSection />
+        <StatsSection />
         <FeaturesOverview />
         <CallToActionSection />
       </main>

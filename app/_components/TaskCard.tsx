@@ -15,7 +15,7 @@ import { useState, useMemo } from "react";
 import { useOutsideClick } from "../_hooks/useOutsideClick";
 import { ChevronDown, ChevronUp, Tag } from "lucide-react";
 import DurationCalculator from "./DurationCalculator";
-import Dropdown from "./reusable/Dropdown";
+import Dropdown from "./Dropdown";
 
 export const getExperienceIcon = (task: Task) => {
   if (!task.completedAt || !task.experience) return null;

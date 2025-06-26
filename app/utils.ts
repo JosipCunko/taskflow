@@ -17,7 +17,6 @@ import {
   Meh,
   Smile,
   Frown,
-  Edit3,
   Trash2,
   XCircle,
   Tag,
@@ -60,6 +59,7 @@ import {
   Notebook,
   Hamburger,
   Gift,
+  SquarePen,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import {
@@ -267,7 +267,7 @@ export const CardSpecificIcons = {
   ExperienceOkay: Meh,
   ExperienceBad: Frown,
   Options: MoreHorizontal,
-  Edit: Edit3,
+  Edit: SquarePen,
   Delete: Trash2,
   PreconditionTasks: ArrowRightLeft,
   MarkComplete: CheckCircle2,
@@ -304,6 +304,18 @@ export const colorsColorPicker = [
   "#c2410c",
   "#64748b",
   "#334155",
+];
+export const TASK_PLACEHOLDERS = [
+  "Buy barbecue sauce tomorrow",
+  "Pick up grandma from the airport",
+  "Repair neighbor's car",
+  "Call dentist for appointment",
+  "Organize a party for the kids",
+  "Learn guitar chords",
+  "Plan weekend hiking trip",
+  "Pay gym membership",
+  "Clean out garage",
+  "Research vacation destinations",
 ];
 
 /** Search feature */
@@ -437,14 +449,11 @@ export const formatDate = (
     const today = startOfDay(now);
     const tomorrow = new Date(today);
     tomorrow.setDate(today.getDate() + 1);
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
 
     const givenDate = startOfDay(dateObj);
 
     if (isEqual(givenDate, today)) return "Today";
     if (isEqual(givenDate, tomorrow)) return "Tomorrow";
-    if (isEqual(givenDate, yesterday)) return "Yesterday";
 
     return dateObj.toLocaleDateString(
       undefined,
@@ -648,18 +657,7 @@ export const formatNotificationCount = (count: number): string => {
 /*Stats */
 /*Stats */
 export const calculateTaskPoints = (task: Task) => {
-  const delayCount = task.delayCount;
-  const isMissed = isPast(task.dueDate);
-
-  const status = task.status;
-  if (status === "pending" && !isMissed) return 0;
-  else if (status === "delayed" || (isMissed && status === "pending")) {
-    return -2 * delayCount - 8;
-  } else if (status === "completed" && task.completedAt) {
-    return -2 * delayCount + 10;
-  } else {
-    throw new Error("Something went wrong with task points calculation");
-  }
+  return -2 * task.delayCount + 10;
 };
 
 export const calculatePotentialTaskPoints = (task: Task) => {

@@ -1,5 +1,4 @@
 import { LucideIcon } from "lucide-react";
-
 interface FeatureCardProps {
   icon: LucideIcon;
   label: string;

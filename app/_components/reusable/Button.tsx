@@ -31,7 +31,7 @@ export default function Button({
     sidebar: "w-full",
     danger: "text-error hover:bg-error/10 px-4 py-2 rounded-md",
     noStyle: "",
-    tag: "flex items-center px-3 py-1.5 rounded-full text-sm",
+    tag: "flex items-center px-3 py-1.5 rounded-full text-sm cursor-pointer",
   };
 
   return (

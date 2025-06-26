@@ -1,43 +1,25 @@
-import {
-  endOfWeek,
-  startOfDay,
-  startOfWeek,
-  getDay,
-  addDays,
-  endOfDay,
-} from "date-fns";
-import { DayOfWeek, RepetitionFrequency, Task } from "../_types/types";
+import { endOfWeek, startOfDay, startOfWeek, getDay, addDays } from "date-fns";
+import { DayOfWeek, Task } from "../_types/types";
 import { MONDAY_START_OF_WEEK } from "../utils";
 
 export function preCreateRepeatingTask(
   interval: number | undefined,
   timesPerWeek: number | undefined,
   daysOfWeek: DayOfWeek[],
-  dueDateWithTime: Date,
+  dueDate: Date,
   taskStartDate: Date
 ): Partial<Task> {
-  const setTimeFromDueDate = (dateToModify: Date): Date => {
-    const newDate = new Date(dateToModify);
-    const timeSource = new Date(dueDateWithTime);
-    newDate.setHours(
-      timeSource.getHours(),
-      timeSource.getMinutes(),
-      timeSource.getSeconds(),
-      timeSource.getMilliseconds()
-    );
+  const setTimeForDueDate = (dateToModify: Date): Date => {
+    const newDate = new Date(dateToModify); // Duplicate Date constructor but nvm
+    newDate.setHours(dueDate.getHours(), dueDate.getMinutes());
     return newDate;
   };
 
   if (interval) {
-    let frequency: RepetitionFrequency;
-    if (interval === 1) frequency = "daily";
-    else if (interval >= 2 && interval <= 7) frequency = "weekly";
-    else frequency = "monthly";
     return {
       isRepeating: true,
-      dueDate: setTimeFromDueDate(endOfDay(taskStartDate)),
+      dueDate: setTimeForDueDate(taskStartDate),
       repetitionRule: {
-        frequency,
         interval,
         timesPerWeek: undefined,
         daysOfWeek: [],
@@ -49,11 +31,10 @@ export function preCreateRepeatingTask(
   if (timesPerWeek) {
     return {
       isRepeating: true,
-      dueDate: setTimeFromDueDate(
+      dueDate: setTimeForDueDate(
         endOfWeek(taskStartDate, MONDAY_START_OF_WEEK)
       ),
       repetitionRule: {
-        frequency: "weekly",
         timesPerWeek,
         interval: undefined,
         daysOfWeek: [],
@@ -64,7 +45,7 @@ export function preCreateRepeatingTask(
   }
   if (daysOfWeek && daysOfWeek?.length > 0) {
     const startDay = getDay(taskStartDate);
-    const sortedDays = [...daysOfWeek].sort((a, b) => a - b);
+    const sortedDays = daysOfWeek.sort((a, b) => a - b);
 
     let nextDueDay = sortedDays.find((day) => day >= startDay);
     let daysUntilNextDue: number;
@@ -80,9 +61,8 @@ export function preCreateRepeatingTask(
 
     return {
       isRepeating: true,
-      dueDate: setTimeFromDueDate(endOfDay(firstDueDate)),
+      dueDate: setTimeForDueDate(firstDueDate),
       repetitionRule: {
-        frequency: "weekly",
         daysOfWeek,
         timesPerWeek: undefined,
         interval: undefined,
@@ -91,10 +71,8 @@ export function preCreateRepeatingTask(
       },
     };
   } else {
-    return {
-      isRepeating: false,
-      dueDate: dueDateWithTime,
-      repetitionRule: undefined,
-    };
+    throw new Error(
+      "Something went very wrong with the preCreateRepeatingTask function!"
+    );
   }
 }

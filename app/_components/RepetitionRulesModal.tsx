@@ -329,8 +329,7 @@ export default function RepetitionRulesModal({
                   }}
                   className="w-full bg-background-550 text-center text-base sm:text-lg py-3 rounded-xl"
                 />
-                {(activeRepetitionType === "daysOfWeek" ||
-                  activeRepetitionType === "timesPerWeek") && (
+                {activeRepetitionType === "timesPerWeek" && (
                   <p className="text-sm text-text-gray ml-2">
                     Week from{" "}
                     {formatDate(

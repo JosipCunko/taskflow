@@ -29,8 +29,8 @@ export interface Task {
     minutes: number;
   };
   risk?: boolean;
+  points: number;
 }
-export type RepetitionFrequency = "daily" | "weekly" | "monthly";
 export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 /** daily, weekly or monhtly
@@ -41,7 +41,6 @@ export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
  * completions: only for weekly and monthly
  */
 export interface RepetitionRule {
-  frequency: RepetitionFrequency;
   interval?: number; // every 'interval' days/weeks/months
   daysOfWeek: DayOfWeek[];
   timesPerWeek?: number; // For "weekly" if it's like "3 times a week, any day"
@@ -50,6 +49,20 @@ export interface RepetitionRule {
   startDate: Date;
   completions: number; // 0 or 1 for daily tasks
 }
+
+export type TaskToUpdateData = Partial<
+  Omit<Task, "id" | "userId" | "createdAt" | "points" | "updatedAt">
+>;
+export type TaskToCreateData = Omit<
+  Task,
+  | "id"
+  | "createdAt"
+  | "updatedAt"
+  | "points"
+  | "status"
+  | "delayCount"
+  | "completedAt"
+>;
 
 export type EmojiOption = {
   id: "bad" | "okay" | "good" | "best";

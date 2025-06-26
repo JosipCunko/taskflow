@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@radix-ui/react-switch": "^1.2.5",
     "date-fns": "^4.1.0",
     "firebase": "^11.7.3",
     "firebase-admin": "^13.4.0",
