@@ -25,7 +25,7 @@ import {
   generateTaskTypes,
   calculateTimeManagementStats,
   calculateConsistencyStats,
-} from "../utils";
+} from "../_utils/utils";
 import { Task } from "../_types/types";
 import RepeatingTaskCard from "../_components/RepeatingTaskCard";
 import { loadNotesByUserId } from "../_lib/notes";

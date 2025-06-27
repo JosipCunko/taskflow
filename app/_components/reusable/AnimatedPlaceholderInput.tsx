@@ -1,7 +1,7 @@
 "use client";
 
 import { ChangeEvent, useState, useEffect } from "react";
-import { TASK_PLACEHOLDERS } from "../../utils";
+import { TASK_PLACEHOLDERS } from "../../_utils/utils";
 
 interface AnimatedPlaceholderInputProps {
   type: string;

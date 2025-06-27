@@ -1,7 +1,7 @@
 "use server";
 
 import { getTasksByUserId } from "./tasks";
-import { calculateConsistencyStats } from "../utils";
+import { calculateConsistencyStats } from "../_utils/utils";
 import { getUserById } from "./user";
 import { generateAchievementNotification } from "./notifications";
 

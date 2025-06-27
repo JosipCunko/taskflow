@@ -1,6 +1,6 @@
 "use client";
 
-import { colorsColorPicker } from "../utils";
+import { colorsColorPicker } from "../_utils/utils";
 
 export default function ColorPicker({
   selectedColor,

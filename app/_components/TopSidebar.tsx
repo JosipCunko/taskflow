@@ -5,7 +5,7 @@ import { Session } from "next-auth";
 import Image from "next/image";
 import Link from "next/link";
 import { Tooltip } from "react-tooltip";
-import { getPhaseOfTheDay } from "../utils";
+import { getPhaseOfTheDay } from "../_utils/utils";
 import { useState, useEffect } from "react";
 
 import { Plus } from "lucide-react";

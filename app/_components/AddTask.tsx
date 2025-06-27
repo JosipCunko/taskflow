@@ -17,10 +17,9 @@ import {
   colorsColorPicker,
   errorToast,
   handleToast,
-  TASK_ICONS,
   formatDate,
-  CardSpecificIcons,
-} from "../utils";
+} from "../_utils/utils";
+import { TASK_ICONS, CardSpecificIcons } from "../_utils/icons";
 import Button from "./reusable/Button";
 import IconPicker from "./IconPicker";
 import DatePicker from "./DatePicker";

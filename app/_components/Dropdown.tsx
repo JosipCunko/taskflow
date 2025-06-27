@@ -1,12 +1,13 @@
 import { useFormStatus } from "react-dom";
 import Button from "./reusable/Button";
 import {
-  CardSpecificIcons,
   handleToast,
   canCompleteRepeatingTaskNow,
   getStartAndEndTime,
   formatDate,
-} from "@/app/utils";
+} from "@/app/_utils/utils";
+import { CardSpecificIcons } from "../_utils/icons";
+
 import { AnimatePresence, motion } from "framer-motion";
 import { Task } from "@/app/_types/types";
 import { isSameDay, isToday, format, isTomorrow } from "date-fns";
@@ -335,7 +336,8 @@ export default function Dropdown({
                     const res = await delayTaskAction(
                       formData,
                       task.dueDate,
-                      task.delayCount
+                      task.delayCount,
+                      task.dueDate
                     );
                     handleToast(res, () => setIsDropdownOpen(false));
                   }}
@@ -354,7 +356,9 @@ export default function Dropdown({
                       type="date"
                       name="newDueDate"
                       defaultValue={
-                        new Date(task.dueDate).toISOString().split("T")[0]
+                        new Date(new Date().setDate(new Date().getDate() + 1))
+                          .toISOString()
+                          .split("T")[0]
                       }
                       className="flex-grow p-1.5 border border-divider rounded-md text-sm bg-background-input text-text-default focus:ring-primary-600 focus:border-primary-600"
                       required

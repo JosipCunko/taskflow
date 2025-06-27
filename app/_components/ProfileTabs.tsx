@@ -2,12 +2,12 @@
 import { BarChart3, Bell, Settings, Trophy } from "lucide-react";
 import { useState } from "react";
 import { ActivityLog, Task, userProfileType } from "../_types/types";
-import { getTaskIconByName } from "../utils";
+import { getTaskIconByName } from "../_utils/icons";
 import { formatDistanceToNowStrict } from "date-fns";
 import TaskCardSmall from "./TaskCardSmall";
 import Checkbox from "./reusable/Checkbox";
 import { updateUserAction } from "../_lib/actions";
-import { handleToast } from "../utils";
+import { handleToast } from "../_utils/utils";
 
 export default function ProfileTabs({
   activityLogs,

@@ -2,7 +2,7 @@
 
 import { useState, KeyboardEvent } from "react";
 import { X } from "lucide-react";
-import { infoToast } from "../utils";
+import { infoToast } from "../_utils/utils";
 
 interface TagInputProps {
   tags: string[];

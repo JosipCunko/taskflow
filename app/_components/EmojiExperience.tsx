@@ -1,4 +1,4 @@
-import { emojiOptions } from "../utils";
+import { emojiOptions } from "../_utils/utils";
 import Button from "./reusable/Button";
 
 export default function EmojiExperience({
@@ -7,7 +7,7 @@ export default function EmojiExperience({
   currentExperience: "bad" | "okay" | "good" | "best" | undefined;
 }) {
   return (
-    <div className="max-w-fit rounded-lg shadow-lg px-1 -mb-5 ml-1 bg-primary-500/10 hover:bg-primary-500/20 ">
+    <div className="max-w-fit rounded-lg shadow-lg px-1 -mb-5 bg-primary-500/10 hover:bg-primary-500/20 ">
       <h2 className="text-sm font-semibold mb-0.5">Rate the task experience</h2>
 
       <div className="flex justify-center items-center gap-2 mb-8 w-full py-2.5 text-sm text-text-gray">

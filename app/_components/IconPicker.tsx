@@ -1,7 +1,7 @@
 "use client";
 
 import type { ForwardRefExoticComponent, RefAttributes } from "react";
-import { TASK_ICONS } from "../utils";
+import { TASK_ICONS } from "../_utils/icons";
 import type { LucideProps } from "lucide-react";
 
 export default function IconPicker({

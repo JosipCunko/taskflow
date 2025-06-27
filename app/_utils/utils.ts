@@ -1,67 +1,15 @@
 import {
-  Dumbbell,
-  Timer,
-  Heart,
-  User,
   Home,
-  Apple,
-  Briefcase,
-  Laptop,
   FileText,
-  ShoppingCart,
   Inbox,
   Calendar,
-  Bell,
-  Link2,
-  Star,
   Meh,
   Smile,
   Frown,
-  Trash2,
-  XCircle,
-  Tag,
-  CheckCircle2,
-  Clock,
-  ClipboardList,
-  LucideIcon,
-  Zap,
-  MoreHorizontal,
-  CalendarClock,
-  CalendarPlus,
-  ZapOff,
-  BellPlus,
-  ArrowRightLeft,
   ChartColumn,
-  BookOpen,
-  Code,
-  Gamepad2,
-  Phone,
   BicepsFlexed,
-  CircleCheckBig,
-  CircleX,
   CalendarArrowUp,
-  AlertTriangle,
-  Target,
-  Trophy,
-  Info,
-  TrendingUp,
-  PartyPopper,
-  Pizza,
-  Volleyball,
-  BellOff,
-  Utensils,
-  Bed,
-  Bike,
-  Sandwich,
-  Coffee,
-  TvMinimal,
-  Camera,
-  Notebook,
-  Hamburger,
-  Gift,
-  SquarePen,
 } from "lucide-react";
-import toast from "react-hot-toast";
 import {
   ConsistencyStats,
   DayOfWeek,
@@ -71,7 +19,7 @@ import {
   TimeManagementStats,
   NotificationType,
   NotificationPriority,
-} from "./_types/types";
+} from "../_types/types";
 import {
   differenceInCalendarDays,
   differenceInDays,
@@ -86,203 +34,9 @@ import {
   isSameWeek,
 } from "date-fns";
 import { isFuture, isToday } from "date-fns";
+import { customToast } from "./toasts";
+import { CardSpecificIcons } from "./icons";
 
-export const TASK_ICONS = [
-  {
-    id: "user",
-    icon: User,
-    label: "User",
-  },
-  {
-    id: "home",
-    icon: Home,
-    label: "Home",
-  },
-  {
-    id: "heart",
-    icon: Heart,
-    label: "Heart",
-  },
-  {
-    id: "Smile",
-    icon: Smile,
-    label: "Smile",
-  },
-  {
-    id: "Sleep",
-    icon: Bed,
-    label: "Sleep",
-  },
-  {
-    id: "Food",
-    icon: Utensils,
-    label: "Food",
-  },
-  {
-    id: "Apple",
-    icon: Apple,
-    label: "Apple",
-  },
-  {
-    id: "Pizza",
-    icon: Pizza,
-    label: "Pizza",
-  },
-  {
-    id: "Hamburger",
-    icon: Hamburger,
-    label: "Hamburger",
-  },
-  {
-    id: "Sandwich",
-    icon: Sandwich,
-    label: "Sandwich",
-  },
-  {
-    id: "Coffee",
-    icon: Coffee,
-    label: "Coffee",
-  },
-  {
-    id: "dumbbell",
-    icon: Dumbbell,
-    label: "Dumbbell",
-  },
-  {
-    id: "Bike",
-    icon: Bike,
-    label: "Bike",
-  },
-  {
-    id: "Volleyball",
-    icon: Volleyball,
-    label: "Volleyball",
-  },
-  {
-    id: "Briefcase",
-    icon: Briefcase,
-    label: "Briefcase",
-  },
-  {
-    id: "Code",
-    icon: Code,
-    label: "Code",
-  },
-  {
-    id: "Phone",
-    icon: Phone,
-    label: "Phone",
-  },
-  {
-    id: "BookOpen",
-    icon: BookOpen,
-    label: "Book",
-  },
-  {
-    id: "file-text",
-    icon: FileText,
-    label: "File",
-  },
-  {
-    id: "Notebook",
-    icon: Notebook,
-    label: "Notebook",
-  },
-  {
-    id: "Camera",
-    icon: Camera,
-    label: "Camera",
-  },
-  {
-    id: "TvMinimal",
-    icon: TvMinimal,
-    label: "Tv",
-  },
-  {
-    id: "Gamepad",
-    icon: Gamepad2,
-    label: "Gamepad",
-  },
-  {
-    id: "laptop",
-    icon: Laptop,
-    label: "Laptop",
-  },
-  {
-    id: "PartyPopper",
-    icon: PartyPopper,
-    label: "Party Popper",
-  },
-
-  {
-    id: "timer",
-    icon: Timer,
-    label: "Timer",
-  },
-  {
-    id: "Star",
-    icon: Star,
-    label: "Star",
-  },
-  {
-    id: "Trophy",
-    icon: Trophy,
-    label: "Trophy",
-  },
-  {
-    id: "shopping-cart",
-    icon: ShoppingCart,
-    label: "Shopping Cart",
-  },
-  {
-    id: "Gift",
-    icon: Gift,
-    label: "Gift",
-  },
-];
-const ACTIVITY_ICONS = [
-  {
-    id: "succuess",
-    icon: CircleCheckBig,
-    label: "success",
-  },
-  {
-    id: "deletion",
-    icon: CircleX,
-    label: "deletion",
-  },
-];
-export const CardSpecificIcons = {
-  DueDate: Calendar,
-  Priority: Zap,
-  Reminder: Bell,
-  StatusPending: Clock,
-  StatusCompleted: CheckCircle2,
-  StatusDelayed: XCircle,
-  StatusMissed: XCircle,
-  Tag: Tag,
-  Precondition: Link2,
-  Points: Star,
-  ExperienceGood: Smile,
-  ExperienceOkay: Meh,
-  ExperienceBad: Frown,
-  Options: MoreHorizontal,
-  Edit: SquarePen,
-  Delete: Trash2,
-  PreconditionTasks: ArrowRightLeft,
-  MarkComplete: CheckCircle2,
-  DelayTomorrow: CalendarClock,
-  DelayNextWeek: CalendarClock,
-  Reschedule: CalendarPlus,
-  AddPriority: Zap,
-  RemovePriority: ZapOff,
-  SetReminder: BellPlus,
-  Smile: Smile,
-  ExperienceBest: BicepsFlexed,
-  Time: Clock,
-  AddReminder: BellPlus,
-  RemoveReminder: BellOff,
-};
 export const colorsColorPicker = [
   "var(--color-primary-500)",
   "#0c4a6e",
@@ -365,38 +119,6 @@ export const emojiOptions: EmojiOption[] = [
   { id: "best", emoji: BicepsFlexed, label: "Best", selected: false },
 ];
 /*Task icon calculator - matches by id, displayName, or label*/
-export const getTaskIconByName = (name: string | undefined): LucideIcon => {
-  if (!name) return ClipboardList;
-
-  // Try to find by id first (most common case)
-  const foundById =
-    TASK_ICONS.find((item) => item.id.toLowerCase() === name.toLowerCase()) ||
-    ACTIVITY_ICONS.find((item) => item.id.toLowerCase() === name.toLowerCase());
-
-  if (foundById) return foundById.icon;
-
-  // Fallback to displayName matching
-  const foundByDisplayName =
-    TASK_ICONS.find(
-      (item) => item.icon.displayName?.toLowerCase() === name.toLowerCase()
-    ) ||
-    ACTIVITY_ICONS.find(
-      (item) => item.icon.displayName?.toLowerCase() === name.toLowerCase()
-    );
-
-  if (foundByDisplayName) return foundByDisplayName.icon;
-
-  // Final fallback to label matching
-  const foundByLabel =
-    TASK_ICONS.find(
-      (item) => item.label.toLowerCase() === name.toLowerCase()
-    ) ||
-    ACTIVITY_ICONS.find(
-      (item) => item.label.toLowerCase() === name.toLowerCase()
-    );
-
-  return foundByLabel ? foundByLabel.icon : ClipboardList;
-};
 
 export function getStatusStyles(status: "completed" | "delayed" | "pending") {
   switch (status) {
@@ -490,41 +212,20 @@ export const formatDateTime = (date: Date | string | undefined): string => {
 /* Toaster */
 /* Toaster */
 export function successToast(message: string) {
-  toast(message, {
-    style: {
-      backgroundColor: "#0e1a2e",
-      border: "1px solid #0284c7a1",
-      color: "#cbd5e1",
-      overflow: "hidden",
-    },
-    icon: "✅",
-  });
+  customToast("Success", message);
 }
 
 export function errorToast(message: string) {
-  toast(message, {
-    style: {
-      backgroundColor: "#0e1a2e",
-      border: "1px solid #f43f5ea1",
-      color: "#cbd5e1",
-      overflow: "hidden",
-    },
-    icon: "❌",
-  });
+  customToast("Error", message);
+}
+
+export function warningToast(message: string) {
+  customToast("Warning", message);
 }
 
 export function infoToast(message: string) {
-  toast(message, {
-    style: {
-      backgroundColor: "#0e1a2e",
-      border: "1px solid #0284c7a1",
-      color: "#cbd5e1",
-      overflow: "hidden",
-    },
-    icon: "ℹ️",
-  });
+  customToast("Info", message);
 }
-
 export const handleToast = (
   state: {
     success: boolean;
@@ -543,25 +244,6 @@ export const handleToast = (
       );
     }
   }
-};
-
-export const getNotificationIcon = (type: NotificationType) => {
-  const iconMap = {
-    TASK_AT_RISK: AlertTriangle,
-    TASK_OVERDUE: Clock,
-    TASK_DUE_SOON: Calendar,
-    STREAK_AT_RISK: Zap,
-    STREAK_MILESTONE: Trophy,
-    PRIORITY_TASK_PENDING: Target,
-    ACHIEVEMENT_UNLOCKED: Trophy,
-    WEEKLY_SUMMARY: TrendingUp,
-    TASK_REMINDER: Bell,
-    CONSISTENCY_ALERT: Target,
-    POINTS_MILESTONE: Trophy,
-    SYSTEM_UPDATE: Info,
-  };
-
-  return iconMap[type] || Bell;
 };
 
 export const getNotificationStyles = (priority: NotificationPriority) => {
@@ -657,7 +339,18 @@ export const formatNotificationCount = (count: number): string => {
 /*Stats */
 /*Stats */
 export const calculateTaskPoints = (task: Task) => {
-  return -2 * task.delayCount + 10;
+  const delayCount = task.delayCount || 0; // Ensure delayCount is never undefined/null
+  const points = -2 * delayCount + 10;
+
+  if (isNaN(points)) {
+    console.error(
+      `calculateTaskPoints: Calculated NaN points! delayCount=${delayCount}, task:`,
+      task
+    );
+    return 10; // Default to 10 points if calculation fails
+  }
+
+  return points;
 };
 
 export const calculatePotentialTaskPoints = (task: Task) => {

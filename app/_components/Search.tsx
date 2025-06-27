@@ -6,7 +6,8 @@ import {
   ChevronRight,
   MessageSquare,
 } from "lucide-react";
-import { errorToast, getTaskIconByName, navItemsToSearch } from "../utils";
+import { errorToast, navItemsToSearch } from "../_utils/utils";
+import { getTaskIconByName } from "../_utils/icons";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { searchUserTasks } from "../_lib/tasks";

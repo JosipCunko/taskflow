@@ -7,12 +7,14 @@ import {
   endOfWeek,
   addWeeks,
   endOfDay,
+  isSameDay,
+  isBefore,
 } from "date-fns";
 import {
   formatDate,
   canCompleteRepeatingTaskNow,
   MONDAY_START_OF_WEEK,
-} from "../utils";
+} from "../_utils/utils";
 
 import {
   ActionResult,
@@ -96,6 +98,8 @@ export async function updateTaskStatusAction(
           description: updatedTask.description || "",
           color: updatedTask.color,
           icon: updatedTask.icon,
+          dueDate: updatedTask.dueDate,
+          status: updatedTask.status,
         },
       });
     }
@@ -112,6 +116,8 @@ export async function updateTaskStatusAction(
 
     revalidatePath("/tasks");
     revalidatePath("/webapp/inbox");
+    revalidatePath("/webapp");
+    revalidatePath("/webapp/profile");
     return { success: true, message: `Task marked as ${newStatus}` };
   } catch (err) {
     const error = err as ActionError;
@@ -152,7 +158,8 @@ export async function updateTaskExperienceAction(
 export async function delayTaskAction(
   formData: FormData,
   dueDate: Date,
-  delayCount: number
+  delayCount: number,
+  currentTaskDueDate?: Date
 ): Promise<ActionResult> {
   const taskId = formData.get("taskId") as string;
   const session = await getServerSession(authOptions);
@@ -160,6 +167,17 @@ export async function delayTaskAction(
 
   if (!userId) {
     return { success: false, error: "User not authenticated" };
+  }
+  if (currentTaskDueDate) {
+    if (
+      isSameDay(dueDate, currentTaskDueDate) ||
+      isBefore(dueDate, new Date())
+    ) {
+      return {
+        success: false,
+        error: "Cannot delay task to the same day or before.",
+      };
+    }
   }
 
   const delayOption = formData.get("delayOption") as "tomorrow" | "nextWeek";
@@ -194,6 +212,8 @@ export async function delayTaskAction(
           description: updatedTask.description || "",
           color: updatedTask.color,
           icon: updatedTask.icon,
+          dueDate: updatedTask.dueDate,
+          status: updatedTask.status,
         },
       });
     }
@@ -236,6 +256,8 @@ export async function deleteTaskAction(
         description: deletedTask.description || "",
         color: deletedTask.color,
         icon: deletedTask.icon,
+        dueDate: deletedTask.dueDate,
+        status: deletedTask.status,
       },
       activityColor: "#cf6679",
       activityIcon: "Delete",
@@ -357,6 +379,8 @@ export async function createTaskAction(
           description: createdTask.description || "",
           color: createdTask.color,
           icon: createdTask.icon,
+          dueDate: createdTask.dueDate,
+          status: createdTask.status,
         },
         activityColor: "#00c853",
         activityIcon: "CircleCheckBig",

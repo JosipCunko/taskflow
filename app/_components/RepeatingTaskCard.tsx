@@ -10,17 +10,16 @@ import {
 } from "lucide-react";
 import type { Task, ActionResult } from "@/app/_types/types";
 import {
-  CardSpecificIcons,
   errorToast,
   formatDate,
   getStatusStyles,
-  getTaskIconByName,
   handleToast,
   getStartAndEndTime,
   getDayName,
   getTimeString,
   canCompleteRepeatingTaskNow,
-} from "../utils";
+} from "../_utils/utils";
+import { CardSpecificIcons, getTaskIconByName } from "../_utils/icons";
 import { getExperienceIcon } from "./TaskCard";
 import {
   completeRepeatingTaskWithDaysOfWeek,
@@ -95,17 +94,6 @@ export default function RepeatingTaskCard({
     repetitionSummary += ` from ${formatDate(rule.startDate)}`;
   }
 
-  /*
-  const isFullyCompletedForCurrentCycle =
-    (rule.interval && isToday(task.completedAt as Date)) ||
-    (rule.timesPerWeek &&
-      rule.completions !== 0 &&
-      rule.completions === rule.timesPerWeek) ||
-    (rule.daysOfWeek &&
-      rule.completions !== 0 &&
-      rule.daysOfWeek.length > 0 &&
-      rule.completions === rule.daysOfWeek.length);
-      */
   const isFullyCompletedForCurrentCycle = task.status === "completed";
 
   const handleComplete = async () => {
@@ -138,13 +126,19 @@ export default function RepeatingTaskCard({
   let cardStateClasses = "bg-background-600 hover:bg-background-550";
 
   if (isFullyCompletedForCurrentCycle) {
-    cardStateClasses = "bg-green-900/30 opacity-70 hover:bg-green-900/40";
+    cardStateClasses = "bg-green-900/30 hover:bg-green-900/40";
   }
 
   return (
     <div
       className={`${cardBaseClasses} ${cardStateClasses} relative border border-divider`}
-      style={{ borderLeftColor: task.color, zIndex: isDropdownOpen ? 50 : 0 }}
+      //color-success
+      style={{
+        borderLeftColor: isFullyCompletedForCurrentCycle
+          ? "#00c853"
+          : task.color,
+        zIndex: isDropdownOpen ? 50 : 0,
+      }}
       ref={outsideClickRef}
     >
       <div className="flex-grow ">

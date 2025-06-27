@@ -5,12 +5,18 @@ export async function updateUserRewardPoints(
   userId: string,
   pointsDiff: number
 ): Promise<void> {
-  if (!userId || typeof pointsDiff !== "number" || pointsDiff === 0) {
+  if (
+    !userId ||
+    typeof pointsDiff !== "number" ||
+    pointsDiff === 0 ||
+    isNaN(pointsDiff)
+  ) {
     // No user or no change, do nothing
     return;
   }
   try {
     const userDocRef = doc(db, "users", userId);
+
     // Atomically increment/decrement the user's rewardPoints
     // If the field doesn't exist, increment starts it at pointsDiff
     await updateDoc(userDocRef, {

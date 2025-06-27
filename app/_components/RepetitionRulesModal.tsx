@@ -2,7 +2,7 @@ import { endOfWeek, format, startOfWeek } from "date-fns";
 import Input from "./reusable/Input";
 import Button from "./reusable/Button";
 import type { DayOfWeek } from "../_types/types";
-import { formatDate, infoToast, MONDAY_START_OF_WEEK } from "../utils";
+import { formatDate, infoToast, MONDAY_START_OF_WEEK } from "../_utils/utils";
 import { Plus, Minus } from "lucide-react";
 
 interface RepetitionRulesModalProps {

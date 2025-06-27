@@ -25,7 +25,7 @@ import {
   TaskToCreateData,
   TaskToUpdateData,
 } from "@/app/_types/types";
-import { calculateTaskPoints, isTaskAtRisk } from "@/app/utils";
+import { calculateTaskPoints, isTaskAtRisk } from "@/app/_utils/utils";
 import { updateUserRewardPoints } from "./user";
 
 // Define a type for the data structure being written to Firestore for a new task
@@ -79,6 +79,7 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Task => {
     status: data.status || "pending",
     delayCount: data.delayCount || 0,
     tags: data.tags || [],
+
     createdAt: data.createdAt
       ? data.createdAt instanceof Date
         ? data.createdAt
@@ -106,6 +107,9 @@ const fromFirestore = (snapshot: QueryDocumentSnapshot<DocumentData>): Task => {
               : data.repetitionRule.startDate.toDate(),
         }
       : undefined,
+    points:
+      data.points ??
+      calculateTaskPoints({ delayCount: data.delayCount || 0 } as Task),
   } as Task;
 
   // Add risk calculation for all tasks
@@ -194,7 +198,7 @@ export const createTask = async (taskData: TaskToCreateData): Promise<Task> => {
       dueDate: Timestamp.fromDate(taskData.dueDate),
       startTime: taskData.startTime || { hour: 0, minute: 0 },
       isRepeating: taskData.isRepeating,
-      points: 0,
+      points: calculateTaskPoints({ delayCount: 0 } as Task),
     };
 
     if (

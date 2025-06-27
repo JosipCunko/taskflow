@@ -14,7 +14,7 @@ import {
   deleteNotificationAction,
   generateNotificationsAction,
 } from "@/app/_lib/notificationActions";
-import { handleToast } from "@/app/utils";
+import { handleToast } from "@/app/_utils/utils";
 import {
   CheckCircle2,
   RefreshCw,

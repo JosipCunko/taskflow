@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/_lib/auth";
 import { getTasksByUserId } from "@/app/_lib/tasks";
 import TaskCardSmall from "@/app/_components/TaskCardSmall";
-import { CardSpecificIcons } from "@/app/utils";
+import { CardSpecificIcons } from "@/app/_utils/icons";
 import { Clock } from "lucide-react";
 import Link from "next/link";
 import RepeatingTaskCard from "@/app/_components/RepeatingTaskCard";

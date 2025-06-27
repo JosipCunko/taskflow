@@ -33,7 +33,7 @@ import {
   differenceInMinutes,
   addMinutes,
 } from "date-fns";
-import { canCompleteRepeatingTaskNow } from "../utils";
+import { canCompleteRepeatingTaskNow } from "../_utils/utils";
 import { getUserPreferences } from "./user";
 
 const NOTIFICATIONS_COLLECTION = "notifications";

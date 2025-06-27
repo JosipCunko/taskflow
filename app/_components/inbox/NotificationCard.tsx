@@ -2,11 +2,11 @@
 
 import { Notification } from "@/app/_types/types";
 import {
-  getNotificationIcon,
   getNotificationStyles,
   formatNotificationTime,
   getPriorityBadgeStyles,
-} from "@/app/utils";
+} from "@/app/_utils/utils";
+import { getNotificationIcon } from "@/app/_utils/icons";
 import { X, ExternalLink, Archive, Clock } from "lucide-react";
 import { useState } from "react";
 

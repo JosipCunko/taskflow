@@ -10,7 +10,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-import { errorToast } from "@/app/utils";
+import { errorToast } from "@/app/_utils/utils";
 import { useSession } from "next-auth/react";
 import { Task } from "@/app/_types/types";
 import { getTasksByUserId } from "@/app/_lib/tasks";

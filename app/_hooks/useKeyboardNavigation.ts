@@ -1,6 +1,6 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { navItemsToSearch } from "../utils";
+import { navItemsToSearch } from "../_utils/utils";
 
 export function useKeyboardNavigation() {
   const router = useRouter();

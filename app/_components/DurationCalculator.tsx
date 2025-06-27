@@ -1,5 +1,5 @@
 import { Task } from "../_types/types";
-import { CardSpecificIcons } from "../utils";
+import { CardSpecificIcons } from "../_utils/icons";
 
 export default function DurationCalculator({ task }: { task: Task }) {
   // Use explicit duration if provided

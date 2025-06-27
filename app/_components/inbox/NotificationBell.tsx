@@ -8,7 +8,7 @@ import { getNotificationStats } from "@/app/_lib/notifications";
 import {
   shouldShowNotificationBadge,
   formatNotificationCount,
-} from "@/app/utils";
+} from "@/app/_utils/utils";
 import Link from "next/link";
 
 export default function NotificationBell() {

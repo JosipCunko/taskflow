@@ -2,13 +2,13 @@
 
 import { motion } from "framer-motion";
 import {
-  getTaskIconByName,
-  CardSpecificIcons,
   getStatusStyles,
   getStartAndEndTime,
   getTimeString,
   formatDate,
-} from "../utils";
+} from "../_utils/utils";
+import { getTaskIconByName, CardSpecificIcons } from "../_utils/icons";
+
 import { Task } from "../_types/types";
 import { format, isPast, isToday, isValid } from "date-fns";
 import { useState, useMemo } from "react";
@@ -122,7 +122,6 @@ export default function TaskCard({
           setIsDropdownOpen={setIsDropdownOpen}
         />
       </div>
-
       <div className="p-4 space-y-3">
         {task.description && (
           <div className="text-sm text-text-gray">
@@ -149,7 +148,6 @@ export default function TaskCard({
           </div>
         )}
 
-        {/* Due Date & Time */}
         <div
           className={`flex items-center space-x-1.5 text-xs px-2.5 py-1.5 rounded-md w-fit ${
             isPastDue
@@ -218,12 +216,16 @@ export default function TaskCard({
 
       {/* Footer: Dates & Experience */}
       <div className="px-4 py-2.5 bg-background-main/50 border-t border-divider text-xs text-text-low space-y-1 rounded-b-lg">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center">
-            <span>
-              Created:{" "}
+        <div className="flex flex-col gap-2 justify-center">
+          <div className="flex items-center gap-1">
+            <span>Created: </span>
+            <span className="text-text-gray ">
               {formatDate(task.createdAt, { day: "numeric", month: "short" })}
             </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span>Reward points if completed:</span>
+            <span className="text-text-gray">{task.points}</span>
           </div>
 
           <div className="flex items-center space-x-2">
