@@ -10,7 +10,9 @@ import { Inbox } from "lucide-react";
 
 export default async function InboxPage() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) redirect("/login");
+  if (!session || !session.user || !session.user.id) {
+    redirect("/login");
+  }
 
   const [notifications, stats] = await Promise.all([
     getNotificationsByUserId(session.user.id, false, 100),

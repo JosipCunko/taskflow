@@ -617,48 +617,40 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
         </ModalContext.Provider>
 
         <div className="mt-3 p-4 bg-background-600 rounded-lg border border-background-500">
-          <h4 className="text-sm font-medium text-text-high mb-3">
-            How would you like to set the task time?
-          </h4>
+          <p className="text-sm text-text-gray text-pretty">
+            Specify how long the task takes
+          </p>
 
-          <div className="flex items-start space-x-3">
-            <div className="flex-1">
-              <p className="text-xs text-text-gray text-pretty mt-1">
-                Specify how long the task takes
-              </p>
-
-              <div className="mt-2">
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    name="durationHours"
-                    value={duration[0].toString().padStart(2, "0")}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                      const newHour = parseInt(e.target.value, 10);
-                      handleDurationChange([
-                        isNaN(newHour) ? 0 : Math.max(0, Math.min(23, newHour)),
-                        duration[1],
-                      ]);
-                    }}
-                    className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none w-16"
-                  />
-                  <span className="text-text-gray">h</span>
-                  <Input
-                    type="number"
-                    name="durationMinutes"
-                    value={duration[1].toString().padStart(2, "0")}
-                    onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                      const newMin = parseInt(e.target.value, 10);
-                      handleDurationChange([
-                        duration[0],
-                        isNaN(newMin) ? 0 : Math.max(0, Math.min(59, newMin)),
-                      ]);
-                    }}
-                    className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none w-16"
-                  />
-                  <span className="text-text-gray">m</span>
-                </div>
-              </div>
+          <div className="mt-2">
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                name="durationHours"
+                value={duration[0].toString().padStart(2, "0")}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                  const newHour = parseInt(e.target.value, 10);
+                  handleDurationChange([
+                    isNaN(newHour) ? 0 : Math.max(0, Math.min(23, newHour)),
+                    duration[1],
+                  ]);
+                }}
+                className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none w-16"
+              />
+              <span className="text-text-gray">h</span>
+              <Input
+                type="number"
+                name="durationMinutes"
+                value={duration[1].toString().padStart(2, "0")}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                  const newMin = parseInt(e.target.value, 10);
+                  handleDurationChange([
+                    duration[0],
+                    isNaN(newMin) ? 0 : Math.max(0, Math.min(59, newMin)),
+                  ]);
+                }}
+                className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none w-16"
+              />
+              <span className="text-text-gray">m</span>
             </div>
           </div>
         </div>

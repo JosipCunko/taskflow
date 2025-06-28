@@ -1,6 +1,6 @@
 "use client";
 
-import { User, Trophy, Zap, Search as SearchIcon } from "lucide-react";
+import { User, Search as SearchIcon } from "lucide-react";
 import { Session } from "next-auth";
 import Image from "next/image";
 import Link from "next/link";
@@ -71,32 +71,6 @@ export default function TopSidebar({
             })}
           </div>
         </div>
-
-        {/* Quick Stats */}
-        {session?.user && (
-          <div className="hidden lg:flex items-center gap-4">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-background-600 rounded-lg">
-              <Trophy className="w-4 h-4 text-accent" />
-              <span className="text-sm font-medium text-text-high">
-                {session.user.rewardPoints}
-              </span>
-              <span className="text-xs text-text-low">pts</span>
-            </div>
-
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-background-600 rounded-lg">
-              <Zap className="w-4 h-4 text-warning" />
-              <span className="text-sm font-medium text-text-high">
-                {(() => {
-                  // Simple streak calculation based on user activity
-                  const baseStreak =
-                    Math.floor(session.user.rewardPoints / 100) || 1;
-                  return Math.min(baseStreak, 30); // Cap at 30 days
-                })()}
-              </span>
-              <span className="text-xs text-text-low">days streak</span>
-            </div>
-          </div>
-        )}
       </div>
 
       <div className="flex items-center gap-3 tooltip-container">

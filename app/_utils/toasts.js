@@ -3,6 +3,15 @@ import Button from "../_components/reusable/Button";
 import { CheckCircle2, CircleX, Info, TriangleAlert } from "lucide-react";
 
 export function customToast(type, message) {
+  const color =
+    type === "Error"
+      ? "text-error"
+      : type === "Success"
+      ? "text-success"
+      : type === "Warning"
+      ? "text-warning"
+      : "text-info";
+
   toast.custom(
     (t) => (
       <div
@@ -22,13 +31,17 @@ export function customToast(type, message) {
         <div className="flex-1 w-0 p-4">
           <div className="flex h-full">
             <div className=" flex-shrink-0 grid place-items-center transition-transform duration-200 hover:scale-110">
-              {type === "Success" && <CheckCircle2 className="w-4 h-4" />}
-              {type === "Error" && <CircleX className="w-4 h-4" />}
-              {type === "Warning" && <TriangleAlert className="w-4 h-4" />}
-              {type === "Info" && <Info className="w-4 h-4" />}
+              {type === "Success" && (
+                <CheckCircle2 className={`w-4 h-4 ${color}`} />
+              )}
+              {type === "Error" && <CircleX className={`w-4 h-4 ${color}`} />}
+              {type === "Warning" && (
+                <TriangleAlert className={`w-4 h-4 ${color}`} />
+              )}
+              {type === "Info" && <Info className={`w-4 h-4 ${color}`} />}
             </div>
             <div className="ml-3 flex-1">
-              <p className="text-sm font-medium text-text-low">{type}</p>
+              <p className={`text-sm font-medium ${color}`}>{type}</p>
               <p className="mt-1 text-sm text-text-gray">{message}</p>
             </div>
           </div>

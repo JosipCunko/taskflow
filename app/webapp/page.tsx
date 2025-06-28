@@ -35,7 +35,9 @@ import NotificationSummary from "../_components/inbox/NotificationSummary";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
-  if (!session) redirect("/login");
+  if (!session || !session.user || !session.user.id) {
+    redirect("/login");
+  }
   const userId = session.user.id;
 
   const [allTasks, notes] = await Promise.all([

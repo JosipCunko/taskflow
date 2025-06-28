@@ -108,7 +108,7 @@ export default function LoginPage() {
       <div className="w-full md:w-1/2 flex flex-col p-8">
         <div className="flex-grow flex flex-col justify-center max-w-md mx-auto w-full">
           <motion.h1
-            className="text-2xl font-bold text-text-high mb-1"
+            className="text-2xl font-bold text-primary-500 mb-1"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
@@ -294,6 +294,8 @@ export default function LoginPage() {
                 setIsSignUp(!isSignUp);
                 setError(null);
                 setSuccessMessage(null);
+                setPassword("");
+                setEmail("");
               }}
               className="text-sm text-primary-500 hover:underline"
             >

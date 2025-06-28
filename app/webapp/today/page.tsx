@@ -7,15 +7,12 @@ import { Clock } from "lucide-react";
 import Link from "next/link";
 import RepeatingTaskCard from "@/app/_components/RepeatingTaskCard";
 import { isToday } from "date-fns";
+import { redirect } from "next/navigation";
 
 export default async function TodayPage() {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return (
-      <div className="p-4 text-text-high">
-        Please log in to see your tasks for today.
-      </div>
-    );
+  if (!session || !session.user || !session.user.id) {
+    redirect("/login");
   }
 
   const userId = session.user.id;

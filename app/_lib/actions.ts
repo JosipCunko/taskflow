@@ -501,7 +501,7 @@ export async function completeRepeatingTaskWithTimesPerWeek(
   // Next due date for "times per week" is the end of the week or next week
   let nextDueDate: Date;
   let newStartDate: Date;
-  if (rule.completions === rule.timesPerWeek) {
+  if (rule.completions + 1 === rule.timesPerWeek) {
     const nextWeekStart = startOfWeek(
       addWeeks(completionDate, 1),
       MONDAY_START_OF_WEEK
@@ -523,7 +523,7 @@ export async function completeRepeatingTaskWithTimesPerWeek(
     dueDate: nextDueDate,
   };
 
-  if (rule.completions === rule.timesPerWeek) {
+  if (rule.completions + 1 === rule.timesPerWeek) {
     updates.completedAt = completionDate;
     updates.status = "completed";
   }

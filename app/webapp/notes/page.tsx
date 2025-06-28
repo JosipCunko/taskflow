@@ -8,8 +8,8 @@ import { redirect } from "next/navigation";
 export default async function NotesPage() {
   const session = await getServerSession(authOptions);
 
-  if (!session || !session.user?.id) {
-    redirect("/login?callbackUrl=/notes");
+  if (!session || !session.user || !session.user.id) {
+    redirect("/login");
   }
 
   const userId = session.user.id;

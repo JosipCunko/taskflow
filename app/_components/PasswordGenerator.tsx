@@ -1,5 +1,5 @@
 import Button from "./reusable/Button";
-import { RefreshCw } from "lucide-react";
+import { KeyRound } from "lucide-react";
 
 export default function PasswordGenerator({
   setCurrentPassword,
@@ -27,7 +27,7 @@ export default function PasswordGenerator({
       className={customClassName}
     >
       <Button onClick={generatePassword}>
-        <RefreshCw size={18} />
+        <KeyRound size={18} />
       </Button>
     </div>
   );

@@ -4,20 +4,16 @@ import { getTasksByUserId } from "@/app/_lib/tasks";
 import TaskCard from "@/app/_components/TaskCard";
 import RepeatingTaskCard from "@/app/_components/RepeatingTaskCard";
 import { authOptions } from "@/app/_lib/auth";
+import { redirect } from "next/navigation";
 
 export default async function TasksPage() {
   const session = await getServerSession(authOptions);
   if (!session || !session.user || !session.user.id) {
-    console.error("User not authenticated or user ID missing from session.");
-    return {
-      success: false,
-      error: "User not authenticated.",
-    };
+    redirect("/login");
   }
   const userId = session.user.id;
   const userTasks = await getTasksByUserId(userId);
 
-  // Separate regular and repeating tasks
   const regularTasks = userTasks.filter(
     (task) => !task.isRepeating && task.status !== "completed"
   );

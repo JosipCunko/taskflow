@@ -17,6 +17,7 @@ import { getTasksByUserId } from "@/app/_lib/tasks";
 import Button from "@/app/_components/reusable/Button";
 import Loader from "@/app/_components/Loader";
 import TaskCardSmall from "@/app/_components/TaskCardSmall";
+import { redirect } from "next/navigation";
 
 export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
@@ -25,11 +26,12 @@ export default function CalendarPage() {
   const [allTasks, setAllTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const session = useSession();
+  if (!session.data) redirect("/login");
 
   const fetchTasks = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await getTasksByUserId(session.data?.user.id);
+      const res = await getTasksByUserId(session.data.user.id);
       const nonRepeatingTasks = res.filter((task) => !task.isRepeating);
       setAllTasks(nonRepeatingTasks);
     } catch (error: unknown) {
@@ -58,9 +60,7 @@ export default function CalendarPage() {
   /** Memoized list of tasks for the selected day */
   const tasksForSelectedDay = useMemo(() => {
     if (!selectedDate) return [];
-    return allTasks.filter((task) =>
-      isSameDay(new Date(task.dueDate), selectedDate)
-    );
+    return allTasks.filter((task) => isSameDay(task.dueDate, selectedDate));
   }, [selectedDate, allTasks]);
 
   /** Memoized set of dates that have tasks, for dot indicator */
@@ -107,7 +107,7 @@ export default function CalendarPage() {
               variant="secondary"
               onClick={fetchTasks}
               disabled={isLoading}
-              className="absolute top-6 right-[22.5%]"
+              className="mt-2.5"
             >
               <RefreshCw
                 className={`w-5 h-5 ${isLoading ? "animate-spin" : ""}`}
@@ -115,7 +115,7 @@ export default function CalendarPage() {
             </Button>
           </div>
 
-          <div className="lg:col-span-3 bg-background-600 p-4 sm:p-6 rounded-xl shadow-xl relative max-h-[370px] overflow-scroll">
+          <div className="lg:col-span-3 bg-background-600 p-4 sm:p-6 rounded-xl shadow-xl relative max-h-[370px] overflow-y-auto overflow-x-hidden">
             <div className="flex items-center mb-4 sm:mb-6">
               <ListChecks className="w-6 h-6 mr-2 text-primary-400" />
               <h2 className="text-xl sm:text-2xl font-semibold text-text-high">
@@ -135,8 +135,8 @@ export default function CalendarPage() {
                 </ul>
               ) : (
                 <div className="text-center py-10">
-                  <CalendarDays className="w-12 h-12 sm:w-16 text-text-medium mx-auto mb-4" />
-                  <p className="text-sm text-text-medium">
+                  <CalendarDays className="w-12 h-12 sm:w-16 text-text-gray mx-auto mb-4" />
+                  <p className="text-sm text-text-gray">
                     No tasks for this day (excluding repeating ones).
                   </p>
                 </div>
@@ -145,7 +145,8 @@ export default function CalendarPage() {
               <div className="text-center py-10">
                 <AlertTriangle className="w-12 h-12 sm:w-16  text-warning mx-auto mb-4" />
                 <p className="text-sm text-text-gray">
-                  Please select a day from the calendar to view tasks.
+                  Please select a day from the calendar to view tasks on that
+                  day.
                 </p>
               </div>
             )}

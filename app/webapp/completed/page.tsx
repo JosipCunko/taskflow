@@ -3,12 +3,12 @@ import { SquareCheckBig } from "lucide-react";
 import { getTasksByUserId } from "@/app/_lib/tasks";
 import TaskCard from "@/app/_components/TaskCard";
 import { authOptions } from "@/app/_lib/auth";
+import { redirect } from "next/navigation";
 
 export default async function CompletedTasksPage() {
   const session = await getServerSession(authOptions);
   if (!session || !session.user || !session.user.id) {
-    console.error("User not authenticated or user ID missing from session.");
-    return null;
+    redirect("/login");
   }
   const userId = session.user.id;
   const allUserTasks = await getTasksByUserId(userId);

@@ -1,9 +1,7 @@
 # Fixes
 
-handleDurationChange is being called only when both number are specified in the any duration field (hour || min)
+dont change duration when the endTime is specified, and then we change startTime
 
-Task: promjeni posteljinu i jastucnicu
-On Sunday from 16. lipnja
-Next: 22. lipnja
+children (letters) are moving when the Button is hovered
 
-its startDate should be the dueDate
+update the stats, a lot of has changes since the last stats update
