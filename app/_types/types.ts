@@ -118,11 +118,10 @@ export interface ActivityLog {
     | "TASK_DELAYED"
     | "TASK_MISSED"
     | "TASK_DELETED";
-  taskId?: string;
-  taskSnapshot?: Partial<Task>;
-  details?: string;
-  activityIcon?: keyof typeof import("lucide-react");
-  activityColor?: string;
+  taskId: string;
+  taskSnapshot: Partial<Task>;
+  activityIcon: keyof typeof import("lucide-react");
+  activityColor: string;
 }
 
 export interface userProfileType {
@@ -135,6 +134,7 @@ export interface userProfileType {
   notifyAchievements: boolean;
   notesCount: number;
   rewardPoints: number;
+  achievements: Achievement[];
 }
 
 export interface ActionResult {
@@ -147,6 +147,19 @@ export interface ActionError extends Error {
   message: string;
 }
 
+export type AchievementType =
+  | "streak_milestone"
+  | "points_milestone"
+  | "consistency_master"
+  | "task_completionist";
+
+export interface Achievement {
+  type: AchievementType;
+  id: string;
+  userId: string;
+  unlockedAt: Date;
+}
+
 export interface Note {
   id: string;
   userId: string;
@@ -156,18 +169,13 @@ export interface Note {
 }
 
 export type NotificationType =
-  | "TASK_AT_RISK" // Repeating task missed multiple times
-  | "TASK_OVERDUE" // Task is overdue
-  | "TASK_DUE_SOON" // Task due in next 24 hours
-  | "STREAK_AT_RISK" // Current streak about to be broken
-  | "STREAK_MILESTONE" // Achieved new streak milestone
-  | "PRIORITY_TASK_PENDING" // High priority task still pending
-  | "ACHIEVEMENT_UNLOCKED" // New achievement earned
-  | "WEEKLY_SUMMARY" // Weekly performance summary
-  | "TASK_REMINDER" // General task reminder
-  | "CONSISTENCY_ALERT" // Consistency dropping alert
-  | "POINTS_MILESTONE" // Reward points milestone reached
-  | "SYSTEM_UPDATE"; // System announcements
+  | "TASK_OVERDUE"
+  | "TASK_DUE_SOON"
+  | "TASK_AT_RISK"
+  | "WEEKLY_SUMMARY"
+  | "ACHIEVEMENT_UNLOCKED"
+  | "POINTS_MILESTONE"
+  | "SYSTEM_UPDATE";
 
 export type NotificationPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
@@ -178,15 +186,15 @@ export interface Notification {
   priority: NotificationPriority;
   title: string;
   message: string;
-  actionText?: string; // e.g., "View Task", "Complete Now"
-  actionUrl?: string; // URL to navigate to when action is clicked
+  actionText?: string;
+  actionUrl?: string;
   taskId?: string; // Related task ID if applicable
   isRead: boolean;
   isArchived: boolean;
   createdAt: Date;
   readAt?: Date;
   data?: Record<string, unknown>; // Additional data for the notification
-  expiresAt?: Date; // Optional expiration date
+  expiresAt?: Date;
 }
 
 export interface NotificationSettings {

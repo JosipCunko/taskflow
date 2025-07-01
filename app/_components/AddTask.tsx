@@ -82,6 +82,7 @@ const ShowMoreDetailsContent = ({
   startTime,
   handleStartTimeChange,
   isRepeatingTask,
+  setDuration,
 }: {
   selectedColor: string;
   setSelectedColor: (s: string) => void;
@@ -101,9 +102,25 @@ const ShowMoreDetailsContent = ({
   startTime: number[];
   handleStartTimeChange: (time: number[]) => void;
   isRepeatingTask: boolean;
+  setDuration: (time: number[]) => void;
 }) => {
   const handleDone = () => {
     onCloseModal?.();
+
+    const isEndTimeDefault = timeEnd[0] === 23 && timeEnd[1] === 59;
+    if (!isEndTimeDefault && (startTime[0] || startTime[1])) {
+      const startTotalMinutes = startTime[0] * 60 + startTime[1];
+      const endTotalMinutes = timeEnd[0] * 60 + timeEnd[1];
+      let durationMinutes = endTotalMinutes - startTotalMinutes;
+
+      if (durationMinutes < 0) {
+        durationMinutes += 24 * 60;
+      }
+
+      const durationHours = Math.floor(durationMinutes / 60);
+      const remainingMinutes = durationMinutes % 60;
+      setDuration([durationHours, remainingMinutes]);
+    }
   };
 
   return (
@@ -286,6 +303,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
 
   const handleDurationChange = (newDuration: number[]) => {
     setDuration(newDuration);
+    const endTimeDefault = timeEnd[0] === 23 && timeEnd[1] === 59;
 
     if (isStartTimeSpecified) {
       const totalMinutes =
@@ -293,11 +311,15 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
       const endHour = Math.floor(totalMinutes / 60) % 24;
       const endMinute = totalMinutes % 60;
 
-      if (endHour === startTime[0] && endMinute === startTime[1]) {
+      if (endHour === startTime[0] && endMinute === startTime[1])
         setTimeEnd([23, 59]);
-      } else {
-        setTimeEnd([endHour, endMinute]);
-      }
+      else setTimeEnd([endHour, endMinute]);
+    } else if (!isStartTimeSpecified && !endTimeDefault) {
+      const totalMinutes =
+        timeEnd[0] * 60 + timeEnd[1] - newDuration[0] * 60 - newDuration[1];
+      const startHour = Math.floor(totalMinutes / 60) % 24;
+      const startMinute = totalMinutes % 60;
+      setStartTime([startHour, startMinute]);
     }
   };
 
@@ -305,11 +327,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
     setStartTime(newStartTime);
 
     const isStartTimeSpecified = newStartTime[0] !== 0 || newStartTime[1] !== 0;
-    const isEndTimeDefault = timeEnd[0] === 23 && timeEnd[1] === 59;
-
-    if (!isStartTimeSpecified) {
-      setDuration([0, 0]);
-    }
+    setDuration([0, 0]);
 
     if (isStartTimeSpecified && isDurationSpecified) {
       const totalMinutes =
@@ -317,47 +335,12 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
       const endHour = Math.floor(totalMinutes / 60) % 24;
       const endMinute = totalMinutes % 60;
       setTimeEnd([endHour, endMinute]);
-    } else if (
-      isStartTimeSpecified &&
-      !isEndTimeDefault &&
-      !isDurationSpecified
-    ) {
-      const startTotalMinutes = newStartTime[0] * 60 + newStartTime[1];
-      const endTotalMinutes = timeEnd[0] * 60 + timeEnd[1];
-      let durationMinutes = endTotalMinutes - startTotalMinutes;
-
-      if (durationMinutes < 0) {
-        durationMinutes += 24 * 60;
-      }
-
-      const durationHours = Math.floor(durationMinutes / 60);
-      const remainingMinutes = durationMinutes % 60;
-      setDuration([durationHours, remainingMinutes]);
     }
   };
 
   const handleEndTimeChange = (newTimeEnd: number[]) => {
     setTimeEnd(newTimeEnd);
-
-    const isEndTimeDefault = newTimeEnd[0] === 23 && newTimeEnd[1] === 59;
-
-    if (isEndTimeDefault) {
-      setDuration([0, 0]);
-    }
-
-    if (!isEndTimeDefault && isStartTimeSpecified) {
-      const startTotalMinutes = startTime[0] * 60 + startTime[1];
-      const endTotalMinutes = newTimeEnd[0] * 60 + newTimeEnd[1];
-      let durationMinutes = endTotalMinutes - startTotalMinutes;
-
-      if (durationMinutes < 0) {
-        durationMinutes += 24 * 60;
-      }
-
-      const durationHours = Math.floor(durationMinutes / 60);
-      const remainingMinutes = durationMinutes % 60;
-      setDuration([durationHours, remainingMinutes]);
-    }
+    setDuration([0, 0]);
   };
 
   const handleSubmit = async (formData: FormData) => {
@@ -555,6 +538,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
               startTime={startTime}
               handleStartTimeChange={handleStartTimeChange}
               isRepeatingTask={isRepeatingTask}
+              setDuration={setDuration}
             />
           </Modal.Window>
         </ModalContext.Provider>

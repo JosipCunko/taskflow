@@ -6,10 +6,11 @@ import {
   getStartAndEndTime,
   getTimeString,
   formatDate,
+  emojiOptions,
 } from "../_utils/utils";
 import { getTaskIconByName, CardSpecificIcons } from "../_utils/icons";
 
-import { Task } from "../_types/types";
+import { EmojiOption, Task } from "../_types/types";
 import { format, isPast, isToday, isValid } from "date-fns";
 import { useState, useMemo } from "react";
 import { useOutsideClick } from "../_hooks/useOutsideClick";
@@ -20,34 +21,21 @@ import Dropdown from "./Dropdown";
 export const getExperienceIcon = (task: Task) => {
   if (!task.completedAt || !task.experience) return null;
   const commonClasses = "w-5 h-5";
-  switch (task.experience) {
-    case "good":
-      return (
-        <CardSpecificIcons.ExperienceGood
-          className={`${commonClasses} text-green-400`}
-        />
-      );
-    case "okay":
-      return (
-        <CardSpecificIcons.ExperienceOkay
-          className={`${commonClasses} text-yellow-400`}
-        />
-      );
-    case "bad":
-      return (
-        <CardSpecificIcons.ExperienceBad
-          className={`${commonClasses} text-red-400`}
-        />
-      );
-    case "best":
-      return (
-        <CardSpecificIcons.ExperienceBest
-          className={`${commonClasses} text-yellow-400`} // Assuming best is also yellow, or choose another color
-        />
-      );
-    default:
-      return null;
-  }
+  // Already good colors from globals.css
+  const color =
+    task.experience === "bad"
+      ? "text-error"
+      : task.experience === "good"
+      ? "text-success"
+      : "text-warning";
+
+  const selectedExperience = Object.entries(emojiOptions).find(
+    (el) => el[1].id === task.experience
+  );
+  if (!selectedExperience) return null;
+  const Icon = selectedExperience.at(1) as EmojiOption;
+
+  return <Icon.emoji className={`${commonClasses} ${color}`} />;
 };
 
 export default function TaskCard({

@@ -1,9 +1,10 @@
+import "server-only";
 import { adminDb } from "./admin";
 import type { ActivityLog } from "@/app/_types/types";
 
 export async function getRecentUserActivity(
   userId: string,
-  limitCount: number = 7
+  limitCount: number = 20
 ): Promise<ActivityLog[]> {
   try {
     const activitySnap = await adminDb
@@ -63,12 +64,3 @@ export async function logUserActivity(
     console.error("Error logging user activity:", error);
   }
 }
-
-// Example of logging task completion
-// logUserActivity(userId, {
-//   type: "TASK_COMPLETED",
-//   taskId: task.id,
-//   taskSnapshot: { title: task.title, description: task.description, color: task.color, icon: task.icon },
-//   activityIcon: 'CheckCircle2',
-//   activityColor: 'var(--color-success)',
-// });

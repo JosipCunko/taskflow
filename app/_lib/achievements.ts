@@ -2,8 +2,8 @@
 
 import { getTasksByUserId } from "./tasks";
 import { calculateConsistencyStats } from "../_utils/utils";
-import { getUserById } from "./user";
 import { generateAchievementNotification } from "./notifications";
+import { getUserById } from "./user";
 
 interface UserAchievementData {
   totalPoints: number;

@@ -1,3 +1,4 @@
+import "server-only";
 import { adminDb } from "@/app/_lib/admin";
 import { Note } from "@/app/_types/types";
 import { Timestamp } from "firebase-admin/firestore";

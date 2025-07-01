@@ -63,7 +63,7 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-64 sm:h-full h-full bg-background-700 flex flex-col overflow-y-auto">
+    <aside className="w-64 h-full bg-background-700 flex flex-col ">
       <div className="">
         <div className="grid place-items-center">
           <Image src="/logo.png" alt="Taskflow" width={150} height={150} />

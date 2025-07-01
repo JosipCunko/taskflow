@@ -1,13 +1,14 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/_lib/auth";
-import { getTasksByUserId } from "@/app/_lib/tasks";
+import { getTasksByUserId } from "@/app/_lib/tasks-admin";
 import TaskCardSmall from "@/app/_components/TaskCardSmall";
 import { CardSpecificIcons } from "@/app/_utils/icons";
-import { Clock } from "lucide-react";
+import { Clock, Clock7, Notebook } from "lucide-react";
 import Link from "next/link";
 import RepeatingTaskCard from "@/app/_components/RepeatingTaskCard";
 import { isToday } from "date-fns";
 import { redirect } from "next/navigation";
+import { getStartAndEndTime } from "@/app/_utils/utils";
 
 export default async function TodayPage() {
   const session = await getServerSession(authOptions);
@@ -17,25 +18,23 @@ export default async function TodayPage() {
 
   const userId = session.user.id;
   const allUserTasks = await getTasksByUserId(userId);
-
-  const regularTasks = allUserTasks.filter((task) => !task.isRepeating);
-  const repeatingTasks = allUserTasks.filter((task) => task.isRepeating);
-
-  const todaysTasks = regularTasks.filter((task) => isToday(task.dueDate));
-
-  // Include repeating tasks that are due today
-  const todaysRepeatingTasks = repeatingTasks.filter((task) =>
-    isToday(task.dueDate)
+  const todaysTasks = allUserTasks.filter(
+    (task) => isToday(task.dueDate) && !task.isRepeating
+  );
+  const todaysRepeatingTasks = allUserTasks.filter(
+    (task) => isToday(task.dueDate) && task.isRepeating
   );
 
   const allTodaysTasks = [...todaysTasks, ...todaysRepeatingTasks];
 
-  const scheduledTasks = allTodaysTasks.filter(
-    (task) => task.startTime && task.status !== "completed"
-  );
-  const otherTasks = allTodaysTasks.filter(
-    (task) => !task.startTime && task.status !== "completed"
-  );
+  const scheduledTasks = allTodaysTasks.filter((task) => {
+    const { startTime, endTime } = getStartAndEndTime(task);
+    return (
+      (startTime !== "00:00" || endTime !== "23:59") &&
+      task.status !== "completed"
+    );
+  });
+  const otherTasks = allTodaysTasks.filter((t) => t.status === "completed");
 
   const now = new Date();
   const nextUpcomingTask = scheduledTasks
@@ -59,13 +58,13 @@ export default async function TodayPage() {
     allTodaysTasks.find((t) => t.status !== "completed");
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 p-4 lg:p-6 bg-background-800 text-text-high min-h-screen">
-      <div className="lg:w-2/5 xl:w-1/3 space-y-6">
+    <div className="grid grid-cols-3 gap-6 p-1 sm:p-6 bg-background-800 text-text-high container mx-auto max-h-full overflow-auto">
+      <div className="bg-background-700 p-6 rounded-lg shadow max-h-fit">
+        <h2 className="text-xl font-semibold mb-4 text-primary-400">
+          Today&apos;s First Focus
+        </h2>
         {focusTask ? (
-          <div className="bg-background-700 p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4 text-primary-400">
-              Today&apos;s First Focus
-            </h2>
+          <>
             <div
               className="p-4 rounded-lg border-l-4 flex items-center gap-2"
               style={{ borderLeftColor: focusTask.color }}
@@ -84,79 +83,88 @@ export default async function TodayPage() {
                 View All Tasks
               </button>
             </Link>
-          </div>
+          </>
         ) : (
-          <div className="bg-background-700 p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-2 text-primary-500">
-              Today&apos;s First Focus
-            </h2>
-            <p className="text-text-low ">No task is in focus for today</p>
+          <>
+            <p className="text-text-gray text-pretty text-center ">
+              No task is in focus for today
+            </p>
             <Link href="/webapp/tasks">
               <button className="w-full mt-4 bg-primary-500/20 text-primary-400 hover:bg-primary-500/30 text-sm font-semibold py-2 rounded-md transition-colors">
                 View All Tasks
               </button>
             </Link>
-          </div>
-        )}
-
-        {/* Other Tasks - Only show if there are tasks */}
-        {otherTasks.filter((t) => t.id !== focusTask?.id).length > 0 && (
-          <div className="bg-background-700 p-4 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4 text-primary-500">
-              Other Tasks
-            </h2>
-            <div className="space-y-3 overflow-y-auto max-h-[calc(100vh-420px)]">
-              {otherTasks
-                .filter((t) => t.id !== focusTask?.id)
-                .map((task) => (
-                  <TaskCardSmall key={task.id} task={task} />
-                ))}
-            </div>
-          </div>
+          </>
         )}
       </div>
 
-      <div className="lg:w-3/5 xl:w-2/3 space-y-6">
-        {/* Schedule View */}
-        <div className="bg-background-700 p-6 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-6 text-primary-500">
-            Today&apos;s Schedule
-          </h2>
-          {scheduledTasks.length > 0 ? (
-            <div className="space-y-3 max-h-[400px] overflow-y-auto">
-              {scheduledTasks
-                .sort((a, b) => {
-                  const timeA = a.startTime!.hour * 60 + a.startTime!.minute;
-                  const timeB = b.startTime!.hour * 60 + b.startTime!.minute;
-                  return timeA - timeB;
-                })
-                .map((task) => (
-                  <TaskCardSmall key={task.id} task={task} />
-                ))}
+      <div className="bg-background-700 p-4 rounded-lg shadow">
+        <h2 className="text-xl font-semibold mb-4 text-primary-500">
+          Other Tasks
+        </h2>
+        <div>
+          {otherTasks.length > 0 ? (
+            <div className="space-y-3 max-h-[24rem] overflow-y-auto">
+              {otherTasks.map((task) => (
+                <TaskCardSmall key={task.id} task={task} />
+              ))}
             </div>
           ) : (
             <div className="text-center py-8">
-              <Clock className="w-12 h-12 text-text-gray mx-auto mb-3" />
-              <p className="text-text-low">No scheduled tasks for today</p>
-              <p className="text-sm text-text-gray">Your schedule is clear!</p>
+              <Notebook className="w-12 h-12 text-text-gray mx-auto mb-3" />
+              <p className="text-text-low">
+                No other tasks that were completed today
+              </p>
+              <p className="text-sm text-text-gray">
+                That doesn&apos; mean you should rest!
+              </p>
             </div>
           )}
         </div>
+      </div>
 
-        {/* Repeating Tasks Today */}
-        {todaysRepeatingTasks.filter((task) => task.status !== "completed")
-          .length > 0 && (
-          <div className="bg-background-700 p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4 text-primary-500">
-              Repeating Tasks Due Today
-            </h2>
-            <div className="space-y-3 max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-background-500 scrollbar-track-transparent">
-              {todaysRepeatingTasks
-                .filter((task) => task.status !== "completed")
-                .map((task) => (
-                  <RepeatingTaskCard key={task.id} notProcessedTask={task} />
-                ))}
-            </div>
+      <div className="bg-background-700 p-6 rounded-lg shadow ">
+        <h2 className="text-xl font-semibold mb-6 text-primary-500">
+          Today&apos;s Schedule
+        </h2>
+        {todaysTasks.length > 0 ? (
+          <div className="space-y-3 max-h-[24rem] overflow-y-auto">
+            {todaysTasks
+              .sort((a, b) => {
+                if (!a.dueDate && !b.dueDate) return 0;
+                if (!a.dueDate) return 1;
+                if (!b.dueDate) return -1;
+                return (
+                  new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+                );
+              })
+              .map((task) => (
+                <TaskCardSmall key={task.id} task={task} />
+              ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <Clock className="w-12 h-12 text-text-gray mx-auto mb-3" />
+            <p className="text-text-low">No scheduled tasks for today</p>
+            <p className="text-sm text-text-gray">Your schedule is clear!</p>
+          </div>
+        )}
+      </div>
+      <div className="bg-background-700 p-6 rounded-lg shadow -mt-24 ">
+        <h2 className="text-xl font-semibold mb-6 text-primary-500">
+          Repeating Tasks Due Today
+        </h2>
+        {todaysRepeatingTasks.length > 0 ? (
+          <div className="space-y-3 max-h-[24rem] overflow-y-auto">
+            {todaysRepeatingTasks.map((task) => (
+              <RepeatingTaskCard key={task.id} notProcessedTask={task} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <Clock7 className="w-12 h-12 text-text-gray mx-auto mb-3" />
+            <p className="text-text-low">No repeating tasks for today</p>
+            <p className="text-sm text-text-gray">Your schedule is clear!</p>
           </div>
         )}
       </div>

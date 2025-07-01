@@ -1,25 +1,12 @@
 "use client";
 
-import { useState, useEffect, ReactNode } from "react";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { Session } from "next-auth"; // We might need the Session type
-import { Task } from "@/app/_types/types";
 import Sidebar from "./Sidebar";
-import TopSidebar from "./TopSidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 
-interface ClientWebappLayoutProps {
-  session: Session | null; // Allow session to be null initially
-  tasks: Task[];
-  children: ReactNode;
-}
-
-export default function ClientWebappLayout({
-  session,
-  tasks,
-  children,
-}: ClientWebappLayoutProps) {
+export default function AnimatedSidebar() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
   const pathname = usePathname();
@@ -59,18 +46,13 @@ export default function ClientWebappLayout({
   };
 
   return (
-    <div className="flex h-screen overflow-x-hidden overflow-y-auto tracking-tight bg-background-625 relative">
-      {" "}
-      {/* Added relative for absolute positioning context of button if needed */}
-      {/* Mobile Menu Button */}
+    <div className="bg-background-625 flex overflow-hidden">
       <button
-        className="md:hidden fixed top-3 left-3 z-[60] p-2 bg-background-600/80 backdrop-blur-sm rounded-md text-text-high shadow-md hover:bg-background-500 transition-colors"
+        className="md:hidden fixed top-3 left-3 z-[60] p-2 bg-background-600/80 backdrop-blur-sm rounded-md text-text-high shadow-md hover:bg-background-500 transition-colors cursor-pointer"
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        aria-label="Toggle sidebar"
       >
         {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
-      {/* Sidebar for Mobile (Overlay) and Desktop (Static) */}
       <AnimatePresence>
         {hasMounted && isSidebarOpen && window.innerWidth < 768 && (
           <motion.div
@@ -85,7 +67,7 @@ export default function ClientWebappLayout({
         )}
       </AnimatePresence>
       <motion.div
-        className="fixed inset-y-0 left-0 z-50 md:static md:z-auto h-full w-64 transform transition-transform duration-300 ease-in-out md:translate-x-0 bg-background-700 md:shadow-none shadow-xl"
+        className="fixed inset-y-0 left-0 z-50 md:static md:z-auto transform transition-transform duration-300 ease-in-out md:translate-x-0 bg-background-700 md:shadow-none shadow-xl"
         initial="closed"
         variants={sidebarVariants}
         transition={{ type: "tween", duration: 0.3 }}
@@ -99,15 +81,8 @@ export default function ClientWebappLayout({
             : "closed"
         }
       >
-        {/* Sidebar might need session if it has user-specific actions like logout */}
         <Sidebar />
       </motion.div>
-      <main className="flex-1 overflow-y-auto flex flex-col min-w-0">
-        <TopSidebar session={session} tasks={tasks} />
-        <div className="flex-1 overflow-y-auto p-2 sm:p-4 lg:p-6 relative min-w-0">
-          {children}
-        </div>
-      </main>
     </div>
   );
 }

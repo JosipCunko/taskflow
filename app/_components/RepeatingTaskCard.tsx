@@ -68,6 +68,13 @@ export default function RepeatingTaskCard({
     repetitionSummary = `On ${rule.daysOfWeek
       .map(getDayName)
       .join(", ")}${timeString}`;
+    if (rule.daysOfWeek.length >= 2) {
+      const repSumArr = repetitionSummary.split(", ");
+      const repSum1 = repSumArr.slice(0, -1);
+      const repSum2 = repSumArr.at(-1);
+      repetitionSummary = `${repSum1.join(", ")} and ${repSum2}`;
+    }
+
     completionFraction = `${rule.completions}/${rule.daysOfWeek.length}`;
     progressPercentage = (rule.completions / rule.daysOfWeek.length) * 100;
     nextInstanceInfo = `Next: ${
@@ -91,7 +98,7 @@ export default function RepeatingTaskCard({
   }
 
   if (rule.startDate) {
-    repetitionSummary += ` from ${formatDate(rule.startDate)}`;
+    repetitionSummary += ` starting ${formatDate(rule.startDate)}`;
   }
 
   const isFullyCompletedForCurrentCycle = task.status === "completed";
@@ -146,9 +153,17 @@ export default function RepeatingTaskCard({
           <div className="flex items-center gap-2 min-w-0">
             <div
               className="p-1.5 rounded-lg w-fit h-fit flex-shrink-0"
-              style={{ backgroundColor: `${task.color}2A` }}
+              style={{
+                backgroundColor:
+                  task.status === "completed" ? "#00c8532A" : `${task.color}2A`,
+              }}
             >
-              <IconComponent size={20} style={{ color: task.color }} />
+              <IconComponent
+                size={20}
+                style={{
+                  color: task.status === "completed" ? "#00c853" : task.color,
+                }}
+              />
             </div>
             <h3 className="text-sm font-semibold text-text-high truncate">
               {task.title}

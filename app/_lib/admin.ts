@@ -14,7 +14,6 @@ try {
   if (!admin.apps.length) {
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
-      // Optional: databaseURL: 'https://<YOUR_PROJECT_ID>.firebaseio.com' if using Realtime Database
     });
   }
 } catch (error: unknown) {
@@ -26,4 +25,7 @@ try {
 }
 
 export const adminAuth = admin.auth();
-export const adminDb = admin.firestore(); // If you need admin access to Firestore
+export const adminDb = admin.firestore(); //Admin access to Firestore
+/*
+The Admin SDK is initialized with service account credentials, granting it privileged access to your database, bypassing the security rules entirely. This is a secure and standard practice for server-to-server communication with Firebase.
+*/

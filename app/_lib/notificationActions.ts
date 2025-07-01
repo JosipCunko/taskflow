@@ -9,8 +9,8 @@ import {
   deleteNotification,
   generateNotificationsForUser,
   cleanupExpiredNotifications,
-} from "./notifications";
-import { getTasksByUserId } from "./tasks";
+} from "./notifications-admin";
+import { getTasksByUserId } from "./tasks-admin";
 import { ActionResult } from "../_types/types";
 import { revalidatePath } from "next/cache";
 

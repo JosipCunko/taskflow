@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth";
 import { SquareCheckBig } from "lucide-react";
-import { getTasksByUserId } from "@/app/_lib/tasks";
+import { getTasksByUserId } from "@/app/_lib/tasks-admin";
 import TaskCard from "@/app/_components/TaskCard";
 import { authOptions } from "@/app/_lib/auth";
 import { redirect } from "next/navigation";
@@ -17,9 +17,9 @@ export default async function CompletedTasksPage() {
   );
 
   return (
-    <div className="container mx-auto p-6 h-full overflow-auto">
-      <div className="mb-8 md:mb-8">
-        <h1 className="text-3xl sm:text-4xl  font-bold text-primary-400 flex items-center">
+    <div className="container mx-auto p-1 sm:p-6 max-h-full overflow-auto">
+      <div className="mb-8 ">
+        <h1 className="text-3xl sm:text-4xl font-bold text-primary-400 flex items-center">
           <SquareCheckBig className="w-8 h-8 mr-3 text-primary-500 " />
           Completed tasks
         </h1>

@@ -106,21 +106,14 @@ export default function ProfileTabs({
                             <p className="font-medium text-sm text-text-high">
                               {activityTitle}
                             </p>
-                            {/* Render TaskCardSmall if taskSnapshot exists, otherwise general details */}
                             {activity.taskSnapshot &&
-                            activity.taskSnapshot.title ? (
-                              <div className="mt-1.5">
-                                <TaskCardSmall
-                                  task={activity.taskSnapshot as Task}
-                                />
-                              </div>
-                            ) : (
-                              activity.details && (
-                                <p className="text-xs text-text-low mt-0.5">
-                                  {activity.details}
-                                </p>
-                              )
-                            )}
+                              activity.taskSnapshot.title && (
+                                <div className="mt-1.5">
+                                  <TaskCardSmall
+                                    task={activity.taskSnapshot as Task}
+                                  />
+                                </div>
+                              )}
                           </div>
                         </div>
                         <span className="text-xs text-text-gray flex-shrink-0 ml-2 pt-1">

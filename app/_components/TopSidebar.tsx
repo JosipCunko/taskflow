@@ -52,7 +52,7 @@ export default function TopSidebar({
   }, []);
 
   return (
-    <header className="flex items-center justify-between p-4 border-b border-background-500">
+    <header className="flex items-center justify-between p-4 border-b border-background-500 h-[80px]">
       <div className="flex items-center gap-6">
         <div>
           <h1 className="text-xl font-semibold sm:block hidden text-text-low">

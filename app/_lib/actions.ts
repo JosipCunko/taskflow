@@ -29,17 +29,13 @@ import {
   deleteTask,
   getTaskByTaskId,
   updateTask,
-  getTasksByUserId,
-} from "./tasks";
+} from "./tasks-admin";
 import { getServerSession } from "next-auth";
 import { logUserActivity } from "./activity";
 import { authOptions } from "./auth";
-import { generateNotificationsForUser } from "./notifications";
-import { doc, updateDoc } from "firebase/firestore";
-import { db } from "./firebase";
 import { User } from "next-auth";
 import { revalidatePath } from "next/cache";
-import { updateUserRewardPoints } from "./user";
+import { updateUser, updateUserRewardPoints } from "./user-admin";
 
 /* User */
 export async function updateUserAction(
@@ -51,23 +47,18 @@ export async function updateUserAction(
     return { success: false, error: "User not authenticated" };
   }
 
-  const userRef = doc(db, "users", userId);
-  try {
-    await updateDoc(userRef, data);
+  const result = await updateUser(userId, data);
+  if (result.success) {
     revalidatePath("/profile");
-    return { success: true, message: "User updated" };
-  } catch (err) {
-    const error = err as ActionError;
-    return { success: false, error: error.message || "Failed to update user" };
   }
+  return result;
 }
 
 /* Update */
-export async function updateTaskStatusAction(
+export async function completeTaskAction(
   formData: FormData
 ): Promise<ActionResult> {
   const taskId = formData.get("taskId") as string;
-  const newStatus = formData.get("newStatus") as Task["status"];
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
 
@@ -75,50 +66,36 @@ export async function updateTaskStatusAction(
     return { success: false, error: "User not authenticated" };
   }
 
-  console.log(`ACTION: Mark Task ${taskId} as ${newStatus}`);
+  console.log(`ACTION: Mark Task ${taskId} as completed`);
 
   try {
     const updatedTask = await updateTask(taskId, {
-      status: newStatus,
-      completedAt: newStatus === "completed" ? new Date() : undefined,
+      status: "completed",
+      completedAt: new Date(),
     });
 
-    if (updatedTask.status === "completed") {
-      await updateUserRewardPoints(userId, updatedTask.points);
-    }
+    await updateUserRewardPoints(userId, updatedTask.points);
 
-    if (userId && updatedTask) {
+    if (updatedTask) {
       await logUserActivity(userId, {
-        type: "TASK_UPDATED",
+        type: "TASK_COMPLETED",
         taskId,
-        activityColor: "#00c853",
+        activityColor: "var(--color-success)",
         activityIcon: "CircleCheckBig",
         taskSnapshot: {
           title: updatedTask.title,
-          description: updatedTask.description || "",
           color: updatedTask.color,
           icon: updatedTask.icon,
           dueDate: updatedTask.dueDate,
           status: updatedTask.status,
+          isPriority: updatedTask.isPriority,
+          isReminder: updatedTask.isReminder,
         },
       });
     }
 
-    // Generate notifications after task status change
-    if (userId) {
-      try {
-        const allTasks = await getTasksByUserId(userId);
-        await generateNotificationsForUser(userId, allTasks);
-      } catch (notificationError) {
-        console.error("Error generating notifications:", notificationError);
-      }
-    }
-
     revalidatePath("/tasks");
-    revalidatePath("/webapp/inbox");
-    revalidatePath("/webapp");
-    revalidatePath("/webapp/profile");
-    return { success: true, message: `Task marked as ${newStatus}` };
+    return { success: true, message: `Task marked as completed` };
   } catch (err) {
     const error = err as ActionError;
     return {
@@ -201,19 +178,20 @@ export async function delayTaskAction(
       delayCount: delayCount + 1,
     });
 
-    if (userId && updatedTask) {
+    if (updatedTask) {
       await logUserActivity(userId, {
         type: "TASK_DELAYED",
         taskId,
-        activityColor: "#cf6679",
-        activityIcon: "CircleCheckBig",
+        activityColor: "var(--color-error)",
+        activityIcon: "ClockAlert",
         taskSnapshot: {
           title: updatedTask.title,
-          description: updatedTask.description || "",
           color: updatedTask.color,
           icon: updatedTask.icon,
           dueDate: updatedTask.dueDate,
           status: updatedTask.status,
+          isPriority: updatedTask.isPriority,
+          isReminder: updatedTask.isReminder,
         },
       });
     }
@@ -242,26 +220,24 @@ export async function deleteTaskAction(
 
   try {
     const deletedTask = await deleteTask(taskId);
-    if (!deletedTask.userId) {
-      throw new Error(
-        "Deleted task data is incomplete (missing userId). Cannot log activity accurately"
-      );
-    }
 
-    await logUserActivity(session.user.id, {
-      type: "TASK_DELETED",
-      taskId,
-      taskSnapshot: {
-        title: deletedTask.title,
-        description: deletedTask.description || "",
-        color: deletedTask.color,
-        icon: deletedTask.icon,
-        dueDate: deletedTask.dueDate,
-        status: deletedTask.status,
-      },
-      activityColor: "#cf6679",
-      activityIcon: "Delete",
-    });
+    if (deletedTask) {
+      await logUserActivity(session.user.id, {
+        type: "TASK_DELETED",
+        taskId,
+        taskSnapshot: {
+          title: deletedTask.title,
+          color: deletedTask.color,
+          icon: deletedTask.icon,
+          dueDate: deletedTask.dueDate,
+          status: deletedTask.status,
+          isPriority: deletedTask.isPriority,
+          isReminder: deletedTask.isReminder,
+        },
+        activityColor: "var(--color-error)",
+        activityIcon: "Delete",
+      });
+    }
     revalidatePath("/tasks");
     return { success: true, message: "Task deleted" };
   } catch (err) {
@@ -376,18 +352,17 @@ export async function createTaskAction(
         taskId: createdTask.id,
         taskSnapshot: {
           title: createdTask.title,
-          description: createdTask.description || "",
           color: createdTask.color,
           icon: createdTask.icon,
           dueDate: createdTask.dueDate,
           status: createdTask.status,
+          isPriority: createdTask.isPriority,
+          isReminder: createdTask.isReminder,
         },
-        activityColor: "#00c853",
+        activityColor: "var(--color-success)",
         activityIcon: "CircleCheckBig",
       });
     }
-    const allTasks = await getTasksByUserId(session.user.id);
-    await generateNotificationsForUser(session.user.id, allTasks);
 
     revalidatePath("/tasks");
     revalidatePath("/webapp/inbox");
@@ -454,6 +429,7 @@ export async function completeRepeatingTaskWithInterval(
 
   try {
     await updateTask(task.id, updates);
+    await updateUserRewardPoints(session.user.id, task.points);
     return {
       success: true,
       message: `Task completed. Next due on ${formatDate(finalDueDate)}`,
@@ -530,12 +506,15 @@ export async function completeRepeatingTaskWithTimesPerWeek(
 
   try {
     await updateTask(task.id, updates);
+    await updateUserRewardPoints(session.user.id, task.points);
     return {
       success: true,
       message:
         rule.completions === rule.timesPerWeek
           ? "Task fully completed for this week"
-          : `Task completed (${rule.completions}/${rule.timesPerWeek} times this week)`,
+          : `Task completed (${rule.completions + 1}/${
+              rule.timesPerWeek
+            } times this week)`,
     };
   } catch (err) {
     const error = err as Error;
@@ -608,12 +587,15 @@ export async function completeRepeatingTaskWithDaysOfWeek(
 
   try {
     await updateTask(task.id, updates);
+    await updateUserRewardPoints(session.user.id, task.points);
     return {
       success: true,
       message:
         rule.completions === rule.daysOfWeek.length
           ? "Task fully completed for this week"
-          : `Task completed (${rule.completions}/${rule.daysOfWeek.length} days this week)`,
+          : `Task completed (${rule.completions + 1}/${
+              rule.daysOfWeek.length
+            } days this week)`,
     };
   } catch (err) {
     const error = err as Error;

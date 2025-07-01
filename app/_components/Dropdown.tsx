@@ -13,7 +13,7 @@ import { Task } from "@/app/_types/types";
 import { isSameDay, isToday, format, isTomorrow } from "date-fns";
 import {
   delayTaskAction,
-  updateTaskStatusAction,
+  completeTaskAction,
   toggleReminderAction,
   togglePriorityAction,
   updateTaskExperienceAction,
@@ -27,12 +27,14 @@ function ActionSubmitButton({
   Icon,
   classNameIcon,
   disabled: propDisabled = false,
+  colorIcon,
 }: {
   children: React.ReactNode;
   className?: string;
   Icon?: React.ElementType;
   classNameIcon?: string;
   disabled?: boolean;
+  colorIcon?: string;
 }) {
   const { pending } = useFormStatus();
   const isDisabled = pending || propDisabled;
@@ -48,6 +50,7 @@ function ActionSubmitButton({
       {Icon && (
         <Icon
           size={16}
+          color={colorIcon}
           className={`mr-2.5 text-text-low group-hover:text-text-high transition-colors ${
             classNameIcon ? classNameIcon : ""
           }`}
@@ -119,16 +122,21 @@ function getCompletionAvailabilityInfo(task: Task, canComplete?: boolean) {
 
     // If task is not due today, show when it will be available
     if (!isDueToday) {
-      const nextDueDate = new Date(task.dueDate);
-      if (isTomorrow(nextDueDate)) {
+      if (isTomorrow(task.dueDate)) {
         return {
           text: "Can complete tomorrow",
           canComplete: false,
           icon: CardSpecificIcons.MarkComplete,
         };
       } else {
+        if (task.repetitionRule?.timesPerWeek)
+          return {
+            text: `Available ${formatDate(task.repetitionRule.startDate)}`,
+            canComplete: false,
+            icon: CardSpecificIcons.MarkComplete,
+          };
         return {
-          text: `Available ${formatDate(nextDueDate)}`,
+          text: `Available ${formatDate(task.dueDate)}`,
           canComplete: false,
           icon: CardSpecificIcons.MarkComplete,
         };
@@ -216,17 +224,14 @@ export default function Dropdown({
                   completionInfo.canComplete
                     ? !task.isRepeating
                       ? async (formData: FormData) => {
-                          const res = await updateTaskStatusAction(formData);
+                          const res = await completeTaskAction(formData);
                           handleToast(res, () => setIsDropdownOpen(false));
                         }
                       : handleComplete
-                    : async () => {
-                        // No-op for disabled state
-                      }
+                    : async () => {}
                 }
               >
                 <input type="hidden" name="taskId" value={task.id} />
-                <input type="hidden" name="newStatus" value="completed" />
                 <ActionSubmitButton
                   Icon={completionInfo.icon}
                   disabled={!completionInfo.canComplete}
@@ -456,6 +461,7 @@ export default function Dropdown({
                 <ActionSubmitButton
                   Icon={CardSpecificIcons.Delete}
                   className=" hover:bg-red-500/10"
+                  colorIcon="var(--color-red-500)"
                 >
                   <span className="text-red-500">Delete Task</span>
                 </ActionSubmitButton>

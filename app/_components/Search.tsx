@@ -123,7 +123,7 @@ export default function Search({ onCloseModal, tasks }: SearchProps) {
   };
 
   return (
-    <div className="min-w-[18rem]">
+    <div className="min-w-[303px] min-h-[464px] relative">
       <div
         className={`flex items-center gap-4 p-2 relative rounded-md 
            border-background-500 bg-background-700 border-1 `}
@@ -144,9 +144,9 @@ export default function Search({ onCloseModal, tasks }: SearchProps) {
         </kbd>
       </div>
 
-      <div className="max-h-[60vh] overflow-y-auto">
+      <div className="overflow-y-auto ">
         {isLoading && (
-          <div className="grid relative place-items-center p-4 h-36 text-text-gray">
+          <div className="relative p-4 h-36 text-text-gray">
             <Loader label="Loading..." />
           </div>
         )}
@@ -254,7 +254,7 @@ export default function Search({ onCloseModal, tasks }: SearchProps) {
             </ul>
           </div>
         )}
-        <div className="p-3 mt-2 border-t border-background-500 text-center">
+        <div className="p-3 absolute bottom-0 left-0 right-0 border-t border-background-500 text-center">
           <p className="text-xs text-text-gray">
             Press{" "}
             <kbd className="px-1.5 py-0.5 bg-background-600 text-text-low rounded">

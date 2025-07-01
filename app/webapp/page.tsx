@@ -15,7 +15,7 @@ import {
   Brain,
 } from "lucide-react";
 import { ReactNode } from "react";
-import { getTasksByUserId } from "@/app/_lib/tasks";
+import { getTasksByUserId } from "@/app/_lib/tasks-admin";
 import { authOptions } from "../_lib/auth";
 import { getServerSession } from "next-auth";
 import TaskCardSmall from "../_components/TaskCardSmall";
@@ -126,7 +126,7 @@ export default async function DashboardPage() {
   );
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="container h-full mx-auto p-1 sm:p-6 space-y-8 overflow-auto ">
       <div className="mb-6 md:mb-8">
         <h1 className="text-3xl sm:text-4xl font-bold text-primary-400 flex items-center">
           <Home className="w-8 h-8 mr-3 text-primary-500" />
@@ -465,7 +465,7 @@ export default async function DashboardPage() {
       </section>
 
       {/* Upcoming Tasks */}
-      <section className="bg-background-700 rounded-lg p-6">
+      <section className="bg-background-700 rounded-lg p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-text-low flex items-center">
             <Calendar className="w-5 h-5 mr-2 text-info" />
@@ -490,7 +490,7 @@ export default async function DashboardPage() {
 
       {/* Repeating Tasks */}
       {repeatingTasks.length > 0 && (
-        <section className="bg-background-700 rounded-lg p-6">
+        <section className="bg-background-700 rounded-lg p-6 mb-12">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-text-low flex items-center">
               <Repeat className="w-5 h-5 mr-2 text-purple-400" />

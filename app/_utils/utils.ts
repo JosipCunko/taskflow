@@ -3,11 +3,7 @@ import {
   FileText,
   Inbox,
   Calendar,
-  Meh,
-  Smile,
-  Frown,
   ChartColumn,
-  BicepsFlexed,
   CalendarArrowUp,
 } from "lucide-react";
 import {
@@ -113,10 +109,30 @@ export const navItemsToSearch = [
 ];
 
 export const emojiOptions: EmojiOption[] = [
-  { id: "bad", emoji: Frown, label: "Bad", selected: false },
-  { id: "okay", emoji: Meh, label: "Okay", selected: false },
-  { id: "good", emoji: Smile, label: "Good", selected: false },
-  { id: "best", emoji: BicepsFlexed, label: "Best", selected: false },
+  {
+    id: "bad",
+    emoji: CardSpecificIcons.ExperienceBad,
+    label: "Bad",
+    selected: false,
+  },
+  {
+    id: "okay",
+    emoji: CardSpecificIcons.ExperienceOkay,
+    label: "Okay",
+    selected: false,
+  },
+  {
+    id: "good",
+    emoji: CardSpecificIcons.ExperienceGood,
+    label: "Good",
+    selected: false,
+  },
+  {
+    id: "best",
+    emoji: CardSpecificIcons.ExperienceBest,
+    label: "Best",
+    selected: false,
+  },
 ];
 /*Task icon calculator - matches by id, displayName, or label*/
 
@@ -652,7 +668,6 @@ export function canCompleteRepeatingTaskNow(
   const notCompletedToday = !completedToday;
   const sameWeek = isSameWeek(today, rule.startDate, MONDAY_START_OF_WEEK);
 
-  // Check if task is scheduled for today first
   let isScheduledToday = false;
 
   if (rule.timesPerWeek) {
@@ -681,17 +696,21 @@ export function canCompleteRepeatingTaskNow(
 
     const startTimeInMinutes =
       Number(startTime.split(":")[0]) * 60 + Number(startTime.split(":")[1]);
-    const endTimeInMinutes =
-      Number(endTime.split(":")[0]) * 60 + Number(endTime.split(":")[1]);
+    //const endTimeInMinutes =
+    //  Number(endTime.split(":")[0]) * 60 + Number(endTime.split(":")[1]);
+    const endTimeInMinutes = 23 * 60 + 59; // Can complete until the end of the day, but not before the startTime
 
     const isInTimeWindow =
       currentTimeInMinutes >= startTimeInMinutes &&
       currentTimeInMinutes <= endTimeInMinutes;
 
+    // Added isToday(task.dueDate) and isScheduledToday for timesPerWeek tasks
     return {
-      canCompleteNow: isInTimeWindow,
+      canCompleteNow:
+        isInTimeWindow &&
+        (rule.timesPerWeek ? isScheduledToday : isToday(task.dueDate)),
       sameWeek,
-      isDueToday: true,
+      isDueToday: rule.timesPerWeek ? isScheduledToday : isToday(task.dueDate),
     };
   }
 

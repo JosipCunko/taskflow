@@ -10,9 +10,19 @@ import {
 } from "next-auth";
 import { adminAuth, adminDb } from "@/app/_lib/admin";
 import { Timestamp } from "firebase-admin/firestore";
-import { Task } from "../_types/types";
+import { DayOfWeek, Task } from "../_types/types";
 import { isTaskAtRisk, MONDAY_START_OF_WEEK } from "../_utils/utils";
-import { endOfWeek, isToday, startOfDay, startOfWeek } from "date-fns";
+import {
+  addDays,
+  endOfWeek,
+  getDay,
+  isFuture,
+  isPast,
+  isSameWeek,
+  isToday,
+  startOfDay,
+  startOfWeek,
+} from "date-fns";
 
 // Define a combined type for user objects that will hold rewardPoints
 type UserWithExtendedData = (NextAuthUser | AdapterUser) & {
@@ -55,6 +65,7 @@ type TaskUpdatePayload = {
   risk?: boolean;
   "repetitionRule.completions"?: number;
   "repetitionRule.startDate"?: Date;
+  points?: number;
 };
 
 // Leave it here
@@ -112,29 +123,86 @@ export async function updateUserRepeatingTasks(userId: string) {
       if (!isToday(taskCompletedAt as Date)) {
         updates.status = "pending";
         updates["repetitionRule.completions"] = 0;
+
+        const nextDueDate = startOfDay(taskDueDate);
+        if (!isFuture(nextDueDate) && !isToday(nextDueDate)) {
+          while (isPast(nextDueDate) && !isToday(nextDueDate)) {
+            nextDueDate.setDate(nextDueDate.getDate() + rule.interval);
+          }
+          updates.dueDate = nextDueDate;
+          updates.dueDate.setHours(
+            taskDueDate.getHours(),
+            taskDueDate.getMinutes()
+          );
+        }
       }
     } else if (rule.timesPerWeek) {
       const currentWeekStart = startOfWeek(today, MONDAY_START_OF_WEEK);
       const taskWeekStart = startOfWeek(ruleStartDate, MONDAY_START_OF_WEEK);
 
-      if (currentWeekStart > taskWeekStart) {
-        // We're in a new week period, reset the task
+      if (
+        isPast(taskDueDate) &&
+        !isSameWeek(currentWeekStart, taskWeekStart, MONDAY_START_OF_WEEK)
+      ) {
         updates.status = "pending";
         updates["repetitionRule.completions"] = 0;
         updates["repetitionRule.startDate"] = currentWeekStart;
+        updates.points = 10;
 
         // Set due date to end of current week, but preserve the time
         const newDueDate = endOfWeek(today, MONDAY_START_OF_WEEK);
         newDueDate.setHours(taskDueDate.getHours(), taskDueDate.getMinutes());
         updates.dueDate = newDueDate;
       }
-    } else if (rule.daysOfWeek && rule.daysOfWeek.length > 0) {
+    } else if (rule.daysOfWeek.length > 0) {
       const currentWeekStart = startOfWeek(today, MONDAY_START_OF_WEEK);
       const taskWeekStart = startOfWeek(taskDueDate, MONDAY_START_OF_WEEK);
 
-      if (currentWeekStart > taskWeekStart) {
+      if (
+        isPast(taskDueDate) &&
+        !isSameWeek(currentWeekStart, taskWeekStart, MONDAY_START_OF_WEEK)
+      ) {
         updates.status = "pending";
         updates["repetitionRule.completions"] = 0;
+        updates.points = 10;
+
+        const todayDay = getDay(today) as DayOfWeek;
+        const sortedDays = [...rule.daysOfWeek].sort((a, b) => a - b);
+
+        let nextDueDay = sortedDays.find((day) => day >= todayDay);
+
+        let daysUntilNext;
+        if (nextDueDay !== undefined) {
+          daysUntilNext = nextDueDay - todayDay;
+        } else {
+          nextDueDay = sortedDays[0];
+          daysUntilNext = 7 - todayDay + nextDueDay;
+        }
+
+        const newDueDate = addDays(today, daysUntilNext);
+        newDueDate.setHours(taskDueDate.getHours(), taskDueDate.getMinutes());
+        updates.dueDate = newDueDate;
+      } else if (
+        isPast(taskDueDate) &&
+        isSameWeek(currentWeekStart, taskWeekStart, MONDAY_START_OF_WEEK)
+      ) {
+        updates.status = "pending";
+        const todayDay = getDay(today) as DayOfWeek;
+        const sortedDays = [...rule.daysOfWeek].sort((a, b) => a - b);
+
+        let nextDueDay = sortedDays.find((day) => day >= todayDay);
+
+        let daysUntilNext;
+        if (nextDueDay !== undefined) {
+          daysUntilNext = nextDueDay - todayDay;
+        } else {
+          nextDueDay = sortedDays[0];
+          daysUntilNext = 7 - todayDay + nextDueDay;
+        }
+
+        const newDueDate = addDays(today, daysUntilNext);
+        newDueDate.setHours(taskDueDate.getHours(), taskDueDate.getMinutes());
+        updates.dueDate = newDueDate;
       }
     }
 
@@ -578,6 +646,14 @@ export const authOptions: NextAuthOptions = {
                 );
               }
             }
+            // Note: Notification generation removed from JWT callback to avoid client/server conflicts
+            /* 
+            const allTasks = await getTasksByUserId(token.uid);
+            await generateNotificationsForUser(token.uid, allTasks);
+            console.log(
+              `Generated notifications for user ${token.uid} via JWT callback`
+            );
+             */
           }
         } catch (error) {
           // ----- ERROR HANDLING -----

@@ -1,5 +1,6 @@
 import { DefaultSession, DefaultUser } from "next-auth";
 import { JWT as DefaultJWT } from "next-auth/jwt";
+import { Achievement } from "./types";
 
 declare module "next-auth" {
   /**
@@ -13,6 +14,7 @@ declare module "next-auth" {
       rewardPoints: number;
       notifyReminders: boolean;
       notifyAchievements: boolean;
+      achievements: Achievement[];
     } & DefaultSession["user"]; // Keep existing properties like name, email, image
   }
 
@@ -27,6 +29,7 @@ declare module "next-auth" {
     rewardPoints: number;
     notifyReminders: boolean;
     notifyAchievements: boolean;
+    achievements: Achievement[];
   }
 }
 
@@ -39,6 +42,7 @@ declare module "next-auth/jwt" {
     rewardPoints: number;
     notifyReminders: boolean;
     notifyAchievements: boolean;
+    achievements: Achievement[];
     // name, email, picture are often included by default if available from provider
   }
 }

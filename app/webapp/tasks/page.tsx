@@ -1,6 +1,6 @@
 import { getServerSession } from "next-auth";
 import { ChartColumn, Repeat, Clock } from "lucide-react";
-import { getTasksByUserId } from "@/app/_lib/tasks";
+import { getTasksByUserId } from "@/app/_lib/tasks-admin";
 import TaskCard from "@/app/_components/TaskCard";
 import RepeatingTaskCard from "@/app/_components/RepeatingTaskCard";
 import { authOptions } from "@/app/_lib/auth";
@@ -20,7 +20,7 @@ export default async function TasksPage() {
   const repeatingTasks = userTasks.filter((task) => task.isRepeating);
 
   return (
-    <div className="container mx-auto p-1 sm:p-6 h-full overflow-auto">
+    <div className="container mx-auto p-1 sm:p-6 max-h-full overflow-auto">
       <div className="mb-6 md:mb-8">
         <h1 className="text-3xl sm:text-4xl font-bold text-primary-400 flex items-center">
           <ChartColumn className="w-8 h-8 mr-3 text-primary-500" />
@@ -51,7 +51,7 @@ export default async function TasksPage() {
         </div>
       </div>
 
-      <div className="mt-12">
+      <div className="my-12">
         <div className="mb-6">
           <h2 className="text-xl font-semibold text-text-high flex items-center mb-4">
             <Repeat className="w-5 h-5 mr-2 text-primary-500" />
