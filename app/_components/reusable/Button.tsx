@@ -22,7 +22,7 @@ export default function Button({
   value,
 }: ButtonProps) {
   const baseStyles =
-    "px-4 py-1 rounded-md transition-all duration-150 flex items-center gap-2 cursor-pointer letter-spacing font-semibold hover:scale-[103%]";
+    "relative isolate px-4 py-1 rounded-md transition-all duration-150 flex items-center gap-2 cursor-pointer letter-spacing font-semibold before:absolute before:inset-0 before:z-[-1] before:scale-x-0 before:origin-right before:transition-transform before:duration-300 hover:before:scale-x-100 before:origin-left";
 
   const variantStyles = {
     primary:

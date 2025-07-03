@@ -1,48 +1,42 @@
 import { DefaultSession, DefaultUser } from "next-auth";
 import { JWT as DefaultJWT } from "next-auth/jwt";
-import { Achievement } from "./types";
 
 declare module "next-auth" {
   /**
-   * Returned by `useSession`, `getSession` and received as a prop on the `SessionProvider` React Context
+   * This session object is what is returned by `useSession`, `getSession`, etc.
+   * We are keeping it lean to improve performance and avoid cookie size limits.
+   * It contains only essential, stable user data.
+   * Components that need more detailed user data (e.g., rewardPoints, achievements) should fetch it from Firestore using the user's ID.
    */
   interface Session {
     user: {
-      /** The user's Firebase UID. */
       id: string;
+      /** The authentication provider used for the session (e.g., 'github', 'firebase'). */
       provider?: string;
-      rewardPoints: number;
-      notifyReminders: boolean;
-      notifyAchievements: boolean;
-      achievements: Achievement[];
     } & DefaultSession["user"]; // Keep existing properties like name, email, image
   }
 
   /**
-   * The shape of the user object returned in the OAuth providers' `profile` callback,
-   * or the second parameter of the `session` callback, when using a database.
-   * Also the shape of the user object returned by the `authorize` callback of the Credentials provider.
+   * The user object shape passed to callbacks.
    */
   interface User extends DefaultUser {
     // id is already part of DefaultUser
-    provider: string;
-    rewardPoints: number;
-    notifyReminders: boolean;
-    notifyAchievements: boolean;
-    achievements: Achievement[];
+    // Extended properties for initial sign-in data transfer
+    lastLoginAt: Date;
   }
 }
 
 declare module "next-auth/jwt" {
-  /** Returned by the `jwt` callback and `getToken`, when using JWT sessions */
+  /**
+   * This is the shape of the JWT token.
+   * We keep it lean, containing only the primary identifiers for the user.
+   * The full user profile is not stored in the JWT to keep it small and fast.
+   */
   interface JWT extends DefaultJWT {
-    /** Firebase UID */
+    /** The user's unique identifier (e.g., Firebase UID or provider-specific ID). */
     uid: string;
+    /** The authentication provider (e.g., 'github', 'firebase'). */
     provider?: string;
-    rewardPoints: number;
-    notifyReminders: boolean;
-    notifyAchievements: boolean;
-    achievements: Achievement[];
-    // name, email, picture are often included by default if available from provider
+    // name, email, picture are included by default from NextAuth
   }
 }

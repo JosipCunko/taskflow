@@ -100,8 +100,6 @@ export async function generateNotificationsAction(): Promise<ActionResult> {
 
     const tasks = await getTasksByUserId(session.user.id);
     await generateNotificationsForUser(session.user.id, tasks);
-
-    // Also cleanup expired notifications
     await cleanupExpiredNotifications(session.user.id);
 
     revalidatePath("/webapp/inbox");

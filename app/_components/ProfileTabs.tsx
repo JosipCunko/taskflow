@@ -1,7 +1,7 @@
 "use client";
 import { BarChart3, Bell, Settings, Trophy } from "lucide-react";
 import { useState } from "react";
-import { ActivityLog, Task, userProfileType } from "../_types/types";
+import { ActivityLog, Task, AppUser } from "../_types/types";
 import { getTaskIconByName } from "../_utils/icons";
 import { formatDistanceToNowStrict } from "date-fns";
 import TaskCardSmall from "./TaskCardSmall";
@@ -11,10 +11,10 @@ import { handleToast } from "../_utils/utils";
 
 export default function ProfileTabs({
   activityLogs,
-  userProfileData,
+  user,
 }: {
   activityLogs: ActivityLog[];
-  userProfileData: userProfileType;
+  user: AppUser;
 }) {
   const [activeTab, setActiveTab] = useState<"overview" | "settings">(
     "overview"
@@ -165,10 +165,10 @@ export default function ProfileTabs({
                     </p>
                   </div>
                 }
-                checked={userProfileData.notifyReminders}
+                checked={user.notifyReminders}
                 onChange={async (e) => {
                   setIsLoading(true);
-                  const res = await updateUserAction(userProfileData.id, {
+                  const res = await updateUserAction(user.uid, {
                     notifyReminders: e.target.checked,
                   });
 
@@ -190,10 +190,10 @@ export default function ProfileTabs({
                     </p>
                   </div>
                 }
-                checked={userProfileData.notifyAchievements}
+                checked={user.notifyAchievements}
                 onChange={async (e) => {
                   setIsLoading(true);
-                  const res = await updateUserAction(userProfileData.id, {
+                  const res = await updateUserAction(user.uid, {
                     notifyAchievements: e.target.checked,
                   });
 

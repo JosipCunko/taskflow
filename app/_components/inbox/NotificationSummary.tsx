@@ -1,51 +1,13 @@
-"use client";
-
-import { useState, useEffect } from "react";
 import { NotificationStats } from "@/app/_types/types";
-import { getNotificationStats } from "@/app/_lib/notifications";
 import { Bell, AlertTriangle, Clock, Trophy } from "lucide-react";
 import Link from "next/link";
 
-interface NotificationSummaryProps {
-  userId: string;
-}
-
 export default function NotificationSummary({
-  userId,
-}: NotificationSummaryProps) {
-  const [stats, setStats] = useState<NotificationStats | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const notificationStats = await getNotificationStats(userId);
-        setStats(notificationStats);
-      } catch (error) {
-        console.error("Error fetching notification stats:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (userId) {
-      fetchStats();
-    }
-  }, [userId]);
-
-  if (isLoading) {
-    return (
-      <div className="bg-background-700 rounded-lg p-6 animate-pulse">
-        <div className="h-4 bg-background-600 rounded w-1/3 mb-4"></div>
-        <div className="space-y-3">
-          <div className="h-3 bg-background-600 rounded w-1/2"></div>
-          <div className="h-3 bg-background-600 rounded w-2/3"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!stats || stats.totalUnread === 0) {
+  notificationStats,
+}: {
+  notificationStats: NotificationStats;
+}) {
+  if (!notificationStats || notificationStats.totalUnread === 0) {
     return (
       <div className="bg-background-700 rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
@@ -63,11 +25,10 @@ export default function NotificationSummary({
     );
   }
 
-  const urgentCount = stats.unreadByPriority.URGENT;
-  const highCount = stats.unreadByPriority.HIGH;
-  const overdueTasks = stats.unreadByType.TASK_OVERDUE || 0;
-  const atRiskTasks = stats.unreadByType.TASK_AT_RISK || 0;
-  const achievements = stats.unreadByType.ACHIEVEMENT_UNLOCKED || 0;
+  const urgentCount = notificationStats.unreadByPriority.URGENT;
+  const highCount = notificationStats.unreadByPriority.HIGH;
+  const overdueTasks = notificationStats.unreadByType.TASK_OVERDUE || 0;
+  const achievements = notificationStats.unreadByType.ACHIEVEMENT_UNLOCKED || 0;
 
   return (
     <div className="bg-background-700 rounded-lg p-6">
@@ -85,15 +46,13 @@ export default function NotificationSummary({
       </div>
 
       <div className="space-y-3">
-        {/* Total unread */}
         <div className="flex items-center justify-between">
           <span className="text-sm text-text-low">Total Unread</span>
           <span className="text-lg font-semibold text-blue-400">
-            {stats.totalUnread}
+            {notificationStats.totalUnread}
           </span>
         </div>
 
-        {/* Priority breakdown */}
         {(urgentCount > 0 || highCount > 0) && (
           <div className="border-t border-background-600 pt-3">
             <div className="text-xs text-text-low mb-2">Priority Alerts</div>
@@ -122,8 +81,7 @@ export default function NotificationSummary({
           </div>
         )}
 
-        {/* Key notification types */}
-        {(overdueTasks > 0 || atRiskTasks > 0 || achievements > 0) && (
+        {(overdueTasks > 0 || achievements > 0) && (
           <div className="border-t border-background-600 pt-3">
             <div className="text-xs text-text-low mb-2">Key Alerts</div>
             {overdueTasks > 0 && (
@@ -137,17 +95,7 @@ export default function NotificationSummary({
                 </span>
               </div>
             )}
-            {atRiskTasks > 0 && (
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm text-red-400 flex items-center">
-                  <AlertTriangle className="w-3 h-3 mr-1" />
-                  At Risk Tasks
-                </span>
-                <span className="text-sm font-medium text-red-400">
-                  {atRiskTasks}
-                </span>
-              </div>
-            )}
+
             {achievements > 0 && (
               <div className="flex items-center justify-between">
                 <span className="text-sm text-yellow-400 flex items-center">
@@ -162,7 +110,6 @@ export default function NotificationSummary({
           </div>
         )}
 
-        {/* Action button */}
         <div className="pt-3">
           <Link
             href="/webapp/inbox"

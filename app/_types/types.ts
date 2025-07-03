@@ -1,4 +1,4 @@
-import { LucideIcon, LucideProps } from "lucide-react";
+import { LucideProps } from "lucide-react";
 import { ForwardRefExoticComponent, RefAttributes } from "react";
 
 export interface Task {
@@ -31,28 +31,35 @@ export interface Task {
   risk?: boolean;
   points: number;
 }
-export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
-/** daily, weekly or monhtly
- * interval: every x days
- * daysOfWekk: [1,2] Monday, Tuesday
- * timesPerWeek: 3
- * startDate: often begining of the week
- * completions: only for weekly and monthly
- */
-export interface RepetitionRule {
-  interval?: number; // every 'interval' days/weeks/months
-  daysOfWeek: DayOfWeek[];
-  timesPerWeek?: number; // For "weekly" if it's like "3 times a week, any day"
-
-  isDueToday?: boolean;
-  startDate: Date;
-  completions: number; // 0 or 1 for daily tasks
+export interface AppUser {
+  uid: string;
+  displayName: string;
+  email: string;
+  photoURL: string;
+  createdAt: Date;
+  provider: string;
+  notifyReminders: boolean;
+  notifyAchievements: boolean;
+  rewardPoints: number;
+  achievements: Achievement[];
+  completedTasksCount: number;
+  currentStreak: number;
+  bestStreak: number;
+  lastLoginAt?: Date;
+  notesCount?: number; // Added field in /webapp/profile
 }
 
-export type TaskToUpdateData = Partial<
-  Omit<Task, "id" | "userId" | "createdAt" | "points" | "updatedAt">
->;
+export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+export interface RepetitionRule {
+  interval?: number;
+  daysOfWeek: DayOfWeek[];
+  timesPerWeek?: number;
+  completedAt: Date[];
+  startDate: Date;
+  completions: number;
+}
+
 export type TaskToCreateData = Omit<
   Task,
   | "id"
@@ -63,6 +70,15 @@ export type TaskToCreateData = Omit<
   | "delayCount"
   | "completedAt"
 >;
+export type TaskToUpdateData = Partial<
+  Omit<Task, "id" | "userId" | "createdAt" | "points" | "updatedAt">
+>;
+export interface SearchedTask {
+  id: string;
+  title: string;
+  icon: string;
+  color: string;
+}
 
 export type EmojiOption = {
   id: "bad" | "okay" | "good" | "best";
@@ -72,40 +88,6 @@ export type EmojiOption = {
   label: string;
   selected?: boolean;
 };
-
-export interface SearchedTask {
-  id: string;
-  title: string;
-  description?: string;
-  icon: string;
-  color: string;
-}
-export interface TaskCategories {
-  todaysTasks: Task[];
-  upcomingTasks: Task[];
-  missedTasks: Task[];
-  delayedTasks: Task[];
-  completedTasks: Task[];
-  completedTodayTasks: Task[];
-  pendingTodayTasks: Task[];
-  pendingTasks: Task[];
-}
-export interface TaskIconItem {
-  name: string;
-  icon: LucideIcon;
-}
-
-export interface TimeManagementStats {
-  onTimeTasksCount: number;
-  totalRelevantTasksForTiming: number; // Completed or missed tasks that had a due date
-  averageDelayDays: number; // For tasks that were completed but after their original due date
-  onTimeCompletionRate: number;
-}
-
-export interface ConsistencyStats {
-  currentStreakDays: number;
-  bestStreakDays: number;
-}
 
 export interface ActivityLog {
   id: string;
@@ -124,41 +106,16 @@ export interface ActivityLog {
   activityColor: string;
 }
 
-export interface userProfileType {
-  id: string;
-  displayName: string;
-  email: string;
-  photoURL: string;
-  memberSince: Date;
-  notifyReminders: boolean;
-  notifyAchievements: boolean;
-  notesCount: number;
-  rewardPoints: number;
-  achievements: Achievement[];
-}
-
-export interface ActionResult {
-  success: boolean;
-  message?: string;
-  error?: string;
-}
-
-export interface ActionError extends Error {
-  message: string;
-}
-
-export type AchievementType =
-  | "streak_milestone"
-  | "points_milestone"
-  | "consistency_master"
-  | "task_completionist";
-
 export interface Achievement {
   type: AchievementType;
   id: string;
   userId: string;
   unlockedAt: Date;
 }
+export type AchievementType =
+  | "streak_milestone"
+  | "points_milestone"
+  | "task_completionist";
 
 export interface Note {
   id: string;
@@ -167,17 +124,6 @@ export interface Note {
   content: string;
   updatedAt: Date;
 }
-
-export type NotificationType =
-  | "TASK_OVERDUE"
-  | "TASK_DUE_SOON"
-  | "TASK_AT_RISK"
-  | "WEEKLY_SUMMARY"
-  | "ACHIEVEMENT_UNLOCKED"
-  | "POINTS_MILESTONE"
-  | "SYSTEM_UPDATE";
-
-export type NotificationPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
 export interface Notification {
   id: string;
@@ -196,25 +142,22 @@ export interface Notification {
   data?: Record<string, unknown>; // Additional data for the notification
   expiresAt?: Date;
 }
+export type NotificationType =
+  | "TASK_OVERDUE"
+  | "TASK_DUE_SOON"
+  | "WEEKLY_SUMMARY"
+  | "ACHIEVEMENT_UNLOCKED"
+  | "POINTS_MILESTONE"
+  | "SYSTEM_UPDATE";
+export type NotificationPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
-export interface NotificationSettings {
-  userId: string;
-  emailNotifications: boolean;
-  pushNotifications: boolean;
-  inAppNotifications: boolean;
-  notificationTypes: {
-    [K in NotificationType]: {
-      enabled: boolean;
-      emailEnabled: boolean;
-      frequency?: "IMMEDIATE" | "DAILY" | "WEEKLY";
-    };
-  };
-  quietHours: {
-    enabled: boolean;
-    startTime: string; // HH:MM format
-    endTime: string; // HH:MM format
-  };
-  updatedAt: Date;
+export interface ActionResult {
+  success: boolean;
+  message?: string;
+  error?: string;
+}
+export interface ActionError extends Error {
+  message: string;
 }
 
 export interface NotificationStats {
@@ -225,4 +168,14 @@ export interface NotificationStats {
   unreadByType: {
     [K in NotificationType]?: number;
   };
+}
+export interface TimeManagementStats {
+  onTimeTasksCount: number;
+  totalRelevantTasksForTiming: number; // Completed or missed tasks that had a due date
+  averageDelayDays: number; // For tasks that were completed but after their original due date
+  onTimeCompletionRate: number;
+}
+export interface ConsistencyStats {
+  currentStreakDays: number;
+  bestStreakDays: number;
 }

@@ -110,13 +110,14 @@ export default function InboxContent({
     );
     updateStats();
 
-    localStorage.setItem("notifications-updated", Date.now().toString());
-
-    try {
-      const result = await markAsReadAction(notificationId);
-      if (!result.success) {
-        handleToast(result);
-        // Revert optimistic update on failure
+    startTransition(async () => {
+      try {
+        localStorage.setItem("notifications-updated", Date.now().toString());
+        await markAsReadAction(notificationId);
+        updateStats();
+      } catch (error) {
+        console.error("Error marking notification as read:", error);
+        // Revert optimistic update on error
         setNotifications((prev) =>
           prev.map((n) =>
             n.id === notificationId
@@ -125,23 +126,9 @@ export default function InboxContent({
           )
         );
         updateStats();
-        // Trigger notification bell update again after revert
-        localStorage.setItem("notifications-updated", Date.now().toString());
+        // Maybe trigger notification bell update again after revert
       }
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
-      // Revert optimistic update on error
-      setNotifications((prev) =>
-        prev.map((n) =>
-          n.id === notificationId
-            ? { ...n, isRead: false, readAt: undefined }
-            : n
-        )
-      );
-      updateStats();
-      // Trigger notification bell update again after revert
-      localStorage.setItem("notifications-updated", Date.now().toString());
-    }
+    });
   };
 
   const handleMarkAllAsRead = async () => {
@@ -154,24 +141,11 @@ export default function InboxContent({
     );
     updateStats();
 
-    // Trigger notification bell update
-    localStorage.setItem("notifications-updated", Date.now().toString());
-
     startTransition(async () => {
       try {
-        const result = await markAllAsReadAction(unreadIds);
-        if (!result.success) {
-          handleToast(result);
-          // Revert optimistic update on failure
-          setNotifications((prev) =>
-            prev.map((n) =>
-              unreadIds.includes(n.id)
-                ? { ...n, isRead: false, readAt: undefined }
-                : n
-            )
-          );
-          updateStats();
-        }
+        localStorage.setItem("notifications-updated", Date.now().toString());
+        await markAllAsReadAction(unreadIds);
+        updateStats();
       } catch (error) {
         console.error("Error marking all notifications as read:", error);
         // Revert optimistic update on error
@@ -188,50 +162,44 @@ export default function InboxContent({
   };
 
   const handleArchive = async (notificationId: string) => {
-    // Optimistic update
     setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
     updateStats();
 
-    try {
-      const result = await archiveNotificationAction(notificationId);
-      if (!result.success) {
-        handleToast(result);
+    startTransition(async () => {
+      try {
+        await archiveNotificationAction(notificationId);
+
         // We would need to revert, but since we removed it from the list,
         // it's better to just refresh the data
+        //window.location.reload(); => revalidatePath already happens in SA
+      } catch (error) {
+        console.error("Error archiving notification:", error);
         window.location.reload();
       }
-    } catch (error) {
-      console.error("Error archiving notification:", error);
-      window.location.reload();
-    }
+    });
   };
 
   const handleDelete = async (notificationId: string) => {
-    // Optimistic update
     setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
     updateStats();
 
-    try {
-      const result = await deleteNotificationAction(notificationId);
-      if (!result.success) {
+    startTransition(async () => {
+      try {
+        const result = await deleteNotificationAction(notificationId);
         handleToast(result);
         window.location.reload();
+      } catch (error) {
+        console.error("Error deleting notification:", error);
+        window.location.reload();
       }
-    } catch (error) {
-      console.error("Error deleting notification:", error);
-      window.location.reload();
-    }
+    });
   };
 
   const handleRefresh = async () => {
     startTransition(async () => {
       try {
-        const result = await generateNotificationsAction();
-        if (result.success) {
-          window.location.reload(); // Keep reload only for refresh since we're generating new notifications
-        } else {
-          handleToast(result);
-        }
+        await generateNotificationsAction();
+        window.location.reload(); // Keep reload only for refresh since we're generating new notifications
       } catch (error) {
         console.error("Error refreshing notifications:", error);
         handleToast({
@@ -270,11 +238,6 @@ export default function InboxContent({
     { value: "priority" as FilterType, label: "Priority", icon: AlertTriangle },
     { value: "TASK_OVERDUE" as FilterType, label: "Overdue", icon: Clock },
     {
-      value: "TASK_AT_RISK" as FilterType,
-      label: "At Risk",
-      icon: AlertTriangle,
-    },
-    {
       value: "ACHIEVEMENT_UNLOCKED" as FilterType,
       label: "Achievements",
       icon: Trophy,
@@ -283,12 +246,9 @@ export default function InboxContent({
 
   return (
     <div className="space-y-6">
-      {/* Controls */}
       <div className="space-y-4">
-        {/* Filter buttons */}
-        <div className="flex flex-wrap gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-background-500">
+        <div className="flex flex-wrap gap-2 pb-2">
           {filterOptions.map((option) => {
-            const Icon = option.icon;
             const count =
               option.value === "all"
                 ? notifications.length
@@ -307,25 +267,24 @@ export default function InboxContent({
                   flex-shrink-0 text-nowrap gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm min-w-fit
                   ${
                     filter === option.value
-                      ? "bg-primary-500/90 text-white"
+                      ? "bg-primary-500/90 text-white hover:bg-primary-500/70"
                       : " text-text-low "
                   }
                 `}
               >
-                <Icon size={14} className="sm:w-4 sm:h-4 flex-shrink-0" />
-                <span className="hidden xs:inline whitespace-nowrap">
-                  {option.label}
-                </span>
-                <span className="xs:hidden whitespace-nowrap">
-                  {option.label.slice(0, 3)}
-                </span>
+                <option.icon
+                  size={14}
+                  className="sm:w-4 sm:h-4 flex-shrink-0"
+                />
+
+                <span className="whitespace-nowrap">{option.label}</span>
                 {count > 0 && (
                   <span
                     className={`
                     px-1 sm:px-1.5 py-0.5 rounded-full text-xs whitespace-nowrap
                     ${
                       filter === option.value
-                        ? "bg-white/20"
+                        ? "bg-red-500/20"
                         : "bg-background-600"
                     }
                   `}
@@ -338,9 +297,7 @@ export default function InboxContent({
           })}
         </div>
 
-        {/* Search and Actions */}
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-          {/* Search */}
           <div className="relative flex-1 sm:max-w-xs">
             <Search
               className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-low"
@@ -355,9 +312,7 @@ export default function InboxContent({
             />
           </div>
 
-          {/* Sort and Actions */}
           <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-            {/* Sort */}
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as SortType)}
@@ -368,7 +323,6 @@ export default function InboxContent({
               <option value="priority">Priority</option>
             </select>
 
-            {/* Actions */}
             <Button
               onClick={handleMarkAllAsRead}
               disabled={isPending || stats.totalUnread === 0}
@@ -396,7 +350,6 @@ export default function InboxContent({
         </div>
       </div>
 
-      {/* Notifications */}
       <div className="space-y-3">
         {filteredNotifications.length === 0 ? (
           <div className="text-center py-12">

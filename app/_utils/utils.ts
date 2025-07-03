@@ -7,25 +7,20 @@ import {
   CalendarArrowUp,
 } from "lucide-react";
 import {
-  ConsistencyStats,
   DayOfWeek,
   EmojiOption,
   Task,
-  TaskCategories,
   TimeManagementStats,
   NotificationType,
   NotificationPriority,
 } from "../_types/types";
 import {
-  differenceInCalendarDays,
   differenceInDays,
-  formatISO,
   getDay,
   isAfter,
   isBefore,
   isEqual,
   isPast,
-  parseISO,
   startOfDay,
   isSameWeek,
 } from "date-fns";
@@ -341,10 +336,6 @@ export const getPriorityBadgeStyles = (priority: NotificationPriority) => {
   return badgeMap[priority];
 };
 
-export const shouldShowNotificationBadge = (unreadCount: number): boolean => {
-  return unreadCount > 0;
-};
-
 export const formatNotificationCount = (count: number): string => {
   if (count === 0) return "";
   if (count > 99) return "99+";
@@ -441,93 +432,7 @@ export function calculateTimeManagementStats(
   };
 }
 
-export function calculateConsistencyStats(tasks: Task[]): ConsistencyStats {
-  const completedTasks = tasks.filter(
-    (task) => task.status === "completed" && task.completedAt
-  );
-
-  if (!completedTasks || completedTasks.length === 0) {
-    return { currentStreakDays: 0, bestStreakDays: 0 };
-  }
-
-  // Get unique days on which tasks were completed, sorted chronologically
-  const completionDays = Array.from(
-    new Set(
-      completedTasks.map((task) =>
-        formatISO(startOfDay(task.completedAt!), { representation: "date" })
-      ) // 'yyyy-MM-dd'
-    )
-  ).sort(); // Sorts strings chronologically
-
-  if (completionDays.length === 0) {
-    return { currentStreakDays: 0, bestStreakDays: 0 };
-  }
-
-  let currentStreak = 0;
-  let bestStreak = 0;
-
-  // Check if the last completion day is today or yesterday to start current streak
-  if (completionDays.length > 0) {
-    const lastCompletionDay = parseISO(
-      completionDays[completionDays.length - 1]
-    );
-    const diffFromToday = differenceInCalendarDays(
-      startOfDay(new Date()),
-      lastCompletionDay
-    );
-
-    if (diffFromToday === 0 || diffFromToday === 1) {
-      // Completed today or yesterday
-      currentStreak = 1; // Start with 1 if last completion was recent enough
-
-      for (let i = completionDays.length - 2; i >= 0; i--) {
-        const prevDay = parseISO(completionDays[i]);
-        const currentDayToCompare = parseISO(completionDays[i + 1]);
-        if (differenceInCalendarDays(currentDayToCompare, prevDay) === 1) {
-          currentStreak++;
-        } else {
-          break; // Streak broken
-        }
-      }
-    }
-  }
-
-  // Calculate best streak
-  if (completionDays.length > 0) {
-    let localCurrentStreak = 1;
-    bestStreak = 1; // At least one day of completion
-    for (let i = 1; i < completionDays.length; i++) {
-      const day1 = parseISO(completionDays[i - 1]);
-      const day2 = parseISO(completionDays[i]);
-      if (differenceInCalendarDays(day2, day1) === 1) {
-        localCurrentStreak++;
-      } else {
-        localCurrentStreak = 1; // Reset streak
-      }
-      if (localCurrentStreak > bestStreak) {
-        bestStreak = localCurrentStreak;
-      }
-    }
-  } else {
-    bestStreak = 0;
-  }
-
-  // If no task completed today or yesterday, current streak is 0
-  const lastCompletionDayObj =
-    completionDays.length > 0
-      ? parseISO(completionDays[completionDays.length - 1])
-      : null;
-  if (
-    lastCompletionDayObj &&
-    differenceInCalendarDays(startOfDay(new Date()), lastCompletionDayObj) > 1
-  ) {
-    currentStreak = 0;
-  }
-
-  return { currentStreakDays: currentStreak, bestStreakDays: bestStreak };
-}
-
-export function generateTaskTypes(allTasks: Task[]): TaskCategories {
+export function generateTaskTypes(allTasks: Task[]) {
   const now = new Date();
   const todayStart = startOfDay(now);
 
@@ -732,4 +637,16 @@ export const getDayName = (day: DayOfWeek): string => {
     "Friday",
     "Saturday",
   ][day];
+};
+export const pointsMilestones = [
+  100, 250, 500, 750, 1000, 1250, 1500, 2000, 2500, 5000,
+];
+export const streakMilestones = [3, 7, 14, 30, 50, 75, 100];
+export const taskCompletionistMilestones = [
+  1, 10, 25, 50, 100, 150, 200, 300, 400, 500,
+];
+
+export const calcNextPointsMilestone = (currentPoints: number): number => {
+  if (currentPoints >= 1000) return 1000;
+  return Math.ceil((currentPoints + 1) / 100) * 100;
 };

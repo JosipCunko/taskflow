@@ -5,10 +5,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { NotificationStats } from "@/app/_types/types";
 import { getNotificationStats } from "@/app/_lib/notifications";
-import {
-  shouldShowNotificationBadge,
-  formatNotificationCount,
-} from "@/app/_utils/utils";
+import { formatNotificationCount } from "@/app/_utils/utils";
 import Link from "next/link";
 
 export default function NotificationBell() {
@@ -32,14 +29,10 @@ export default function NotificationBell() {
 
     fetchStats();
 
-    // Set up more frequent polling (every 10 seconds)
-    const interval = setInterval(fetchStats, 10000);
-
     // Also update when page gains focus
     const handleFocus = () => {
       fetchStats();
     };
-
     window.addEventListener("focus", handleFocus);
 
     // Listen for storage events (when notifications are updated in other tabs)
@@ -48,11 +41,9 @@ export default function NotificationBell() {
         fetchStats();
       }
     };
-
     window.addEventListener("storage", handleStorageChange);
 
     return () => {
-      clearInterval(interval);
       window.removeEventListener("focus", handleFocus);
       window.removeEventListener("storage", handleStorageChange);
     };
@@ -69,8 +60,7 @@ export default function NotificationBell() {
     );
   }
 
-  const hasUnreadNotifications =
-    stats && shouldShowNotificationBadge(stats.totalUnread);
+  const hasUnreadNotifications = stats && stats.totalUnread > 0;
   const urgentCount = stats?.unreadByPriority.URGENT || 0;
   const highCount = stats?.unreadByPriority.HIGH || 0;
   const priorityCount = urgentCount + highCount;

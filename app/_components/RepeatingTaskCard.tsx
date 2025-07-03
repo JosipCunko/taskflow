@@ -142,7 +142,7 @@ export default function RepeatingTaskCard({
       //color-success
       style={{
         borderLeftColor: isFullyCompletedForCurrentCycle
-          ? "#00c853"
+          ? "var(--color-success)"
           : task.color,
         zIndex: isDropdownOpen ? 50 : 0,
       }}
@@ -155,13 +155,18 @@ export default function RepeatingTaskCard({
               className="p-1.5 rounded-lg w-fit h-fit flex-shrink-0"
               style={{
                 backgroundColor:
-                  task.status === "completed" ? "#00c8532A" : `${task.color}2A`,
+                  task.status === "completed"
+                    ? "var(--color-success)2A"
+                    : ` ${task.color}2A`,
               }}
             >
               <IconComponent
                 size={20}
                 style={{
-                  color: task.status === "completed" ? "#00c853" : task.color,
+                  color:
+                    task.status === "completed"
+                      ? "var(--color-success)"
+                      : task.color,
                 }}
               />
             </div>
@@ -284,7 +289,7 @@ export default function RepeatingTaskCard({
           <CalendarDays size={12} className="opacity-70 flex-shrink-0" />
           <span>{nextInstanceInfo}</span>
         </div>
-        {task.risk && !task.experience && !isFullyCompletedForCurrentCycle && (
+        {task.risk && !isFullyCompletedForCurrentCycle && (
           <div className="flex items-center gap-1 text-yellow-400">
             <AlertTriangle size={12} />
             <span className="text-2xs">At Risk</span>

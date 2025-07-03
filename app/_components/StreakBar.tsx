@@ -1,16 +1,12 @@
+import { calcNextPointsMilestone } from "../_utils/utils";
+
 type StreakBarProps = {
   points: number;
   maxPoints?: number;
 };
 
 export default function StreakBar({ points, maxPoints }: StreakBarProps) {
-  // Calculate progressive goal: 100 → 200 → 300... max 1000
-  const calculateGoal = (currentPoints: number): number => {
-    if (currentPoints >= 1000) return 1000;
-    return Math.ceil((currentPoints + 1) / 100) * 100; // Calculate next 100-point milestone
-  };
-
-  const currentGoal = maxPoints || calculateGoal(points);
+  const currentGoal = maxPoints || calcNextPointsMilestone(points);
 
   // Calculate percentage, ensuring it stays between 0 and 100
   const percentage = Math.min(Math.max((points / currentGoal) * 100, 0), 100);

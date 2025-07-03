@@ -24,7 +24,6 @@ import {
   calculatePotentialTaskPoints,
   generateTaskTypes,
   calculateTimeManagementStats,
-  calculateConsistencyStats,
 } from "../_utils/utils";
 import { Task } from "../_types/types";
 import RepeatingTaskCard from "../_components/RepeatingTaskCard";
@@ -32,6 +31,8 @@ import { loadNotesByUserId } from "../_lib/notes";
 import { isSameDay, isToday } from "date-fns";
 import { redirect } from "next/navigation";
 import NotificationSummary from "../_components/inbox/NotificationSummary";
+import { getUserById } from "../_lib/user-admin";
+import { getNotificationStats } from "../_lib/notifications-admin";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -40,10 +41,15 @@ export default async function DashboardPage() {
   }
   const userId = session.user.id;
 
-  const [allTasks, notes] = await Promise.all([
+  const [user, allTasks, notes, notificationStats] = await Promise.all([
+    getUserById(userId),
     getTasksByUserId(userId),
     loadNotesByUserId(userId),
+    getNotificationStats(userId),
   ]);
+  if (!user) {
+    redirect("/login");
+  }
 
   const regularTasks = allTasks.filter((task) => !task.isRepeating);
   const repeatingTasks = allTasks.filter((task) => task.isRepeating);
@@ -67,9 +73,8 @@ export default async function DashboardPage() {
   );
 
   const timeManagementStats = calculateTimeManagementStats(allTasks);
-  const consistencyStats = calculateConsistencyStats(allTasks);
 
-  const totalPoints = session.user.rewardPoints;
+  const totalPoints = user.rewardPoints;
   const todayPoints = todaysTasks.reduce(
     (acc: number, task: Task) => acc + calculateTaskPoints(task),
     0
@@ -161,9 +166,9 @@ export default async function DashboardPage() {
         />
         <DashboardCard
           title="Current Streak"
-          value={`${consistencyStats.currentStreakDays} days`}
+          value={`${user.currentStreak} days`}
           icon={<Zap className="text-warning" size={24} />}
-          subtitle={`Best: ${consistencyStats.bestStreakDays} days`}
+          subtitle={`Best: ${user.bestStreak} days`}
         />
         <DashboardCard
           title="Success Rate"
@@ -293,8 +298,7 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        {/* Notification Summary */}
-        <NotificationSummary userId={userId} />
+        <NotificationSummary notificationStats={notificationStats} />
       </div>
 
       {/* Performance Insights */}
@@ -365,13 +369,13 @@ export default async function DashboardPage() {
               <div className="flex justify-between items-center">
                 <span className="text-sm text-text-low">Current Streak</span>
                 <span className="font-medium text-warning">
-                  {consistencyStats.currentStreakDays} days
+                  {user.currentStreak} days
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-text-low">Best Streak</span>
                 <span className="font-medium text-success">
-                  {consistencyStats.bestStreakDays} days
+                  {user.bestStreak} days
                 </span>
               </div>
             </div>

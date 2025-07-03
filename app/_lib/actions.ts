@@ -1,14 +1,12 @@
 "use server";
 
 import {
-  startOfWeek,
   addDays,
   getDay,
-  endOfWeek,
-  addWeeks,
-  endOfDay,
   isSameDay,
   isBefore,
+  addWeeks,
+  startOfWeek,
 } from "date-fns";
 import {
   formatDate,
@@ -23,6 +21,7 @@ import {
   RepetitionRule,
   DayOfWeek,
   TaskToCreateData,
+  AppUser,
 } from "../_types/types";
 import {
   createTask,
@@ -33,14 +32,15 @@ import {
 import { getServerSession } from "next-auth";
 import { logUserActivity } from "./activity";
 import { authOptions } from "./auth";
-import { User } from "next-auth";
 import { revalidatePath } from "next/cache";
 import { updateUser, updateUserRewardPoints } from "./user-admin";
+import { adminDb } from "./admin";
+import { FieldValue } from "firebase-admin/firestore";
 
 /* User */
 export async function updateUserAction(
   userId: string,
-  data: Partial<User>
+  data: Partial<AppUser>
 ): Promise<ActionResult> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -49,7 +49,7 @@ export async function updateUserAction(
 
   const result = await updateUser(userId, data);
   if (result.success) {
-    revalidatePath("/profile");
+    revalidatePath("/webapp/profile");
   }
   return result;
 }
@@ -69,27 +69,42 @@ export async function completeTaskAction(
   console.log(`ACTION: Mark Task ${taskId} as completed`);
 
   try {
-    const updatedTask = await updateTask(taskId, {
-      status: "completed",
-      completedAt: new Date(),
+    const taskRef = adminDb.collection("tasks").doc(taskId);
+    const userRef = adminDb.collection("users").doc(userId);
+    const task = await getTaskByTaskId(taskId);
+    if (!task) {
+      return { success: false, error: "Task not found" };
+    }
+
+    await adminDb.runTransaction(async (transaction) => {
+      const userDoc = await transaction.get(userRef);
+      if (!userDoc.exists) throw new Error("User not found");
+
+      transaction.update(taskRef, {
+        status: "completed",
+        completedAt: new Date(),
+      });
+
+      transaction.update(userRef, {
+        completedTasksCount: FieldValue.increment(1),
+        rewardPoints: FieldValue.increment(task.points),
+      });
     });
 
-    await updateUserRewardPoints(userId, updatedTask.points);
-
-    if (updatedTask) {
+    if (task) {
       await logUserActivity(userId, {
         type: "TASK_COMPLETED",
         taskId,
         activityColor: "var(--color-success)",
         activityIcon: "CircleCheckBig",
         taskSnapshot: {
-          title: updatedTask.title,
-          color: updatedTask.color,
-          icon: updatedTask.icon,
-          dueDate: updatedTask.dueDate,
-          status: updatedTask.status,
-          isPriority: updatedTask.isPriority,
-          isReminder: updatedTask.isReminder,
+          title: task.title,
+          color: task.color,
+          icon: task.icon,
+          dueDate: task.dueDate,
+          status: "completed",
+          isPriority: task.isPriority,
+          isReminder: task.isReminder,
         },
       });
     }
@@ -420,6 +435,7 @@ export async function completeRepeatingTaskWithInterval(
   const updates: Partial<Task> = {
     repetitionRule: {
       ...rule,
+      completedAt: [...rule.completedAt, completionDate],
       completions: 1,
     },
     status: "completed",
@@ -475,24 +491,27 @@ export async function completeRepeatingTaskWithTimesPerWeek(
   }
 
   // Next due date for "times per week" is the end of the week or next week
-  let nextDueDate: Date;
   let newStartDate: Date;
+  let nextDueDate: Date = task.dueDate;
   if (rule.completions + 1 === rule.timesPerWeek) {
     const nextWeekStart = startOfWeek(
       addWeeks(completionDate, 1),
       MONDAY_START_OF_WEEK
     );
-    nextDueDate = endOfDay(endOfWeek(nextWeekStart, MONDAY_START_OF_WEEK));
     newStartDate = nextWeekStart;
+    nextDueDate = nextWeekStart;
   } else {
-    nextDueDate = endOfDay(endOfWeek(completionDate, MONDAY_START_OF_WEEK));
     newStartDate = rule.startDate;
+    nextDueDate = addDays(completionDate, 1);
   }
+  // Next due date for "times per week" is the next day
+  nextDueDate.setHours(task.dueDate.getHours(), task.dueDate.getMinutes());
 
   const updates: Partial<Task> = {
     repetitionRule: {
       ...rule,
       startDate: newStartDate,
+      completedAt: [...rule.completedAt, completionDate],
       completions: rule.completions + 1,
     },
     completedAt: completionDate,
@@ -574,6 +593,7 @@ export async function completeRepeatingTaskWithDaysOfWeek(
   const updates: Partial<Task> = {
     repetitionRule: {
       ...rule,
+      completedAt: [...rule.completedAt, completionDate],
       completions: rule.completions + 1,
     },
     completedAt: completionDate,
@@ -587,6 +607,7 @@ export async function completeRepeatingTaskWithDaysOfWeek(
 
   try {
     await updateTask(task.id, updates);
+    /// !!!
     await updateUserRewardPoints(session.user.id, task.points);
     return {
       success: true,
