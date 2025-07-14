@@ -1,15 +1,17 @@
+import { Dispatch } from "react";
 import { DayPicker } from "react-day-picker";
 import "react-day-picker/dist/style.css";
+import { Action } from "./AddTask";
 
 export default function DatePicker({
   date,
-  setDate,
+  dispatch,
 }: {
   date: Date;
-  setDate: (date: Date) => void;
+  dispatch: Dispatch<Action>;
 }) {
   const handleDaySelect = (day: Date) => {
-    setDate(day);
+    dispatch({ type: "selectedDate", payload: day });
   };
 
   const today = new Date();

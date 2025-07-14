@@ -5,6 +5,7 @@ import FeaturesOverview from "@/app/_components/landing/FeaturesOverview";
 import CallToActionSection from "@/app/_components/landing/CallToActionSection";
 import Footer from "@/app/_components/landing/Footer";
 import Navbar from "@/app/_components/landing/Navbar";
+import FeaturesCards from "./_components/landing/FeaturesCards";
 
 export default function LandingPage() {
   return (
@@ -15,6 +16,7 @@ export default function LandingPage() {
         <ImageSection />
         <StatsSection />
         <FeaturesOverview />
+        <FeaturesCards />
         <CallToActionSection />
       </main>
       <Footer />

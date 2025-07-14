@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Tooltip } from "react-tooltip";
 import { getPhaseOfTheDay } from "../_utils/utils";
 import { useState, useEffect } from "react";
-
+import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
 import Modal from "./Modal";
 import Button from "./reusable/Button";
@@ -15,7 +15,9 @@ import AddTask from "./AddTask";
 import { useKeyboardNavigation } from "../_hooks/useKeyboardNavigation";
 import { Task } from "../_types/types";
 import Search from "./Search";
-import NotificationBell from "./inbox/NotificationBell";
+const NotificationBell = dynamic(() => import("./inbox/NotificationBell"), {
+  ssr: false,
+});
 
 export default function TopSidebar({
   session,

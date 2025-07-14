@@ -1,7 +1,13 @@
 import "server-only";
 import { adminDb } from "./admin";
-import { AppUser, ActionResult, ActionError } from "../_types/types";
+import {
+  AppUser,
+  ActionResult,
+  ActionError,
+  Achievement,
+} from "../_types/types";
 import { Timestamp, FieldValue } from "firebase-admin/firestore";
+import { unstable_cache } from "next/cache";
 
 export async function getUserPreferences(userId: string): Promise<{
   notifyReminders?: boolean;
@@ -25,36 +31,46 @@ export async function getUserPreferences(userId: string): Promise<{
   }
 }
 
-export const getUserById = async (userId: string): Promise<AppUser | null> => {
-  try {
-    const userDoc = await adminDb.collection("users").doc(userId).get();
-    if (!userDoc.exists) {
+export const getUserById = unstable_cache(
+  async (userId: string): Promise<AppUser | null> => {
+    try {
+      const userDoc = await adminDb.collection("users").doc(userId).get();
+      if (!userDoc.exists) {
+        return null;
+      }
+      const userData = userDoc.data();
+      if (!userData) {
+        return null;
+      }
+
+      return {
+        uid: userDoc.id,
+        displayName: userData.displayName,
+        email: userData.email,
+        provider: userData.provider,
+        photoURL: userData.photoURL,
+        createdAt: (userData.createdAt as Timestamp).toDate(),
+        notifyReminders: userData.notifyReminders,
+        notifyAchievements: userData.notifyAchievements,
+        rewardPoints: userData.rewardPoints || 0,
+        achievements: (
+          (userData.achievements || []) as (Omit<Achievement, "unlockedAt"> & {
+            unlockedAt: Timestamp;
+          })[]
+        ).map((achievement) => ({
+          ...achievement,
+          unlockedAt: achievement.unlockedAt.toDate(),
+        })),
+        completedTasksCount: userData.completedTasksCount || 0,
+        currentStreak: userData.currentStreak || 0,
+        bestStreak: userData.bestStreak || 0,
+      };
+    } catch (error) {
+      console.error("Error fetching user by ID:", error);
       return null;
     }
-    const userData = userDoc.data();
-    if (!userData) {
-      return null;
-    }
-    return {
-      uid: userDoc.id,
-      displayName: userData.displayName,
-      email: userData.email,
-      provider: userData.provider,
-      photoURL: userData.photoURL,
-      createdAt: (userData.createdAt as Timestamp).toDate(),
-      notifyReminders: userData.notifyReminders,
-      notifyAchievements: userData.notifyAchievements,
-      rewardPoints: userData.rewardPoints || 0,
-      achievements: userData.achievements || [],
-      completedTasksCount: userData.completedTasksCount || 0,
-      currentStreak: userData.currentStreak || 0,
-      bestStreak: userData.bestStreak || 0,
-    };
-  } catch (error) {
-    console.error("Error fetching user by ID:", error);
-    return null;
   }
-};
+);
 
 export async function updateUserRewardPoints(
   userId: string,

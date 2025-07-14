@@ -14,25 +14,26 @@ import {
   Award,
   Brain,
 } from "lucide-react";
+import { isSameDay, isToday } from "date-fns";
+import { Task } from "../_types/types";
 import { ReactNode } from "react";
-import { getTasksByUserId } from "@/app/_lib/tasks-admin";
-import { authOptions } from "../_lib/auth";
+import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
-import TaskCardSmall from "../_components/TaskCardSmall";
 import {
   calculateTaskPoints,
   calculatePotentialTaskPoints,
   generateTaskTypes,
   calculateTimeManagementStats,
 } from "../_utils/utils";
-import { Task } from "../_types/types";
-import RepeatingTaskCard from "../_components/RepeatingTaskCard";
+import { authOptions } from "../_lib/auth";
 import { loadNotesByUserId } from "../_lib/notes";
-import { isSameDay, isToday } from "date-fns";
-import { redirect } from "next/navigation";
-import NotificationSummary from "../_components/inbox/NotificationSummary";
 import { getUserById } from "../_lib/user-admin";
+import { getTasksByUserId } from "@/app/_lib/tasks-admin";
 import { getNotificationStats } from "../_lib/notifications-admin";
+
+import NotificationSummary from "../_components/inbox/NotificationSummary";
+import TaskCardSmall from "../_components/TaskCardSmall";
+import RepeatingTaskCard from "../_components/RepeatingTaskCard";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);

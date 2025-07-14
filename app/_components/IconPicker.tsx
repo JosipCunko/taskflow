@@ -1,21 +1,18 @@
 "use client";
 
-import type { ForwardRefExoticComponent, RefAttributes } from "react";
+import type { Dispatch, ForwardRefExoticComponent, RefAttributes } from "react";
 import { TASK_ICONS } from "../_utils/icons";
 import type { LucideProps } from "lucide-react";
+import { Action } from "./AddTask";
 
 export default function IconPicker({
   selectedIcon,
-  setSelectedIcon,
+  dispatch,
 }: {
   selectedIcon: ForwardRefExoticComponent<
     Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>
   >;
-  setSelectedIcon: (
-    icon: ForwardRefExoticComponent<
-      Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>
-    >
-  ) => void;
+  dispatch: Dispatch<Action>;
 }) {
   return (
     <div className="flex flex-col gap-2 w-fit p-1">
@@ -30,7 +27,9 @@ export default function IconPicker({
           <button
             type="button"
             key={icon.id}
-            onClick={() => setSelectedIcon(icon.icon)}
+            onClick={() =>
+              dispatch({ type: "selectedIcon", payload: icon.icon })
+            }
             className={`w-8 h-8 cursor-pointer rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white transition-transform hover:scale-110
               grid place-items-center
               ${

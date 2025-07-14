@@ -1,13 +1,15 @@
 import ProfileTabs from "@/app/_components/ProfileTabs";
+import UserInfoCard from "@/app/_components/UserInfoCard";
+
 import { User } from "lucide-react";
 import { getServerSession } from "next-auth";
-import UserInfoCard from "@/app/_components/UserInfoCard";
 import { redirect } from "next/navigation";
 import { getRecentUserActivity } from "@/app/_lib/activity";
 import { AppUser } from "@/app/_types/types";
 import { authOptions } from "@/app/_lib/auth";
 import { loadNotesByUserId } from "@/app/_lib/notes";
 import { getUserById } from "@/app/_lib/user-admin";
+
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions);
   if (!session || !session.user || !session.user.id) {
@@ -19,6 +21,9 @@ export default async function ProfilePage() {
     getRecentUserActivity(userFromToken.id, 7),
     loadNotesByUserId(userFromToken.id),
   ]);
+  if (!user) {
+    redirect("/login");
+  }
 
   const userProfileData = {
     ...user,

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { getServerSession } from "next-auth";
 import { authOptions } from "../_lib/auth";
 import { getTasksByUserId } from "../_lib/tasks-admin";
-import { Toaster } from "react-hot-toast";
-import TopSidebar from "../_components/TopSidebar";
 import { redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
+import { Toaster } from "react-hot-toast";
+
+import TopSidebar from "../_components/TopSidebar";
 import AnimatedSidebar from "../_components/AnimatedSidebar";
 
 export const metadata: Metadata = {

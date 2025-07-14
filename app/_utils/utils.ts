@@ -522,10 +522,11 @@ export function isTaskAtRisk(task: Task): boolean {
 
 export function getStartAndEndTime(task: Task) {
   let startTime: string;
+  const dueDate = new Date(task.dueDate);
   const endTime =
-    task.dueDate.getHours().toString().padStart(2, "0") +
+    dueDate.getHours().toString().padStart(2, "0") +
     ":" +
-    task.dueDate.getMinutes().toString().padStart(2, "0");
+    dueDate.getMinutes().toString().padStart(2, "0");
   if (
     !task?.startTime ||
     task.startTime.hour === undefined ||

@@ -1,14 +1,15 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/_lib/auth";
 import { getTasksByUserId } from "@/app/_lib/tasks-admin";
-import TaskCardSmall from "@/app/_components/TaskCardSmall";
 import { CardSpecificIcons } from "@/app/_utils/icons";
 import { Clock, Clock7, Notebook } from "lucide-react";
 import Link from "next/link";
-import RepeatingTaskCard from "@/app/_components/RepeatingTaskCard";
 import { isToday } from "date-fns";
 import { redirect } from "next/navigation";
 import { getStartAndEndTime } from "@/app/_utils/utils";
+
+import TaskCardSmall from "@/app/_components/TaskCardSmall";
+import RepeatingTaskCard from "@/app/_components/RepeatingTaskCard";
 
 export default async function TodayPage() {
   const session = await getServerSession(authOptions);
@@ -18,9 +19,11 @@ export default async function TodayPage() {
 
   const userId = session.user.id;
   const allUserTasks = await getTasksByUserId(userId);
-  const todaysTasks = allUserTasks.filter(
-    (task) => isToday(task.dueDate) && !task.isRepeating
-  );
+
+  const todaysTasks = allUserTasks.filter((task) => {
+    console.log(task.dueDate);
+    return isToday(task.dueDate) && !task.isRepeating;
+  });
   const todaysRepeatingTasks = allUserTasks.filter(
     (task) => isToday(task.dueDate) && task.isRepeating
   );

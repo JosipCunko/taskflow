@@ -82,16 +82,9 @@ function Window({ children, name, showButton = undefined }: WindowProps) {
 
   return createPortal(
     <div
-      className="fixed inset-0 rounded-xl backdrop-blur-lg z-[999] p-4 overflow-y-auto flex items-center justify-center" // Added overflow-y-auto and flex centering
+      className="fixed inset-0 rounded-xl z-[999] p-4 overflow-y-auto flex items-center justify-center" // Added overflow-y-auto and flex centering
     >
-      <div
-        className="fixed top-[50%] left-[50%] rounded-lg shadow-lg bg-background-700 p-4 "
-        style={{
-          transform: "translate(-50%, -50%)",
-          transition: "transform 0.3s ease-out, opacity 0.3s ease-out",
-          opacity: 1,
-        }}
-      >
+      <div className="fixed top-[50%] left-[50%] rounded-lg shadow-lg p-4 translate-x-[-50%] translate-y-[-50%]">
         <div>{cloneElement(children, { onCloseModal: close })}</div>
 
         {showButton && (

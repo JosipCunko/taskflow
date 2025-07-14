@@ -102,7 +102,7 @@ export async function updateUserRepeatingTasks(userId: string) {
       Array.from({ length: getDaysInMonth(today) }).forEach((_, i) => {
         const dayToCheck = addDays(currentMonthStart, i);
         if (isPast(dayToCheck) && !isToday(dayToCheck)) {
-          if (!rule.completedAt.includes(dayToCheck)) {
+          if (!rule.completedAt?.includes(dayToCheck)) {
             updates.points = Math.max(2, task.points - 2);
           }
         }
@@ -132,22 +132,24 @@ export async function updateUserRepeatingTasks(userId: string) {
       const taskWeekStart = startOfWeek(ruleStartDate, MONDAY_START_OF_WEEK);
 
       Array.from({ length: 7 }).forEach((_, i) => {
-        const dayToCheck = addDays(currentWeekStart, i);
+        const dayToCheck = addDays(taskWeekStart, i);
         if (isPast(dayToCheck) && !isToday(dayToCheck)) {
-          if (!rule.completedAt.includes(dayToCheck)) {
+          if (!rule.completedAt?.includes(dayToCheck)) {
             updates.points = Math.max(2, task.points - 2);
           }
         }
       });
 
-      if (
-        isPast(taskDueDate) &&
-        !isSameWeek(currentWeekStart, taskWeekStart, MONDAY_START_OF_WEEK)
-      ) {
+      if (isPast(taskDueDate)) {
+        updates.status = "pending";
+      }
+
+      if (!isSameWeek(currentWeekStart, taskWeekStart, MONDAY_START_OF_WEEK)) {
         updates.status = "pending";
         updates["repetitionRule.completions"] = 0;
         updates["repetitionRule.startDate"] = currentWeekStart;
         updates["repetitionRule.completedAt"] = [];
+        updates.points = 10;
 
         const newDueDate = new Date(today);
         newDueDate.setHours(taskDueDate.getHours(), taskDueDate.getMinutes());
@@ -159,7 +161,7 @@ export async function updateUserRepeatingTasks(userId: string) {
       Array.from({ length: 7 }).forEach((_, i) => {
         const dayToCheck = addDays(taskWeekStart, i);
         if (isPast(dayToCheck) && !isToday(dayToCheck)) {
-          if (!rule.completedAt.includes(dayToCheck)) {
+          if (!rule.completedAt?.includes(dayToCheck)) {
             updates.points = Math.max(2, task.points - 2);
           }
         }

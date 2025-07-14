@@ -4,20 +4,19 @@ import Button from "./reusable/Button";
 import type { DayOfWeek } from "../_types/types";
 import { formatDate, infoToast, MONDAY_START_OF_WEEK } from "../_utils/utils";
 import { Plus, Minus } from "lucide-react";
+import { Dispatch } from "react";
+import { Action } from "./AddTask";
 
 interface RepetitionRulesModalProps {
   activeRepetitionType: "interval" | "daysOfWeek" | "timesPerWeek" | "none";
   setActiveRepetitionType: (
     type: "interval" | "daysOfWeek" | "timesPerWeek" | "none"
   ) => void;
+  dispatch: Dispatch<Action>;
   intervalValue: number;
-  setIntervalValue: (value: number) => void;
   timesPerWeekValue: number;
-  setTimesPerWeekValue: (value: number) => void;
   selectedDaysOfWeek: DayOfWeek[];
-  setSelectedDaysOfWeek: (days: DayOfWeek[]) => void;
   repetitionTaskStartDate: Date;
-  setRepetitionTaskStartDate: (date: Date) => void;
   onDone: () => void; // Function to call when user clicks "Done" in the modal
 }
 
@@ -92,16 +91,13 @@ function NumberControl({
 }
 
 export default function RepetitionRulesModal({
+  dispatch,
   activeRepetitionType,
   setActiveRepetitionType,
   intervalValue,
-  setIntervalValue,
   timesPerWeekValue,
-  setTimesPerWeekValue,
   selectedDaysOfWeek,
-  setSelectedDaysOfWeek,
   repetitionTaskStartDate,
-  setRepetitionTaskStartDate,
   onDone,
 }: RepetitionRulesModalProps) {
   const handleDone = () => {
@@ -196,7 +192,9 @@ export default function RepetitionRulesModal({
             <NumberControl
               label="Repeat every"
               value={intervalValue}
-              setValue={setIntervalValue}
+              setValue={(interval) =>
+                dispatch({ type: "interval", payload: interval })
+              }
               min={1}
               max={30}
               suffix={intervalValue === 1 ? "day" : "days"}
@@ -225,13 +223,14 @@ export default function RepetitionRulesModal({
                       type="button"
                       key={dayLabel}
                       onClick={() =>
-                        setSelectedDaysOfWeek(
-                          selectedDaysOfWeek.includes(dayValue)
+                        dispatch({
+                          type: "selectedDaysOfWeek",
+                          payload: selectedDaysOfWeek.includes(dayValue)
                             ? selectedDaysOfWeek.filter((d) => d !== dayValue)
                             : [...selectedDaysOfWeek, dayValue].sort(
                                 (a, b) => a - b
-                              )
-                        )
+                              ),
+                        })
                       }
                       className={`aspect-square flex flex-col items-center justify-center rounded-xl border-2 transition-all text-sm font-medium
                                 ${
@@ -276,7 +275,9 @@ export default function RepetitionRulesModal({
             <NumberControl
               label="Complete this many times per week"
               value={timesPerWeekValue}
-              setValue={setTimesPerWeekValue}
+              setValue={(timesPerWeek) =>
+                dispatch({ type: "timesPerWeek", payload: timesPerWeek })
+              }
               min={1}
               max={7}
               suffix={timesPerWeekValue === 1 ? "time" : "times"}
@@ -325,7 +326,7 @@ export default function RepetitionRulesModal({
                       0,
                       0
                     );
-                    setRepetitionTaskStartDate(localDate);
+                    dispatch({ type: "startDate", payload: localDate });
                   }}
                   className="w-full bg-background-550 text-center text-base sm:text-lg py-3 rounded-xl"
                 />

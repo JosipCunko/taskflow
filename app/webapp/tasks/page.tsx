@@ -1,10 +1,11 @@
 import { getServerSession } from "next-auth";
 import { ChartColumn, Repeat, Clock } from "lucide-react";
 import { getTasksByUserId } from "@/app/_lib/tasks-admin";
-import TaskCard from "@/app/_components/TaskCard";
-import RepeatingTaskCard from "@/app/_components/RepeatingTaskCard";
 import { authOptions } from "@/app/_lib/auth";
 import { redirect } from "next/navigation";
+
+import TaskCard from "@/app/_components/TaskCard";
+import RepeatingTaskCard from "@/app/_components/RepeatingTaskCard";
 
 export default async function TasksPage() {
   const session = await getServerSession(authOptions);

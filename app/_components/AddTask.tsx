@@ -6,8 +6,9 @@ import {
   useEffect,
   useTransition,
   type ChangeEvent,
+  useReducer,
 } from "react";
-import type { RefAttributes, ForwardRefExoticComponent } from "react";
+import type { RefAttributes, ForwardRefExoticComponent, Dispatch } from "react";
 import { Calendar, CheckCircle } from "lucide-react";
 import type { LucideProps } from "lucide-react";
 import { isSameDay } from "date-fns";
@@ -32,6 +33,21 @@ import { DayOfWeek } from "../_types/types";
 import SwitchComponent from "./reusable/Switch";
 import { preCreateRepeatingTask } from "../_lib/repeatingTasks";
 import RepetitionRulesModal from "./RepetitionRulesModal";
+
+export type Action = {
+  type: string;
+  payload:
+    | number[]
+    | number
+    | string
+    | boolean
+    | Date
+    | DayOfWeek[]
+    | ForwardRefExoticComponent<
+        Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>
+      >
+    | string[];
+};
 
 interface AddTaskProps {
   onCloseModal?: () => void;
@@ -71,38 +87,28 @@ const ShowMoreTriggerButton = ({
 
 const ShowMoreDetailsContent = ({
   selectedColor,
-  setSelectedColor,
   selectedIcon,
-  setSelectedIcon,
   onCloseModal,
   selectedDate,
-  setSelectedDate,
   timeEnd,
   handleTimeEndChange,
   startTime,
   handleStartTimeChange,
   isRepeatingTask,
-  setDuration,
+  dispatch,
 }: {
   selectedColor: string;
-  setSelectedColor: (s: string) => void;
   selectedIcon: ForwardRefExoticComponent<
     Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>
   >;
-  setSelectedIcon: (
-    i: ForwardRefExoticComponent<
-      Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>
-    >
-  ) => void;
   onCloseModal?: () => void;
   selectedDate: Date;
-  setSelectedDate: (date: Date) => void;
   timeEnd: number[];
   handleTimeEndChange: (time: number[]) => void;
   startTime: number[];
   handleStartTimeChange: (time: number[]) => void;
   isRepeatingTask: boolean;
-  setDuration: (time: number[]) => void;
+  dispatch: Dispatch<Action>;
 }) => {
   const handleDone = () => {
     onCloseModal?.();
@@ -119,7 +125,10 @@ const ShowMoreDetailsContent = ({
 
       const durationHours = Math.floor(durationMinutes / 60);
       const remainingMinutes = durationMinutes % 60;
-      setDuration([durationHours, remainingMinutes]);
+      dispatch({
+        type: "duration",
+        payload: [durationHours, remainingMinutes],
+      });
     }
   };
 
@@ -130,17 +139,11 @@ const ShowMoreDetailsContent = ({
       </h3>
 
       <div className="flex flex-col gap-4">
-        <ColorPicker
-          selectedColor={selectedColor}
-          setSelectedColor={setSelectedColor}
-        />
-        <IconPicker
-          selectedIcon={selectedIcon}
-          setSelectedIcon={setSelectedIcon}
-        />
+        <ColorPicker selectedColor={selectedColor} dispatch={dispatch} />
+        <IconPicker selectedIcon={selectedIcon} dispatch={dispatch} />
         {!isRepeatingTask && (
           <div className="grid place-items-center">
-            <DatePicker date={selectedDate} setDate={setSelectedDate} />
+            <DatePicker date={selectedDate} dispatch={dispatch} />
           </div>
         )}
 
@@ -220,36 +223,35 @@ const ShowMoreDetailsContent = ({
     </div>
   );
 };
+const initialState = {
+  selectedDate: new Date(),
+  startTime: [0, 0],
+  endTime: [23, 59],
+  isRepeating: false,
+  isPriority: false,
+  isReminder: false,
+  tags: [] as string[],
+  duration: [0, 0],
+  selectedColor: colorsColorPicker[0],
+  selectedIcon: TASK_ICONS[0].icon,
+  selectedDaysOfWeek: [] as DayOfWeek[],
+  timesPerWeek: 1,
+  interval: 1,
+  startDate: new Date(),
+};
+
+const reducer = (state: typeof initialState, action: Action) => {
+  return { ...state, [action.type]: action.payload };
+};
 
 export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
   const [isPending, startTransition] = useTransition();
   const [isTitleFocused, setIsTitleFocused] = useState(false);
-
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [timeEnd, setTimeEnd] = useState<number[]>([23, 59]);
-  const [startTime, setStartTime] = useState<number[]>([0, 0]);
-
-  const [isPriority, setIsPriority] = useState(false);
-  const [isReminder, setIsReminder] = useState(false);
-  const [tags, setTags] = useState<string[]>([]);
-  const [duration, setDuration] = useState<number[]>([0, 0]);
-  const [selectedColor, setSelectedColor] = useState<string>(
-    colorsColorPicker[0]
-  );
-  const [selectedIcon, setSelectedIcon] = useState<
-    ForwardRefExoticComponent<
-      Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>
-    >
-  >(TASK_ICONS[0].icon);
-
-  const [isRepeatingTask, setIsRepeatingTask] = useState(false);
-  const [selectedDaysOfWeek, setSelectedDaysOfWeek] = useState<DayOfWeek[]>([]);
-  const [timesPerWeek, setTimesPerWeek] = useState<number>(1);
-  const [interval, setInterval] = useState<number>(1);
-  const [taskStartDate, setTaskStartDate] = useState<Date>(new Date());
   const [activeRepetitionType, setActiveRepetitionType] = useState<
     "interval" | "daysOfWeek" | "timesPerWeek" | "none"
   >("none");
+
+  const [state, dispatch] = useReducer(reducer, initialState);
 
   const [showMoreOpenName, setShowMoreOpenName] = useState<string>("");
   const openShowMore = (name: string) => setShowMoreOpenName(name);
@@ -279,7 +281,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
   );
 
   useEffect(() => {
-    if (isRepeatingTask) {
+    if (state.isRepeating) {
       if (activeRepetitionType === "none") {
         setActiveRepetitionType("interval");
       }
@@ -290,88 +292,104 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
         closeRepetitionModal();
       }
     }
-  }, [isRepeatingTask]);
+  }, [state.isRepeating]);
 
   const isStartTimeSpecified = useMemo(
-    () => startTime[0] !== 0 || startTime[1] !== 0,
-    [startTime]
+    () => state.startTime[0] !== 0 || state.startTime[1] !== 0,
+    [state.startTime]
   );
   const isDurationSpecified = useMemo(
-    () => duration[0] !== 0 || duration[1] !== 0,
-    [duration]
+    () => state.duration[0] !== 0 || state.duration[1] !== 0,
+    [state.duration]
   );
 
   const handleDurationChange = (newDuration: number[]) => {
-    setDuration(newDuration);
-    const endTimeDefault = timeEnd[0] === 23 && timeEnd[1] === 59;
+    dispatch({ type: "duration", payload: newDuration });
+    const endTimeDefault = state.endTime[0] === 23 && state.endTime[1] === 59;
 
     if (isStartTimeSpecified) {
       const totalMinutes =
-        startTime[0] * 60 + startTime[1] + newDuration[0] * 60 + newDuration[1];
+        state.startTime[0] * 60 +
+        state.startTime[1] +
+        newDuration[0] * 60 +
+        newDuration[1];
       const endHour = Math.floor(totalMinutes / 60) % 24;
       const endMinute = totalMinutes % 60;
 
-      if (endHour === startTime[0] && endMinute === startTime[1])
-        setTimeEnd([23, 59]);
-      else setTimeEnd([endHour, endMinute]);
+      if (endHour === state.startTime[0] && endMinute === state.startTime[1])
+        dispatch({ type: "endTime", payload: [23, 59] });
+      else dispatch({ type: "endTime", payload: [endHour, endMinute] });
     } else if (!isStartTimeSpecified && !endTimeDefault) {
       const totalMinutes =
-        timeEnd[0] * 60 + timeEnd[1] - newDuration[0] * 60 - newDuration[1];
+        state.endTime[0] * 60 +
+        state.endTime[1] -
+        newDuration[0] * 60 -
+        newDuration[1];
       const startHour = Math.floor(totalMinutes / 60) % 24;
       const startMinute = totalMinutes % 60;
-      setStartTime([startHour, startMinute]);
+      dispatch({ type: "startTime", payload: [startHour, startMinute] });
     }
   };
 
   const handleStartTimeChange = (newStartTime: number[]) => {
-    setStartTime(newStartTime);
+    dispatch({ type: "startTime", payload: newStartTime });
 
     const isStartTimeSpecified = newStartTime[0] !== 0 || newStartTime[1] !== 0;
-    setDuration([0, 0]);
+    dispatch({ type: "duration", payload: [0, 0] });
 
     if (isStartTimeSpecified && isDurationSpecified) {
       const totalMinutes =
-        newStartTime[0] * 60 + newStartTime[1] + duration[0] * 60 + duration[1];
+        newStartTime[0] * 60 +
+        newStartTime[1] +
+        state.duration[0] * 60 +
+        state.duration[1];
       const endHour = Math.floor(totalMinutes / 60) % 24;
       const endMinute = totalMinutes % 60;
-      setTimeEnd([endHour, endMinute]);
+      dispatch({ type: "endTime", payload: [endHour, endMinute] });
     }
   };
 
   const handleEndTimeChange = (newTimeEnd: number[]) => {
-    setTimeEnd(newTimeEnd);
-    setDuration([0, 0]);
+    dispatch({ type: "endTime", payload: newTimeEnd });
+    dispatch({ type: "duration", payload: [0, 0] });
   };
 
   const handleSubmit = async (formData: FormData) => {
     startTransition(async () => {
       try {
         const title = formData.get("title") as string;
-        const endHour = timeEnd[0];
-        const endMinute = timeEnd[1];
-        if (!title || !selectedColor || !selectedIcon) {
+        const endHour = state.endTime[0];
+        const endMinute = state.endTime[1];
+        if (!title || !state.selectedColor || !state.selectedIcon) {
           throw new Error("Missing some required fields.");
         }
 
-        const baseDueDate = new Date(selectedDate);
+        const baseDueDate = new Date(state.selectedDate);
         baseDueDate.setHours(endHour, endMinute);
-        const durationObject = { hours: duration[0], minutes: duration[1] };
-        const taskTimeObject = { hour: startTime[0], minute: startTime[1] };
+        const durationObject = {
+          hours: state.duration[0],
+          minutes: state.duration[1],
+        };
+        const taskTimeObject = {
+          hour: state.startTime[0],
+          minute: state.startTime[1],
+        };
 
-        if (isRepeatingTask && activeRepetitionType !== "none") {
+        if (state.isRepeating && activeRepetitionType !== "none") {
           let argInterval: number | undefined;
           let argTimesPerWeek: number | undefined;
           let argDaysOfWeek: DayOfWeek[] = [];
 
           switch (activeRepetitionType) {
             case "interval":
-              argInterval = interval > 0 ? interval : undefined;
+              argInterval = state.interval > 0 ? state.interval : undefined;
               break;
             case "timesPerWeek":
-              argTimesPerWeek = timesPerWeek > 0 ? timesPerWeek : undefined;
+              argTimesPerWeek =
+                state.timesPerWeek > 0 ? state.timesPerWeek : undefined;
               break;
             case "daysOfWeek":
-              argDaysOfWeek = selectedDaysOfWeek;
+              argDaysOfWeek = state.selectedDaysOfWeek;
               break;
           }
 
@@ -381,18 +399,19 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
               argTimesPerWeek,
               argDaysOfWeek,
               baseDueDate,
-              taskStartDate
+              state.startDate
             );
 
           const res = await createTaskAction(
             formData,
-            isPriority,
-            isReminder,
-            selectedColor,
-            TASK_ICONS.filter((icon) => icon.icon === selectedIcon)[0].label,
+            state.isPriority,
+            state.isReminder,
+            state.selectedColor,
+            TASK_ICONS.filter((icon) => icon.icon === state.selectedIcon)[0]
+              .label,
             firstInstanceDueDate as Date,
             taskTimeObject,
-            tags,
+            state.tags,
             durationObject,
             true,
             repetitionRule
@@ -403,13 +422,14 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
         } else {
           const res = await createTaskAction(
             formData,
-            isPriority,
-            isReminder,
-            selectedColor,
-            TASK_ICONS.filter((icon) => icon.icon === selectedIcon)[0].label,
+            state.isPriority,
+            state.isReminder,
+            state.selectedColor,
+            TASK_ICONS.filter((icon) => icon.icon === state.selectedIcon)[0]
+              .label,
             baseDueDate,
             taskTimeObject,
-            tags,
+            state.tags,
             durationObject,
             false,
             undefined
@@ -467,24 +487,27 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
         <TagInput
           id="task-topics"
           label="Tags"
-          tags={tags}
-          setTags={setTags}
+          tags={state.tags}
+          setTags={(tags) => dispatch({ type: "tags", payload: tags })}
           placeholder="e.g. family, gym"
         />
         <div className="flex items-center space-x-2 my-4 ">
-          {!isRepeatingTask && (
+          {!state.isRepeating && (
             <Button
               variant="tag"
               onClick={() => {
                 const today = new Date();
-                setSelectedDate(
-                  isSameDay(today, selectedDate)
-                    ? new Date(selectedDate.getTime() + 24 * 60 * 60 * 1000)
-                    : today
-                );
+                dispatch({
+                  type: "date",
+                  payload: isSameDay(today, state.selectedDate)
+                    ? new Date(
+                        state.selectedDate.getTime() + 24 * 60 * 60 * 1000
+                      )
+                    : today,
+                });
               }}
               className={` ${
-                isSameDay(new Date(), selectedDate)
+                isSameDay(new Date(), state.selectedDate)
                   ? "bg-green-100 text-green-800"
                   : "bg-background-500 text-text-low"
               }`}
@@ -496,9 +519,11 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
 
           <Button
             variant="tag"
-            onClick={() => setIsPriority(!isPriority)}
+            onClick={() =>
+              dispatch({ type: "isPriority", payload: !state.isPriority })
+            }
             className={`${
-              isPriority
+              state.isPriority
                 ? "bg-red-100 text-red-800"
                 : "bg-background-500 text-text-low"
             }`}
@@ -509,9 +534,11 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
 
           <Button
             variant="tag"
-            onClick={() => setIsReminder(!isReminder)}
+            onClick={() =>
+              dispatch({ type: "isReminder", payload: !state.isReminder })
+            }
             className={` ${
-              isReminder
+              state.isReminder
                 ? "bg-blue-100 text-blue-800"
                 : "bg-background-500 text-text-low"
             }`}
@@ -527,18 +554,15 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
 
           <Modal.Window name="show-more">
             <ShowMoreDetailsContent
-              selectedColor={selectedColor}
-              setSelectedColor={setSelectedColor}
-              selectedIcon={selectedIcon}
-              setSelectedIcon={setSelectedIcon}
-              selectedDate={selectedDate}
-              setSelectedDate={setSelectedDate}
-              timeEnd={timeEnd}
+              selectedColor={state.selectedColor}
+              dispatch={dispatch}
+              selectedIcon={state.selectedIcon}
+              selectedDate={state.selectedDate}
+              timeEnd={state.endTime}
               handleTimeEndChange={handleEndTimeChange}
-              startTime={startTime}
+              startTime={state.startTime}
               handleStartTimeChange={handleStartTimeChange}
-              isRepeatingTask={isRepeatingTask}
-              setDuration={setDuration}
+              isRepeatingTask={state.isRepeating}
             />
           </Modal.Window>
         </ModalContext.Provider>
@@ -547,15 +571,15 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
             id="isRepeating"
             name="isRepeating"
             label="Make this a repeating task"
-            checked={isRepeatingTask}
+            checked={state.isRepeating}
             onCheckedChange={(checked) => {
-              setIsRepeatingTask(checked);
+              dispatch({ type: "isRepeating", payload: checked });
               if (!checked) {
                 setActiveRepetitionType("none");
               }
             }}
           />
-          {isRepeatingTask && activeRepetitionType !== "none" && (
+          {state.isRepeating && activeRepetitionType !== "none" && (
             <Button
               variant="secondary"
               onClick={() => openRepetitionModal("repetition-rules")}
@@ -563,10 +587,10 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
             >
               <CardSpecificIcons.Edit size={20} />
               {activeRepetitionType === "interval" &&
-                `Repeats every ${interval} day(s)`}
+                `Repeats every ${state.interval} day(s)`}
               {activeRepetitionType === "daysOfWeek" &&
                 `Repeats on ${
-                  selectedDaysOfWeek
+                  state.selectedDaysOfWeek
                     .map(
                       (d) =>
                         ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d]
@@ -574,10 +598,10 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
                     .join(", ") || "selected days"
                 }`}
               {activeRepetitionType === "timesPerWeek" &&
-                `Repeats ${timesPerWeek} time${
-                  timesPerWeek === 1 ? "" : "s"
+                `Repeats ${state.timesPerWeek} time${
+                  state.timesPerWeek === 1 ? "" : "s"
                 } per week`}
-              {taskStartDate && ` starting ${formatDate(taskStartDate)}`}
+              {state.startDate && ` starting ${formatDate(state.startDate)}`}
             </Button>
           )}
         </div>
@@ -585,16 +609,13 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
         <ModalContext.Provider value={repetitionModalContextValue}>
           <Modal.Window name="repetition-rules">
             <RepetitionRulesModal
+              dispatch={dispatch}
               activeRepetitionType={activeRepetitionType}
               setActiveRepetitionType={setActiveRepetitionType}
-              intervalValue={interval}
-              setIntervalValue={setInterval}
-              timesPerWeekValue={timesPerWeek}
-              setTimesPerWeekValue={setTimesPerWeek}
-              selectedDaysOfWeek={selectedDaysOfWeek}
-              setSelectedDaysOfWeek={setSelectedDaysOfWeek}
-              repetitionTaskStartDate={taskStartDate}
-              setRepetitionTaskStartDate={setTaskStartDate}
+              intervalValue={state.interval}
+              timesPerWeekValue={state.timesPerWeek}
+              selectedDaysOfWeek={state.selectedDaysOfWeek}
+              repetitionTaskStartDate={state.startDate}
               onDone={closeRepetitionModal}
             />
           </Modal.Window>
@@ -610,12 +631,12 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
               <Input
                 type="number"
                 name="durationHours"
-                value={duration[0].toString().padStart(2, "0")}
+                value={state.duration[0].toString().padStart(2, "0")}
                 onChange={(e: ChangeEvent<HTMLInputElement>) => {
                   const newHour = parseInt(e.target.value, 10);
                   handleDurationChange([
                     isNaN(newHour) ? 0 : Math.max(0, Math.min(23, newHour)),
-                    duration[1],
+                    state.duration[1],
                   ]);
                 }}
                 className="text-text-gray text-center bg-background-500 focus:ring-primary-500 outline-none w-16"
@@ -624,11 +645,11 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
               <Input
                 type="number"
                 name="durationMinutes"
-                value={duration[1].toString().padStart(2, "0")}
+                value={state.duration[1].toString().padStart(2, "0")}
                 onChange={(e: ChangeEvent<HTMLInputElement>) => {
                   const newMin = parseInt(e.target.value, 10);
                   handleDurationChange([
-                    duration[0],
+                    state.duration[0],
                     isNaN(newMin) ? 0 : Math.max(0, Math.min(59, newMin)),
                   ]);
                 }}

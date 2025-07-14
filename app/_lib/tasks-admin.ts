@@ -9,8 +9,31 @@ import {
 } from "@/app/_types/types";
 import { calculateTaskPoints, isTaskAtRisk } from "@/app/_utils/utils";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
-
+import { revalidateTag } from "next/cache";
 const TASKS_COLLECTION = "tasks";
+
+// Helper function to safely convert dates from either Timestamp or ISO string
+const safeConvertToDate = (
+  dateValue: Timestamp | Date | string | undefined
+): Date => {
+  if (!dateValue) return new Date();
+
+  // If it's already a Date object, return it
+  if (dateValue instanceof Date) return dateValue;
+
+  // If it's a Firestore Timestamp, convert it
+  if (
+    dateValue &&
+    typeof dateValue === "object" &&
+    "toDate" in dateValue &&
+    typeof dateValue.toDate === "function"
+  ) {
+    return new Date(dateValue.toDate());
+  }
+
+  // If it's an ISO string or any other format, try to parse it
+  return new Date(dateValue as string);
+};
 
 const fromFirestore = (
   snapshot: admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData>
@@ -25,21 +48,28 @@ const fromFirestore = (
     color: data.color,
     isPriority: data.isPriority,
     isReminder: data.isReminder,
-    dueDate: data.dueDate.toDate(),
+    dueDate: safeConvertToDate(data.dueDate),
     startTime: data.startTime || { hour: 0, minute: 0 },
     status: data.status || "pending",
     delayCount: data.delayCount || 0,
     tags: data.tags || [],
-    createdAt: data.createdAt.toDate(),
-    updatedAt: data.updatedAt.toDate(),
-    completedAt: data.completedAt ? data.completedAt.toDate() : undefined,
+    createdAt: safeConvertToDate(data.createdAt),
+    updatedAt: safeConvertToDate(data.updatedAt),
+    completedAt: data.completedAt
+      ? safeConvertToDate(data.completedAt)
+      : undefined,
     experience: data.experience || undefined,
     duration: data.duration || { hours: 0, minutes: 0 },
     isRepeating: data.isRepeating,
     repetitionRule: data.repetitionRule
       ? {
           ...data.repetitionRule,
-          startDate: data.repetitionRule.startDate.toDate(),
+          completedAt: data.repetitionRule.completedAt
+            ? data.repetitionRule.completedAt.map(
+                (date: Timestamp | Date | string) => safeConvertToDate(date)
+              )
+            : [],
+          startDate: safeConvertToDate(data.repetitionRule.startDate),
         }
       : undefined,
     points: data.points,
@@ -75,6 +105,7 @@ export const getTaskByTaskId = async (taskId: string): Promise<Task | null> => {
   }
 };
 
+// Problem with caching - Dates are converted to ISO strings
 export const getTasksByUserId = async (
   userId: string | undefined
 ): Promise<Task[]> => {
@@ -91,7 +122,9 @@ export const getTasksByUserId = async (
     const tasksSnapshot = await tasksQuery.get();
 
     const tasks: Task[] = tasksSnapshot.docs.map((doc) => {
-      return fromFirestore(doc);
+      return fromFirestore(
+        doc as admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData>
+      );
     });
 
     return tasks;
@@ -168,7 +201,7 @@ export const createTask = async (taskData: TaskToCreateData): Promise<Task> => {
     const createdTask = fromFirestore(
       createdDocSnap as admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData>
     );
-
+    revalidateTag("tasks");
     return createdTask;
   } catch (error) {
     console.error("Error creating task:", error);
@@ -206,7 +239,7 @@ export const updateTask = async (
     }
 
     await taskRef.update(updateData);
-
+    revalidateTag("tasks");
     const updatedDocSnap = await taskRef.get();
     return fromFirestore(
       updatedDocSnap as admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData>
@@ -228,6 +261,7 @@ export const deleteTask = async (taskId: string): Promise<Task> => {
       taskSnap as admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData>
     );
     await taskRef.delete();
+    revalidateTag("tasks");
     return taskToDelete;
   } catch (error) {
     console.error(`Error deleting task ${taskId}:`, error);

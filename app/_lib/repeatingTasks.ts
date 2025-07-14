@@ -20,6 +20,7 @@ export function preCreateRepeatingTask(
       isRepeating: true,
       dueDate: setTimeForDueDate(taskStartDate),
       repetitionRule: {
+        completedAt: [],
         interval,
         timesPerWeek: undefined,
         daysOfWeek: [],
@@ -35,6 +36,7 @@ export function preCreateRepeatingTask(
         endOfWeek(taskStartDate, MONDAY_START_OF_WEEK)
       ),
       repetitionRule: {
+        completedAt: [],
         timesPerWeek,
         interval: undefined,
         daysOfWeek: [],
@@ -63,6 +65,7 @@ export function preCreateRepeatingTask(
       isRepeating: true,
       dueDate: setTimeForDueDate(firstDueDate),
       repetitionRule: {
+        completedAt: [],
         daysOfWeek,
         timesPerWeek: undefined,
         interval: undefined,

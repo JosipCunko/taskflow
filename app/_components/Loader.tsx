@@ -1,13 +1,7 @@
 export default function Loader({ label = undefined }: { label?: string }) {
   return (
-    <div className="bg-background-650 absolute inset-0 flex justify-center items-center flex-col gap-0.5">
-      <section className="dots-container">
-        <div className="dot"></div>
-        <div className="dot"></div>
-        <div className="dot"></div>
-        <div className="dot"></div>
-        <div className="dot"></div>
-      </section>
+    <div className="bg-background-650 absolute inset-0 flex justify-center items-center flex-col gap-y-0.5">
+      <div className="spinner"></div>
       {label && <span className="text-lg text-text-low">{label}</span>}
     </div>
   );

@@ -21,11 +21,6 @@ const images = [
     title: "Customize Your Tasks",
   },
   {
-    src: "/layout2.png",
-    alt: "Visible app layout and the dashboard.",
-    title: "Amazing app layout and useful dashboard",
-  },
-  {
     src: "/profile.png",
     alt: "The user profile page, displaying statistics and settings.",
     title: "Manage Your Profile",
