@@ -32,6 +32,16 @@ const SwitchComponent: React.FC<SwitchProps> = ({
         disabled ? "opacity-60 cursor-not-allowed" : ""
       }`}
     >
+      {label && (
+        <label
+          htmlFor={id}
+          className={`${labelClassName} ${
+            disabled ? "cursor-not-allowed" : "cursor-pointer"
+          }`}
+        >
+          {label}
+        </label>
+      )}
       <Switch.Root
         id={id}
         name={name}
@@ -61,17 +71,6 @@ const SwitchComponent: React.FC<SwitchProps> = ({
                       ${disabled ? "!bg-gray-400" : ""}`}
         />
       </Switch.Root>
-
-      {label && (
-        <label
-          htmlFor={id}
-          className={`${labelClassName} ${
-            disabled ? "cursor-not-allowed" : "cursor-pointer"
-          }`}
-        >
-          {label}
-        </label>
-      )}
     </div>
   );
 };

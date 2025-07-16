@@ -7,18 +7,10 @@ import { infoToast } from "../_utils/utils";
 interface TagInputProps {
   tags: string[];
   setTags: (tags: string[]) => void;
-  placeholder?: string;
   id?: string;
-  label?: string;
 }
 
-function TagInput({
-  tags,
-  setTags,
-  placeholder = "Add a tag...",
-  id = "tag-input",
-  label = "Tags",
-}: TagInputProps) {
+function TagInput({ tags, setTags, id = "tag-input" }: TagInputProps) {
   const [inputValue, setInputValue] = useState("");
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,19 +44,8 @@ function TagInput({
   };
 
   return (
-    <div className="mb-4">
-      {label && (
-        <label
-          htmlFor={id}
-          className="block text-sm font-gray text-text-low mb-1"
-        >
-          {label}{" "}
-          <span className="text-xs text-text-gray">
-            (separate with spaces or Enter)
-          </span>
-        </label>
-      )}
-      <div className="max-w-sm flex flex-wrap items-center gap-2 p-2.5 rounded-lg bg-background-700 border border-background-500 focus-within:border-primary-500 focus-within:ring-1 focus-within:ring-primary-500 transition-all">
+    <div>
+      <div className="max-w-sm flex flex-wrap items-center gap-2 p-2.5 rounded-lg focus-within:outline-none">
         {tags.map((tag, index) => (
           <span
             key={index}
@@ -87,8 +68,10 @@ function TagInput({
           value={inputValue}
           onChange={handleInputChange}
           onKeyDown={handleInputKeyDown}
-          placeholder={tags.length === 0 ? placeholder : ""} // Show placeholder only if no tags
-          className="flex-1 bg-transparent text-text-high placeholder-text-gray outline-none text-sm min-w-[100px] py-1"
+          placeholder={
+            tags.length === 0 ? "Tags: (separate with spaces or Enter)" : ""
+          }
+          className="flex-1 bg-transparent text-text-high placeholder-text-gray focus-within:outline-none text-sm min-w-[100px] py-1"
         />
       </div>
     </div>

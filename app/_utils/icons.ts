@@ -57,6 +57,8 @@ import {
   ClockFading,
   Ellipsis,
   Clock7,
+  MapPin,
+  MapPinOff,
 } from "lucide-react";
 import { NotificationType } from "../_types/types";
 
@@ -285,6 +287,9 @@ export const CardSpecificIcons = {
   RemovePriority: ZapOff,
   SetReminder: BellPlus,
   RemoveReminder: BellOff,
+  Location: MapPin,
+  ResetLocation: MapPinOff,
+  User: User,
 };
 
 export const getNotificationIcon = (type: NotificationType) => {

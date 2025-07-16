@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@radix-ui/react-switch": "^1.2.5",
+    "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "firebase": "^11.7.3",
     "firebase-admin": "^13.4.0",
@@ -22,7 +23,8 @@
     "react-dom": "^19.0.0",
     "react-hot-toast": "^2.5.2",
     "react-tooltip": "^5.28.1",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

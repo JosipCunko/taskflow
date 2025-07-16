@@ -33,7 +33,7 @@ import { getServerSession } from "next-auth";
 import { logUserActivity } from "./activity";
 import { authOptions } from "./auth";
 import { revalidatePath } from "next/cache";
-import { updateUser, updateUserRewardPoints } from "./user-admin";
+import { updateUser, updateUserCompletionStats } from "./user-admin";
 import { adminDb } from "./admin";
 import { FieldValue } from "firebase-admin/firestore";
 
@@ -327,7 +327,8 @@ export async function createTaskAction(
   tags: string[],
   duration: { hours: number; minutes: number },
   isRepeating: boolean,
-  repetitionRule: RepetitionRule | undefined
+  repetitionRule: RepetitionRule | undefined,
+  startDate?: Date
 ): Promise<ActionResult> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -337,6 +338,7 @@ export async function createTaskAction(
 
   const title = String(formData.get("title"));
   const description = String(formData.get("description") || "");
+  const location = String(formData.get("location") || "");
 
   const newTaskData: TaskToCreateData = {
     userId,
@@ -347,10 +349,12 @@ export async function createTaskAction(
     isPriority,
     isReminder,
     dueDate,
+    startDate,
     startTime,
     tags: tags || [],
     isRepeating: isRepeating,
     duration,
+    location,
   };
 
   if (repetitionRule) {
@@ -445,7 +449,7 @@ export async function completeRepeatingTaskWithInterval(
 
   try {
     await updateTask(task.id, updates);
-    await updateUserRewardPoints(session.user.id, task.points);
+    await updateUserCompletionStats(session.user.id, task.points);
     return {
       success: true,
       message: `Task completed. Next due on ${formatDate(finalDueDate)}`,
@@ -501,16 +505,16 @@ export async function completeRepeatingTaskWithTimesPerWeek(
     newStartDate = nextWeekStart;
     nextDueDate = nextWeekStart;
   } else {
-    newStartDate = rule.startDate;
+    newStartDate = task.startDate || new Date();
     nextDueDate = addDays(completionDate, 1);
   }
   // Next due date for "times per week" is the next day
   nextDueDate.setHours(task.dueDate.getHours(), task.dueDate.getMinutes());
 
   const updates: Partial<Task> = {
+    startDate: newStartDate,
     repetitionRule: {
       ...rule,
-      startDate: newStartDate,
       completedAt: [...rule.completedAt, completionDate],
       completions: rule.completions + 1,
     },
@@ -525,7 +529,7 @@ export async function completeRepeatingTaskWithTimesPerWeek(
 
   try {
     await updateTask(task.id, updates);
-    await updateUserRewardPoints(session.user.id, task.points);
+    await updateUserCompletionStats(session.user.id, task.points);
     return {
       success: true,
       message:
@@ -607,8 +611,7 @@ export async function completeRepeatingTaskWithDaysOfWeek(
 
   try {
     await updateTask(task.id, updates);
-    /// !!!
-    await updateUserRewardPoints(session.user.id, task.points);
+    await updateUserCompletionStats(session.user.id, task.points);
     return {
       success: true,
       message:

@@ -48,7 +48,7 @@ export default function Error({
           Something went wrong
         </h1>
 
-        <p className="text-text-low text-lg mb-8">
+        <p className="text-text-low text-pretty text-lg mb-8">
           We&apos;ve encountered an unexpected error while processing your
           request.
         </p>

@@ -1,26 +1,31 @@
 import Link from "next/link";
-import { MoveRight } from "lucide-react";
+import GridAndDotsBackground from "../animations/GridAndDotsBackground";
+import GlitchText from "../animations/GlitchText";
 
 export default function CallToActionSection() {
   return (
-    <section className="py-16 md:py-24 bg-gradient-to-b from-background-600 via-background-650 to-background-700">
-      <div className="container mx-auto px-6 text-center">
-        <h2 className="text-3xl sm:text-4xl font-bold text-text-high mb-6">
-          Ready to{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-accent">
-            Elevate Your Productivity?
-          </span>
-        </h2>
-        <p className="text-text-low max-w-lg mx-auto mb-10 text-base sm:text-lg leading-relaxed">
-          Join TaskFlow today and start turning your to-do lists into
-          accomplishments. Discipline, control, and success are just a click
-          away.
+    <section className="relative py-16 md:py-24 bg-background-700 overflow-hidden">
+      <GridAndDotsBackground />
+      <div className="absolute inset-0 bg-gradient-to-t from-background-700 via-background-700/80 to-transparent z-0"></div>
+
+      <div className="container mx-auto px-6 relative z-10 grid place-items-center">
+        <GlitchText
+          enableOnHover={false}
+          speed={2.2}
+          fontSize="42px"
+          className="tracking-tight mb-6"
+        >
+          Begin Transmission
+        </GlitchText>
+        <p className="text-text-low mx-auto mb-8 text-base max-w-xl  leading-relaxed text-center text-balance">
+          Secure channel open. Your journey to peak productivity is one click
+          away. Authorize and engage.
         </p>
         <Link
           href="/login"
-          className="inline-flex items-center justify-center text-lg font-semibold text-white bg-primary-600 hover:bg-primary-600 shadow-lg hover:shadow-primary-500/40 focus:ring-4 focus:ring-primary-500/50 rounded-lg px-10 py-4 transition-all duration-300 transform hover:scale-105"
+          className="group inline-flex items-center justify-center text-lg font-semibold text-primary-300 bg-primary-500/10 hover:bg-primary-500/20 border-2 border-primary-500/50 shadow-lg hover:shadow-primary-500/20 focus:ring-4 focus:ring-primary-500/50 rounded-lg px-10 py-4 transition-all duration-300 transform hover:scale-105"
         >
-          Sign Up & Take Control <MoveRight className="w-5 h-5 ml-2" />
+          &gt; Authorize & Engage
         </Link>
       </div>
     </section>

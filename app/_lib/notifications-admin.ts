@@ -441,6 +441,18 @@ export const generateAchievementNotification = async (
     return;
   }
 
+  // Check if a notification for this specific achievement already exists
+  const existingNotifications = await getNotificationsByUserIdAdmin(userId);
+  const hasExistingNotification = existingNotifications.some(
+    (notification) =>
+      notification.type === "ACHIEVEMENT_UNLOCKED" &&
+      notification.data?.achievementId === achievementData.achievementId
+  );
+
+  if (hasExistingNotification) {
+    return; // Prevent duplicate notifications
+  }
+
   const achievementTitles: Record<string, string> = {
     streak_milestone: "🔥 Streak Milestone!",
     points_milestone: "🏆 Points Milestone!",
@@ -457,20 +469,18 @@ export const generateAchievementNotification = async (
       "You've achieved a new task completionist milestone! You've completed a total of  ",
   };
 
-  if (
-    !user.achievements.some((ach) => ach.id === achievementData.achievementId)
-  )
-    await createNotification({
-      userId,
-      type: "ACHIEVEMENT_UNLOCKED",
-      priority: "LOW",
-      title: achievementTitles[achievementType],
-      message: `${achievementMessages[achievementType]} ${numberMilestone}`,
-      actionText: "View Achievement",
-      actionUrl: "/webapp/profile",
-      data: achievementData,
-      expiresAt: addDays(new Date(), 30),
-    });
+  // Create notification regardless of user.achievements check to avoid race conditions
+  await createNotification({
+    userId,
+    type: "ACHIEVEMENT_UNLOCKED",
+    priority: "LOW",
+    title: achievementTitles[achievementType],
+    message: `${achievementMessages[achievementType]} ${numberMilestone}`,
+    actionText: "View Achievement",
+    actionUrl: "/webapp/profile",
+    data: achievementData,
+    expiresAt: addDays(new Date(), 30),
+  });
 };
 
 /**

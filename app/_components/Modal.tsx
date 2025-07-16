@@ -9,6 +9,7 @@ import {
   useEffect,
 } from "react";
 import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import Button from "./reusable/Button";
 
 interface ModalContextType {
@@ -74,28 +75,40 @@ function Window({ children, name, showButton = undefined }: WindowProps) {
     [close]
   );
 
-  if (name !== openName) return null;
-
   if (typeof window === "undefined") {
     return null;
   }
 
   return createPortal(
-    <div
-      className="fixed inset-0 rounded-xl z-[999] p-4 overflow-y-auto flex items-center justify-center" // Added overflow-y-auto and flex centering
-    >
-      <div className="fixed top-[50%] left-[50%] rounded-lg shadow-lg p-4 translate-x-[-50%] translate-y-[-50%]">
-        <div>{cloneElement(children, { onCloseModal: close })}</div>
+    <AnimatePresence>
+      {name === openName && (
+        <motion.div
+          className="fixed inset-0 rounded-xl z-[999]  overflow-y-auto flex items-center justify-center backdrop-blur-md"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <motion.div
+            className="fixed top-[50%] left-[50%]  rounded-lg shadow-lg translate-x-[-50%] translate-y-[-50%] bg-background-700"
+            initial={{ opacity: 0, x: 50, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 50, y: 50, scale: 0.9 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          >
+            <div>{cloneElement(children, { onCloseModal: close })}</div>
 
-        {showButton && (
-          <div className="px-6 pb-4 pt-2 flex justify-start">
-            <Button variant="secondary" onClick={close}>
-              Cancel
-            </Button>
-          </div>
-        )}
-      </div>
-    </div>,
+            {showButton && (
+              <div className="px-6 pb-4 pt-2 flex justify-start">
+                <Button variant="secondary" onClick={close}>
+                  Cancel
+                </Button>
+              </div>
+            )}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
     document.body
   );
 }

@@ -21,7 +21,7 @@ export default function Sidebar() {
     general: [
       {
         label: "Dashboard",
-        href: "/webapp/",
+        href: "/webapp",
         icon: Home,
       },
       { label: "Inbox", icon: Inbox, href: "/webapp/inbox" },
@@ -80,7 +80,7 @@ export default function Sidebar() {
             </h2>
             <ul className="space-y-1">
               {items.map((item) => {
-                const isActive = pathname === item?.href;
+                const isActive = pathname === item.href;
                 return (
                   <li key={item.href}>
                     <Link

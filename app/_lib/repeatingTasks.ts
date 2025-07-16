@@ -19,12 +19,12 @@ export function preCreateRepeatingTask(
     return {
       isRepeating: true,
       dueDate: setTimeForDueDate(taskStartDate),
+      startDate: startOfDay(taskStartDate),
       repetitionRule: {
         completedAt: [],
         interval,
         timesPerWeek: undefined,
         daysOfWeek: [],
-        startDate: startOfDay(taskStartDate),
         completions: 0,
       },
     };
@@ -35,12 +35,12 @@ export function preCreateRepeatingTask(
       dueDate: setTimeForDueDate(
         endOfWeek(taskStartDate, MONDAY_START_OF_WEEK)
       ),
+      startDate: startOfDay(startOfWeek(taskStartDate, MONDAY_START_OF_WEEK)),
       repetitionRule: {
         completedAt: [],
         timesPerWeek,
         interval: undefined,
         daysOfWeek: [],
-        startDate: startOfDay(startOfWeek(taskStartDate, MONDAY_START_OF_WEEK)),
         completions: 0,
       },
     };
@@ -64,12 +64,12 @@ export function preCreateRepeatingTask(
     return {
       isRepeating: true,
       dueDate: setTimeForDueDate(firstDueDate),
+      startDate: startOfDay(taskStartDate),
       repetitionRule: {
         completedAt: [],
         daysOfWeek,
         timesPerWeek: undefined,
         interval: undefined,
-        startDate: startOfDay(taskStartDate),
         completions: 0,
       },
     };

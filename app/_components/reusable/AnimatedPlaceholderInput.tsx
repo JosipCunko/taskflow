@@ -2,6 +2,7 @@
 
 import { ChangeEvent, useState, useEffect } from "react";
 import { TASK_PLACEHOLDERS } from "../../_utils/utils";
+import Input from "./Input";
 
 interface AnimatedPlaceholderInputProps {
   type: string;
@@ -57,7 +58,7 @@ export default function AnimatedPlaceholderInput({
 
   return (
     <div className="relative w-full">
-      <input
+      <Input
         min={min}
         max={max}
         type={type}
@@ -67,16 +68,14 @@ export default function AnimatedPlaceholderInput({
         defaultValue={defaultValue}
         onChange={onChange}
         onBlur={onBlur}
-        className={`w-full px-3 py-2 rounded-md focus:outline-none border-1 border-background-500 focus:ring-2 focus:ring-background-500 placeholder:text-text-gray ${
-          className ? className : ""
-        }`}
+        className={className}
         disabled={disabled}
         required={required}
       />
 
       {/* Animated placeholder overlay */}
       {!value && !defaultValue && !isFocused && (
-        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none overflow-hidden h-6 ">
+        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none overflow-hidden h-6">
           <div
             className={`text-text-gray transition-transform duration-500 linear ${
               isAnimating

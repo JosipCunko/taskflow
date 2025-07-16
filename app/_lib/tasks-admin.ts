@@ -10,7 +10,6 @@ import {
 import { calculateTaskPoints, isTaskAtRisk } from "@/app/_utils/utils";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { revalidateTag } from "next/cache";
-const TASKS_COLLECTION = "tasks";
 
 // Helper function to safely convert dates from either Timestamp or ISO string
 const safeConvertToDate = (
@@ -69,9 +68,9 @@ const fromFirestore = (
                 (date: Timestamp | Date | string) => safeConvertToDate(date)
               )
             : [],
-          startDate: safeConvertToDate(data.repetitionRule.startDate),
         }
       : undefined,
+    startDate: data.startDate ? safeConvertToDate(data.startDate) : undefined,
     points: data.points,
   } as Task;
 
@@ -89,7 +88,7 @@ export const getTaskByTaskId = async (taskId: string): Promise<Task | null> => {
     return null;
   }
   try {
-    const taskDocRef = adminDb.collection(TASKS_COLLECTION).doc(taskId);
+    const taskDocRef = adminDb.collection("tasks").doc(taskId);
     const docSnap = await taskDocRef.get();
 
     if (!docSnap.exists) {
@@ -115,7 +114,7 @@ export const getTasksByUserId = async (
   }
 
   try {
-    const tasksRef = adminDb.collection(TASKS_COLLECTION);
+    const tasksRef = adminDb.collection("tasks");
     const tasksQuery = tasksRef
       .where("userId", "==", userId)
       .orderBy("dueDate", "asc");
@@ -143,6 +142,7 @@ interface TaskFirestoreData {
   isPriority: boolean;
   isReminder: boolean;
   dueDate: Timestamp;
+  startDate?: Timestamp;
   startTime: { hour: number; minute: number };
   status: "pending";
   delayCount: number;
@@ -152,8 +152,9 @@ interface TaskFirestoreData {
   experience?: "bad" | "okay" | "good" | "best";
   duration?: { hours: number; minutes: number };
   isRepeating?: boolean;
-  repetitionRule?: Omit<RepetitionRule, "startDate"> & { startDate: Timestamp };
+  repetitionRule?: RepetitionRule;
   points: number;
+  location?: string;
 }
 
 export const createTask = async (taskData: TaskToCreateData): Promise<Task> => {
@@ -175,6 +176,7 @@ export const createTask = async (taskData: TaskToCreateData): Promise<Task> => {
       startTime: taskData.startTime || { hour: 0, minute: 0 },
       isRepeating: taskData.isRepeating,
       points: calculateTaskPoints({ delayCount: 0 } as Task),
+      location: taskData.location,
     };
 
     if (
@@ -187,15 +189,13 @@ export const createTask = async (taskData: TaskToCreateData): Promise<Task> => {
       taskToCreateFirebase.experience = taskData.experience;
     }
     if (taskData.repetitionRule) {
-      taskToCreateFirebase.repetitionRule = {
-        ...taskData.repetitionRule,
-        startDate: Timestamp.fromDate(taskData.repetitionRule.startDate),
-      };
+      taskToCreateFirebase.repetitionRule = taskData.repetitionRule;
+    }
+    if (taskData.startDate) {
+      taskToCreateFirebase.startDate = Timestamp.fromDate(taskData.startDate);
     }
 
-    const docRef = await adminDb
-      .collection(TASKS_COLLECTION)
-      .add(taskToCreateFirebase);
+    const docRef = await adminDb.collection("tasks").add(taskToCreateFirebase);
 
     const createdDocSnap = await docRef.get();
     const createdTask = fromFirestore(
@@ -214,7 +214,7 @@ export const updateTask = async (
   updates: TaskToUpdateData
 ): Promise<Task> => {
   try {
-    const taskRef = adminDb.collection(TASKS_COLLECTION).doc(taskId);
+    const taskRef = adminDb.collection("tasks").doc(taskId);
 
     const updateData: { [key: string]: unknown } = {
       ...updates,
@@ -224,13 +224,11 @@ export const updateTask = async (
     if (updates.dueDate) {
       updateData.dueDate = Timestamp.fromDate(new Date(updates.dueDate));
     }
-    if (updates.repetitionRule?.startDate) {
-      updateData.repetitionRule = {
-        ...updates.repetitionRule,
-        startDate: Timestamp.fromDate(
-          new Date(updates.repetitionRule.startDate)
-        ),
-      };
+    if (updates.startDate) {
+      updateData.startDate = Timestamp.fromDate(new Date(updates.startDate));
+    }
+    if (updates.repetitionRule) {
+      updateData.repetitionRule = updates.repetitionRule;
     }
     if (updates.completedAt) {
       updateData.completedAt = Timestamp.fromDate(
@@ -252,7 +250,7 @@ export const updateTask = async (
 
 export const deleteTask = async (taskId: string): Promise<Task> => {
   try {
-    const taskRef = adminDb.collection(TASKS_COLLECTION).doc(taskId);
+    const taskRef = adminDb.collection("tasks").doc(taskId);
     const taskSnap = await taskRef.get();
     if (!taskSnap.exists) {
       throw new Error("Task not found for deletion");

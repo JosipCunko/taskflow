@@ -1,36 +1,32 @@
 import Link from "next/link";
-import Image from "next/image";
+import { Code } from "lucide-react";
 
 export default function Navbar() {
   return (
-    <nav className="py-5 px-6 md:px-10 lg:px-16 sticky top-0 z-50 bg-background-600 backdrop-blur-md shadow-sm">
+    <nav className="py-4 px-6 md:px-10 lg:px-16 sticky top-0 z-50 bg-background-700/80 backdrop-blur-md border-b border-primary-500/20 shadow-lg shadow-primary-500/5">
       <div className="container mx-auto flex justify-between items-center">
         <Link
           href="/"
-          className="text-2xl font-bold text-primary-400 flex items-center"
+          className="text-xl font-bold text-primary-400 flex items-center group"
         >
-          <Image
-            width={28}
-            height={28}
-            src={"/icon.png"} // Assuming icon.png is in public folder
-            className="mr-2"
-            alt={"TaskFlow Logo"}
-          />
-          TaskFlow
+          <div className="w-8 h-8 mr-3 relative">
+            <div className="absolute inset-0 bg-primary-500/20 rounded-lg group-hover:animate-none group-hover:bg-primary-500/30 transition-colors animate-pulse"></div>
+            <Code className="w-8 h-8 p-1 text-primary-300 group-hover:animate-[text-glitch_0.3s_ease-out]" />
+          </div>
+          <span className="group-hover:text-glow transition-all">TaskFlow</span>
         </Link>
-        <div className="space-x-4 md:space-x-6">
+        <div className="space-x-4 md:space-x-6 flex items-center">
           <Link
             href="#features"
-            className="text-text-low hover:text-primary-400 transition-colors duration-200 text-sm sm:text-base"
+            className="text-text-low hover:text-primary-300 hover:text-glow transition-all duration-200 text-sm sm:text-base font-medium"
           >
-            Features
+            &gt; Features
           </Link>
-          {/* Add other nav links here if needed, e.g., Pricing, About */}
           <Link
-            href="/login" // Or /webapp if user is already logged in (requires session check)
-            className="bg-primary-500 hover:bg-primary-600 text-white font-semibold py-2 px-4 sm:px-5 rounded-md transition-colors duration-200 text-sm sm:text-base"
+            href="/login"
+            className="bg-primary-500/10 hover:bg-primary-500/20 border border-primary-500/50 text-primary-300 font-semibold py-2 px-4 sm:px-5 rounded-md transition-all duration-200 text-sm sm:text-base hover:shadow-md hover:shadow-primary-500/20"
           >
-            Get Started
+            [Engage]
           </Link>
         </div>
       </div>

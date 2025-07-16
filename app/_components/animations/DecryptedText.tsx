@@ -1,7 +1,22 @@
-"use client";
-
 import { useEffect, useState, useRef } from "react";
 import { motion, HTMLMotionProps } from "framer-motion";
+
+const styles = {
+  wrapper: {
+    display: "inline-block",
+    whiteSpace: "pre-wrap",
+  },
+  srOnly: {
+    position: "absolute" as const,
+    width: "1px",
+    height: "1px",
+    padding: 0,
+    margin: "-1px",
+    overflow: "hidden",
+    clip: "rect(0,0,0,0)",
+    border: 0,
+  },
+};
 
 interface DecryptedTextProps extends HTMLMotionProps<"span"> {
   text: string;
@@ -12,8 +27,8 @@ interface DecryptedTextProps extends HTMLMotionProps<"span"> {
   useOriginalCharsOnly?: boolean;
   characters?: string;
   className?: string;
-  encryptedClassName?: string;
   parentClassName?: string;
+  encryptedClassName?: string;
   animateOn?: "view" | "hover";
 }
 
@@ -64,6 +79,7 @@ export default function DecryptedText({
           ) {
             return nextIndex;
           }
+
           for (let i = 0; i < textLength; i++) {
             if (!revealedSet.has(i)) return i;
           }
@@ -200,7 +216,9 @@ export default function DecryptedText({
     }
 
     return () => {
-      if (currentRef) observer.unobserve(currentRef);
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
     };
   }, [animateOn, hasAnimated]);
 
@@ -214,12 +232,13 @@ export default function DecryptedText({
 
   return (
     <motion.span
+      className={parentClassName}
       ref={containerRef}
-      className={`inline-block whitespace-pre-wrap ${parentClassName}`}
+      style={styles.wrapper}
       {...hoverProps}
       {...props}
     >
-      <span className="sr-only">{displayText}</span>
+      <span style={styles.srOnly}>{displayText}</span>
 
       <span aria-hidden="true">
         {displayText.split("").map((char, index) => {

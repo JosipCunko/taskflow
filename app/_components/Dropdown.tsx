@@ -1,16 +1,15 @@
 import { useFormStatus } from "react-dom";
 import Button from "./reusable/Button";
 import {
-  handleToast,
-  canCompleteRepeatingTaskNow,
-  getStartAndEndTime,
   formatDate,
+  getCompletionAvailabilityInfo,
+  handleToast,
 } from "@/app/_utils/utils";
 import { CardSpecificIcons } from "../_utils/icons";
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Task } from "@/app/_types/types";
-import { isSameDay, isToday, format, isTomorrow } from "date-fns";
+import { isSameDay } from "date-fns";
 import {
   delayTaskAction,
   completeTaskAction,
@@ -20,6 +19,8 @@ import {
   deleteTaskAction,
 } from "@/app/_lib/actions";
 import EmojiExperience from "./EmojiExperience";
+import DateInput from "./reusable/DateInput";
+import { useState } from "react";
 
 function ActionSubmitButton({
   children,
@@ -37,6 +38,7 @@ function ActionSubmitButton({
   colorIcon?: string;
 }) {
   const { pending } = useFormStatus();
+
   const isDisabled = pending || propDisabled;
   return (
     <Button
@@ -61,123 +63,6 @@ function ActionSubmitButton({
   );
 }
 
-function getCompletionAvailabilityInfo(task: Task, canComplete?: boolean) {
-  // If task is completed today, show completion message
-  if (task.completedAt && isToday(task.completedAt)) {
-    return {
-      text: "Already completed today",
-      canComplete: false,
-      icon: CardSpecificIcons.MarkComplete,
-    };
-  }
-
-  // If task is already completed (but not today)
-  if (task.status === "completed") {
-    return {
-      text: "Already completed",
-      canComplete: false,
-      icon: CardSpecificIcons.MarkComplete,
-    };
-  }
-
-  // For repeating tasks, use the advanced logic
-  if (task.isRepeating) {
-    const { canCompleteNow, isDueToday } = canCompleteRepeatingTaskNow(task);
-    const { startTime, endTime } = getStartAndEndTime(task);
-
-    if (canCompleteNow) {
-      return {
-        text: "Complete",
-        canComplete: true,
-        icon: CardSpecificIcons.MarkComplete,
-      };
-    }
-
-    // If task is due today but not available right now due to time window
-    if (isDueToday && startTime && endTime) {
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-      const currentTimeInMinutes = currentHour * 60 + currentMinute;
-
-      const startTimeInMinutes =
-        Number(startTime.split(":")[0]) * 60 + Number(startTime.split(":")[1]);
-      const endTimeInMinutes =
-        Number(endTime.split(":")[0]) * 60 + Number(endTime.split(":")[1]);
-
-      if (currentTimeInMinutes < startTimeInMinutes) {
-        return {
-          text: `Available from ${startTime}`,
-          canComplete: false,
-          icon: CardSpecificIcons.MarkComplete,
-        };
-      } else if (currentTimeInMinutes > endTimeInMinutes) {
-        return {
-          text: `Was available until ${endTime}`,
-          canComplete: false,
-          icon: CardSpecificIcons.MarkComplete,
-        };
-      }
-    }
-
-    // If task is not due today, show when it will be available
-    if (!isDueToday) {
-      if (isTomorrow(task.dueDate)) {
-        return {
-          text: "Can complete tomorrow",
-          canComplete: false,
-          icon: CardSpecificIcons.MarkComplete,
-        };
-      } else {
-        if (task.repetitionRule?.timesPerWeek)
-          return {
-            text: `Available ${formatDate(task.repetitionRule.startDate)}`,
-            canComplete: false,
-            icon: CardSpecificIcons.MarkComplete,
-          };
-        return {
-          text: `Available ${formatDate(task.dueDate)}`,
-          canComplete: false,
-          icon: CardSpecificIcons.MarkComplete,
-        };
-      }
-    }
-
-    // Fallback for repeating tasks
-    return {
-      text: "Not available now",
-      canComplete: false,
-      icon: CardSpecificIcons.MarkComplete,
-    };
-  }
-
-  // For regular tasks, use the canComplete prop or default behavior
-  if (canComplete === false) {
-    // Check if it's tomorrow
-    if (isTomorrow(task.dueDate)) {
-      return {
-        text: "Can complete tomorrow",
-        canComplete: false,
-        icon: CardSpecificIcons.MarkComplete,
-      };
-    }
-
-    // For future dates
-    return {
-      text: `Available ${format(task.dueDate, "MMM d")}`,
-      canComplete: false,
-      icon: CardSpecificIcons.MarkComplete,
-    };
-  }
-
-  // Default case - can complete
-  return {
-    text: "Complete",
-    canComplete: canComplete === undefined || canComplete === true,
-    icon: CardSpecificIcons.MarkComplete,
-  };
-}
-
 export default function Dropdown({
   isDropdownOpen,
   setIsDropdownOpen,
@@ -192,6 +77,7 @@ export default function Dropdown({
   handleComplete?: () => void;
 }) {
   const completionInfo = getCompletionAvailabilityInfo(task, canComplete);
+  const [rescheduleDate, setRescheduleDate] = useState<Date>(new Date());
 
   return (
     <div className="relative shrink-0">
@@ -217,7 +103,7 @@ export default function Dropdown({
             transition={{ duration: 0.2, ease: "easeOut" }}
             className="absolute right-0 mt-2 w-60 bg-background-600 border border-divider shadow-xl rounded-lg p-1.5 z-[100] origin-top-right focus:outline-none "
           >
-            {/* ---: Action: Mark as Completed  --- */}
+            {/* ---: Action: Complete --- */}
             <li>
               <form
                 action={
@@ -349,25 +235,32 @@ export default function Dropdown({
                   className="space-y-1.5"
                 >
                   <input type="hidden" name="taskId" value={task.id} />
-                  <label
-                    htmlFor={`reschedule-date-${task.id}`}
-                    className="block text-xs text-text-low px-1.5"
-                  >
+                  <p className="block text-xs text-text-low px-1.5">
                     Reschedule to:
-                  </label>
+                  </p>
                   <div className="flex items-center space-x-2 px-1.5">
+                    {/* -mr-20 because it overflows */}
+                    <DateInput
+                      className="-mr-20"
+                      date={rescheduleDate}
+                      setDate={(date) => setRescheduleDate(date)}
+                    >
+                      <div className="flex items-center gap-2 rounded-lg px-4 py-3 cursor-pointer">
+                        <CardSpecificIcons.DueDate
+                          size={20}
+                          className="text-text-gray"
+                        />
+                        <span className="text-text-gray">
+                          {formatDate(rescheduleDate)}
+                        </span>
+                      </div>
+                    </DateInput>
                     <input
-                      id={`reschedule-date-${task.id}`}
-                      type="date"
+                      type="hidden"
                       name="newDueDate"
-                      defaultValue={
-                        new Date(new Date().setDate(new Date().getDate() + 1))
-                          .toISOString()
-                          .split("T")[0]
-                      }
-                      className="flex-grow p-1.5 border border-divider rounded-md text-sm bg-background-input text-text-default focus:ring-primary-600 focus:border-primary-600"
-                      required
+                      value={rescheduleDate.toISOString().split("T")[0]}
                     />
+
                     <Button type="submit" variant="secondary">
                       Set
                     </Button>

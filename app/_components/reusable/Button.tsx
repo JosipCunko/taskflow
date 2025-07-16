@@ -1,14 +1,12 @@
-import { ReactNode } from "react";
+import { ReactNode, ButtonHTMLAttributes } from "react";
 
-interface ButtonProps {
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
   variant?: "primary" | "secondary" | "sidebar" | "danger" | "noStyle" | "tag";
   onClick?: (e: React.MouseEvent<HTMLButtonElement> | undefined) => void;
   disabled?: boolean;
   className?: string;
   type?: "button" | "submit" | "reset";
-  name?: string;
-  value?: string;
 }
 
 export default function Button({
@@ -18,8 +16,7 @@ export default function Button({
   disabled = false,
   className = "",
   type = "button",
-  name,
-  value,
+  ...rest
 }: ButtonProps) {
   const baseStyles =
     "relative isolate px-4 py-1 rounded-md transition-all duration-150 flex items-center gap-2 cursor-pointer letter-spacing font-semibold before:absolute before:inset-0 before:z-[-1] before:scale-x-0 before:origin-right before:transition-transform before:duration-300 hover:before:scale-x-100 before:origin-left";
@@ -38,14 +35,12 @@ export default function Button({
     <button
       type={type}
       onClick={onClick}
-      disabled={disabled}
-      name={name}
-      value={value}
       className={`${
         variant === "noStyle" || variant === "tag" ? "" : baseStyles
       } ${variantStyles[variant]} ${
         disabled ? "opacity-50 cursor-not-allowed" : ""
       } ${className}`}
+      {...rest}
     >
       {children}
     </button>

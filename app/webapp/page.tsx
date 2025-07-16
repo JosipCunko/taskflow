@@ -14,7 +14,7 @@ import {
   Award,
   Brain,
 } from "lucide-react";
-import { isSameDay, isToday } from "date-fns";
+import { isToday } from "date-fns";
 import { Task } from "../_types/types";
 import { ReactNode } from "react";
 import { redirect } from "next/navigation";
@@ -24,6 +24,7 @@ import {
   calculatePotentialTaskPoints,
   generateTaskTypes,
   calculateTimeManagementStats,
+  canCompleteRepeatingTaskNow,
 } from "../_utils/utils";
 import { authOptions } from "../_lib/auth";
 import { loadNotesByUserId } from "../_lib/notes";
@@ -52,11 +53,34 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const regularTasks = allTasks.filter((task) => !task.isRepeating);
-  const repeatingTasks = allTasks.filter((task) => task.isRepeating);
-  const priorityTasks = regularTasks.filter(
-    (task) => task.isPriority && task.status === "completed"
-  );
+  const regularTasks: Task[] = [];
+  const repeatingTasks: Task[] = [];
+  const priorityTasks: Task[] = [];
+  const repeatingTasksDueToday: Task[] = [];
+  const completedTodayRepeatingTasks: Task[] = [];
+
+  allTasks.map((task) => {
+    if (task.isRepeating) {
+      repeatingTasks.push(task);
+      const { isDueToday } = canCompleteRepeatingTaskNow(task);
+      if (isDueToday) {
+        repeatingTasksDueToday.push(task);
+      }
+      if (
+        task.status === "completed" &&
+        task.completedAt &&
+        isToday(task.completedAt)
+      ) {
+        completedTodayRepeatingTasks.push(task);
+      }
+    } else {
+      regularTasks.push(task);
+    }
+
+    if (task.isPriority && task.status !== "completed") {
+      priorityTasks.push(task);
+    }
+  });
 
   const {
     todaysTasks,
@@ -64,22 +88,21 @@ export default async function DashboardPage() {
     missedTasks,
     delayedTasks,
     completedTasks,
-    completedTodayTasks,
     pendingTodayTasks,
   } = generateTaskTypes(regularTasks);
 
-  // Repeating tasks due today
-  const repeatingTasksDueToday = repeatingTasks.filter((task) =>
-    isToday(task.dueDate)
-  );
-
   const timeManagementStats = calculateTimeManagementStats(allTasks);
-
   const totalPoints = user.rewardPoints;
-  const todayPoints = todaysTasks.reduce(
-    (acc: number, task: Task) => acc + calculateTaskPoints(task),
-    0
+
+  // Calculate today's points from both regular and repeating tasks that are completed today
+  const completedTodayRegularTasks = todaysTasks.filter(
+    (task) => task.status === "completed"
   );
+
+  const todayPoints = [
+    ...completedTodayRegularTasks,
+    ...completedTodayRepeatingTasks,
+  ].reduce((acc: number, task: Task) => acc + calculateTaskPoints(task), 0);
 
   // Calculate potential points available today (for incomplete tasks)
   // For regular tasks: exclude completed tasks
@@ -87,39 +110,10 @@ export default async function DashboardPage() {
   const incompleteTodayTasks = todaysTasks.filter(
     (task) => task.status !== "completed"
   );
-
   const incompleteRepeatingTasksDueToday = repeatingTasksDueToday.filter(
     (task) => {
-      // If task is marked as completed, it can't earn more points today
-      if (task.status === "completed") return false;
-
-      // Check if this repeating task was already completed today
-      const rule = task.repetitionRule;
-
-      if (task.completedAt) {
-        const today = new Date();
-        const lastCompleted = task.completedAt as Date;
-
-        // If interval task was completed today, it's not available for more points
-        if (rule?.interval && isSameDay(lastCompleted, today)) {
-          return false;
-        }
-
-        // If times per week task has reached its limit for this week
-        if (rule?.timesPerWeek && rule.completions >= rule.timesPerWeek) {
-          return false;
-        }
-
-        // If days of week task has been completed for all required days this week
-        if (
-          rule?.daysOfWeek?.length &&
-          rule.completions >= rule.daysOfWeek.length
-        ) {
-          return false;
-        }
-      }
-
-      return true;
+      const { canCompleteNow } = canCompleteRepeatingTaskNow(task);
+      return canCompleteNow;
     }
   );
 
@@ -147,9 +141,10 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <DashboardCard
           title="Today's Tasks"
-          value={`${completedTodayTasks.length}/${
-            todaysTasks.length + repeatingTasksDueToday.length
-          }`}
+          value={`${
+            completedTodayRegularTasks.length +
+            completedTodayRepeatingTasks.length
+          }/${todaysTasks.length + repeatingTasksDueToday.length}`}
           icon={<Clock className="text-primary" size={24} />}
           subtitle={`${
             pendingTodayTasks.length + incompleteRepeatingTasksDueToday.length
@@ -183,7 +178,7 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <DashboardCard
           title="Completed Tasks"
-          value={completedTasks.length}
+          value={user.completedTasksCount}
           icon={<CheckCircle2 className="text-success" size={24} />}
           subtitle="All time"
         />
@@ -219,12 +214,13 @@ export default async function DashboardPage() {
           <div className="space-y-4">
             {todaysTasks.length > 0 || repeatingTasksDueToday.length > 0 ? (
               <>
-                <div className="w-full bg-background-600 rounded-full h-2.5">
+                <div className="w-full  rounded-full h-2.5">
                   <div
                     className="bg-primary h-2.5 rounded-full transition-all duration-300"
                     style={{
                       width: `${
-                        (completedTodayTasks.length /
+                        ((completedTodayRegularTasks.length +
+                          completedTodayRepeatingTasks.length) /
                           (todaysTasks.length +
                             repeatingTasksDueToday.length)) *
                         100
@@ -235,7 +231,8 @@ export default async function DashboardPage() {
                 <div className="grid grid-cols-3 gap-4">
                   <div className="text-center">
                     <p className="text-2xl font-bold text-success">
-                      {completedTodayTasks.length}
+                      {completedTodayRegularTasks.length +
+                        completedTodayRepeatingTasks.length}
                     </p>
                     <p className="text-sm text-text-low">Completed</p>
                   </div>

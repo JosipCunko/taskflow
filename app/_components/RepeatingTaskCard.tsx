@@ -92,13 +92,13 @@ export default function RepeatingTaskCard({
 
     nextInstanceInfo = isThisWeek
       ? "Complete this week"
-      : `Week from ${formatDate(rule.startDate)} to ${formatDate(
+      : `Week from ${formatDate(task.startDate || new Date())} to ${formatDate(
           task.dueDate
         )}`;
   }
 
-  if (rule.startDate) {
-    repetitionSummary += ` starting ${formatDate(rule.startDate)}`;
+  if (task.startDate) {
+    repetitionSummary += ` starting ${formatDate(task.startDate)}`;
   }
 
   const isFullyCompletedForCurrentCycle = task.status === "completed";

@@ -97,140 +97,76 @@ export async function updateUserRepeatingTasks(userId: string) {
       : undefined;
     const currentWeekStart = startOfWeek(today, MONDAY_START_OF_WEEK);
 
-    // Helper function to safely update field only if value has changed
-    const setIfChanged = (
-      key: keyof TaskUpdatePayload,
-      newValue: unknown,
-      currentValue: unknown
-    ) => {
-      if (newValue !== currentValue && newValue !== undefined) {
-        (updates as Record<string, unknown>)[key] = newValue;
-      }
-    };
-
-    // Helper function to safely update nested field only if value has changed
-    const setNestedIfChanged = (
-      key: string,
-      newValue: unknown,
-      currentValue: unknown
-    ) => {
-      if (newValue !== currentValue && newValue !== undefined) {
-        (updates as Record<string, unknown>)[key] = newValue;
-      }
-    };
-
-    // Calculate points deductions for missed days only if not already calculated
-    const calculateMissedDaysPenalty = (
-      daysToCheck: Date[],
-      currentPoints: number
-    ): number => {
-      let missedDays = 0;
-      daysToCheck.forEach((dayToCheck) => {
+    // Calc the next due date and reset the status and completions
+    if (rule.interval && rule.interval > 0) {
+      const currentMonthStart = startOfMonth(today);
+      Array.from({ length: getDaysInMonth(today) }).forEach((_, i) => {
+        const dayToCheck = addDays(currentMonthStart, i);
         if (isPast(dayToCheck) && !isToday(dayToCheck)) {
-          if (
-            !rule.completedAt?.some((completedDate) => {
-              const completedDay =
-                completedDate instanceof Date
-                  ? completedDate
-                  : (completedDate as Timestamp).toDate();
-              return (
-                startOfDay(completedDay).getTime() ===
-                startOfDay(dayToCheck).getTime()
-              );
-            })
-          ) {
-            missedDays++;
+          if (!rule.completedAt?.includes(dayToCheck)) {
+            updates.points = Math.max(2, task.points - 2);
           }
         }
       });
 
-      if (missedDays > 0) {
-        return Math.max(2, currentPoints - 2 * missedDays);
-      }
-      return currentPoints;
-    };
+      if (!isToday(taskCompletedAt as Date)) {
+        updates.status = "pending";
+        updates["repetitionRule.completions"] = 0;
 
-    // Calc the next due date and reset the status and completions
-    if (rule.interval && rule.interval > 0) {
-      const currentMonthStart = startOfMonth(today);
-      const daysInMonth = Array.from(
-        { length: getDaysInMonth(today) },
-        (_, i) => addDays(currentMonthStart, i)
-      );
-
-      // Calculate points only if there are actually missed days
-      const newPoints = calculateMissedDaysPenalty(daysInMonth, task.points);
-      setIfChanged("points", newPoints, task.points);
-
-      const isCompletedToday = taskCompletedAt && isToday(taskCompletedAt);
-      if (!isCompletedToday) {
-        setIfChanged("status", "pending", task.status);
-        setNestedIfChanged("repetitionRule.completions", 0, rule.completions);
-
-        const nextDueDate = startOfDay(new Date(taskDueDate));
+        const nextDueDate = startOfDay(taskDueDate);
         if (isPast(nextDueDate) && !isToday(nextDueDate)) {
           if (!isSameMonth(taskDueDate, today)) {
-            setNestedIfChanged(
-              "repetitionRule.completedAt",
-              [],
-              rule.completedAt
-            );
-            setIfChanged("points", 10, task.points);
+            updates["repetitionRule.completedAt"] = [];
+            updates.points = 10;
           }
-
-          // Calculate new due date
-          const newDueDate = new Date(nextDueDate);
-          while (isPast(newDueDate) && !isToday(newDueDate)) {
-            newDueDate.setDate(newDueDate.getDate() + rule.interval);
+          while (isPast(nextDueDate) && !isToday(nextDueDate)) {
+            nextDueDate.setDate(nextDueDate.getDate() + rule.interval);
           }
-          newDueDate.setHours(taskDueDate.getHours(), taskDueDate.getMinutes());
-
-          if (newDueDate.getTime() !== taskDueDate.getTime()) {
-            updates.dueDate = newDueDate;
-          }
+          updates.dueDate = nextDueDate;
+          updates.dueDate.setHours(
+            taskDueDate.getHours(),
+            taskDueDate.getMinutes()
+          );
         }
       }
     } else if (rule.timesPerWeek) {
       const taskWeekStart = startOfWeek(taskStartDate, MONDAY_START_OF_WEEK);
-      const weekDays = Array.from({ length: 7 }, (_, i) =>
-        addDays(taskWeekStart, i)
-      );
 
-      // Calculate points only if there are actually missed days
-      const newPoints = calculateMissedDaysPenalty(weekDays, task.points);
-      setIfChanged("points", newPoints, task.points);
+      Array.from({ length: 7 }).forEach((_, i) => {
+        const dayToCheck = addDays(taskWeekStart, i);
+        if (isPast(dayToCheck) && !isToday(dayToCheck)) {
+          if (!rule.completedAt?.includes(dayToCheck)) {
+            updates.points = Math.max(2, task.points - 2);
+          }
+        }
+      });
 
       if (isPast(taskDueDate)) {
-        setIfChanged("status", "pending", task.status);
+        updates.status = "pending";
       }
 
       if (!isSameWeek(currentWeekStart, taskWeekStart, MONDAY_START_OF_WEEK)) {
-        setIfChanged("status", "pending", task.status);
-        setNestedIfChanged("repetitionRule.completions", 0, rule.completions);
-
-        if (currentWeekStart.getTime() !== taskStartDate.getTime()) {
-          updates.startDate = currentWeekStart;
-        }
-
-        setNestedIfChanged("repetitionRule.completedAt", [], rule.completedAt);
-        setIfChanged("points", 10, task.points);
+        updates.status = "pending";
+        updates["repetitionRule.completions"] = 0;
+        updates.startDate = currentWeekStart;
+        updates["repetitionRule.completedAt"] = [];
+        updates.points = 10;
 
         const newDueDate = new Date(today);
         newDueDate.setHours(taskDueDate.getHours(), taskDueDate.getMinutes());
-
-        // Only update if the date actually changed
-        if (newDueDate.getTime() !== taskDueDate.getTime()) {
-          updates.dueDate = newDueDate;
-        }
+        updates.dueDate = newDueDate;
       }
     } else if (rule.daysOfWeek.length > 0) {
       const taskWeekStart = startOfWeek(taskDueDate, MONDAY_START_OF_WEEK);
-      const weekDays = Array.from({ length: 7 }, (_, i) =>
-        addDays(taskWeekStart, i)
-      );
 
-      const newPoints = calculateMissedDaysPenalty(weekDays, task.points);
-      setIfChanged("points", newPoints, task.points);
+      Array.from({ length: 7 }).forEach((_, i) => {
+        const dayToCheck = addDays(taskWeekStart, i);
+        if (isPast(dayToCheck) && !isToday(dayToCheck)) {
+          if (!rule.completedAt?.includes(dayToCheck)) {
+            updates.points = Math.max(2, task.points - 2);
+          }
+        }
+      });
 
       if (isPast(taskDueDate)) {
         const todayDay = getDay(today) as DayOfWeek;
@@ -248,60 +184,48 @@ export async function updateUserRepeatingTasks(userId: string) {
 
         const newDueDate = addDays(today, daysUntilNext);
         newDueDate.setHours(taskDueDate.getHours(), taskDueDate.getMinutes());
-
-        if (newDueDate.getTime() !== taskDueDate.getTime()) {
-          updates.dueDate = newDueDate;
-        }
+        updates.dueDate = newDueDate;
       }
 
       if (
         isPast(taskDueDate) &&
         !isSameWeek(currentWeekStart, taskWeekStart, MONDAY_START_OF_WEEK)
       ) {
-        setIfChanged("status", "pending", task.status);
-        setNestedIfChanged("repetitionRule.completions", 0, rule.completions);
-        setNestedIfChanged("repetitionRule.completedAt", [], rule.completedAt);
-        setIfChanged("points", 10, task.points);
+        updates.status = "pending";
+        updates["repetitionRule.completions"] = 0;
+        updates["repetitionRule.completedAt"] = [];
+        updates.points = 10;
       } else if (
         isPast(taskDueDate) &&
         isSameWeek(currentWeekStart, taskWeekStart, MONDAY_START_OF_WEEK)
       ) {
-        setIfChanged("status", "pending", task.status);
+        updates.status = "pending";
       }
     }
 
-    // Only calculate and update risk if there are other updates or if risk calculation might have changed
     if (Object.keys(updates).length > 0) {
+      // To calculate risk, we need a Task object with the updated values.
+
       const tempTask = {
         ...task,
         ...updates,
       };
 
-      const newRisk = isTaskAtRisk(tempTask);
-      setIfChanged("risk", newRisk, task.risk);
-    }
-
-    // Only batch update if there are actual changes
-    if (Object.keys(updates).length > 0) {
+      updates.risk = isTaskAtRisk(tempTask);
       batch.update(taskRef, updates);
       updatesDetails.count += 1;
       updatesDetails.tasksTitles.push(task.title);
     }
   });
 
-  // Only commit if there are actual updates
-  if (updatesDetails.count > 0) {
-    await batch.commit();
-    console.log(
-      `Repeating tasks (${
-        updatesDetails.count
-      } of them: ${updatesDetails.tasksTitles.join(
-        ", "
-      )}) done updating for user: ${userId}.`
-    );
-  } else {
-    console.log(`No repeating task updates needed for user: ${userId}.`);
-  }
+  await batch.commit();
+  console.log(
+    `Repeating tasks (${
+      updatesDetails.count
+    } of them: ${updatesDetails.tasksTitles.join(
+      ", "
+    )}) done updating for user: ${userId}.`
+  );
 }
 
 /**

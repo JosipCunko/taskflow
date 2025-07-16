@@ -94,6 +94,35 @@ export async function updateUserRewardPoints(
   }
 }
 
+export async function updateUserCompletionStats(
+  userId: string,
+  pointsDiff: number
+): Promise<void> {
+  if (!userId || typeof pointsDiff !== "number" || isNaN(pointsDiff)) {
+    return;
+  }
+  try {
+    const userDocRef = adminDb.collection("users").doc(userId);
+
+    // Always increment completed tasks count regardless of points
+    const updates: {
+      completedTasksCount: FieldValue;
+      rewardPoints?: FieldValue;
+    } = {
+      completedTasksCount: FieldValue.increment(1),
+    };
+
+    // Only update points if there are points to add
+    if (pointsDiff !== 0) {
+      updates.rewardPoints = FieldValue.increment(pointsDiff);
+    }
+
+    await userDocRef.update(updates);
+  } catch (error) {
+    console.error(`Error updating completion stats for user ${userId}:`, error);
+  }
+}
+
 export async function updateUser(
   userId: string,
   data: Partial<Omit<AppUser, "id" | "createdAt">>

@@ -57,7 +57,7 @@ export default function TopSidebar({
     <header className="flex items-center justify-between p-4 border-b border-background-500 h-[80px]">
       <div className="flex items-center gap-6">
         <div>
-          <h1 className="text-xl font-semibold sm:block hidden text-text-low">
+          <h1 className="text-xl font-semibold sm:block hidden text-balance text-text-low">
             Good {getPhaseOfTheDay()}, {session?.user.name}
           </h1>
           <div className="text-sm text-text-gray sm:block hidden">
@@ -113,7 +113,7 @@ export default function TopSidebar({
               src={session?.user.image}
               width={40}
               height={40}
-              className="rounded-full"
+              className="rounded-full min-w-10 min-h-10"
               alt={"User profile image"}
               data-tooltip-id="profile-link"
               data-tooltip-content="Your profile"

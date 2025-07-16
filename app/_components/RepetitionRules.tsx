@@ -1,13 +1,11 @@
-import { endOfWeek, format, startOfWeek } from "date-fns";
-import Input from "./reusable/Input";
 import Button from "./reusable/Button";
 import type { DayOfWeek } from "../_types/types";
-import { formatDate, infoToast, MONDAY_START_OF_WEEK } from "../_utils/utils";
+import { infoToast } from "../_utils/utils";
 import { Plus, Minus } from "lucide-react";
 import { Dispatch } from "react";
 import { Action } from "./AddTask";
 
-interface RepetitionRulesModalProps {
+interface RepetitionRulesProps {
   activeRepetitionType: "interval" | "daysOfWeek" | "timesPerWeek" | "none";
   setActiveRepetitionType: (
     type: "interval" | "daysOfWeek" | "timesPerWeek" | "none"
@@ -16,7 +14,6 @@ interface RepetitionRulesModalProps {
   intervalValue: number;
   timesPerWeekValue: number;
   selectedDaysOfWeek: DayOfWeek[];
-  repetitionTaskStartDate: Date;
   onDone: () => void; // Function to call when user clicks "Done" in the modal
 }
 
@@ -90,16 +87,15 @@ function NumberControl({
   );
 }
 
-export default function RepetitionRulesModal({
+export default function RepetitionRules({
   dispatch,
   activeRepetitionType,
   setActiveRepetitionType,
   intervalValue,
   timesPerWeekValue,
   selectedDaysOfWeek,
-  repetitionTaskStartDate,
   onDone,
-}: RepetitionRulesModalProps) {
+}: RepetitionRulesProps) {
   const handleDone = () => {
     if (
       activeRepetitionType === "daysOfWeek" &&
@@ -125,9 +121,8 @@ export default function RepetitionRulesModal({
   ];
 
   return (
-    <div className="bg-background-650 rounded-2xl shadow-2xl w-full max-w-2xl mx-auto min-w-[24rem] flex flex-col max-h-[90vh] sm:max-h-[85vh]">
-      {/* Fixed Header */}
-      <div className="text-center p-4 sm:p-6 border-b border-divider/20 flex-shrink-0">
+    <div className="bg-background-650 rounded-2xl w-[22rem] sm:w-[26rem] flex flex-col h-[75vh] px-4 overflow-y-auto overflow-x-hidden mx-auto">
+      <div className="text-center p-4 sm:p-6 flex-shrink-0">
         <h3 className="text-xl sm:text-2xl font-bold text-text-high mb-2">
           Set Repetition Rules
         </h3>
@@ -136,57 +131,49 @@ export default function RepetitionRulesModal({
         </p>
       </div>
 
-      {/* Scrollable Content */}
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4 sm:space-y-6">
-        {/* Repetition Type Selection */}
-        <div className="space-y-4">
-          <p className="text-lg font-semibold text-text-high">Repeat Pattern</p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-            {(["interval", "daysOfWeek", "timesPerWeek"] as const).map(
-              (type) => {
-                let label = "";
-                let description = "";
-                if (type === "interval") {
-                  label = "Every X Days";
-                  description = "Repeat every few days";
-                } else if (type === "daysOfWeek") {
-                  label = "Specific Days";
-                  description = "Certain days of week";
-                } else if (type === "timesPerWeek") {
-                  label = "X Times/Week";
-                  description = "Flexible weekly goal";
-                }
+      <div className="flex-1 space-y-4 sm:space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+          {(["interval", "daysOfWeek", "timesPerWeek"] as const).map((type) => {
+            let label = "";
+            let description = "";
+            if (type === "interval") {
+              label = "Every X Days";
+              description = "Every few days";
+            } else if (type === "daysOfWeek") {
+              label = "Specific Days";
+              description = "Certain days of week";
+            } else if (type === "timesPerWeek") {
+              label = "X Times/Week";
+              description = "Weekly goal";
+            }
 
-                return (
-                  <label
-                    key={type}
-                    className={`flex flex-col items-center p-4 sm:p-6 rounded-xl border-2 cursor-pointer transition-all text-center group
+            return (
+              <label
+                key={type}
+                className={`flex flex-col items-center p-4 sm:p-6 rounded-xl border-2 cursor-pointer transition-all text-center text-nowrap group
                             ${
                               activeRepetitionType === type
                                 ? "bg-primary-500/10 border-primary-500 text-primary-500"
                                 : "bg-background-500 border-background-700 text-text-low hover:border-primary-400 hover:bg-background-450"
                             }`}
-                  >
-                    <input
-                      type="radio"
-                      name="repetitionTypeModal"
-                      value={type}
-                      checked={activeRepetitionType === type}
-                      onChange={() => setActiveRepetitionType(type)}
-                      className="sr-only"
-                    />
-                    <span className="text-base font-semibold mb-1">
-                      {label}
-                    </span>
-                    <span className="text-xs opacity-80">{description}</span>
-                  </label>
-                );
-              }
-            )}
-          </div>
+              >
+                <input
+                  type="radio"
+                  name="repetitionTypeModal"
+                  value={type}
+                  checked={activeRepetitionType === type}
+                  onChange={() => setActiveRepetitionType(type)}
+                  className="sr-only"
+                />
+                <span className="text-base text-nowrap font-semibold mb-1">
+                  {label}
+                </span>
+                <span className="text-xs opacity-80">{description}</span>
+              </label>
+            );
+          })}
         </div>
 
-        {/* Conditional Configuration */}
         {activeRepetitionType === "interval" && (
           <div className="p-4 sm:p-6 bg-background-500/50 rounded-xl animate-fadeInQuick">
             <NumberControl
@@ -235,7 +222,7 @@ export default function RepetitionRulesModal({
                       className={`aspect-square flex flex-col items-center justify-center rounded-xl border-2 transition-all text-sm font-medium
                                 ${
                                   isSelected
-                                    ? "border-primary-500 text-white shadow-lg transform scale-105"
+                                    ? "border-primary-500 text-white transform scale-105"
                                     : "bg-background-600 text-text-low border-background-700 hover:border-primary-400 hover:bg-background-550"
                                 }`}
                       style={{
@@ -286,63 +273,6 @@ export default function RepetitionRulesModal({
               <p className="text-sm text-text-gray">
                 You can complete this task on any day of the week
               </p>
-            </div>
-          </div>
-        )}
-
-        {/* Start Date */}
-        {activeRepetitionType !== "none" && (
-          <div className="pt-2 sm:pt-6">
-            <div className="space-y-3 sm:space-y-4">
-              <div className="text-center">
-                <p className="text-lg font-semibold text-text-high mb-1">
-                  Start Date
-                </p>
-                <p className="text-sm text-text-low">
-                  {activeRepetitionType === "daysOfWeek" ||
-                  activeRepetitionType === "timesPerWeek"
-                    ? "In which week should this task be completed?"
-                    : "When should this task start repeating on?"}
-                </p>
-              </div>
-
-              <div className="max-w-xs mx-auto">
-                <Input
-                  name="modalRepetitionStartDate"
-                  type="date"
-                  id="modalRepetitionStartDate"
-                  value={format(repetitionTaskStartDate, "yyyy-MM-dd")}
-                  onChange={(e) => {
-                    // Create date with local timezone to avoid timezone shifts
-                    const [year, month, day] = e.target.value
-                      .split("-")
-                      .map(Number);
-                    const localDate = new Date(
-                      year,
-                      month - 1,
-                      day,
-                      0,
-                      0,
-                      0,
-                      0
-                    );
-                    dispatch({ type: "startDate", payload: localDate });
-                  }}
-                  className="w-full bg-background-550 text-center text-base sm:text-lg py-3 rounded-xl"
-                />
-                {activeRepetitionType === "timesPerWeek" && (
-                  <p className="text-sm text-text-gray ml-2">
-                    Week from{" "}
-                    {formatDate(
-                      startOfWeek(repetitionTaskStartDate, MONDAY_START_OF_WEEK)
-                    )}
-                    {" - "}
-                    {formatDate(
-                      endOfWeek(repetitionTaskStartDate, MONDAY_START_OF_WEEK)
-                    )}
-                  </p>
-                )}
-              </div>
             </div>
           </div>
         )}

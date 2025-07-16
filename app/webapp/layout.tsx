@@ -27,7 +27,7 @@ export default async function RootLayout({
     <>
       <main className="grid grid-rows-1 grid-cols-1 sm:grid-cols-[16rem_1fr] overflow-hidden h-screen relative bg-background-625">
         <AnimatedSidebar />
-        <div className="overflow-hidden h-full grid-cols-1 grid-rows-[80px_1fr] p-2 sm:p-4 lg:p-6 relative">
+        <div className="h-full grid-cols-1 grid-rows-[80px_1fr] p-2 sm:p-4 lg:p-6 relative">
           <TopSidebar session={session} tasks={tasks} />
           {children}
         </div>
