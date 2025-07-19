@@ -66,19 +66,6 @@ export default function ProgrammingFeatures() {
           </motion.div>
         ))}
       </div>
-      <motion.div
-        className="flex items-center justify-center gap-4 text-text-low"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        transition={{ duration: 0.6, delay: 0.5 }}
-        viewport={{ once: true }}
-      >
-        <div className="h-px w-12 bg-gradient-to-r from-transparent to-primary-500/50"></div>
-        <span className="text-sm font-mono">
-          SYSTEM.STATUS: <span className="text-success">OPERATIONAL</span>
-        </span>
-        <div className="h-px w-12 bg-gradient-to-l from-transparent to-primary-500/50"></div>
-      </motion.div>
     </>
   );
 }

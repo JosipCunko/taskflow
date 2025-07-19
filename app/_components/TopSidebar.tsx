@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Tooltip } from "react-tooltip";
 import { getPhaseOfTheDay } from "../_utils/utils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import dynamic from "next/dynamic";
 import { Plus } from "lucide-react";
 import Modal from "./Modal";
@@ -15,6 +15,7 @@ import AddTask from "./AddTask";
 import { useKeyboardNavigation } from "../_hooks/useKeyboardNavigation";
 import { Task } from "../_types/types";
 import Search from "./Search";
+
 const NotificationBell = dynamic(() => import("./inbox/NotificationBell"), {
   ssr: false,
 });
@@ -53,8 +54,11 @@ export default function TopSidebar({
     };
   }, []);
 
+  const MemoizedSearch = memo(Search);
+  const MemoizedNotificationBell = memo(NotificationBell);
+
   return (
-    <header className="flex items-center justify-between p-4 border-b border-background-500 h-[80px]">
+    <header className="flex items-center justify-between p-4 border-b border-background-500 h-[80px] sticky top-0 z-10 bg-background-625">
       <div className="flex items-center gap-6">
         <div>
           <h1 className="text-xl font-semibold sm:block hidden text-balance text-text-low">
@@ -88,7 +92,7 @@ export default function TopSidebar({
             </Button>
           </Modal.Open>
           <Modal.Window name="search" showButton>
-            <Search tasks={tasks} />
+            <MemoizedSearch tasks={tasks} />
           </Modal.Window>
         </Modal>
 
@@ -105,7 +109,7 @@ export default function TopSidebar({
           </Modal.Window>
         </Modal>
 
-        <NotificationBell />
+        <MemoizedNotificationBell />
 
         <Link href="/webapp/profile">
           {session?.user.image ? (

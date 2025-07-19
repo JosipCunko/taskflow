@@ -24,7 +24,7 @@ export default function UserInfoCard({ user }: { user: AppUser }) {
             )}
           </div>
           <h2 className="text-xl font-bold">{user.displayName}</h2>
-          <p className="text-text-low">{user.email}</p>
+          <p className="text-text-low max-w-full truncate">{user.email}</p>
 
           <div className="mt-6 w-full space-y-4">
             <StreakBar points={user.rewardPoints} />

@@ -299,18 +299,12 @@ export const getNotificationStyles = (priority: NotificationPriority) => {
 
 export const getNotificationTypeLabel = (type: NotificationType): string => {
   const labelMap = {
-    TASK_AT_RISK: "Task at Risk",
     TASK_OVERDUE: "Overdue Task",
     TASK_DUE_SOON: "Due Soon",
-    STREAK_AT_RISK: "Streak at Risk",
-    STREAK_MILESTONE: "Streak Milestone",
-    PRIORITY_TASK_PENDING: "Priority Task",
     ACHIEVEMENT_UNLOCKED: "Achievement",
     WEEKLY_SUMMARY: "Weekly Summary",
-    TASK_REMINDER: "Reminder",
-    CONSISTENCY_ALERT: "Consistency Alert",
     POINTS_MILESTONE: "Points Milestone",
-    SYSTEM_UPDATE: "System Update",
+    SYSTEM: "System Update",
   };
 
   return labelMap[type] || "Notification";

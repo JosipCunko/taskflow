@@ -12,8 +12,7 @@ export default function CallToActionSection() {
         <GlitchText
           enableOnHover={false}
           speed={2.2}
-          fontSize="42px"
-          className="tracking-tight mb-6"
+          className="text-3xl md:text-5xl tracking-tight mb-6"
         >
           Begin Transmission
         </GlitchText>

@@ -4,6 +4,7 @@ import { Timestamp, FieldValue, WriteBatch } from "firebase-admin/firestore";
 import { adminDb } from "./admin";
 import {
   AchievementType,
+  CampaignNotification,
   Notification,
   NotificationPriority,
   NotificationStats,
@@ -26,6 +27,138 @@ import {
 } from "../_utils/utils";
 import { getUserById, getUserPreferences } from "./user-admin";
 import admin from "firebase-admin";
+
+// Add FCM push notification sending
+const sendPushNotification = async (
+  fcmToken: string,
+  notification: {
+    title: string;
+    body: string;
+    icon?: string;
+  },
+  data?: Record<string, string>
+): Promise<boolean> => {
+  try {
+    const message = {
+      notification: {
+        title: notification.title,
+        body: notification.body,
+        icon: notification.icon || "/icon.png",
+      },
+      data: {
+        actionUrl: data?.actionUrl || "/webapp",
+        type: data?.type || "SYSTEM",
+        ...data,
+      },
+      token: fcmToken,
+      webpush: {
+        notification: {
+          icon: notification.icon || "/icon.png",
+          badge: "/icon.png",
+          requireInteraction: true,
+          actions: [
+            {
+              action: "view",
+              title: "View Task",
+              icon: "/icon.png",
+            },
+            {
+              action: "dismiss",
+              title: "Dismiss",
+            },
+          ],
+        },
+      },
+    };
+
+    const response = await admin.messaging().send(message);
+    console.log("Successfully sent push notification:", response);
+    return true;
+  } catch (error) {
+    console.error("Error sending push notification:", error);
+    return false;
+  }
+};
+
+// Enhanced notification creation with optional push notification
+export const createNotificationWithPush = async (
+  notificationData: Omit<
+    Notification,
+    "id" | "createdAt" | "isRead" | "isArchived"
+  >,
+  sendPush: boolean = true
+): Promise<Notification> => {
+  try {
+    // Create the database notification
+    const notification = await createNotification(notificationData);
+
+    // Send push notification if requested
+    if (sendPush) {
+      // Get FCM token from user document directly
+      const userDoc = await adminDb
+        .collection("users")
+        .doc(notificationData.userId)
+        .get();
+      const userData = userDoc.data();
+
+      if (userData?.fcmToken) {
+        await sendPushNotification(
+          userData.fcmToken,
+          {
+            title: notificationData.title,
+            body: notificationData.message,
+          },
+          {
+            actionUrl: notificationData.actionUrl || "/webapp",
+            type: notificationData.type,
+            notificationId: notification.id,
+          }
+        );
+      }
+    }
+
+    return notification;
+  } catch (error) {
+    console.error("Error creating notification with push:", error);
+    throw error;
+  }
+};
+
+export const sendCampaignNotification = async (
+  userIds: string[],
+  campaign: CampaignNotification
+): Promise<{ sent: number; failed: number }> => {
+  let sent = 0;
+  let failed = 0;
+
+  for (const userId of userIds) {
+    try {
+      await createNotificationWithPush(
+        {
+          userId,
+          type: campaign.type,
+          priority: campaign.priority,
+          title: campaign.title,
+          message: campaign.message,
+          actionText: "View",
+          actionUrl: campaign.actionUrl,
+          data: { campaign: true },
+          expiresAt: addDays(new Date(), 7),
+        },
+        true
+      );
+      sent++;
+    } catch (error) {
+      console.error(
+        `Failed to send campaign notification to user ${userId}:`,
+        error
+      );
+      failed++;
+    }
+  }
+
+  return { sent, failed };
+};
 
 const fromFirestore = (
   snapshot: admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData>

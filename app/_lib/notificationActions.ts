@@ -46,7 +46,11 @@ export async function markAllAsReadAction(
     await markNotificationsAsRead(notificationIds);
     revalidatePath("/webapp/inbox");
     revalidatePath("/webapp");
-    return { success: true, message: "All notifications marked as read" };
+
+    return {
+      success: true,
+      message: `${notificationIds.length} notifications marked as read`,
+    };
   } catch (error) {
     console.error("Error marking notifications as read:", error);
     return { success: false, error: "Failed to mark notifications as read" };
@@ -65,6 +69,7 @@ export async function archiveNotificationAction(
     await archiveNotification(notificationId);
     revalidatePath("/webapp/inbox");
     revalidatePath("/webapp");
+
     return { success: true, message: "Notification archived" };
   } catch (error) {
     console.error("Error archiving notification:", error);
@@ -84,6 +89,7 @@ export async function deleteNotificationAction(
     await deleteNotification(notificationId);
     revalidatePath("/webapp/inbox");
     revalidatePath("/webapp");
+
     return { success: true, message: "Notification deleted" };
   } catch (error) {
     console.error("Error deleting notification:", error);

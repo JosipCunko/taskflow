@@ -2,7 +2,7 @@
 import { FirebaseApp, getApp, getApps, initializeApp } from "firebase/app";
 import { Auth, getAuth } from "firebase/auth";
 import { Firestore, getFirestore } from "firebase/firestore";
-// import { getAnalytics } from "firebase/analytics";
+import { getAnalytics, Analytics } from "firebase/analytics";
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -23,5 +23,10 @@ const app: FirebaseApp =
 const auth: Auth = getAuth(app);
 const db: Firestore = getFirestore(app);
 
-// export const analytics = getAnalytics(app);
-export { app, auth, db };
+// Initialize Analytics (only in browser)
+let analytics: Analytics | null = null;
+if (typeof window !== "undefined") {
+  analytics = getAnalytics(app);
+}
+
+export { app, auth, db, analytics };

@@ -46,7 +46,7 @@ export default function AnimatedSidebar() {
   };
 
   return (
-    <div className="bg-background-625 flex overflow-hidden">
+    <div className="bg-background-625 h-screen flex overflow-hidden">
       <button
         className="md:hidden fixed top-3 left-3 z-[60] p-2 bg-background-600/80 backdrop-blur-sm rounded-md text-text-high shadow-md hover:bg-background-500 transition-colors cursor-pointer"
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}

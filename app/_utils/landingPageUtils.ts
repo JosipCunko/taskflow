@@ -125,8 +125,13 @@ export const programmingFeatures = [
     imgPath: "/security.png",
   },
   {
-    title: "Dynamic UI Engine",
-    tag: "UI_CORE",
+    title: "Popular and Optimized",
+    tag: "BEST_POPULAR",
     imgPath: "/usage.png",
+  },
+  {
+    title: "Analytics & Insights",
+    tag: "ANALYTICS_CORE",
+    imgPath: "/analytics.png",
   },
 ];

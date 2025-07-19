@@ -22,6 +22,7 @@ import {
   DayOfWeek,
   TaskToCreateData,
   AppUser,
+  CampaignNotification,
 } from "../_types/types";
 import {
   createTask,
@@ -36,6 +37,7 @@ import { revalidatePath } from "next/cache";
 import { updateUser, updateUserCompletionStats } from "./user-admin";
 import { adminDb } from "./admin";
 import { FieldValue } from "firebase-admin/firestore";
+import { sendCampaignNotification } from "./notifications-admin";
 
 /* User */
 export async function updateUserAction(
@@ -627,5 +629,29 @@ export async function completeRepeatingTaskWithDaysOfWeek(
       success: false,
       error: error.message,
     };
+  }
+}
+
+export async function sendCampaignNotificationAction(
+  userIds: string[],
+  campaign: CampaignNotification
+): Promise<ActionResult> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+    const result = await sendCampaignNotification(userIds, campaign);
+
+    revalidatePath("/webapp/inbox");
+    revalidatePath("/webapp");
+
+    return {
+      success: true,
+      message: `Campaign sent successfully! ${result.sent} sent, ${result.failed} failed`,
+    };
+  } catch (error) {
+    console.error("Error sending campaign:", error);
+    return { success: false, error: "Failed to send campaign" };
   }
 }

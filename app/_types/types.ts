@@ -148,7 +148,7 @@ export type NotificationType =
   | "WEEKLY_SUMMARY"
   | "ACHIEVEMENT_UNLOCKED"
   | "POINTS_MILESTONE"
-  | "SYSTEM_UPDATE";
+  | "SYSTEM";
 export type NotificationPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
 export interface ActionResult {
@@ -178,4 +178,12 @@ export interface TimeManagementStats {
 export interface ConsistencyStats {
   currentStreakDays: number;
   bestStreakDays: number;
+}
+
+export interface CampaignNotification {
+  title: string;
+  message: string;
+  actionUrl: string;
+  type: NotificationType;
+  priority: NotificationPriority;
 }

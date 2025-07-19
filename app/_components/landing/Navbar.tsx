@@ -1,5 +1,5 @@
+import Image from "next/image";
 import Link from "next/link";
-import { Code } from "lucide-react";
 
 export default function Navbar() {
   return (
@@ -10,17 +10,35 @@ export default function Navbar() {
           className="text-xl font-bold text-primary-400 flex items-center group"
         >
           <div className="w-8 h-8 mr-3 relative">
-            <div className="absolute inset-0 bg-primary-500/20 rounded-lg group-hover:animate-none group-hover:bg-primary-500/30 transition-colors animate-pulse"></div>
-            <Code className="w-8 h-8 p-1 text-primary-300 group-hover:animate-[text-glitch_0.3s_ease-out]" />
+            <div className="absolute inset-0 bg-primary-500/20 rounded-lg group-hover:animate-none transition-colors animate-pulse"></div>
+            <Image
+              src="/icon.png"
+              alt="Taskflow Logo"
+              fill
+              className="w-8 h-8 p-1 text-primary-300 group-hover:animate-[text-glitch_0.3s_ease-out]"
+            />
           </div>
           <span className="group-hover:text-glow transition-all">TaskFlow</span>
         </Link>
         <div className="space-x-4 md:space-x-6 flex items-center">
           <Link
+            href="#images"
+            className="text-text-low hover:text-primary-300 hover:text-glow transition-all duration-200 text-sm sm:text-base font-medium"
+          >
+            _Preview
+          </Link>
+
+          <Link
             href="#features"
             className="text-text-low hover:text-primary-300 hover:text-glow transition-all duration-200 text-sm sm:text-base font-medium"
           >
-            &gt; Features
+            _Features
+          </Link>
+          <Link
+            href="https://mail.google.com/mail/u/0/#inbox?compose=CllgCJZbjrwqZhdlnFdSGkCDrWzqCMDPVlffTKZHKVLxQZMgcDQKGsDlMZLDDlpjDpczSXcjtmg"
+            className="text-text-low hover:text-primary-300 hover:text-glow transition-all duration-200 text-sm sm:text-base font-medium"
+          >
+            _Contact_Us
           </Link>
           <Link
             href="/login"

@@ -83,7 +83,7 @@ function Window({ children, name, showButton = undefined }: WindowProps) {
     <AnimatePresence>
       {name === openName && (
         <motion.div
-          className="fixed inset-0 rounded-xl z-[999]  overflow-y-auto flex items-center justify-center backdrop-blur-md"
+          className="fixed inset-0 rounded-xl z-[999] overflow-y-auto flex items-center justify-center backdrop-blur-md"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

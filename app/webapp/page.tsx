@@ -35,6 +35,8 @@ import { getNotificationStats } from "../_lib/notifications-admin";
 import NotificationSummary from "../_components/inbox/NotificationSummary";
 import TaskCardSmall from "../_components/TaskCardSmall";
 import RepeatingTaskCard from "../_components/RepeatingTaskCard";
+import AnalyticsDashboard from "../_components/AnalyticsDashboard";
+import NotificationSetup from "../_components/NotificationSetup";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -126,11 +128,11 @@ export default async function DashboardPage() {
   );
 
   return (
-    <div className="container h-full mx-auto p-1 sm:p-6 space-y-8 overflow-auto ">
+    <div className="container h-full mx-auto p-1 sm:p-6 space-y-8 overflow-y-auto">
       <div className="mb-6 md:mb-8">
         <h1 className="text-3xl sm:text-4xl font-bold text-primary-400 flex items-center">
-          <Home className="w-8 h-8 mr-3 text-primary-500" />
-          Dashboard
+          <Home className="w-8 h-8 mr-3 text-primary-500 icon-glow" />
+          <span className="text-glow">Dashboard</span>
         </h1>
         <p className="text-text-low mt-2">
           Welcome back! Here&apos;s your productivity overview for today.
@@ -201,6 +203,18 @@ export default async function DashboardPage() {
           subtitle={`${repeatingTasksDueToday.length} due today`}
         />
       </div>
+
+      <AnalyticsDashboard
+        existingStats={{
+          totalPoints,
+          currentStreak: user.currentStreak,
+          bestStreak: user.bestStreak,
+          completedTasksCount: user.completedTasksCount,
+          successRate: timeManagementStats.onTimeCompletionRate,
+          todayPoints,
+        }}
+      />
+      <NotificationSetup />
 
       {/* Today's Progress and Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -527,7 +541,7 @@ function DashboardCard({ title, value, icon, subtitle }: DashboardCardProps) {
         <h3 className="font-medium text-text-low">{title}</h3>
         {icon}
       </div>
-      <p className="text-2xl font-bold text-text-high">{value}</p>
+      <p className="text-2xl font-bold text-text-low">{value}</p>
       {subtitle && <p className="text-sm text-text-low mt-1">{subtitle}</p>}
     </div>
   );

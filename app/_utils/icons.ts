@@ -50,9 +50,7 @@ import {
   Gift,
   SquarePen,
   Info,
-  Target,
   TrendingUp,
-  AlertTriangle,
   ClockAlert,
   ClockFading,
   Ellipsis,
@@ -294,18 +292,12 @@ export const CardSpecificIcons = {
 
 export const getNotificationIcon = (type: NotificationType) => {
   const iconMap = {
-    TASK_AT_RISK: AlertTriangle,
     TASK_OVERDUE: Clock,
     TASK_DUE_SOON: Calendar,
-    STREAK_AT_RISK: Zap,
-    STREAK_MILESTONE: Trophy,
-    PRIORITY_TASK_PENDING: Target,
     ACHIEVEMENT_UNLOCKED: Trophy,
     WEEKLY_SUMMARY: TrendingUp,
-    TASK_REMINDER: Bell,
-    CONSISTENCY_ALERT: Target,
     POINTS_MILESTONE: Trophy,
-    SYSTEM_UPDATE: Info,
+    SYSTEM: Info,
   };
 
   return iconMap[type] || Bell;

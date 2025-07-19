@@ -22,7 +22,7 @@ const ReusableTextarea = (
 ) => (
   <textarea
     {...props}
-    className={`block w-full px-3 py-2 bg-background-600 border border-background-500 rounded-md shadow-sm placeholder-text-low focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm text-text-high disabled:opacity-70 disabled:bg-background-550 ${props.className}`}
+    className={`block w-full px-3 py-2 bg-background-700 border border-divider rounded-md shadow-sm placeholder-text-low focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm text-text-low disabled:opacity-70 disabled:bg-background-550 ${props.className}`}
   />
 );
 
@@ -221,7 +221,7 @@ export default function NotesClientUI({
               </div>
             ) : (
               <div className="space-y-2 flex flex-col flex-grow">
-                <h3 className="text-xl font-semibold text-text-high truncate mb-1">
+                <h3 className="text-xl font-semibold text-text-low truncate mb-1">
                   {note.title || (
                     <span className="italic text-text-gray">Untitled</span>
                   )}

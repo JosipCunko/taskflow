@@ -61,7 +61,7 @@ export default async function TodayPage() {
     allTodaysTasks.find((t) => t.status !== "completed");
 
   return (
-    <div className="grid grid-cols-3 gap-6 p-1 sm:p-6 bg-background-800 text-text-high container mx-auto max-h-full overflow-auto">
+    <div className="grid grid-cols-3 gap-6 p-1 sm:p-6 bg-background-800 text-text-low container mx-auto max-h-full overflow-auto">
       <div className="bg-background-700 p-6 rounded-lg shadow max-h-fit">
         <h2 className="text-xl font-semibold mb-4 text-primary-400">
           Today&apos;s First Focus
@@ -72,7 +72,7 @@ export default async function TodayPage() {
               className="p-4 rounded-lg border-l-4 flex items-center gap-2"
               style={{ borderLeftColor: focusTask.color }}
             >
-              <h3 className="font-bold text-lg text-text-high truncate">
+              <h3 className="font-bold text-lg text-text-low truncate">
                 {focusTask.title}
               </h3>
 

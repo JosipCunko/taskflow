@@ -22,7 +22,6 @@ export default function ProfileTabs({
   );
 
   const [isLoading, setIsLoading] = useState(false);
-  const [darkModeEnabled, setDarkModeEnabled] = useState(true);
 
   const getActivityDisplayInfo = (
     activityType: ActivityLog["type"]
@@ -98,7 +97,6 @@ export default function ProfileTabs({
             transition={{ duration: 0.2 }}
             className="space-y-6"
           >
-            {/* Recent Activity */}
             <div className="bg-background-600 rounded-lg p-4 sm:p-6 border border-divider shadow-md">
               <h3 className="text-lg font-semibold mb-4 text-text-high">
                 Recent Activity
@@ -176,7 +174,6 @@ export default function ProfileTabs({
             transition={{ duration: 0.2 }}
             className="space-y-6"
           >
-            {/* Notification Settings */}
             <div className="bg-background-600 rounded-lg p-4 sm:p-6 border border-divider shadow-md">
               <div className="flex items-center gap-3 mb-4">
                 <Bell size={20} className="text-primary-400" />
@@ -194,7 +191,8 @@ export default function ProfileTabs({
                         Task Reminders
                       </p>
                       <p className="text-sm text-text-low">
-                        Get notified about upcoming tasks
+                        Get notified about reminders on tasks that you&apos;ve
+                        set
                       </p>
                     </div>
                   }
@@ -219,7 +217,7 @@ export default function ProfileTabs({
                         Achievement Alerts
                       </p>
                       <p className="text-sm text-text-low">
-                        Get notified about new achievements & reward points
+                        Get notified about new achievements & weekly stats
                       </p>
                     </div>
                   }
@@ -238,7 +236,6 @@ export default function ProfileTabs({
               </div>
             </div>
 
-            {/* Display Settings */}
             <div className="bg-background-600 rounded-lg p-4 sm:p-6 border border-divider shadow-md">
               <div className="flex items-center gap-3 mb-4">
                 <Settings size={20} className="text-primary-400" />
@@ -258,10 +255,8 @@ export default function ProfileTabs({
                       </p>
                     </div>
                   }
-                  checked={darkModeEnabled}
-                  onChange={(e) => {
-                    setDarkModeEnabled(e.target.checked);
-                  }}
+                  checked
+                  onChange={() => {}}
                   disabled
                 />
               </div>

@@ -20,8 +20,8 @@ export default async function CompletedTasksPage() {
     <div className="container mx-auto p-1 sm:p-6 max-h-full overflow-auto">
       <div className="mb-8 ">
         <h1 className="text-3xl sm:text-4xl font-bold text-primary-400 flex items-center">
-          <SquareCheckBig className="w-8 h-8 mr-3 text-primary-500 " />
-          Completed tasks
+          <SquareCheckBig className="w-8 h-8 mr-3 text-primary-500 icon-glow" />
+          <span className="text-glow">Completed tasks</span>
         </h1>
         <p className="text-text-low mt-1 text-sm sm:text-base">
           Manage and review your completed tasks.

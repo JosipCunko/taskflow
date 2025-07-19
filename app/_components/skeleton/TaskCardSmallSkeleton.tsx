@@ -42,20 +42,20 @@ export default function TaskCardSmallSkeleton() {
         <div className="flex flex-wrap gap-2">
           {/* Status badge skeleton */}
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-background-600 border border-background-500/30">
-            <div className="w-3.5 h-3.5 bg-background-500 rounded" />
-            <div className="h-3 w-12 bg-background-500 rounded" />
-          </div>
-
-          {/* Duration calculator skeleton */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-background-600 border border-background-500/30">
-            <div className="w-3.5 h-3.5 bg-background-500 rounded" />
-            <div className="h-3 w-8 bg-background-500 rounded" />
+            <div className="w-3.5 h-3.5 bg-success rounded" />
+            <div className="h-3 w-12 bg-success rounded" />
           </div>
 
           {/* Priority badge skeleton */}
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-500/15 border border-orange-500/30">
             <div className="w-3.5 h-3.5 bg-orange-500/50 rounded" />
             <div className="h-3 w-12 bg-orange-500/50 rounded" />
+          </div>
+
+          {/* Reminder badge skeleton */}
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-background-600 border border-background-500/30">
+            <div className="w-3.5 h-3.5 bg-purple-500 rounded" />
+            <div className="h-3 w-12 bg-purple-500 rounded" />
           </div>
         </div>
 

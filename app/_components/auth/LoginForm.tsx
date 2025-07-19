@@ -25,7 +25,6 @@ export default function LoginForm() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -41,7 +40,6 @@ export default function LoginForm() {
     event.preventDefault();
     setIsLoading(true);
     setError(null);
-    setSuccessMessage(null);
 
     try {
       if (isSignUp) {
@@ -70,7 +68,8 @@ export default function LoginForm() {
             errorMessage = "Incorrect password. Please try again.";
             break;
           case "auth/email-already-in-use":
-            errorMessage = "This email is already in use. Try signing in.";
+            errorMessage =
+              "This email is already in use. Try signing in or choose a differenet email.";
             break;
           case "auth/weak-password":
             errorMessage =
@@ -102,10 +101,16 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="w-full md:w-1/2 flex flex-col p-8">
+    <div className="flex flex-col p-8 w-full">
       <div className="flex-grow flex flex-col justify-center max-w-md mx-auto w-full">
+        <Link
+          href="/"
+          className="bg-primary-500/10 hover:bg-primary-500/20 border border-primary-500/50 text-primary-300 font-semibold py-2 px-4 rounded-md transition-all duration-200 text-sm hover:shadow-md hover:shadow-primary-500/20 w-fit animate-flicker"
+        >
+          [&larr; Go back]
+        </Link>
         <motion.h1
-          className="text-2xl font-bold text-primary-500 mb-1"
+          className="text-2xl font-bold text-primary-500 mt-6 mb-1"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
@@ -113,7 +118,7 @@ export default function LoginForm() {
           {isSignUp ? "Create an Account" : "Welcome back"}
         </motion.h1>
         <motion.p
-          className="text-text-low text-sm mb-8"
+          className="text-text-low text-sm mb-6"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
@@ -167,13 +172,13 @@ export default function LoginForm() {
               <PasswordGenerator
                 setCurrentPassword={setPassword}
                 length={12}
-                customClassName="absolute top-2 right-2"
+                customClassName="absolute top-2 right-2 "
               />
             )}
             <Tooltip
               id="password-generator"
               place="top"
-              className="tooltip-diff-arrow"
+              className="tooltip-diff-arrow z-100"
               classNameArrow="tooltip-arrow"
             />
           </div>
@@ -182,15 +187,10 @@ export default function LoginForm() {
               {error}
             </p>
           )}
-          {successMessage && (
-            <p className="text-sm text-green-700 bg-green-100 border border-green-300 p-2 rounded">
-              {successMessage}
-            </p>
-          )}
+
           <Button
             type="submit"
-            variant="primary"
-            className="w-full flex items-center justify-center py-2.5"
+            className="w-full justify-center py-2 "
             disabled={isLoading}
           >
             {isLoading && !isSignUp && !error
@@ -290,7 +290,6 @@ export default function LoginForm() {
             onClick={() => {
               setIsSignUp(!isSignUp);
               setError(null);
-              setSuccessMessage(null);
               setPassword("");
               setEmail("");
             }}

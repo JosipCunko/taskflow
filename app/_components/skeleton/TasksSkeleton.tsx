@@ -1,4 +1,4 @@
-import { ChartColumn } from "lucide-react";
+import { ChartColumn, Clock, Repeat } from "lucide-react";
 
 function TaskCardSkeleton() {
   return (
@@ -63,18 +63,45 @@ function TaskCardSkeleton() {
 
 export default function TasksSkeleton() {
   return (
-    <div className="container mx-auto p-1 sm:p-6 h-full overflow-auto animate-pulse">
+    <div className="container mx-auto p-1 sm:p-6 max-h-full overflow-auto animate-pulse">
       <div className="mb-6 md:mb-8">
         <h1 className="text-3xl sm:text-4xl font-bold text-primary-400 flex items-center">
-          <ChartColumn className="w-8 h-8 mr-3 text-primary-500" />
-          Your tasks
+          <ChartColumn className="w-8 h-8 mr-3 text-primary-500 icon-glow" />
+          <span className="text-glow">Your tasks</span>
         </h1>
       </div>
 
+      {/* Regular Tasks Section */}
       <div className="mt-8">
-        <div className="p-6">
+        <div className="mb-6">
+          <div className="text-xl font-semibold text-text-high flex items-center mb-4">
+            <Clock className="w-5 h-5 mr-2 text-primary-500" />
+            <div className="h-6 w-40 bg-background-500 rounded" />
+          </div>
+        </div>
+
+        <div className="p-6 text-center text-text-low">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
+              <TaskCardSkeleton key={i} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Repeating Tasks Section */}
+      <div className="my-12">
+        <div className="mb-6">
+          <div className="text-xl font-semibold text-text-high flex items-center mb-4">
+            <Repeat className="w-5 h-5 mr-2 text-primary-500" />
+            <div className="h-6 w-48 bg-background-500 rounded" />
+          </div>
+          <div className="h-4 w-80 bg-background-500 rounded" />
+        </div>
+
+        <div className="p-6 text-center text-text-low">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(4)].map((_, i) => (
               <TaskCardSkeleton key={i} />
             ))}
           </div>

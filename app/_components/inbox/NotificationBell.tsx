@@ -7,6 +7,7 @@ import { NotificationStats } from "@/app/_types/types";
 import { getNotificationStats } from "@/app/_lib/notifications";
 import { formatNotificationCount } from "@/app/_utils/utils";
 import Link from "next/link";
+import { Tooltip } from "react-tooltip";
 
 export default function NotificationBell() {
   const { data: session } = useSession();
@@ -15,6 +16,7 @@ export default function NotificationBell() {
 
   useEffect(() => {
     const fetchStats = async () => {
+      setIsLoading(true);
       if (!session?.user?.id) return;
 
       try {
@@ -68,18 +70,25 @@ export default function NotificationBell() {
   return (
     <Link
       href="/webapp/inbox"
-      className="relative p-2 rounded-lg hover:bg-background-600 transition-colors group"
-      title={`${stats?.totalUnread || 0} unread notifications`}
+      className="relative p-2 rounded-lg hover:bg-background-600 transition-colors group tooltip-container"
     >
       <Bell
         size={20}
         className={`
-          transition-colors
-          ${hasUnreadNotifications ? "text-blue-500" : "text-text-low"}
-          ${priorityCount > 0 ? "text-orange-500" : ""}
-          ${urgentCount > 0 ? "text-red-500" : ""}
-          group-hover:scale-110 transition-transform
-        `}
+            transition-colors
+            ${hasUnreadNotifications ? "text-blue-500" : "text-text-low"}
+            ${priorityCount > 0 ? "text-orange-500" : ""}
+            ${urgentCount > 0 ? "text-red-500" : ""}
+            group-hover:scale-110 transition-transform
+            `}
+        data-tooltip-id="notification-link"
+        data-tooltip-content={`${stats?.totalUnread || 0} unread notifications`}
+      />
+
+      <Tooltip
+        id="notification-link"
+        className="tooltip-diff-arrow"
+        classNameArrow="tooltip-arrow"
       />
 
       {/* Notification badge */}

@@ -42,16 +42,14 @@ export function customToast(type, message) {
             </div>
             <div className="ml-3 flex-1">
               <p className={`text-sm font-medium ${color}`}>{type}</p>
-              <p className="mt-1 text-sm text-text-gray">{message}</p>
+              <p className="mt-1 text-sm text-text-gray text-balance">
+                {message}
+              </p>
             </div>
           </div>
         </div>
         <div className="flex items-center pr-2">
-          <Button
-            variant="secondary"
-            onClick={() => toast.dismiss(t.id)}
-            className="text-xs px-3 py-1.5 transition-all duration-200 hover:scale-105 hover:bg-background-500/50"
-          >
+          <Button variant="secondary" onClick={() => toast.dismiss(t.id)}>
             Close
           </Button>
         </div>

@@ -22,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${plexMono.variable} font-mono antialiased dark bg-background-700 text-text-high transition-colors duration-200`}
+        className={`${plexMono.variable} font-mono antialiased dark bg-background-700 h-screen text-text-high transition-colors duration-200`}
       >
         <AuthProvider>{children}</AuthProvider>
       </body>

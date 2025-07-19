@@ -90,7 +90,10 @@ function TechBackgroundPattern() {
 
 export default function ImageSection() {
   return (
-    <section className="py-16 md:py-24 bg-gradient-to-br from-background-700 to-background-650 relative overflow-hidden">
+    <section
+      id="images"
+      className="py-16 md:py-24 bg-gradient-to-br from-background-700 to-background-650 relative overflow-hidden"
+    >
       <TechBackgroundPattern />
 
       <div className="container mx-auto p-6 text-center relative z-10">

@@ -19,14 +19,15 @@ export default function Button({
   ...rest
 }: ButtonProps) {
   const baseStyles =
-    "relative isolate px-4 py-1 rounded-md transition-all duration-150 flex items-center gap-2 cursor-pointer letter-spacing font-semibold before:absolute before:inset-0 before:z-[-1] before:scale-x-0 before:origin-right before:transition-transform before:duration-300 hover:before:scale-x-100 before:origin-left";
+    "relative isolate px-4 py-1 rounded-md transition-all duration-200 flex items-center gap-2 text-sm sm:text-base cursor-pointer font-semibold";
 
   const variantStyles = {
     primary:
-      "bg-primary-600 hover:bg-primary-600 text-white border border-primary-500",
-    secondary: "bg-primary-500/10 hover:bg-primary-500/20 text-text-high ",
+      "bg-primary-500/10 hover:bg-primary-500/20 text-primary-300 border border-primary-500/50",
+    secondary:
+      "bg-background-500/50 text-text-low border border-primary-500/10 hover:bg-background-500/60 hover:border-primary-500/20 ",
     sidebar: "w-full",
-    danger: "text-error hover:bg-error/10 px-4 py-2 rounded-md",
+    danger: "text-error hover:bg-error/10",
     noStyle: "",
     tag: "flex items-center px-3 py-1.5 rounded-full text-sm cursor-pointer",
   };

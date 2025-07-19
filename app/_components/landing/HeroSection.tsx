@@ -11,7 +11,7 @@ export default function HeroSection() {
       <GridAndDotsBackground />
       <div className="absolute inset-0 bg-gradient-to-t from-background-700 via-background-700/80 to-transparent z-0"></div>
 
-      <div className=" container mx-auto px-6 relative z-10">
+      <div className="space-y-5 container mx-auto max-w-[1000px] text-pretty px-6 relative z-10">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -21,7 +21,7 @@ export default function HeroSection() {
           <GlitchText
             enableOnHover={false}
             speed={2.2}
-            className="mb-6 text-xl tracking-tight"
+            className="text-4xl sm:text-5xl md:text-6xl "
           >
             Conquer Your Day
           </GlitchText>

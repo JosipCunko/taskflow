@@ -1,7 +1,10 @@
 @import "tailwindcss";
 
-body {
+:root {
   scroll-behavior: smooth;
+}
+
+body {
   scroll-snap-stop: always;
   background-color: var(--color-background-700);
   background-image: radial-gradient(
@@ -12,6 +15,10 @@ body {
   position: relative;
 }
 
+/* Scan lines and RGB color seperation
+flicker animation that constantly changes opacities
+background dot patter that simulate an old CRT monitor
+*/
 body::after {
   content: "";
   position: fixed;
@@ -148,6 +155,10 @@ body::after {
   text-shadow: 0 0 5px var(--color-primary-500),
     0 0 10px var(--color-primary-500);
   font-weight: 600;
+}
+.icon-glow {
+  filter: drop-shadow(0 0 5px var(--color-primary-500))
+    drop-shadow(0 0 10px var(--color-primary-500));
 }
 
 ::-webkit-scrollbar {

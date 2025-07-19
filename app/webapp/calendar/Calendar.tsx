@@ -53,7 +53,7 @@ export default function Calendar({ tasks }: { tasks: Task[] }) {
       <div className="lg:col-span-3 bg-background-600 p-4 sm:p-6 rounded-xl shadow-xl relative max-h-[370px] overflow-y-auto overflow-x-hidden">
         <div className="flex items-center mb-4 sm:mb-6">
           <ListChecks className="w-6 h-6 mr-2 text-primary-400" />
-          <h2 className="text-xl sm:text-2xl font-semibold text-text-high">
+          <h2 className="text-xl sm:text-2xl font-semibold text-text-low">
             {selectedDate
               ? format(selectedDate, "MMMM do, yyyy")
               : "Select a day"}

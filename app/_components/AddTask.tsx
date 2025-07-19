@@ -319,7 +319,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
   };
 
   return (
-    <div className="w-[22rem] sm:w-[26rem] mx-auto px-4 bg-background-700 rounded-2xl shadow h-[75vh] overflow-y-auto overflow-x-hidden">
+    <div className="w-[22rem] sm:w-[26rem] mx-auto px-4 bg-background-700 rounded-2xl shadow h-[65vh] overflow-y-auto overflow-x-hidden">
       <div className="flex border-b border-background-600 mb-4">
         {tabs.map((tab) => (
           <button

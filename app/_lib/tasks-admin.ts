@@ -9,7 +9,7 @@ import {
 } from "@/app/_types/types";
 import { calculateTaskPoints, isTaskAtRisk } from "@/app/_utils/utils";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
-import { revalidateTag } from "next/cache";
+import { revalidateTag, unstable_cache } from "next/cache";
 
 // Helper function to safely convert dates from either Timestamp or ISO string
 const safeConvertToDate = (
@@ -105,33 +105,37 @@ export const getTaskByTaskId = async (taskId: string): Promise<Task | null> => {
 };
 
 // Problem with caching - Dates are converted to ISO strings
-export const getTasksByUserId = async (
-  userId: string | undefined
-): Promise<Task[]> => {
-  if (!userId) {
-    console.warn("getTasksByUserId called without a userId.");
-    return [];
+export const getTasksByUserId = unstable_cache(
+  async (userId: string | undefined): Promise<Task[]> => {
+    if (!userId) {
+      console.warn("getTasksByUserId called without a userId.");
+      return [];
+    }
+
+    try {
+      const tasksRef = adminDb.collection("tasks");
+      const tasksQuery = tasksRef
+        .where("userId", "==", userId)
+        .orderBy("dueDate", "asc");
+      const tasksSnapshot = await tasksQuery.get();
+
+      const tasks: Task[] = tasksSnapshot.docs.map((doc) => {
+        return fromFirestore(
+          doc as admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData>
+        );
+      });
+
+      return tasks;
+    } catch (error) {
+      console.error("Error fetching tasks by user ID:", error);
+      throw error;
+    }
+  },
+  ["getTasksByUserId"],
+  {
+    tags: ["tasks"],
   }
-
-  try {
-    const tasksRef = adminDb.collection("tasks");
-    const tasksQuery = tasksRef
-      .where("userId", "==", userId)
-      .orderBy("dueDate", "asc");
-    const tasksSnapshot = await tasksQuery.get();
-
-    const tasks: Task[] = tasksSnapshot.docs.map((doc) => {
-      return fromFirestore(
-        doc as admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData>
-      );
-    });
-
-    return tasks;
-  } catch (error) {
-    console.error("Error fetching tasks by user ID:", error);
-    throw error;
-  }
-};
+);
 
 interface TaskFirestoreData {
   userId: string;

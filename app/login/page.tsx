@@ -10,7 +10,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen bg-background-600">
       <LoginForm />
 
-      <div className="hidden md:flex md:w-1/2 bg-background-700 items-center justify-center p-8 relative overflow-hidden">
+      <div className="hidden md:flex w-full bg-background-700 items-center justify-center p-8 relative overflow-hidden">
         <AnimatedBackground />
 
         <div className="max-w-md relative z-10">
