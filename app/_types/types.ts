@@ -8,21 +8,20 @@ export interface Task {
   description?: string;
   icon: string;
   color: string;
-  isPriority: boolean; // 'focus' tag could set this
+  isPriority: boolean;
   isReminder: boolean;
   delayCount: number;
-  tags?: string[]; // For user-defined tags like 'morning routine', 'gym'
-  createdAt: Date; // Stored as Timestamp in Firestore
-  updatedAt: Date; // Stored as Timestamp in Firestore
+  tags?: string[];
+  createdAt: Date;
+  updatedAt: Date;
   experience?: "bad" | "okay" | "good" | "best";
   location?: string;
   dueDate: Date; // Stored as Timestamp in Firestore, converted to Date in app
   startDate?: Date;
-  startTime?: { hour: number; minute: number }; // NEW: Time of day for the task
+  startTime?: { hour: number; minute: number };
   completedAt?: Date;
   /**Delayed is pending but rescheduled */
   status: "pending" | "completed" | "delayed";
-
   isRepeating?: boolean;
   repetitionRule?: RepetitionRule;
   duration?: {
@@ -147,7 +146,6 @@ export type NotificationType =
   | "TASK_DUE_SOON"
   | "WEEKLY_SUMMARY"
   | "ACHIEVEMENT_UNLOCKED"
-  | "POINTS_MILESTONE"
   | "SYSTEM";
 export type NotificationPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 

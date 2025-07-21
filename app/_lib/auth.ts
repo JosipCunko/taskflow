@@ -626,7 +626,7 @@ export const authOptions: NextAuthOptions = {
               await Promise.all([
                 userDocRef.update(updates),
                 updateUserRepeatingTasks(token.uid),
-                checkAndAwardAchievements(userData),
+                checkAndAwardAchievements(token.uid),
                 //generateNotificationsForUser(token.uid, tasks),
               ]);
             }

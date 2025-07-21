@@ -121,7 +121,7 @@ export default function RepetitionRules({
   ];
 
   return (
-    <div className="bg-background-650 rounded-2xl w-[22rem] sm:w-[26rem] flex flex-col h-[75vh] px-4 overflow-y-auto overflow-x-hidden mx-auto">
+    <div className="bg-background-650 rounded-2xl w-[22rem] sm:w-[26rem] flex flex-col h-[90vh] sm:h-[65vh] px-4 overflow-y-auto overflow-x-hidden mx-auto">
       <div className="text-center p-4 sm:p-6 flex-shrink-0">
         <h3 className="text-xl sm:text-2xl font-bold text-text-high mb-2">
           Set Repetition Rules
@@ -141,7 +141,7 @@ export default function RepetitionRules({
               description = "Every few days";
             } else if (type === "daysOfWeek") {
               label = "Specific Days";
-              description = "Certain days of week";
+              description = "Days of the week";
             } else if (type === "timesPerWeek") {
               label = "X Times/Week";
               description = "Weekly goal";

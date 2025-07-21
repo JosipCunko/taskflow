@@ -4,6 +4,7 @@ import { getTasksByUserId } from "../_lib/tasks-admin";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { Toaster } from "react-hot-toast";
+import Script from "next/script";
 
 import TopSidebar from "../_components/TopSidebar";
 import AnimatedSidebar from "../_components/AnimatedSidebar";
@@ -33,6 +34,7 @@ export default async function RootLayout({
         </div>
       </main>
       <Toaster position="top-center" containerStyle={{ zIndex: 999999 }} />
+      <Script src="https://cdn.jotfor.ms/agent/embedjs/01982cd8d8e7774fbebc0a2dd460c49e2c67/embed.js?skipWelcome=1&maximizable=1" />
     </>
   );
 }

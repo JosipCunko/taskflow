@@ -11,8 +11,8 @@ export default async function CalendarPage() {
   const allUserTasks = await getTasksByUserId(session.user.id);
 
   return (
-    <div className="container mx-auto overflow-y-auto text-text-low p-1 sm:p-6">
-      <div className="mb-8 ">
+    <div className="container mx-auto overflow-y-auto text-text-low p-1 sm:p-6 max-h-full">
+      <div className="mb-8">
         <h1 className="text-3xl sm:text-4xl font-bold text-primary-400 flex items-center">
           <CalendarDays className="w-8 h-8 mr-3 text-primary-500 icon-glow" />
           <span className="text-glow">My Calendar</span>

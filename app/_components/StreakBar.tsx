@@ -2,22 +2,14 @@ import { calcNextPointsMilestone } from "../_utils/utils";
 
 type StreakBarProps = {
   points: number;
-  maxPoints?: number;
 };
 
-export default function StreakBar({ points, maxPoints }: StreakBarProps) {
-  const currentGoal = maxPoints || calcNextPointsMilestone(points);
+export default function StreakBar({ points }: StreakBarProps) {
+  const { nextMilestone: currentGoal, currentMilestoneColor } =
+    calcNextPointsMilestone(points);
 
   // Calculate percentage, ensuring it stays between 0 and 100
   const percentage = Math.min(Math.max((points / currentGoal) * 100, 0), 100);
-
-  // Determine color based on points
-  let color = "bg-yellow-400";
-  if (points === 0) {
-    color = "bg-red-500";
-  } else if (points > currentGoal * 0.8) {
-    color = "bg-green-500";
-  }
 
   return (
     <div className="w-full space-y-2">
@@ -29,8 +21,11 @@ export default function StreakBar({ points, maxPoints }: StreakBarProps) {
       </div>
       <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
         <div
-          className={`h-full ${color} transition-all duration-500 ease-in-out`}
-          style={{ width: `${percentage}%` }}
+          className="h-full transition-all duration-500 ease-in-out"
+          style={{
+            width: `${percentage}%`,
+            backgroundColor: currentMilestoneColor,
+          }}
         />
       </div>
       <div className="text-xs text-gray-500">

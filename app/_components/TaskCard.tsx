@@ -212,7 +212,10 @@ export default function TaskCard({
             </span>
           </div>
           <div className="flex items-center gap-1">
-            <span>Reward points if completed:</span>
+            <span>
+              Reward points{" "}
+              {task.status !== "completed" ? "if completed" : "gained"}
+            </span>
             <span className="text-text-gray">{task.points}</span>
           </div>
 

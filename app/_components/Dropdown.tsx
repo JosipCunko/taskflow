@@ -45,7 +45,7 @@ function ActionSubmitButton({
       type="submit"
       disabled={isDisabled}
       variant="secondary"
-      className={`w-full text-left px-2.5 py-2.5 text-sm text-text-gray ${className} ${
+      className={`text-nowrap w-full text-left py-2.5 text-sm text-text-gray ${className} ${
         isDisabled ? "opacity-50 cursor-not-allowed" : ""
       }`}
     >
@@ -67,16 +67,14 @@ export default function Dropdown({
   isDropdownOpen,
   setIsDropdownOpen,
   task,
-  canComplete = undefined,
   handleComplete = undefined,
 }: {
   isDropdownOpen: boolean;
   setIsDropdownOpen: (isDropdownOpen: boolean) => void;
   task: Task;
-  canComplete?: boolean;
   handleComplete?: () => void;
 }) {
-  const completionInfo = getCompletionAvailabilityInfo(task, canComplete);
+  const completionInfo = getCompletionAvailabilityInfo(task);
   const [rescheduleDate, setRescheduleDate] = useState<Date>(new Date());
 
   return (

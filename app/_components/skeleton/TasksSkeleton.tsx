@@ -80,7 +80,7 @@ export default function TasksSkeleton() {
           </div>
         </div>
 
-        <div className="p-6 text-center text-text-low">
+        <div className="p-1 sm:p-6 text-center text-text-low">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
               <TaskCardSkeleton key={i} />
@@ -99,7 +99,7 @@ export default function TasksSkeleton() {
           <div className="h-4 w-80 bg-background-500 rounded" />
         </div>
 
-        <div className="p-6 text-center text-text-low">
+        <div className="p-1 sm:p-6 text-center text-text-low">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(4)].map((_, i) => (
               <TaskCardSkeleton key={i} />

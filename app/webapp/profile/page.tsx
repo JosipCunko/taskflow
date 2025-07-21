@@ -31,7 +31,7 @@ export default async function ProfilePage() {
   } as AppUser;
 
   return (
-    <div className="mx-auto container max-h-full p-1 sm:p-6 space-y-8">
+    <div className="mx-auto container overflow-y-auto p-1 sm:p-6 space-y-8">
       <div className="mb-6 md:mb-8">
         <h1 className="text-3xl sm:text-4xl font-bold text-primary-400 flex items-center">
           <User className="w-8 h-8 mr-3 text-primary-500 icon-glow" />

@@ -37,7 +37,7 @@ export default async function TasksPage() {
           </h2>
         </div>
 
-        <div className="p-6 text-center text-text-low">
+        <div className="p-1 sm:p-6 text-center text-text-low">
           {regularTasks.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {regularTasks.map((task, idx) => (
@@ -63,7 +63,7 @@ export default async function TasksPage() {
           </p>
         </div>
 
-        <div className="p-6 text-center text-text-low">
+        <div className="p-1 sm:p-6 text-center text-text-low">
           {repeatingTasks.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {repeatingTasks.map((task) => (

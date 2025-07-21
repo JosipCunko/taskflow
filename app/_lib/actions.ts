@@ -38,6 +38,7 @@ import { updateUser, updateUserCompletionStats } from "./user-admin";
 import { adminDb } from "./admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { sendCampaignNotification } from "./notifications-admin";
+import { checkAndAwardAchievements } from "./achievements";
 
 /* User */
 export async function updateUserAction(
@@ -110,6 +111,9 @@ export async function completeTaskAction(
         },
       });
     }
+
+    // Check for achievements after task completion
+    await checkAndAwardAchievements(userId);
 
     revalidatePath("/tasks");
     return { success: true, message: `Task marked as completed` };
@@ -452,6 +456,10 @@ export async function completeRepeatingTaskWithInterval(
   try {
     await updateTask(task.id, updates);
     await updateUserCompletionStats(session.user.id, task.points);
+
+    // Check for achievements after task completion
+    await checkAndAwardAchievements(session.user.id);
+
     return {
       success: true,
       message: `Task completed. Next due on ${formatDate(finalDueDate)}`,
@@ -532,6 +540,10 @@ export async function completeRepeatingTaskWithTimesPerWeek(
   try {
     await updateTask(task.id, updates);
     await updateUserCompletionStats(session.user.id, task.points);
+
+    // Check for achievements after task completion
+    await checkAndAwardAchievements(session.user.id);
+
     return {
       success: true,
       message:
@@ -614,6 +626,10 @@ export async function completeRepeatingTaskWithDaysOfWeek(
   try {
     await updateTask(task.id, updates);
     await updateUserCompletionStats(session.user.id, task.points);
+
+    // Check for achievements after task completion
+    await checkAndAwardAchievements(session.user.id);
+
     return {
       success: true,
       message:

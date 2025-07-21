@@ -30,7 +30,6 @@ import {
   isPast,
   startOfDay,
   isSameWeek,
-  isTomorrow,
   format,
 } from "date-fns";
 import { isFuture, isToday } from "date-fns";
@@ -622,7 +621,6 @@ export function getCompletionAvailabilityInfo(
     };
   }
 
-  // If task is completed today, show completion message
   if (task.completedAt && isToday(task.completedAt)) {
     return {
       text: "Completed today",
@@ -631,8 +629,7 @@ export function getCompletionAvailabilityInfo(
     };
   }
 
-  // If task is already completed (but not today)
-  if (task.status === "completed") {
+  if (task.completedAt && task.status === "completed") {
     return {
       text: "Already completed",
       canComplete: false,
@@ -640,14 +637,13 @@ export function getCompletionAvailabilityInfo(
     };
   }
 
-  // For repeating tasks, use the advanced logic
   if (task.isRepeating) {
     const { canCompleteNow, isDueToday } = canCompleteRepeatingTaskNow(task);
     const { startTime, endTime } = getStartAndEndTime(task);
 
     if (canCompleteNow) {
       return {
-        text: "Complete",
+        text: "Complete now",
         canComplete: true,
         icon: CardSpecificIcons.MarkComplete,
       };
@@ -669,64 +665,34 @@ export function getCompletionAvailabilityInfo(
         return {
           text: `Available from ${startTime}`,
           canComplete: false,
-          icon: CardSpecificIcons.MarkComplete,
         };
       } else if (currentTimeInMinutes > endTimeInMinutes) {
         return {
           text: `Was available until ${endTime}`,
           canComplete: false,
-          icon: CardSpecificIcons.MarkComplete,
         };
       }
     }
 
-    // If task is not due today, show when it will be available
     if (!isDueToday) {
-      if (isTomorrow(task.dueDate)) {
-        return {
-          text: "Can complete tomorrow",
-          canComplete: false,
-          icon: CardSpecificIcons.MarkComplete,
-        };
-      } else {
-        if (task.repetitionRule?.timesPerWeek)
-          return {
-            text: `Available ${formatDate(task.startDate || new Date())}`,
-            canComplete: false,
-            icon: CardSpecificIcons.MarkComplete,
-          };
-        return {
-          text: `Available ${formatDate(task.dueDate)}`,
-          canComplete: false,
-          icon: CardSpecificIcons.MarkComplete,
-        };
-      }
+      return {
+        text: `Available ${formatDate(task.dueDate)}`,
+        canComplete: false,
+      };
     }
 
     // Fallback for repeating tasks
     return {
       text: "Not available now",
       canComplete: false,
-      icon: CardSpecificIcons.MarkComplete,
     };
   }
 
   // For regular tasks, use the canComplete prop or default behavior
   if (canComplete === false) {
-    // Check if it's tomorrow
-    if (isTomorrow(task.dueDate)) {
-      return {
-        text: "Can complete tomorrow",
-        canComplete: false,
-        icon: CardSpecificIcons.MarkComplete,
-      };
-    }
-
-    // For future dates
     return {
       text: `Available ${format(task.dueDate, "MMM d")}`,
       canComplete: false,
-      icon: CardSpecificIcons.MarkComplete,
     };
   }
 
@@ -739,40 +705,34 @@ export function getCompletionAvailabilityInfo(
 }
 
 /*Repeating tasks */
-/*Repeating tasks */
-/*Repeating tasks */
 export const MONDAY_START_OF_WEEK = { weekStartsOn: 1 } as const;
-interface RepeatingTaskAvailability {
+
+export function canCompleteRepeatingTaskNow(task: Task): {
   canCompleteNow: boolean;
   sameWeek?: boolean;
   isDueToday: boolean;
-}
-
-export function canCompleteRepeatingTaskNow(
-  task: Task
-): RepeatingTaskAvailability {
+} {
   if (!task.isRepeating || !task.repetitionRule) {
     return { canCompleteNow: false, isDueToday: false };
   }
   const today = new Date();
   const rule = task.repetitionRule;
-  if (task.startDate && today < task.startDate)
+  if (task.startDate && isFuture(task.startDate))
     return { canCompleteNow: false, isDueToday: false };
+
+  const sameWeek = isSameWeek(
+    today,
+    task.startDate || new Date(),
+    MONDAY_START_OF_WEEK
+  );
 
   const completedToday =
     task.status === "completed" ||
     (task.completedAt && isToday(task.completedAt as Date));
 
   if (completedToday) {
-    return { canCompleteNow: false, isDueToday: false };
+    return { canCompleteNow: false, sameWeek, isDueToday: true };
   }
-
-  const notCompletedToday = !completedToday;
-  const sameWeek = isSameWeek(
-    today,
-    task.startDate || new Date(),
-    MONDAY_START_OF_WEEK
-  );
 
   let isScheduledToday = false;
 
@@ -780,7 +740,8 @@ export function canCompleteRepeatingTaskNow(
     isScheduledToday = sameWeek && rule.completions < rule.timesPerWeek;
   } else if (rule.daysOfWeek.length > 0) {
     const dayOfWeek = getDay(today) as DayOfWeek;
-    isScheduledToday = sameWeek && rule.daysOfWeek.includes(dayOfWeek);
+    // Decided not to include sameWeek here because it's not relevant for daysOfWeek
+    isScheduledToday = rule.daysOfWeek.includes(dayOfWeek);
   } else if (rule.interval) {
     const daysSinceStart = differenceInDays(
       today,
@@ -790,7 +751,7 @@ export function canCompleteRepeatingTaskNow(
     isScheduledToday = daysSinceStart % rule.interval === 0;
   }
 
-  if (!isScheduledToday || !notCompletedToday) {
+  if (!isScheduledToday) {
     return { canCompleteNow: false, sameWeek, isDueToday: false };
   }
 
@@ -815,11 +776,9 @@ export function canCompleteRepeatingTaskNow(
 
     // Added isToday(task.dueDate) and isScheduledToday for timesPerWeek tasks
     return {
-      canCompleteNow:
-        isInTimeWindow &&
-        (rule.timesPerWeek ? isScheduledToday : isToday(task.dueDate)),
+      canCompleteNow: isInTimeWindow && isToday(task.dueDate),
       sameWeek,
-      isDueToday: rule.timesPerWeek ? isScheduledToday : isToday(task.dueDate),
+      isDueToday: isToday(task.dueDate),
     };
   }
 
@@ -847,10 +806,29 @@ export const pointsMilestones = [
 ];
 export const streakMilestones = [3, 7, 14, 30, 50, 75, 100];
 export const taskCompletionistMilestones = [
-  1, 10, 25, 50, 100, 150, 200, 300, 400, 500,
+  1, 10, 25, 50, 100, 150, 200, 300, 400, 500, 1000, 2500, 5000, 10000,
 ];
+export const calcNextPointsMilestone = (
+  currentPoints: number
+): { nextMilestone: number; currentMilestoneColor: string } => {
+  let nextMilestone = 0;
+  let currentMilestoneColor = "#f75454";
 
-export const calcNextPointsMilestone = (currentPoints: number): number => {
-  if (currentPoints >= 1000) return 1000;
-  return Math.ceil((currentPoints + 1) / 100) * 100;
+  pointsMilestones.forEach((milestone, index) => {
+    if (currentPoints >= milestone) {
+      nextMilestone = pointsMilestones[index + 1];
+    }
+  });
+
+  if (currentPoints >= 10000) {
+    nextMilestone = 10000;
+    currentMilestoneColor = "#00c853";
+  }
+  if (currentPoints > nextMilestone * 0.2) currentMilestoneColor = "#cf6679";
+  if (currentPoints > nextMilestone * 0.4) currentMilestoneColor = "#fbabab";
+  if (currentPoints > nextMilestone * 0.6) currentMilestoneColor = "#ffd600";
+  if (currentPoints > nextMilestone * 0.8) currentMilestoneColor = "#0ea5e9";
+  if (currentPoints > nextMilestone * 0.9) currentMilestoneColor = "#00c853";
+
+  return { nextMilestone, currentMilestoneColor };
 };

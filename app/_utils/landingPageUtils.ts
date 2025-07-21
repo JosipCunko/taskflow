@@ -49,7 +49,7 @@ export const images = [
     category: "Planning",
   },
   {
-    src: "/customizeTask.png",
+    src: "/taskCustomization.png",
     alt: "A user customizes a task, setting a due date and duration.",
     title: "Customize Your Tasks",
     category: "Customization",
@@ -61,7 +61,7 @@ export const images = [
     category: "Analytics",
   },
   {
-    src: "/tasks2.png",
+    src: "/tasks.png",
     alt: "The user tasks page, displaying tasks and settings.",
     title: "Manage Your Tasks",
     category: "Organization",

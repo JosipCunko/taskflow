@@ -1,0 +1,323 @@
+TaskFlow AI Agent Context
+
+Application Overview
+
+TaskFlow is a modern, feature-rich task management application designed to help users achieve their goals through disciplined task organization and tracking. It offers a seamless experience for managing daily, weekly, and monthly tasks, as well as a dedicated space for personal notes.
+
+Key Features Summary
+
+1. Smart Task Management
+
+- Comprehensive task creation with titles, descriptions, due dates, start times, and durations
+- Visual organization with custom icons and colors
+- Priority marking for important tasks
+- Task reminders and notifications
+- Location tagging for tasks
+- Advanced scheduling with repeating tasks
+- Manual rescheduling with delay tracking
+- Experience rating system (bad, okay, good, best)
+- Points system and gamification
+
+2. Notes Feature
+
+- Personal notes with title and content
+- Create, edit, and delete functionality
+- Automatic timestamp tracking
+- Centralized management at `/webapp/notes`
+
+3. Dashboard and Analytics
+
+- Performance metrics and insights
+- Streak tracking (current and best)
+- Points system and achievements
+- Task completion statistics
+- Time management analytics
+
+4. Notifications and Inbox
+
+- Smart notification system with priority levels
+- Task reminders (overdue, due soon)
+- Achievement notifications
+- Weekly summaries
+- Real-time inbox management
+
+5. User Profile and Settings
+
+- Notification preferences
+- Account management
+- Activity logs
+- Performance statistics
+
+Navigation and Routes
+
+Main Application Routes:
+
+- Dashboard (`/webapp`) - Overview of tasks and performance analytics
+- Tasks (`/webapp/tasks`) - Comprehensive task management interface
+- Calendar (`/webapp/calendar`) - Calendar view of tasks
+- Completed (`/webapp/completed`) - View of completed tasks
+- Notes (`/webapp/notes`) - Dedicated section for managing personal notes
+- Inbox (`/webapp/inbox`) - Real-time notification management center
+- Profile (`/webapp/profile`) - User settings and preferences
+- Today (`/webapp/today`) - Today's tasks view
+- Login (`/login`) - Authentication page
+
+Task Management System
+
+How to Add a New Task
+
+Tasks are created through the "Add Task" modal, accessible via:
+
+- New Task button in the top navigation bar
+- The modal has two tabs: "Task" and "Customization"
+
+Task Tab Fields:
+
+1. Title (required) - Task name with animated placeholders
+2. Location (optional) - Geographic tagging with search functionality
+3. Description (optional) - Detailed task description
+4. Tags (optional) - Custom tags for organization (up to 6 tags)
+5. Quick Settings:
+   - Whole day toggle - Sets task for entire day
+   - Priority toggle - Marks task as high priority
+   - Reminders toggle - Enables notifications for this task
+
+Date and Time Settings:
+
+- Start Date - When the task begins
+- End Date - When the task is due (for non-repeating tasks)
+- Start Time - Specific time when task should start
+- Duration - How long the task should take
+
+Customization Tab:
+
+- Color Picker - Choose from predefined color palette
+- Icon Picker - Select from extensive icon library
+
+Task Reminders
+
+To add a reminder to a task:
+
+1. During Creation: Toggle the "Reminders" button in the Add Task modal
+2. After Creation: Use the task dropdown menu and select "Add Reminder"
+
+Reminders will generate notifications when:
+
+- Task is overdue
+- Task is due within 24 hours
+- For time-sensitive repeating tasks (15 min, 5 min, and at start time)
+
+To add a location to a task:
+
+1. Click the "Add location" button in the Add Task modal
+2. Options available:
+   - Search for address - Type to search for places using OpenStreetMap
+   - Get my position - Use GPS to get current location
+   - Reset location - Clear the current location
+
+Location data is stored with the task and displayed on task cards.
+
+Repeating Tasks
+
+To create a repeating task:
+
+1. Toggle the "Repeats" switch in the Add Task modal
+2. Click "Edit" to configure repetition rules
+3. Choose from three repetition types:
+
+Repetition Types:
+
+1. Every X Days (Interval)
+
+   - Repeats every specified number of days
+   - Example: "Every 2 days" means task repeats every other day
+
+2. Specific Days (Days of Week)
+
+   - Select specific days of the week
+   - Example: "Tuesday and Friday" repeats only on those days
+   - Can select multiple days
+
+3. X Times/Week (Times per Week)
+   - Complete a certain number of times per week
+   - Example: "3 times per week" allows completion on any 3 days
+
+Example: Task that repeats on Tuesday and Friday, starting tomorrow:
+
+1. Toggle "Repeats" on
+2. Click "Edit" to open Repetition Rules
+3. Select "Specific Days"
+4. Choose Tuesday (2) and Friday (5)
+5. Set start date to tomorrow
+6. Click "Done"
+
+The system will automatically calculate the first due date and subsequent repetitions.
+
+Notes are managed at `/webapp/notes`:
+
+1. Access: Navigate to Notes from the sidebar
+2. Create: Click "Add New Note" button
+3. Edit: Click the pencil icon on any note
+4. Content: Each note has:
+   - Title field
+   - Content area (supports multi-line text)
+   - Automatic timestamp tracking
+
+Note Features:
+
+- Real-time editing - Changes are saved when you click "Save"
+- Delete functionality - Remove notes with trash icon
+- Organization - Notes are sorted by last updated date
+- Search and filter capabilities
+
+Dashboard and Profile Data
+
+Dashboard Displays:
+
+- Today's Tasks - Completed vs total tasks for today
+- Reward Points - Total points earned and points available today
+- Current Streak - Days of consecutive activity
+- Success Rate - On-time task completion percentage
+- Completed Tasks - Total lifetime completions
+- Notes Created - Total number of notes
+- Missed Tasks - Tasks that need attention
+- Repeating Tasks - Active recurring tasks
+
+Profile Page Shows:
+
+- User Information - Name, email, profile photo
+- Statistics:
+  - Total completed tasks
+  - Current and best streaks
+  - Reward points
+  - Notes count
+- Settings - Notification preferences
+- Activity Log - Recent task activities
+- Achievements - Unlocked milestones
+
+Analytics Available:
+
+- Performance Metrics - Completion rates and trends
+- Time Management - On-time vs delayed tasks
+- Productivity Insights - Peak hours and patterns
+- Feature Usage - How often different sections are used
+- Streak History - Daily activity tracking
+
+Data Security and Privacy
+
+Security Features:
+
+1. Authentication:
+   - Multiple sign-in options: Google, Email/Password, GitHub
+   - Managed by NextAuth.js and Firebase
+   - Secure session handling
+
+2. Data Protection:
+   - All data stored in Firebase Firestore
+   - Protected API routes requiring authentication
+   - Users can only access their own data
+   - Secure environment variable management
+
+3. Privacy:
+   - Personal data is encrypted and secure
+   - No data sharing with third parties
+   - User has full control over their information
+   - Can delete account and data
+
+Data Storage:
+
+- Tasks - Stored in Firestore with user ID isolation
+- Notes - Personal notes in separate collection
+- User Profiles - Preferences and statistics
+- Notifications - Temporary, auto-expire
+- Activity Logs - Audit trail of user actions
+
+Managing Notifications:
+- Inbox - Central hub for all notifications
+- Settings - Toggle reminders and achievement alerts in Profile
+- Push Notifications - Can be enabled for real-time alerts
+- Filtering - Sort by priority, type, and read status
+
+Task Schema:
+
+```typescript
+interface Task {
+  id: string;
+  userId: string;
+  title: string;
+  description?: string;
+  icon: string;
+  color: string;
+  isPriority: boolean;
+  isReminder: boolean;
+  delayCount: number;
+  tags?: string[];
+  createdAt: Date;
+  updatedAt: Date;
+  experience?: "bad" | "okay" | "good" | "best";
+  location?: string;
+  dueDate: Date;
+  startDate?: Date;
+  startTime?: { hour: number; minute: number };
+  completedAt?: Date;
+  status: "pending" | "completed" | "delayed";
+  isRepeating?: boolean;
+  repetitionRule?: RepetitionRule;
+  duration?: { hours: number; minutes: number };
+  risk?: boolean;
+  points: number;
+}
+```
+
+Common User Questions and Answers
+
+Q: How do I add a new task?
+
+A: Click the "New Task" button in the top navigation bar. Fill in the title (required), and optionally add description, location, tags, and customize the icon/color. Set the due date and any specific timing. Toggle on "Priority" or "Reminders" if needed.
+
+Q: How can I add a reminder to a task?
+
+A: You can add reminders in two ways:
+
+1. When creating a task, toggle the "Reminders" button in the Add Task modal
+2. For existing tasks, click the three dots menu on the task and select "Add Reminder"
+
+Q: How can I make a task repeat on specific days?
+
+A:
+1. In the Add Task modal, toggle "Repeats" on
+2. Click "Edit" to open Repetition Rules
+3. Select "Specific Days"
+4. Choose the days you want (e.g., Tuesday and Friday)
+5. Set your start date
+6. Click "Done"
+
+Q: What data is visible in the dashboard and profile?
+
+A:
+Dashboard shows: Today's task progress, reward points, current streak, success rate, total completed tasks, notes count, missed tasks, and repeating tasks.
+Profile shows: Personal information, detailed statistics, notification settings, recent activity log, and earned achievements.
+
+Q: Is my data safe?
+
+A: Yes, your data is very secure. TaskFlow uses enterprise-grade Firebase security with:
+
+- Encrypted data storage
+- Authentication required for all access
+- User isolation (you can only see your own data)
+- No third-party data sharing
+- Secure session management
+
+Keyboard Shortcuts
+
+- Ctrl+K - Open search/command palette
+- Click task title - Quick edit mode
+- Three dots (⋮) - Open task actions menu
+
+For additional help:
+
+1. Check the dashboard for performance insights
+2. Review the profile page for detailed statistics
+3. Use the search function (Ctrl+K) to quickly find tasks
+4. Check the inbox for important notifications
+5. Visit settings to customize notification preferences

@@ -17,7 +17,6 @@ import {
   getStartAndEndTime,
   getDayName,
   getTimeString,
-  canCompleteRepeatingTaskNow,
 } from "../_utils/utils";
 import { CardSpecificIcons, getTaskIconByName } from "../_utils/icons";
 import { getExperienceIcon } from "./TaskCard";
@@ -50,7 +49,6 @@ export default function RepeatingTaskCard({
   const rule = task.repetitionRule;
 
   const { startTime, endTime } = getStartAndEndTime(task);
-  const { canCompleteNow } = canCompleteRepeatingTaskNow(task);
 
   // For display purposes, check if task is due today regardless of time window
   const isDueToday = isToday(task.dueDate);
@@ -178,7 +176,6 @@ export default function RepeatingTaskCard({
             task={task}
             isDropdownOpen={isDropdownOpen}
             setIsDropdownOpen={setIsDropdownOpen}
-            canComplete={canCompleteNow}
             handleComplete={handleComplete}
           />
         </div>
@@ -188,7 +185,7 @@ export default function RepeatingTaskCard({
             size={12}
             className="inline mr-1.5 opacity-80 flex-shrink-0"
           />
-          <span>{repetitionSummary}</span>
+          <span className="text-left text-balance">{repetitionSummary}</span>
         </p>
 
         {task.description && (

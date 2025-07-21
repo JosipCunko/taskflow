@@ -17,7 +17,7 @@ export default async function CompletedTasksPage() {
   );
 
   return (
-    <div className="container mx-auto p-1 sm:p-6 max-h-full overflow-auto">
+    <div className="container mx-auto p-2 sm:p-6 max-h-full overflow-auto">
       <div className="mb-8 ">
         <h1 className="text-3xl sm:text-4xl font-bold text-primary-400 flex items-center">
           <SquareCheckBig className="w-8 h-8 mr-3 text-primary-500 icon-glow" />
@@ -29,7 +29,7 @@ export default async function CompletedTasksPage() {
       </div>
 
       <div className="mt-8">
-        <div className="p-6 text-center text-text-low">
+        <div className="p-2 sm:p-6 text-center text-text-low">
           {userCompletedTasks.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {userCompletedTasks.map((task, idx) => (

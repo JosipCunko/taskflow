@@ -72,7 +72,7 @@ export default function CompletedSkeleton() {
       </div>
 
       <div className="mt-8">
-        <div className="p-6 text-center text-text-low">
+        <div className="p-1 sm:p-6 text-center text-text-low">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(8)].map((_, i) => (
               <CompletedTaskCardSkeleton key={i} />

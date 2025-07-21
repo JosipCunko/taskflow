@@ -123,7 +123,7 @@ export default function Search({ onCloseModal, tasks }: SearchProps) {
   };
 
   return (
-    <div className="w-[22rem] sm:w-[26rem] h-[65vh] p-4 mx-auto overflow-y-auto rounded-2xl  relative">
+    <div className="w-[22rem] sm:w-[26rem] h-[90vh] sm:h-[65vh] p-4 mx-auto overflow-y-auto rounded-2xl  relative">
       <div
         className={`flex items-center gap-4 p-2 relative rounded-md 
            border-background-500 bg-background-700 border-1 `}

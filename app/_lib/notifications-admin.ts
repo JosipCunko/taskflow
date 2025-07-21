@@ -394,7 +394,7 @@ export const generateOverdueTaskNotifications = async (
         actionUrl: `/webapp/tasks`,
         taskId: task.id,
         data: { daysOverdue },
-        expiresAt: addDays(now, 1),
+        expiresAt: addDays(now, 7),
       });
     }
   });
@@ -446,7 +446,7 @@ export const generateDueSoonNotifications = async (
         actionText: "View Task",
         actionUrl: `/webapp/tasks`,
         taskId: task.id,
-        expiresAt: addDays(now, 1),
+        expiresAt: addDays(now, 7),
       });
     }
   });

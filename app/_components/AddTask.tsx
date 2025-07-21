@@ -319,7 +319,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
   };
 
   return (
-    <div className="w-[22rem] sm:w-[26rem] mx-auto px-4 bg-background-700 rounded-2xl shadow h-[65vh] overflow-y-auto overflow-x-hidden">
+    <div className="w-[22rem] sm:w-[26rem] mx-auto px-4 bg-background-700 rounded-2xl shadow h-[90vh] sm:h-[65vh] overflow-y-auto overflow-x-hidden">
       <div className="flex border-b border-background-600 mb-4">
         {tabs.map((tab) => (
           <button
@@ -386,7 +386,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
             </InputGroup>
 
             {/* Button tags*/}
-            <div className="flex items-center space-x-2 my-3 ">
+            <div className="flex flex-wrap items-center gap-2 my-3 ">
               <Button
                 variant="tag"
                 onClick={() =>
@@ -437,7 +437,9 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
               {/* Start Date */}
               <div className="space-y-1">
                 <div className="grid grid-cols-[4rem_1fr_min-content] items-center gap-2">
-                  <p className="text-sm text-text-low">Starts at:</p>
+                  <p className="text-sm text-nowrap text-text-low">
+                    Starts at:
+                  </p>
                   <DateInput
                     date={state.startDate}
                     setDate={(date) =>
@@ -496,7 +498,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
               {/* End Date */}
               {!state.isRepeating && (
                 <div className="grid grid-cols-[4rem_1fr_min-content] items-center gap-2">
-                  <p className="text-sm text-text-low">Ends at:</p>
+                  <p className="text-sm text-nowrap text-text-low">Ends at:</p>
                   <DateInput
                     date={state.selectedDate}
                     setDate={(date) =>
@@ -554,7 +556,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
 
               {/* Duration */}
               <div className="grid grid-cols-[4rem_min-content_1fr] items-center gap-2">
-                <p className="text-sm text-text-low">Duration:</p>
+                <p className="text-sm text-nowrap text-text-low">Duration:</p>
                 <div className="flex items-center gap-1">
                   <Input
                     type="number"
