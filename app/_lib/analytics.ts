@@ -287,6 +287,7 @@ export const trackTaskAnalytics = async (
   }
 };
 
+// Track which app features users engage with
 export const trackFeatureUsage = async (
   userId: string,
   feature: string,
@@ -307,6 +308,7 @@ export const trackFeatureUsage = async (
   }
 };
 
+// Track when achievements are unlocked
 export const trackAchievementAnalytics = async (
   userId: string,
   achievementType: AchievementType,

@@ -76,8 +76,6 @@ export default function AnalyticsDashboard({
         lastLoginAt: new Date(),
       });
     }
-
-    // Fetch analytics data (simulated for now - this would come from Firebase Analytics)
     fetchAnalyticsData();
   }, [session, existingStats]);
 

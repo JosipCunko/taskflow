@@ -4,7 +4,11 @@ import { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { usePathname } from 'next/navigation';
 import { trackPageView, trackAppOpen } from '@/app/_lib/analytics';
-
+/*
+  Session Management: Automatically starts sessions on app launch
+  Page Change Tracking: Tracks navigation between features
+  Route-Based Feature Detection: Maps URLs to features (tasks, calendar, notes, etc.)
+*/
 export default function AnalyticsTracker() {
   const { data: session } = useSession();
   const pathname = usePathname();

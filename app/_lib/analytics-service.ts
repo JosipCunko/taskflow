@@ -1,7 +1,38 @@
 import "server-only";
 import { adminDb } from "./admin";
 import { AnalyticsData } from "./analytics";
+/*
+App Usage Analytics:
+Session duration (average time per session)
+Page views (total pages visited)
+Active time (actual engagement time)
+Task Analytics:
+Daily task completions (last 7 days)
+Weekly task trends (last 4 weeks)
+Most productive hour (when you complete most tasks)
+Average completion time (from creation to completion)
+User Behavior:
+Streak history (consecutive days with activity)
+Points growth (progression over time)
+Feature usage (tasks, calendar, notes, inbox, profile)
+Performance Insights:
+Completion rate history (% of tasks completed)
+Consistency score (how regularly you use the app)
+Productivity score (based on completion patterns)
+🚀 How It Works
+App Launch: When user opens the app, AnalyticsTracker automatically starts a session
+Task Actions: Every task creation, completion, delay, or deletion is tracked with detailed metadata
+Page Navigation: Firebase Analytics tracks page views and feature usage
+Achievement Unlocks: Achievement awards are logged for analysis
+Dashboard Display: Real analytics data is fetched and displayed in beautiful charts
 
+Firestore Collections Created
+userSessions - Session data with start/end times, page views, active time
+taskAnalytics - Detailed task action logs with timing and metadata
+userBehavior - Feature usage patterns and engagement data
+achievementAnalytics - Achievement unlock tracking
+
+*/
 export const getAnalyticsData = async (userId: string): Promise<AnalyticsData> => {
   try {
     const now = new Date();
