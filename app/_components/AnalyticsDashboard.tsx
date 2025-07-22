@@ -16,6 +16,7 @@ import {
   trackPageView,
   setUserAnalyticsProperties,
 } from "@/app/_lib/analytics";
+import { getAnalyticsData } from "@/app/_lib/analytics-service";
 
 interface AnalyticsData {
   // App usage analytics
@@ -82,33 +83,17 @@ export default function AnalyticsDashboard({
 
   const fetchAnalyticsData = async () => {
     try {
-      // Simulate analytics data - in production, this would fetch from Firebase Analytics API
-      // or your own analytics collection in Firestore
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
+      if (!session?.user?.id) {
+        setIsLoading(false);
+        return;
+      }
 
-      const mockData: AnalyticsData = {
-        sessionDuration: 1247, // seconds
-        pageViews: 45,
-        activeTime: 892,
-        dailyTaskCompletions: [3, 5, 2, 7, 4, 6, 8], // Last 7 days
-        weeklyTaskTrends: [23, 28, 31, 25], // Last 4 weeks
-        mostProductiveHour: 10, // 10 AM
-        averageCompletionTime: 125, // seconds
-        streakHistory: [1, 2, 3, 4, 5, 6, 7], // Last 7 days
-        pointsGrowth: [100, 125, 140, 165, 180, 205, 225], // Last 7 days
-        featureUsage: {
-          tasks: 85,
-          calendar: 23,
-          notes: 12,
-          inbox: 34,
-          profile: 8,
-        },
-        completionRateHistory: [78, 82, 75, 88, 85, 90, 87], // Last 7 days %
-        consistencyScore: 92,
-        productivityScore: 85,
-      };
-
-      setAnalyticsData(mockData);
+      // Track page view
+      trackPageView('Dashboard', '/webapp');
+      
+      // Fetch real analytics data from our service
+      const data = await getAnalyticsData(session.user.id);
+      setAnalyticsData(data);
     } catch (error) {
       console.error("Error fetching analytics data:", error);
     } finally {

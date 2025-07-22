@@ -39,6 +39,7 @@ import { adminDb } from "./admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { sendCampaignNotification } from "./notifications-admin";
 import { checkAndAwardAchievements } from "./achievements";
+import { trackTaskAnalytics } from "./analytics";
 
 /* User */
 export async function updateUserAction(
@@ -109,6 +110,16 @@ export async function completeTaskAction(
           isPriority: task.isPriority,
           isReminder: task.isReminder,
         },
+      });
+
+      // Track task completion analytics
+      await trackTaskAnalytics(userId, taskId, 'completed', {
+        dueDate: task.dueDate,
+        isPriority: task.isPriority,
+        isRepeating: task.isRepeating || false,
+        createdAt: task.createdAt,
+        completedAt: new Date(),
+        delayCount: task.delayCount || 0,
       });
     }
 
@@ -215,6 +226,15 @@ export async function delayTaskAction(
           isReminder: updatedTask.isReminder,
         },
       });
+
+      // Track task delay analytics
+      await trackTaskAnalytics(userId, taskId, 'delayed', {
+        dueDate: updatedTask.dueDate,
+        isPriority: updatedTask.isPriority,
+        isRepeating: updatedTask.isRepeating || false,
+        createdAt: updatedTask.createdAt,
+        delayCount: updatedTask.delayCount || 0,
+      });
     }
 
     revalidatePath("/tasks");
@@ -257,6 +277,14 @@ export async function deleteTaskAction(
         },
         activityColor: "var(--color-error)",
         activityIcon: "Delete",
+      });
+
+      // Track task deletion analytics
+      await trackTaskAnalytics(session.user.id, taskId, 'deleted', {
+        dueDate: deletedTask.dueDate,
+        isPriority: deletedTask.isPriority,
+        isRepeating: deletedTask.isRepeating || false,
+        createdAt: deletedTask.createdAt,
       });
     }
     revalidatePath("/tasks");
@@ -386,6 +414,14 @@ export async function createTaskAction(
         },
         activityColor: "var(--color-success)",
         activityIcon: "CircleCheckBig",
+      });
+
+      // Track task creation analytics
+      await trackTaskAnalytics(session.user.id, createdTask.id, 'created', {
+        dueDate: createdTask.dueDate,
+        isPriority: createdTask.isPriority,
+        isRepeating: createdTask.isRepeating || false,
+        createdAt: createdTask.createdAt,
       });
     }
 
