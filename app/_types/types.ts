@@ -48,6 +48,71 @@ export interface AppUser {
   bestStreak: number;
   lastLoginAt?: Date;
   notesCount?: number; // Added field in /webapp/profile
+  //Removed todayPoints
+}
+
+export interface AnalyticsData {
+  // App usage analytics
+  sessionDuration: number;
+  pageViews: number;
+  activeTime: number;
+
+  // Task analytics
+  dailyTaskCompletions: number[];
+  weeklyTaskTrends: number[];
+  mostProductiveHour: number;
+  averageCompletionTime: number;
+
+  // User behavior
+  streakHistory: number[];
+  pointsGrowth: number[];
+  featureUsage: Record<string, number>;
+
+  // Performance insights
+  completionRateHistory: number[];
+  consistencyScore: number;
+  productivityScore: number;
+}
+
+export interface SessionData {
+  userId: string;
+  sessionStart: Date;
+  sessionEnd?: Date;
+  pageViews: number;
+  activeTime: number; // in seconds
+  pagesVisited: string[];
+}
+
+export type TaskEventType =
+  | "task_completed"
+  | "task_created"
+  | "task_deleted"
+  | "task_delayed";
+
+export type NotificationEventType =
+  | "notification_clicked"
+  | "notification_dismissed"
+  | "notification_created";
+
+export interface TaskAnalytics {
+  userId: string;
+  taskId: string;
+  action: TaskEventType;
+  timestamp: Date;
+  completionTime?: number; // seconds from creation to completion
+  dueDate: Date;
+  isPriority: boolean;
+  isRepeating: boolean;
+  delayCount?: number;
+  hour: number; // hour of day when action occurred
+}
+
+export interface UserBehaviorData {
+  userId: string;
+  date: Date;
+  featureUsed: string;
+  duration: number; // time spent in seconds
+  timestamp: Date;
 }
 
 export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;

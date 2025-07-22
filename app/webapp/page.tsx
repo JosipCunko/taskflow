@@ -215,9 +215,9 @@ export default async function DashboardPage() {
           todayPoints,
         }}
       />
-      
+
       <FourteenDayOverview user={user} allTasks={allTasks} />
-      
+
       <NotificationSetup />
 
       {/* Today's Progress and Quick Actions */}

@@ -9,6 +9,7 @@ import {
   taskCompletionistMilestones,
 } from "../_utils/utils";
 import { getUserById } from "./user-admin";
+import { trackAchievementAnalytics } from "./analytics-admin";
 
 async function addAchievementToUser(
   userId: string,
@@ -55,6 +56,9 @@ async function addAchievementToUser(
     await generateAchievementNotification(userId, achievement.type, {
       achievementId: achievement.id,
     });
+
+    // Track achievement analytics
+    await trackAchievementAnalytics(userId, achievement.type, 0);
   } catch (error) {
     console.error(
       `Error adding achievement ${achievement.id} to user ${userId}:`,

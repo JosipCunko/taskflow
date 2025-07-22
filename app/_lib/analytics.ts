@@ -1,21 +1,14 @@
+"use client";
+//Client side
 import { logEvent, setUserProperties } from "firebase/analytics";
 import { analytics } from "./firebase";
 import {
   AchievementType,
+  NotificationEventType,
   NotificationPriority,
   NotificationType,
+  TaskEventType,
 } from "../_types/types";
-
-export type TaskEventType =
-  | "task_completed"
-  | "task_created"
-  | "task_deleted"
-  | "task_delayed";
-
-export type NotificationEventType =
-  | "notification_clicked"
-  | "notification_dismissed"
-  | "notification_created";
 
 export const trackTaskEvent = (
   eventType: TaskEventType,
