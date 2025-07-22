@@ -37,6 +37,7 @@ import TaskCardSmall from "../_components/TaskCardSmall";
 import RepeatingTaskCard from "../_components/RepeatingTaskCard";
 import AnalyticsDashboard from "../_components/AnalyticsDashboard";
 import NotificationSetup from "../_components/NotificationSetup";
+import FourteenDayOverview from "../_components/14DayOverview";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -214,6 +215,9 @@ export default async function DashboardPage() {
           todayPoints,
         }}
       />
+      
+      <FourteenDayOverview user={user} allTasks={allTasks} />
+      
       <NotificationSetup />
 
       {/* Today's Progress and Quick Actions */}
