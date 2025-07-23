@@ -31,6 +31,13 @@ export interface Task {
   risk?: boolean;
   points: number;
 }
+export interface RepetitionRule {
+  interval?: number;
+  daysOfWeek: DayOfWeek[];
+  timesPerWeek?: number;
+  completedAt: Date[];
+  completions: number;
+}
 
 export interface AppUser {
   uid: string;
@@ -48,7 +55,35 @@ export interface AppUser {
   bestStreak: number;
   lastLoginAt?: Date;
   notesCount?: number; // Added field in /webapp/profile
+  gainedPoints: number[]; // max length 7
   //Removed todayPoints
+}
+
+export interface Notification {
+  id: string;
+  userId: string;
+  type: NotificationType;
+  priority: NotificationPriority;
+  title: string;
+  message: string;
+  actionText?: string;
+  actionUrl?: string;
+  taskId?: string; // Related task ID if applicable
+  isRead: boolean;
+  isArchived: boolean;
+  createdAt: Date;
+  readAt?: Date;
+  data?: Record<string, unknown>; // Additional data for the notification
+  expiresAt?: Date;
+}
+
+// In the user document under achievements array
+// Since they aren't stored in a seperate collection, firebase doesnt need an id
+export interface Achievement {
+  type: AchievementType;
+  id: string; // `task_completionist_${milestone}`
+  userId: string;
+  unlockedAt: Date;
 }
 
 export interface AnalyticsData {
@@ -60,11 +95,9 @@ export interface AnalyticsData {
   // Task analytics
   dailyTaskCompletions: number[];
   weeklyTaskTrends: number[];
-  mostProductiveHour: number;
   averageCompletionTime: number;
 
   // User behavior
-  streakHistory: number[];
   pointsGrowth: number[];
   featureUsage: Record<string, number>;
 
@@ -72,6 +105,10 @@ export interface AnalyticsData {
   completionRateHistory: number[];
   consistencyScore: number;
   productivityScore: number;
+
+  // Achievement analytics
+  recentAchievements: Achievement[];
+  achievementsByType: Record<string, number>;
 }
 
 export interface SessionData {
@@ -82,17 +119,6 @@ export interface SessionData {
   activeTime: number; // in seconds
   pagesVisited: string[];
 }
-
-export type TaskEventType =
-  | "task_completed"
-  | "task_created"
-  | "task_deleted"
-  | "task_delayed";
-
-export type NotificationEventType =
-  | "notification_clicked"
-  | "notification_dismissed"
-  | "notification_created";
 
 export interface TaskAnalytics {
   userId: string;
@@ -106,6 +132,11 @@ export interface TaskAnalytics {
   delayCount?: number;
   hour: number; // hour of day when action occurred
 }
+export type TaskEventType =
+  | "task_completed"
+  | "task_created"
+  | "task_deleted"
+  | "task_delayed";
 
 export interface UserBehaviorData {
   userId: string;
@@ -116,14 +147,6 @@ export interface UserBehaviorData {
 }
 
 export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
-export interface RepetitionRule {
-  interval?: number;
-  daysOfWeek: DayOfWeek[];
-  timesPerWeek?: number;
-  completedAt: Date[];
-  completions: number;
-}
-
 export type TaskToCreateData = Omit<
   Task,
   | "id"
@@ -170,17 +193,6 @@ export interface ActivityLog {
   activityColor: string;
 }
 
-export interface Achievement {
-  type: AchievementType;
-  id: string;
-  userId: string;
-  unlockedAt: Date;
-}
-export type AchievementType =
-  | "streak_milestone"
-  | "points_milestone"
-  | "task_completionist";
-
 export interface Note {
   id: string;
   userId: string;
@@ -189,23 +201,11 @@ export interface Note {
   updatedAt: Date;
 }
 
-export interface Notification {
-  id: string;
-  userId: string;
-  type: NotificationType;
-  priority: NotificationPriority;
-  title: string;
-  message: string;
-  actionText?: string;
-  actionUrl?: string;
-  taskId?: string; // Related task ID if applicable
-  isRead: boolean;
-  isArchived: boolean;
-  createdAt: Date;
-  readAt?: Date;
-  data?: Record<string, unknown>; // Additional data for the notification
-  expiresAt?: Date;
-}
+export type AchievementType =
+  | "streak_milestone"
+  | "points_milestone"
+  | "task_completionist";
+
 export type NotificationType =
   | "TASK_OVERDUE"
   | "TASK_DUE_SOON"

@@ -11,20 +11,15 @@ import {
   FileText,
   Zap,
   Target,
-  Award,
   Brain,
 } from "lucide-react";
-import { isToday } from "date-fns";
 import { Task } from "../_types/types";
 import { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import {
-  calculateTaskPoints,
-  calculatePotentialTaskPoints,
   generateTaskTypes,
   calculateTimeManagementStats,
-  canCompleteRepeatingTaskNow,
 } from "../_utils/utils";
 import { authOptions } from "../_lib/auth";
 import { loadNotesByUserId } from "../_lib/notes";
@@ -56,77 +51,37 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  const regularTasks: Task[] = [];
-  const repeatingTasks: Task[] = [];
-  const priorityTasks: Task[] = [];
-  const repeatingTasksDueToday: Task[] = [];
-  const completedTodayRepeatingTasks: Task[] = [];
-
-  allTasks.map((task) => {
-    if (task.isRepeating) {
-      repeatingTasks.push(task);
-      const { isDueToday } = canCompleteRepeatingTaskNow(task);
-      if (isDueToday) {
-        repeatingTasksDueToday.push(task);
-      }
-      if (
-        task.status === "completed" &&
-        task.completedAt &&
-        isToday(task.completedAt)
-      ) {
-        completedTodayRepeatingTasks.push(task);
-      }
-    } else {
-      regularTasks.push(task);
-    }
-
-    if (task.isPriority && task.status !== "completed") {
-      priorityTasks.push(task);
-    }
-  });
-
   const {
-    todaysTasks,
+    regularTasks,
+    completedTodayRegularTasks,
+    incompleteRegularTodayTasks,
     upcomingTasks,
     missedTasks,
     delayedTasks,
-    completedTasks,
+    todaysTasks,
+    //pendingTasks,
     pendingTodayTasks,
-  } = generateTaskTypes(regularTasks);
+    repeatingTasks,
+    incompleteRepeatingTodayTasks,
+    repeatingTasksDueToday,
+    completedTodayRepeatingTasks,
+    //completedPriorityTasks,
+    pendingPriorityTasks,
+    //completedTasks,
+  } = generateTaskTypes(allTasks);
 
-  const timeManagementStats = calculateTimeManagementStats(allTasks);
+  const timeManagementStats = calculateTimeManagementStats(regularTasks);
   const totalPoints = user.rewardPoints;
-
-  // Calculate today's points from both regular and repeating tasks that are completed today
-  const completedTodayRegularTasks = todaysTasks.filter(
-    (task) => task.status === "completed"
-  );
 
   const todayPoints = [
     ...completedTodayRegularTasks,
     ...completedTodayRepeatingTasks,
-  ].reduce((acc: number, task: Task) => acc + calculateTaskPoints(task), 0);
-
-  // Calculate potential points available today (for incomplete tasks)
-  // For regular tasks: exclude completed tasks
-  // For repeating tasks: exclude if already completed today or can't be completed today
-  const incompleteTodayTasks = todaysTasks.filter(
-    (task) => task.status !== "completed"
-  );
-  const incompleteRepeatingTasksDueToday = repeatingTasksDueToday.filter(
-    (task) => {
-      const { canCompleteNow } = canCompleteRepeatingTaskNow(task);
-      return canCompleteNow;
-    }
-  );
+  ].reduce((acc: number, task: Task) => acc + task.points, 0);
 
   const potentialTodayPoints = [
-    ...incompleteTodayTasks,
-    ...incompleteRepeatingTasksDueToday,
-  ].reduce(
-    (acc: number, task: Task) => acc + calculatePotentialTaskPoints(task),
-    0
-  );
+    ...incompleteRegularTodayTasks,
+    ...incompleteRepeatingTodayTasks,
+  ].reduce((acc: number, task: Task) => acc + task.points, 0);
 
   return (
     <div className="container h-full mx-auto p-1 sm:p-6 space-y-8 overflow-y-auto">
@@ -147,11 +102,9 @@ export default async function DashboardPage() {
           value={`${
             completedTodayRegularTasks.length +
             completedTodayRepeatingTasks.length
-          }/${todaysTasks.length + repeatingTasksDueToday.length}`}
-          icon={<Clock className="text-primary" size={24} />}
-          subtitle={`${
-            pendingTodayTasks.length + incompleteRepeatingTasksDueToday.length
-          } pending`}
+          }/${todaysTasks.length}`}
+          icon={<Clock className="text-primary-500" size={24} />}
+          subtitle={`${pendingTodayTasks.length} pending`}
         />
         <DashboardCard
           title="Reward Points"
@@ -161,6 +114,19 @@ export default async function DashboardPage() {
             potentialTodayPoints > 0
               ? `${potentialTodayPoints} pts available today`
               : "No points available today"
+          }
+          extra={
+            <div className="flex justify-between items-center text-xs">
+              <span className=" text-text-low">Today&apos;s Impact: </span>
+              <span
+                className={`ml-1 ${
+                  todayPoints >= 0 ? "text-success" : "text-error"
+                }`}
+              >
+                {todayPoints >= 0 ? "+" : ""}
+                {todayPoints}
+              </span>
+            </div>
           }
         />
         <DashboardCard
@@ -205,16 +171,7 @@ export default async function DashboardPage() {
         />
       </div>
 
-      <AnalyticsDashboard
-        existingStats={{
-          totalPoints,
-          currentStreak: user.currentStreak,
-          bestStreak: user.bestStreak,
-          completedTasksCount: user.completedTasksCount,
-          successRate: timeManagementStats.onTimeCompletionRate,
-          todayPoints,
-        }}
-      />
+      <AnalyticsDashboard user={user} />
 
       <FourteenDayOverview user={user} allTasks={allTasks} />
 
@@ -230,17 +187,16 @@ export default async function DashboardPage() {
             </h2>
           </div>
           <div className="space-y-4">
-            {todaysTasks.length > 0 || repeatingTasksDueToday.length > 0 ? (
+            {todaysTasks.length > 0 ? (
               <>
                 <div className="w-full  rounded-full h-2.5">
                   <div
-                    className="bg-primary h-2.5 rounded-full transition-all duration-300"
+                    className="bg-success h-2.5 rounded-full transition-all duration-300"
                     style={{
                       width: `${
                         ((completedTodayRegularTasks.length +
                           completedTodayRepeatingTasks.length) /
-                          (todaysTasks.length +
-                            repeatingTasksDueToday.length)) *
+                          todaysTasks.length) *
                         100
                       }%`,
                     }}
@@ -256,8 +212,7 @@ export default async function DashboardPage() {
                   </div>
                   <div className="text-center">
                     <p className="text-2xl font-bold text-warning">
-                      {pendingTodayTasks.length +
-                        incompleteRepeatingTasksDueToday.length}
+                      {pendingTodayTasks.length}
                     </p>
                     <p className="text-sm text-text-low">Pending</p>
                   </div>
@@ -268,15 +223,6 @@ export default async function DashboardPage() {
                     <p className="text-sm text-text-low">Points available</p>
                   </div>
                 </div>
-                {repeatingTasksDueToday.length > 0 && (
-                  <div className="mt-4 p-3 bg-background-600 rounded-md">
-                    <p className="text-sm text-text-low mb-2">
-                      <Repeat className="w-4 h-4 inline mr-1" />
-                      {repeatingTasksDueToday.length} repeating task(s) due
-                      today
-                    </p>
-                  </div>
-                )}
               </>
             ) : (
               <div className="text-center py-8">
@@ -296,8 +242,8 @@ export default async function DashboardPage() {
             </h2>
           </div>
           <div className="space-y-3 max-h-64 overflow-y-auto">
-            {priorityTasks.length > 0 ? (
-              priorityTasks
+            {pendingPriorityTasks.length > 0 ? (
+              pendingPriorityTasks
                 .slice(0, 4)
                 .map((task: Task) => (
                   <TaskCardSmall key={task.id} task={task} />
@@ -318,15 +264,15 @@ export default async function DashboardPage() {
       </div>
 
       {/* Performance Insights */}
-      <section className="bg-background-700 rounded-lg p-6">
+      <section className="bg-background-700 rounded-lg p-6 ">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-text-low flex items-center">
             <Brain className="w-5 h-5 mr-2 text-purple-400" />
             Performance Insights
           </h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-background-600 rounded-lg p-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-background-600 rounded-lg p-4  ">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium text-text-low">
                 Time Management
@@ -335,13 +281,15 @@ export default async function DashboardPage() {
             </div>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-text-low">On-time Tasks</span>
+                <span className="text-sm text-text-low">
+                  On-time Regular Tasks
+                </span>
                 <span className="font-medium text-success">
                   {timeManagementStats.onTimeTasksCount}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-text-low">Avg. Delay</span>
+                <span className="text-sm text-text-low">Avg. Delay </span>
                 <span className="font-medium text-warning">
                   {timeManagementStats.averageDelayDays > 0
                     ? `${timeManagementStats.averageDelayDays} days`
@@ -360,66 +308,13 @@ export default async function DashboardPage() {
               <div className="flex justify-between items-center">
                 <span className="text-sm text-text-low">Completion Rate</span>
                 <span className="font-medium text-success">
-                  {regularTasks.length > 0
-                    ? `${Math.round(
-                        (completedTasks.length / regularTasks.length) * 100
-                      )}%`
-                    : "0%"}
+                  {timeManagementStats.onTimeCompletionRate}%
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-text-low">Missed Tasks</span>
                 <span className="font-medium text-error">
                   {missedTasks.length}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-background-600 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-text-low">Consistency</h3>
-              <Zap className="w-4 h-4 text-warning" />
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-text-low">Current Streak</span>
-                <span className="font-medium text-warning">
-                  {user.currentStreak} days
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-text-low">Best Streak</span>
-                <span className="font-medium text-success">
-                  {user.bestStreak} days
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-background-600 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-text-low">
-                Productivity
-              </h3>
-              <Award className="w-4 h-4 text-accent" />
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-text-low">Total Points</span>
-                <span className="font-medium text-accent">{totalPoints}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-text-low">
-                  Today&apos;s Impact
-                </span>
-                <span
-                  className={`font-medium ${
-                    todayPoints >= 0 ? "text-success" : "text-error"
-                  }`}
-                >
-                  {todayPoints >= 0 ? "+" : ""}
-                  {todayPoints}
                 </span>
               </div>
             </div>
@@ -491,7 +386,6 @@ export default async function DashboardPage() {
             <Calendar className="w-5 h-5 mr-2 text-info" />
             Upcoming Tasks
           </h2>
-          <span className="text-sm text-text-low">Next 7 days</span>
         </div>
         <div className="space-y-3 max-h-64 overflow-y-auto">
           {upcomingTasks.length > 0 ? (
@@ -531,22 +425,28 @@ export default async function DashboardPage() {
   );
 }
 
-interface DashboardCardProps {
+function DashboardCard({
+  title,
+  value,
+  icon,
+  subtitle,
+  extra,
+}: {
   title: string;
   value: string | number;
   icon: ReactNode;
   subtitle?: string;
-}
-
-function DashboardCard({ title, value, icon, subtitle }: DashboardCardProps) {
+  extra?: ReactNode;
+}) {
   return (
-    <div className="bg-background-700 rounded-lg p-6 hover:bg-background-600 transition-colors duration-200">
+    <div className="bg-background-700 rounded-lg p-6 hover:bg-background-600 transition-colors duration-200 relative">
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-medium text-text-low">{title}</h3>
         {icon}
       </div>
       <p className="text-2xl font-bold text-text-low">{value}</p>
       {subtitle && <p className="text-sm text-text-low mt-1">{subtitle}</p>}
+      {extra && <div className="absolute bottom-0 right-0">{extra}</div>}
     </div>
   );
 }

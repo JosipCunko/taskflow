@@ -1,99 +1,26 @@
 "use client";
 
-import { useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-/*
-  Session Management: Automatically starts sessions on app launch
-  Page Change Tracking: Tracks navigation between features
-  Route-Based Feature Detection: Maps URLs to features (tasks, calendar, notes, etc.)
-*/
+import { setUserAnalyticsProperties, trackAppOpen } from "@/app/_lib/analytics";
+import { AppUser } from "../_types/types";
 
-import {
-  trackPageView,
-  trackAppOpen,
-  trackUserEngagement,
-} from "@/app/_lib/analytics";
-
+// Api routes are a bridge for the functions for analytics-admin.ts
 async function postToServer(endpoint: string, data: object) {
   try {
-    await fetch(`/api/analytics/${endpoint}`, {
+    const response = await fetch(`/api/analytics/${endpoint}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
+
+    if (!response.ok) {
+      throw new Error(`Failed to post to ${endpoint}: ${response.statusText}`);
+    }
+    return response.json();
   } catch (error) {
     console.error(`Error posting to ${endpoint}:`, error);
   }
-}
-
-export default function AnalyticsTracker() {
-  const { data: session } = useSession();
-  const pathname = usePathname();
-
-  useEffect(() => {
-    if (!session?.user?.id) return;
-
-    const initializeSession = async () => {
-      // Track app open and initial page view
-      trackAppOpen();
-      trackPageView("App Launch", pathname);
-      await postToServer("feature", {
-        userId: session.user.id,
-        feature: "App Launch",
-      });
-
-      // Track feature-specific page
-      const feature = getFeatureFromPath(pathname);
-      if (feature) {
-        trackPageView(feature, pathname);
-        await postToServer("feature", {
-          userId: session.user.id,
-          feature,
-        });
-      }
-    };
-
-    initializeSession();
-
-    const handleBeforeUnload = () => {
-      if (session?.user?.id) {
-        const data = {
-          userId: session.user.id,
-          feature: "sessionEnd",
-          duration: 0,
-        };
-        postToServer("feature", data);
-        trackUserEngagement(0, "sessionEnd");
-      }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, [session?.user?.id]);
-
-  useEffect(() => {
-    if (!session?.user?.id) return;
-
-    const trackPageChange = async () => {
-      const feature = getFeatureFromPath(pathname);
-      if (feature) {
-        trackPageView(feature, pathname);
-        await postToServer("feature", {
-          userId: session.user.id,
-          feature,
-          duration: 0,
-        });
-      }
-    };
-
-    trackPageChange();
-  }, [pathname, session?.user?.id]);
-
-  return null;
 }
 
 function getFeatureFromPath(pathname: string): string {
@@ -104,4 +31,100 @@ function getFeatureFromPath(pathname: string): string {
   if (pathname.includes("/profile")) return "profile";
   if (pathname.includes("/webapp")) return "dashboard";
   return "app";
+}
+
+export default function AnalyticsTracker({
+  userData,
+}: {
+  userData: AppUser | null;
+}) {
+  const pathname = usePathname();
+  const lastActivityTime = useRef(Date.now());
+  const sessionIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!userData?.uid) return;
+
+    const startSession = async () => {
+      const storedSessionId = sessionStorage.getItem("sessionId");
+      if (storedSessionId) {
+        sessionIdRef.current = storedSessionId;
+        return;
+      }
+
+      trackAppOpen();
+      const feature = getFeatureFromPath(pathname);
+      const data = await postToServer("session/start", {
+        userId: userData.uid,
+        pageTitle: feature,
+      });
+
+      if (data?.sessionId) {
+        sessionIdRef.current = data.sessionId;
+        sessionStorage.setItem("sessionId", data.sessionId);
+      }
+    };
+    const updateUserProperties = async () => {
+      try {
+        setUserAnalyticsProperties({
+          currentStreak: userData.currentStreak,
+          totalTasksCompleted: userData.completedTasksCount,
+          rewardPoints: userData.rewardPoints,
+          notifyReminders: userData.notifyReminders,
+          notifyAchievements: userData.notifyAchievements,
+          notificationsEnabled:
+            userData.notifyReminders || userData.notifyAchievements,
+          lastLoginAt: new Date(),
+        });
+      } catch (error) {
+        console.error("Error setting user analytics properties:", error);
+      }
+    };
+
+    const endSession = () => {
+      if (sessionIdRef.current) {
+        const payload = JSON.stringify({
+          sessionId: sessionIdRef.current,
+        });
+
+        navigator.sendBeacon("/api/analytics/session/end", payload);
+        sessionStorage.removeItem("sessionId");
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        endSession();
+      } else {
+        lastActivityTime.current = Date.now();
+      }
+    };
+
+    startSession();
+    updateUserProperties();
+
+    window.addEventListener("beforeunload", endSession);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("beforeunload", endSession);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [userData?.uid, pathname]);
+
+  useEffect(() => {
+    if (sessionIdRef.current) {
+      const timeSpent = Math.round(
+        (Date.now() - lastActivityTime.current) / 1000
+      );
+      postToServer("session/update", {
+        sessionId: sessionIdRef.current,
+        pageTitle: getFeatureFromPath(pathname),
+        timeSpent,
+      });
+      lastActivityTime.current = Date.now();
+    }
+  }, [pathname]);
+
+  return null;
 }

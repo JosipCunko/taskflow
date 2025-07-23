@@ -1,81 +1,42 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import {
   BarChart3,
   TrendingUp,
-  Clock,
   Target,
   Eye,
   Activity,
   Zap,
   Award,
 } from "lucide-react";
-import {
-  trackPageView,
-  setUserAnalyticsProperties,
-} from "@/app/_lib/analytics";
-import { AnalyticsData } from "../_types/types";
+import { AnalyticsData, AppUser } from "../_types/types";
 import { getAnalyticsDataAction } from "../_lib/actions";
+import { formatDateTime } from "../_utils/utils";
 
-interface AnalyticsDashboardProps {
-  userId: string;
-  existingStats: {
-    totalPoints: number;
-    currentStreak: number;
-    bestStreak: number;
-    completedTasksCount: number;
-    successRate: number;
-    todayPoints: number;
-  };
-}
-
-export default function AnalyticsDashboard({
-  existingStats,
-}: Omit<AnalyticsDashboardProps, "userId">) {
-  const { data: session } = useSession();
+export default function AnalyticsDashboard({ user }: { user: AppUser }) {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(
     null
   );
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, startTransition] = useTransition();
 
-  useEffect(() => {
-    // Track page view
-    trackPageView("Dashboard", "/webapp");
-
-    // Set user properties for Firebase Analytics
-    if (session?.user?.id) {
-      setUserAnalyticsProperties({
-        currentStreak: existingStats.currentStreak,
-        totalTasksCompleted: existingStats.completedTasksCount,
-        rewardPoints: existingStats.totalPoints,
-        notificationsEnabled: true,
-        lastLoginAt: new Date(),
-      });
-    }
-    fetchAnalyticsData();
-  }, [session, existingStats]);
-
-  const fetchAnalyticsData = async () => {
+  const fetchAnalyticsData = useCallback(async () => {
     try {
-      if (!session?.user?.id) {
-        setIsLoading(false);
+      if (!user.uid) {
         return;
       }
-
-      // Track page view
-      trackPageView("Dashboard", "/webapp");
-
-      // Fetch real analytics data from our service
-      const data = await getAnalyticsDataAction();
-      setAnalyticsData(data);
+      startTransition(async () => {
+        const data = await getAnalyticsDataAction();
+        setAnalyticsData(data);
+      });
     } catch (error) {
       console.error("Error fetching analytics data:", error);
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [user.uid]);
+
+  useEffect(() => {
+    fetchAnalyticsData();
+  }, [fetchAnalyticsData]);
 
   if (isLoading) {
     return <AnalyticsLoadingSkeleton />;
@@ -87,7 +48,6 @@ export default function AnalyticsDashboard({
 
   return (
     <div className="space-y-6">
-      {/* Enhanced Analytics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <AnalyticsCard
           title="App Usage"
@@ -110,16 +70,8 @@ export default function AnalyticsDashboard({
           subtitle="Daily engagement level"
           trend={8}
         />
-        <AnalyticsCard
-          title="Peak Hour"
-          value={`${analyticsData.mostProductiveHour}:00`}
-          icon={<Clock className="text-purple-400" size={24} />}
-          subtitle="Most productive time"
-          trend={0}
-        />
       </div>
 
-      {/* Feature Usage Insights */}
       <div className="bg-background-700 rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-text-high flex items-center">
@@ -191,29 +143,89 @@ export default function AnalyticsDashboard({
             Points Growth
           </h3>
           <div className="space-y-3">
-            {analyticsData.pointsGrowth.map((points, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <span className="text-sm text-text-low">Day {index + 1}</span>
-                <div className="flex items-center space-x-2">
-                  <div className="w-20 bg-background-600 rounded-full h-2">
-                    <div
-                      className="bg-accent h-2 rounded-full transition-all duration-500"
-                      style={{
-                        width: `${
-                          (points / Math.max(...analyticsData.pointsGrowth)) *
-                          100
-                        }%`,
-                      }}
-                    />
+            {user.gainedPoints.length > 0 ? (
+              user.gainedPoints.map((points, index) => (
+                <div key={index} className="flex items-center justify-between">
+                  <span className="text-sm text-text-low">Day {index + 1}</span>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-20 bg-background-600 rounded-full h-2">
+                      <div
+                        className="bg-accent h-2 rounded-full transition-all duration-500"
+                        style={{
+                          width: `${
+                            (points / Math.max(...user.gainedPoints)) * 100
+                          }%`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-sm font-medium text-accent">
+                      {points}
+                    </span>
                   </div>
-                  <span className="text-sm font-medium text-accent">
-                    {points}
-                  </span>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-text-low text-sm">
+                Your points history is empty
+              </p>
+            )}
           </div>
         </div>
+      </div>
+
+      {/* Achievement Analytics */}
+      <div className="bg-background-700 rounded-lg p-6 relative">
+        <h3 className="text-lg font-semibold text-text-high mb-4 flex items-center">
+          <Award className="w-5 h-5 mr-2 text-yellow-400" />
+          Recent Achievements{" "}
+          <span className="text-text-gray ml-2">( last 30 days )</span>
+        </h3>
+        {analyticsData.recentAchievements.length > 0 ? (
+          <>
+            <div className="space-y-3">
+              {analyticsData.recentAchievements
+                .slice(0, 5)
+                .map((achievement, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xl">
+                        {achievement.type === "streak_milestone"
+                          ? "🔥"
+                          : achievement.type === "points_milestone"
+                          ? "🏆"
+                          : achievement.type === "task_completionist"
+                          ? "✅"
+                          : "🎯"}
+                      </span>
+                      <span className="text-sm text-text-low capitalize">
+                        {achievement.id.replaceAll("_", " ")}
+                      </span>
+                    </div>
+                    <span className="text-xs text-text-low">
+                      {formatDateTime(achievement.unlockedAt)}
+                    </span>
+                  </div>
+                ))}
+            </div>
+            <div className="absolute top-2 right-2 flex items-center gap-2 ">
+              Total:
+              <span>
+                🔥 {analyticsData.achievementsByType.streak_milestone}
+              </span>
+              <span>
+                🏆 {analyticsData.achievementsByType.streak_milestone}
+              </span>
+              <span>
+                ✅ {analyticsData.achievementsByType.streak_milestone}
+              </span>
+            </div>
+          </>
+        ) : (
+          <p className="text-text-low text-sm">No recent achievements</p>
+        )}
       </div>
 
       {/* Quick Insights */}
@@ -292,14 +304,17 @@ function AnalyticsCard({
   );
 }
 
-interface InsightCardProps {
+function InsightCard({
+  title,
+  value,
+  description,
+  icon,
+}: {
   title: string;
   value: string;
   description: string;
   icon: string;
-}
-
-function InsightCard({ title, value, description, icon }: InsightCardProps) {
+}) {
   return (
     <div className="bg-background-600 rounded-lg p-4">
       <div className="flex items-center justify-between mb-2">
@@ -315,7 +330,6 @@ function InsightCard({ title, value, description, icon }: InsightCardProps) {
 export function AnalyticsLoadingSkeleton() {
   return (
     <>
-      {/* Feature Usage Analytics */}
       <div className="bg-background-700 rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center">
@@ -337,7 +351,6 @@ export function AnalyticsLoadingSkeleton() {
         </div>
       </div>
 
-      {/* Performance Trends */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-background-700 rounded-lg p-6">
           <div className="flex items-center mb-4">
@@ -380,7 +393,6 @@ export function AnalyticsLoadingSkeleton() {
         </div>
       </div>
 
-      {/* Quick Insights */}
       <div className="bg-background-700 rounded-lg p-6">
         <div className="flex items-center mb-4">
           <div className="h-5 w-5 bg-background-500 rounded mr-2"></div>
@@ -400,7 +412,6 @@ export function AnalyticsLoadingSkeleton() {
         </div>
       </div>
 
-      {/* Notification Setup */}
       <div className="bg-background-700 rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="h-6 w-40 bg-background-500 rounded"></div>

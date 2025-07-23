@@ -85,6 +85,17 @@ export async function completeTaskAction(
       const userDoc = await transaction.get(userRef);
       if (!userDoc.exists) throw new Error("User not found");
 
+      const userData = userDoc.data();
+      const currentGainedPoints = userData?.gainedPoints || [];
+      const currentRewardPoints = userData?.rewardPoints || 0;
+      const newTotalPoints = currentRewardPoints + task.points;
+
+      // Update gainedPoints array - maintain max length of 7
+      let updatedGainedPoints = [...currentGainedPoints, newTotalPoints];
+      if (updatedGainedPoints.length > 7) {
+        updatedGainedPoints = updatedGainedPoints.slice(-7); // Keep only last 7 entries
+      }
+
       transaction.update(taskRef, {
         status: "completed",
         completedAt: new Date(),
@@ -93,6 +104,7 @@ export async function completeTaskAction(
       transaction.update(userRef, {
         completedTasksCount: FieldValue.increment(1),
         rewardPoints: FieldValue.increment(task.points),
+        gainedPoints: updatedGainedPoints,
       });
     });
 
@@ -715,7 +727,7 @@ export async function sendCampaignNotificationAction(
 }
 
 // NEeds to be an action performing server side because getAnalyticsData needs to be called server side, and we are doing that by an action in AnalyticsDashboard.tsx
-export async function getAnalyticsDataAction(): Promise<AnalyticsData> {
+export async function getAnalyticsDataAction(): Promise<AnalyticsData | null> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     throw new Error("User not authenticated");

@@ -24,7 +24,6 @@ import {
 import {
   differenceInDays,
   getDay,
-  isAfter,
   isBefore,
   isEqual,
   isPast,
@@ -359,40 +358,20 @@ export const calculateTaskPoints = (task: Task) => {
     return 10; // Default to 10 points if calculation fails
   }
 
-  return points;
-};
-
-export const calculatePotentialTaskPoints = (task: Task) => {
-  // If task is already completed, no potential points
-  if (task.status === "completed") {
-    return 0;
-  }
-
-  // For pending tasks (whether due today, future, or missed),
-  // potential points = what they would get if completed now
-  // This follows the same formula as calculateTaskPoints
-  const potentialPoints = -2 * (task.delayCount || 0) + 10;
-
-  // Ensure minimum of 0 points (can't gain negative points)
-  return Math.max(0, potentialPoints);
+  return Math.max(0, points);
 };
 
 export function calculateTimeManagementStats(
-  tasks: Task[]
+  regularTasks: Task[]
 ): TimeManagementStats {
   let onTimeTasksCount = 0;
   let totalDelayDays = 0;
   let delayedAndCompletedCount = 0;
   let totalRelevantTasksForTiming = 0;
 
-  tasks.forEach((task) => {
+  regularTasks.forEach((task) => {
     // For regular tasks that are completed
-    if (
-      !task.isRepeating &&
-      task.status === "completed" &&
-      task.completedAt &&
-      task.dueDate
-    ) {
+    if (task.status === "completed" && task.completedAt) {
       totalRelevantTasksForTiming++;
       const dueDateStart = startOfDay(task.dueDate);
       const completedAtStart = startOfDay(task.completedAt);
@@ -409,48 +388,6 @@ export function calculateTimeManagementStats(
           delayedAndCompletedCount++;
         }
       }
-    }
-    // For repeating tasks that are completed
-    else if (
-      task.isRepeating &&
-      task.status === "completed" &&
-      task.completedAt &&
-      task.dueDate
-    ) {
-      totalRelevantTasksForTiming++;
-      const dueDateStart = startOfDay(task.dueDate);
-      const completedAtStart = startOfDay(task.completedAt);
-
-      if (
-        isBefore(completedAtStart, dueDateStart) ||
-        isEqual(completedAtStart, dueDateStart)
-      ) {
-        onTimeTasksCount++;
-      } else {
-        const delay = differenceInDays(completedAtStart, dueDateStart);
-        if (delay > 0) {
-          totalDelayDays += delay;
-          delayedAndCompletedCount++;
-        }
-      }
-    }
-    // Consider missed non-repeating tasks as not on-time
-    else if (
-      !task.isRepeating &&
-      isPast(task.dueDate) &&
-      !isToday(task.dueDate) &&
-      task.status === "pending"
-    ) {
-      totalRelevantTasksForTiming++;
-    }
-    // Consider missed repeating tasks as not on-time
-    else if (
-      task.isRepeating &&
-      isPast(task.dueDate) &&
-      !isToday(task.dueDate) &&
-      task.status === "pending"
-    ) {
-      totalRelevantTasksForTiming++;
     }
   });
 
@@ -472,25 +409,59 @@ export function calculateTimeManagementStats(
 }
 
 export function generateTaskTypes(allTasks: Task[]) {
-  const now = new Date();
-  const todayStart = startOfDay(now);
-
+  const regularTasks: Task[] = [];
+  const repeatingTasks: Task[] = [];
+  const completedPriorityTasks: Task[] = [];
+  const pendingPriorityTasks: Task[] = [];
+  const repeatingTasksDueToday: Task[] = [];
+  const completedTodayRepeatingTasks: Task[] = [];
   const todaysTasks: Task[] = [];
   const upcomingTasks: Task[] = [];
+
+  // Only regular tasks
   const missedTasks: Task[] = [];
   const delayedTasks: Task[] = [];
   const completedTasks: Task[] = [];
-  const completedTodayTasks: Task[] = [];
+  const completedTodayRegularTasks: Task[] = [];
   const pendingTodayTasks: Task[] = [];
   const pendingTasks: Task[] = [];
+  const incompleteRepeatingTodayTasks: Task[] = [];
+  const incompleteRegularTodayTasks: Task[] = [];
 
   allTasks.map((task) => {
-    // Handle today's tasks - for repeating tasks use special logic
     if (task.isRepeating) {
+      repeatingTasks.push(task);
       const { isDueToday } = canCompleteRepeatingTaskNow(task);
-      if (isDueToday) todaysTasks.push(task);
+      if (isDueToday) {
+        repeatingTasksDueToday.push(task);
+        todaysTasks.push(task);
+
+        if (
+          task.repetitionRule?.completedAt.some((d) => isToday(d)) ||
+          (task.completedAt &&
+            isToday(task.completedAt) &&
+            task.status === "completed")
+        )
+          completedTodayRepeatingTasks.push(task);
+        else incompleteRepeatingTodayTasks.push(task);
+      }
     } else {
-      if (isToday(task.dueDate)) todaysTasks.push(task);
+      regularTasks.push(task);
+      if (isToday(task.dueDate)) {
+        todaysTasks.push(task);
+        if (task.status !== "completed") incompleteRegularTodayTasks.push(task);
+        else completedTodayRegularTasks.push(task);
+      }
+
+      if (
+        isPast(task.dueDate) &&
+        !isToday(task.dueDate) &&
+        task.status === "pending"
+      )
+        missedTasks.push(task);
+
+      if ((task.delayCount || 0) > 0 && task.status === "delayed")
+        delayedTasks.push(task);
     }
 
     if (
@@ -500,51 +471,35 @@ export function generateTaskTypes(allTasks: Task[]) {
     )
       upcomingTasks.push(task);
 
-    // Missed tasks logic - for repeating tasks, check if they should have been completed but weren't
-    if (task.isRepeating) {
-      // For repeating tasks, check if they are overdue based on their repetition pattern
-      if (
-        isPast(task.dueDate) &&
-        !isToday(task.dueDate) &&
-        task.status === "pending"
-      ) {
-        missedTasks.push(task);
-      }
-    } else {
-      if (
-        isPast(task.dueDate) &&
-        !isToday(task.dueDate) &&
-        task.status === "pending"
-      )
-        missedTasks.push(task);
+    if (task.status === "completed") {
+      if (task.isPriority) completedPriorityTasks.push(task);
+      completedTasks.push(task);
     }
 
-    if (
-      (task.delayCount || 0) > 0 &&
-      task.status === "delayed" &&
-      isAfter(task.dueDate, todayStart)
-    )
-      delayedTasks.push(task);
-    if (task.status === "completed") completedTasks.push(task);
-    if (
-      (task.status === "completed" && isToday(task.completedAt as Date)) ||
-      (isToday(task.dueDate) && task.status === "completed")
-    )
-      completedTodayTasks.push(task);
-    if (isToday(task.dueDate) && task.status === "pending")
+    if (isToday(task.dueDate) && task.status === "pending") {
+      if (task.isPriority) pendingPriorityTasks.push(task);
       pendingTodayTasks.push(task);
+    }
     if (task.status === "pending") pendingTasks.push(task);
   });
 
   return {
-    todaysTasks,
+    regularTasks,
+    completedTodayRegularTasks,
+    incompleteRegularTodayTasks,
     upcomingTasks,
     missedTasks,
     delayedTasks,
-    completedTasks,
-    completedTodayTasks,
-    pendingTodayTasks,
+    todaysTasks,
     pendingTasks,
+    pendingTodayTasks,
+    repeatingTasks,
+    incompleteRepeatingTodayTasks,
+    repeatingTasksDueToday,
+    completedTodayRepeatingTasks,
+    completedPriorityTasks,
+    pendingPriorityTasks,
+    completedTasks,
   };
 }
 

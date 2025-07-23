@@ -64,6 +64,7 @@ export const getUserById = unstable_cache(
         completedTasksCount: userData.completedTasksCount || 0,
         currentStreak: userData.currentStreak || 0,
         bestStreak: userData.bestStreak || 0,
+        gainedPoints: userData.gainedPoints || [],
       };
     } catch (error) {
       console.error("Error fetching user by ID:", error);
@@ -94,6 +95,9 @@ export async function updateUserRewardPoints(
   }
 }
 
+/**
+ * Updates user 's completeTasksCount, rewardPoints and gainedPoints
+ */
 export async function updateUserCompletionStats(
   userId: string,
   pointsDiff: number
@@ -104,20 +108,39 @@ export async function updateUserCompletionStats(
   try {
     const userDocRef = adminDb.collection("users").doc(userId);
 
-    // Always increment completed tasks count regardless of points
-    const updates: {
-      completedTasksCount: FieldValue;
-      rewardPoints?: FieldValue;
-    } = {
-      completedTasksCount: FieldValue.increment(1),
-    };
+    // Use transaction to get current data and update gainedPoints
+    await adminDb.runTransaction(async (transaction) => {
+      const userDoc = await transaction.get(userDocRef);
+      if (!userDoc.exists) throw new Error("User not found");
 
-    // Only update points if there are points to add
-    if (pointsDiff !== 0) {
-      updates.rewardPoints = FieldValue.increment(pointsDiff);
-    }
+      const userData = userDoc.data();
+      const currentGainedPoints = userData?.gainedPoints || [];
+      const currentRewardPoints = userData?.rewardPoints || 0;
 
-    await userDocRef.update(updates);
+      // Always increment completed tasks count regardless of points
+      const updates: {
+        completedTasksCount: FieldValue;
+        rewardPoints?: FieldValue;
+        gainedPoints?: number[];
+      } = {
+        completedTasksCount: FieldValue.increment(1),
+      };
+
+      // Only update points if there are points to add
+      if (pointsDiff !== 0) {
+        updates.rewardPoints = FieldValue.increment(pointsDiff);
+
+        // Update gainedPoints array - maintain max length of 7
+        const newTotalPoints = currentRewardPoints + pointsDiff;
+        let updatedGainedPoints = [...currentGainedPoints, newTotalPoints];
+        if (updatedGainedPoints.length > 7) {
+          updatedGainedPoints = updatedGainedPoints.slice(-7); // Keep only last 7 entries
+        }
+        updates.gainedPoints = updatedGainedPoints;
+      }
+
+      transaction.update(userDocRef, updates);
+    });
   } catch (error) {
     console.error(`Error updating completion stats for user ${userId}:`, error);
   }

@@ -1,64 +1,32 @@
 "use client";
-//Client side
+//Needs to be client side
 import { logEvent, setUserProperties } from "firebase/analytics";
 import { analytics } from "./firebase";
-import {
-  AchievementType,
-  NotificationEventType,
-  NotificationPriority,
-  NotificationType,
-  TaskEventType,
-} from "../_types/types";
+import { TaskEventType, TaskAnalytics } from "../_types/types";
 
+/** Logs "task_completed" | "task_created" | "task_deleted" | "task_delayed" event to Firebase Analytics with a whole data */
 export const trackTaskEvent = (
   eventType: TaskEventType,
-  properties: {
-    isRepeating: boolean;
-    isPriority: boolean;
-    completionTime: number;
-    delayCount: number;
-    createdAt: Date;
-    completedAt: Date;
-    dueDate: Date;
-  }
+  data: TaskAnalytics
 ) => {
   if (!analytics) return;
-
-  logEvent(analytics, eventType, {
-    ...properties,
-    timestamp: Date.now(),
-  });
+  logEvent(analytics, eventType, data);
 };
 
-export const trackAchievementUnlocked = (
-  achievementType: AchievementType,
-  value: number
-) => {
+/** 
+ - Logs achievement_unlocked event to Firebase Analytics with an achievementId and unlockedAt
+ - Firebase Analytics automatically associates events with the current user session, so userId attached to the log is unnecessary**
+ */
+export const trackAchievementUnlocked = (achievementId: string) => {
   if (!analytics) return;
 
   logEvent(analytics, "achievement_unlocked", {
-    achievement_type: achievementType,
-    value,
-    timestamp: Date.now(),
+    achievementId,
+    unlockedAt: new Date(),
   });
 };
 
-export const trackNotificationEvent = (
-  eventType: NotificationEventType,
-  properties?: {
-    notification_type?: NotificationType;
-    priority?: NotificationPriority;
-    action_taken?: "clicked" | "dismissed" | "completed_from_notification";
-  }
-) => {
-  if (!analytics) return;
-
-  logEvent(analytics, eventType, {
-    ...properties,
-    timestamp: Date.now(),
-  });
-};
-
+// It was part of the previous analytics setup. Its functionality has been replaced by the more robust session tracking system we just implemented, which now correctly calculates active time on the server.
 export const trackUserEngagement = (
   engagementTimeMsec: number,
   pageTitle?: string
@@ -70,12 +38,14 @@ export const trackUserEngagement = (
     pageTitle,
   });
 };
-export const trackPageView = (page_title: string, page_location?: string) => {
+
+// Removed from AnalyticsTracker as part of the new session tracking implementation to avoid duplicate page view events.
+export const trackPageView = (pageTitle: string, pagePath?: string) => {
   if (!analytics) return;
 
   logEvent(analytics, "page_view", {
-    page_title,
-    page_location: page_location || window.location.pathname,
+    pageTitle,
+    pagePath: pagePath || window.location.pathname,
   });
 };
 
@@ -87,6 +57,7 @@ export const trackAppOpen = () => {
   });
 };
 
+// Maybe combine AnalyticsData and SessionData
 export const setUserAnalyticsProperties = (properties: {
   currentStreak?: number;
   totalTasksCompleted?: number;

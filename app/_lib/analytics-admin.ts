@@ -2,14 +2,14 @@ import "server-only";
 import { adminDb } from "./admin";
 import { FieldValue } from "firebase-admin/firestore";
 import {
-  AchievementType,
   SessionData,
   TaskAnalytics,
   UserBehaviorData,
   TaskEventType,
   AnalyticsData,
+  Achievement,
 } from "../_types/types";
-import { trackAchievementUnlocked, trackTaskEvent } from "./analytics";
+import { trackTaskEvent } from "./analytics";
 
 /**
  * - Session duration (average time per session)
@@ -18,6 +18,8 @@ import { trackAchievementUnlocked, trackTaskEvent } from "./analytics";
  */
 export const startUserSession = async (userId: string, pageTitle: string) => {
   try {
+    if (!userId) throw new Error("User ID is required");
+
     const sessionData: SessionData = {
       userId,
       sessionStart: new Date(),
@@ -50,6 +52,8 @@ export const updateUserSession = async (
   pageTitle: string,
   timeSpent: number
 ) => {
+  if (!sessionId) throw new Error("Session ID is required");
+
   try {
     /*
     if (typeof window === "undefined") return;
@@ -75,18 +79,12 @@ export const updateUserSession = async (
 
 export const endUserSession = async (sessionId: string) => {
   try {
-    /*
-    if (typeof window === "undefined") return;
-    const sessionId = localStorage.getItem("currentSessionId");
-    if (!sessionId) return;
-    */
+    if (!sessionId) throw new Error("Session ID is required");
 
     const sessionRef = adminDb.collection("userSessions").doc(sessionId);
     await sessionRef.update({
       sessionEnd: new Date(),
     });
-
-    //localStorage.removeItem("currentSessionId");
   } catch (error) {
     console.error("Error ending user session:", error);
   }
@@ -137,15 +135,7 @@ export const trackTaskAnalytics = async (
     await adminDb.collection("taskAnalytics").add(analyticsData);
 
     // Also track in Firebase Analytics
-    trackTaskEvent(`task_${action}` as TaskEventType, {
-      isRepeating: taskData.isRepeating,
-      isPriority: taskData.isPriority,
-      completionTime: completionTime || 0,
-      delayCount: taskData.delayCount || 0,
-      createdAt: taskData.createdAt || now,
-      completedAt: taskData.completedAt || now,
-      dueDate: taskData.dueDate,
-    });
+    trackTaskEvent(`task_${action}` as TaskEventType, analyticsData);
   } catch (error) {
     console.error("Error tracking task analytics:", error);
   }
@@ -169,27 +159,6 @@ export const trackFeatureUsage = async (
     await adminDb.collection("userBehavior").add(behaviorData);
   } catch (error) {
     console.error("Error tracking feature usage:", error);
-  }
-};
-
-// Track when achievements are unlocked
-export const trackAchievementAnalytics = async (
-  userId: string,
-  achievementType: AchievementType,
-  value: number
-) => {
-  try {
-    await adminDb.collection("achievementAnalytics").add({
-      userId,
-      achievementType,
-      value,
-      timestamp: new Date(),
-    });
-
-    // Also track in Firebase Analytics
-    trackAchievementUnlocked(achievementType, value);
-  } catch (error) {
-    console.error("Error tracking achievement analytics:", error);
   }
 };
 
@@ -217,7 +186,7 @@ Achievement Unlocks: Achievement awards are logged for analysis
 */
 export const getAnalyticsData = async (
   userId: string
-): Promise<AnalyticsData> => {
+): Promise<AnalyticsData | null> => {
   try {
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -246,6 +215,10 @@ export const getAnalyticsData = async (
       .orderBy("date", "desc")
       .get();
 
+    // Get user data for current streak and points
+    const userDoc = await adminDb.collection("users").doc(userId).get();
+    const userData = userDoc.exists ? userDoc.data() : null;
+
     // Process session data
     const sessions: SessionData[] = sessionsSnapshot.docs.map((doc) => {
       const data = doc.data();
@@ -259,19 +232,23 @@ export const getAnalyticsData = async (
         pagesVisited: data.pagesVisited,
       };
     });
+
     const totalSessionDuration = sessions.reduce((acc, session) => {
       const start = session.sessionStart;
       const end = session.sessionEnd || new Date();
       return acc + Math.floor((end.getTime() - start.getTime()) / 1000);
     }, 0);
+
     const avgSessionDuration =
       sessions.length > 0
         ? Math.floor(totalSessionDuration / sessions.length)
         : 0;
+
     const totalPageViews = sessions.reduce(
       (acc, session) => acc + (session.pageViews || 0),
       0
     );
+
     const totalActiveTime = sessions.reduce(
       (acc, session) => acc + (session.activeTime || 0),
       0
@@ -313,6 +290,37 @@ export const getAnalyticsData = async (
       }).length;
     }).reverse();
 
+    // Calculate weekly task trends for last 4 weeks
+    const weeklyTaskTrends = Array.from({ length: 4 }, (_, i) => {
+      const weekEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+      const weekStart = new Date(weekEnd.getTime() - 6 * 24 * 60 * 60 * 1000);
+      weekStart.setHours(0, 0, 0, 0);
+      weekEnd.setHours(23, 59, 59, 999);
+
+      return taskAnalytics.filter((task) => {
+        const taskDate = task.timestamp;
+        return (
+          task.action === "task_completed" &&
+          taskDate >= weekStart &&
+          taskDate <= weekEnd
+        );
+      }).length;
+    }).reverse();
+
+    // Calculate average completion time from actual data
+    const completedTasks = taskAnalytics.filter(
+      (task) => task.action === "task_completed" && task.completionTime
+    );
+    const avgCompletionTime =
+      completedTasks.length > 0
+        ? Math.floor(
+            completedTasks.reduce(
+              (acc, task) => acc + (task.completionTime || 0),
+              0
+            ) / completedTasks.length
+          )
+        : 0;
+
     // Process user behavior data for feature usage
     const behaviorData: UserBehaviorData[] = behaviorSnapshot.docs.map(
       (doc) => {
@@ -327,12 +335,13 @@ export const getAnalyticsData = async (
         };
       }
     );
+
     const featureUsage = behaviorData.reduce((acc, behavior) => {
       acc[behavior.featureUsed] = (acc[behavior.featureUsed] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
-    // Ensure we have some default feature usage
+    // Ensure we have default feature usage structure
     const defaultFeatureUsage = {
       tasks: 0,
       calendar: 0,
@@ -342,52 +351,124 @@ export const getAnalyticsData = async (
       ...featureUsage,
     };
 
-    // Return analytics data (mix of real and calculated data)
+    // Calculate points growth using actual gainedPoints data
+    const pointsGrowth = userData?.gainedPoints || [];
+
+    // Calculate completion rate history for last 7 days
+    const completionRateHistory = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const dayStart = new Date(date.setHours(0, 0, 0, 0));
+      const dayEnd = new Date(date.setHours(23, 59, 59, 999));
+
+      const dayCompletions = taskAnalytics.filter((task) => {
+        const taskDate = task.timestamp;
+        return (
+          task.action === "task_completed" &&
+          taskDate >= dayStart &&
+          taskDate <= dayEnd
+        );
+      }).length;
+
+      const dayCreations = taskAnalytics.filter((task) => {
+        const taskDate = task.timestamp;
+        return (
+          task.action === "task_created" &&
+          taskDate >= dayStart &&
+          taskDate <= dayEnd
+        );
+      }).length;
+
+      return dayCreations > 0
+        ? Math.round((dayCompletions / dayCreations) * 100)
+        : 0;
+    }).reverse();
+
+    // Calculate consistency score based on session frequency
+    const daysWithSessions = new Set(
+      sessions.map((session) => session.sessionStart.toDateString())
+    ).size;
+    const consistencyScore = Math.round((daysWithSessions / 30) * 100);
+
+    // Calculate productivity score based on completion rates and session activity
+    const totalCompletions = taskAnalytics.filter(
+      (task) => task.action === "task_completed"
+    ).length;
+    const totalCreations = taskAnalytics.filter(
+      (task) => task.action === "task_created"
+    ).length;
+    const completionRate =
+      totalCreations > 0 ? totalCompletions / totalCreations : 0;
+
+    //(completionRate * 0.6 + (consistencyScore / 100) * 0.4) * 100
+    const productivityScore = Math.round(
+      (completionRate * 0.6 + (consistencyScore / 100) * 0.4) * 100
+    );
+
+    // Process achievement analytics from user's achievements array
+    const userAchievements = userData?.achievements || [];
+
+    // Helper function to convert achievement date to Date object
+    const getAchievementDate = (dateValue: unknown): Date => {
+      if (dateValue instanceof Date) {
+        return dateValue;
+      }
+      if (
+        dateValue &&
+        typeof dateValue === "object" &&
+        "toDate" in dateValue &&
+        typeof dateValue.toDate === "function"
+      ) {
+        return dateValue.toDate();
+      }
+      return new Date(dateValue as string);
+    };
+
+    // Helper type for achievement data from Firestore
+
+    // Get recent achievements (last 30 days)
+    const recentAchievements = userAchievements
+      .filter((achievement: Achievement) => {
+        const unlockedDate = getAchievementDate(achievement.unlockedAt);
+        return unlockedDate >= thirtyDaysAgo;
+      })
+      .map((achievement: Achievement) => ({
+        type: achievement.type,
+        id: achievement.id,
+        unlockedAt: getAchievementDate(achievement.unlockedAt),
+      }))
+      .sort(
+        (a: { unlockedAt: Date }, b: { unlockedAt: Date }) =>
+          b.unlockedAt.getTime() - a.unlockedAt.getTime()
+      );
+
+    // Calculate achievements by type
+    const achievementsByType = userAchievements.reduce(
+      (acc: Record<string, number>, achievement: Achievement) => {
+        acc[achievement.type] = (acc[achievement.type] || 0) + 1;
+        return acc;
+      },
+      {}
+    );
+
+    // Return analytics data with calculated values
     return {
-      sessionDuration: avgSessionDuration || 1247,
-      pageViews: totalPageViews || 45,
-      activeTime: totalActiveTime || 892,
-      dailyTaskCompletions: dailyTaskCompletions.some((d) => d > 0)
-        ? dailyTaskCompletions
-        : [3, 5, 2, 7, 4, 6, 8],
-      weeklyTaskTrends: [23, 28, 31, 25],
-      mostProductiveHour: 10,
-      averageCompletionTime: 125,
-      streakHistory: [1, 2, 3, 4, 5, 6, 7],
-      pointsGrowth: [100, 125, 140, 165, 180, 205, 225],
-      featureUsage: Object.keys(defaultFeatureUsage).some(
-        (k) => defaultFeatureUsage[k as keyof typeof defaultFeatureUsage] > 0
-      )
-        ? defaultFeatureUsage
-        : { tasks: 85, calendar: 23, notes: 12, inbox: 34, profile: 8 },
-      completionRateHistory: [78, 82, 75, 88, 85, 90, 87],
-      consistencyScore: 92,
-      productivityScore: 85,
+      sessionDuration: avgSessionDuration,
+      pageViews: totalPageViews,
+      activeTime: totalActiveTime,
+      dailyTaskCompletions,
+      weeklyTaskTrends,
+      averageCompletionTime: avgCompletionTime,
+      pointsGrowth,
+      featureUsage: defaultFeatureUsage,
+      completionRateHistory,
+      consistencyScore,
+      productivityScore,
+      recentAchievements,
+      achievementsByType,
     };
   } catch (error) {
     console.error("Error fetching analytics data:", error);
 
-    // Fallback for now
-    return {
-      sessionDuration: 1247,
-      pageViews: 45,
-      activeTime: 892,
-      dailyTaskCompletions: [3, 5, 2, 7, 4, 6, 8],
-      weeklyTaskTrends: [23, 28, 31, 25],
-      mostProductiveHour: 10,
-      averageCompletionTime: 125,
-      streakHistory: [1, 2, 3, 4, 5, 6, 7],
-      pointsGrowth: [101, 125, 140, 165, 180, 205, 225],
-      featureUsage: {
-        tasks: 85,
-        calendar: 23,
-        notes: 12,
-        inbox: 34,
-        profile: 8,
-      },
-      completionRateHistory: [78, 82, 75, 88, 85, 90, 87],
-      consistencyScore: 92,
-      productivityScore: 85,
-    };
+    return null;
   }
 };

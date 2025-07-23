@@ -9,7 +9,7 @@ import {
   taskCompletionistMilestones,
 } from "../_utils/utils";
 import { getUserById } from "./user-admin";
-import { trackAchievementAnalytics } from "./analytics-admin";
+import { trackAchievementUnlocked } from "./analytics";
 
 async function addAchievementToUser(
   userId: string,
@@ -53,12 +53,13 @@ async function addAchievementToUser(
     });
 
     // Only generate notification after successful transaction
-    await generateAchievementNotification(userId, achievement.type, {
-      achievementId: achievement.id,
-    });
+    await generateAchievementNotification(
+      userId,
+      achievement.type,
+      achievement.id
+    );
 
-    // Track achievement analytics
-    await trackAchievementAnalytics(userId, achievement.type, 0);
+    trackAchievementUnlocked(achievement.id);
   } catch (error) {
     console.error(
       `Error adding achievement ${achievement.id} to user ${userId}:`,

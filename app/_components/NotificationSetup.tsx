@@ -10,9 +10,7 @@ import {
   isNotificationSupported,
   getNotificationPermission,
 } from "@/app/_lib/fcm";
-import { trackNotificationEvent } from "@/app/_lib/analytics";
 import { customToast } from "@/app/_utils/toasts";
-import { NotificationType } from "../_types/types";
 
 //Permission request and notification setup
 export default function NotificationSetup() {
@@ -32,12 +30,6 @@ export default function NotificationSetup() {
     if (isNotificationSupported()) {
       const unsubscribe = onForegroundMessage((payload) => {
         console.log("Received foreground notification:", payload);
-
-        // Track notification received
-        trackNotificationEvent("notification_clicked", {
-          notification_type: payload.data?.type as NotificationType,
-          action_taken: "clicked",
-        });
 
         if (payload.notification?.title) {
           customToast(
@@ -71,11 +63,6 @@ export default function NotificationSetup() {
         // Save token to backend
         await saveNotificationToken(token);
         setPermission("granted");
-
-        // Track analytics
-        trackNotificationEvent("notification_clicked", {
-          action_taken: "clicked",
-        });
 
         customToast("Success", "🔔 Push notifications enabled!");
       } else {

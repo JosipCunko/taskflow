@@ -567,7 +567,7 @@ export const generateTimeWindowNotifications = async (
 export const generateAchievementNotification = async (
   userId: string,
   achievementType: AchievementType,
-  achievementData: { achievementId: string }
+  achievementId: string
 ): Promise<void> => {
   const user = await getUserById(userId);
   if (!user?.notifyAchievements) {
@@ -579,7 +579,7 @@ export const generateAchievementNotification = async (
   const hasExistingNotification = existingNotifications.some(
     (notification) =>
       notification.type === "ACHIEVEMENT_UNLOCKED" &&
-      notification.data?.achievementId === achievementData.achievementId
+      notification.data?.achievementId === achievementId
   );
 
   if (hasExistingNotification) {
@@ -592,14 +592,11 @@ export const generateAchievementNotification = async (
     task_completionist: "✅ Task Completionist!",
   };
 
-  const numberMilestone = achievementData.achievementId.split("_").at(-1);
+  const numberMilestone = achievementId.split("_").at(-1);
   const achievementMessages: Record<string, string> = {
-    streak_milestone:
-      "You've achieved a new streak milestone! You've completed a new streak of ",
-    points_milestone:
-      "You've achieved a new points milestone! You've earned a total of ",
-    task_completionist:
-      "You've achieved a new task completionist milestone! You've completed a total of  ",
+    streak_milestone: `You've achieved a new streak milestone! You've completed a new streak of ${numberMilestone}.`,
+    points_milestone: `You've achieved a new points milestone! You've earned a total of ${numberMilestone} points.`,
+    task_completionist: `You've achieved a new task completionist milestone! You've completed a total of ${numberMilestone} tasks.`,
   };
 
   // Create notification regardless of user.achievements check to avoid race conditions
@@ -608,10 +605,10 @@ export const generateAchievementNotification = async (
     type: "ACHIEVEMENT_UNLOCKED",
     priority: "LOW",
     title: achievementTitles[achievementType],
-    message: `${achievementMessages[achievementType]} ${numberMilestone}`,
+    message: achievementMessages[achievementType],
     actionText: "View Achievement",
     actionUrl: "/webapp/profile",
-    data: achievementData,
+    data: { achievementId },
     expiresAt: addDays(new Date(), 30),
   });
 };
