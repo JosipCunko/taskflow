@@ -40,7 +40,7 @@ import { adminDb } from "./admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { sendCampaignNotification } from "./notifications-admin";
 import { checkAndAwardAchievements } from "./achievements";
-import { trackTaskAnalytics, getAnalyticsData } from "./analytics-admin";
+import { trackTaskAnalytics, getAnalyticsData, trackFeatureUsage } from "./analytics-admin";
 
 /* User */
 export async function updateUserAction(
@@ -134,6 +134,9 @@ export async function completeTaskAction(
         completedAt: new Date(),
         delayCount: task.delayCount || 0,
       });
+
+      // Track feature usage
+      await trackFeatureUsage(userId, "tasks_complete");
     }
 
     // Check for achievements after task completion
@@ -248,6 +251,9 @@ export async function delayTaskAction(
         createdAt: updatedTask.createdAt,
         delayCount: updatedTask.delayCount || 0,
       });
+
+      // Track feature usage
+      await trackFeatureUsage(userId, "tasks_delay");
     }
 
     revalidatePath("/tasks");
@@ -299,6 +305,9 @@ export async function deleteTaskAction(
         isRepeating: deletedTask.isRepeating || false,
         createdAt: deletedTask.createdAt,
       });
+
+      // Track feature usage
+      await trackFeatureUsage(session.user.id, "tasks_delete");
     }
     revalidatePath("/tasks");
     return { success: true, message: "Task deleted" };
@@ -441,6 +450,9 @@ export async function createTaskAction(
           createdAt: createdTask.createdAt,
         }
       );
+
+      // Track feature usage
+      await trackFeatureUsage(session.user.id, "tasks_create");
     }
 
     revalidatePath("/tasks");

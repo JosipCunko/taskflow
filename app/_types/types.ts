@@ -96,6 +96,7 @@ export interface AnalyticsData {
   dailyTaskCompletions: number[];
   weeklyTaskTrends: number[];
   averageCompletionTime: number;
+  mostProductiveHour: number; // Hour of day (0-23) when most tasks are completed
 
   // User behavior
   pointsGrowth: number[];

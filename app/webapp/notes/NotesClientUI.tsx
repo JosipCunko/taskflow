@@ -11,6 +11,7 @@ import Button from "@/app/_components/reusable/Button";
 import Input from "@/app/_components/reusable/Input";
 import { PlusCircle, Save, Trash2, XCircle, Edit3 } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { trackFeatureUsage } from "@/app/_lib/analytics";
 
 interface NotesClientUIProps {
   initialNotes: Note[];
@@ -68,6 +69,9 @@ export default function NotesClientUI({
         setCurrentTitle("New Note");
         setCurrentContent("");
         toast.success(result?.message || "Note added.");
+        
+        // Track feature usage
+        trackFeatureUsage(userId, "notes_create");
       } else {
         toast.error(result.error ?? "Failed to add note.");
       }
@@ -111,6 +115,9 @@ export default function NotesClientUI({
         );
         setEditingNoteId(null);
         toast.success(result.message || "Note updated.");
+        
+        // Track feature usage
+        trackFeatureUsage(userId, "notes_edit");
       } else {
         toast.error(result.error ?? "Failed to update note.");
       }
@@ -135,6 +142,9 @@ export default function NotesClientUI({
             setEditingNoteId(null);
           }
           toast.success(result.message || "Note deleted.");
+          
+          // Track feature usage
+          trackFeatureUsage(userId, "notes_delete");
         } else {
           toast.error(result.error ?? "Failed to delete note.");
         }
