@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { setUserAnalyticsProperties, trackAppOpen } from "@/app/_lib/analytics";
-import { AppUser } from "../_types/types";
+import { updateUserPropertiesFromData, trackAppOpen } from "@/app/_lib/analytics";
+import { AppUser, AnalyticsData } from "../_types/types";
 
 // Api routes are a bridge for the functions for analytics-admin.ts
 async function postToServer(endpoint: string, data: object) {
@@ -66,18 +66,43 @@ export default function AnalyticsTracker({
     };
     const updateUserProperties = async () => {
       try {
-        setUserAnalyticsProperties({
+        // Fetch analytics data to combine with user data
+        const analyticsResponse = await fetch("/api/analytics/data");
+        let analyticsData: AnalyticsData | null = null;
+        let sessionCount = 0;
+        
+        if (analyticsResponse.ok) {
+          const result = await analyticsResponse.json();
+          analyticsData = result.analyticsData;
+          sessionCount = result.sessionCount || 0;
+        }
+
+        // Use the enhanced function that combines user data and analytics data
+        updateUserPropertiesFromData(
+          {
+            currentStreak: userData.currentStreak,
+            completedTasksCount: userData.completedTasksCount,
+            rewardPoints: userData.rewardPoints,
+            notifyReminders: userData.notifyReminders,
+            notifyAchievements: userData.notifyAchievements,
+            createdAt: userData.createdAt,
+            achievements: userData.achievements,
+          },
+          analyticsData || undefined,
+          sessionCount
+        );
+      } catch (error) {
+        console.error("Error setting user analytics properties:", error);
+        // Fallback to basic user properties if analytics fetch fails
+        updateUserPropertiesFromData({
           currentStreak: userData.currentStreak,
-          totalTasksCompleted: userData.completedTasksCount,
+          completedTasksCount: userData.completedTasksCount,
           rewardPoints: userData.rewardPoints,
           notifyReminders: userData.notifyReminders,
           notifyAchievements: userData.notifyAchievements,
-          notificationsEnabled:
-            userData.notifyReminders || userData.notifyAchievements,
-          lastLoginAt: new Date(),
+          createdAt: userData.createdAt,
+          achievements: userData.achievements,
         });
-      } catch (error) {
-        console.error("Error setting user analytics properties:", error);
       }
     };
 

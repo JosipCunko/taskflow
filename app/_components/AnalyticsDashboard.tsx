@@ -54,21 +54,21 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
           value={`${Math.round(analyticsData.sessionDuration / 60)}m`}
           icon={<Activity className="text-blue-400" size={24} />}
           subtitle={`${analyticsData.pageViews} page views`}
-          trend={12}
+          trend={analyticsData.trends.sessionDurationTrend}
         />
         <AnalyticsCard
           title="Productivity Score"
           value={`${analyticsData.productivityScore}%`}
           icon={<Target className="text-green-400" size={24} />}
           subtitle="Based on completion patterns"
-          trend={5}
+          trend={analyticsData.trends.productivityTrend}
         />
         <AnalyticsCard
           title="Consistency Score"
           value={`${analyticsData.consistencyScore}%`}
           icon={<Zap className="text-yellow-400" size={24} />}
           subtitle="Daily engagement level"
-          trend={8}
+          trend={analyticsData.trends.consistencyTrend}
         />
       </div>
 
@@ -213,13 +213,13 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
             <div className="absolute top-2 right-2 flex items-center gap-2 ">
               Total:
               <span>
-                🔥 {analyticsData.achievementsByType.streak_milestone}
+                🔥 {analyticsData.achievementsByType.streak_milestone || 0}
               </span>
               <span>
-                🏆 {analyticsData.achievementsByType.streak_milestone}
+                🏆 {analyticsData.achievementsByType.points_milestone || 0}
               </span>
               <span>
-                ✅ {analyticsData.achievementsByType.streak_milestone}
+                ✅ {analyticsData.achievementsByType.task_completionist || 0}
               </span>
             </div>
           </>

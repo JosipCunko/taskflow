@@ -450,7 +450,74 @@ export const getAnalyticsData = async (
       {}
     );
 
-    // Return analytics data with calculated values
+    // Calculate trends by comparing current period (last 15 days) to previous period (15-30 days ago)
+    const fifteenDaysAgo = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
+    
+    // Split sessions into current and previous periods
+    const currentPeriodSessions = sessions.filter(s => s.sessionStart >= fifteenDaysAgo);
+    const previousPeriodSessions = sessions.filter(s => s.sessionStart < fifteenDaysAgo);
+    
+    // Calculate current and previous period metrics
+    const currentAvgSessionDuration = currentPeriodSessions.length > 0 
+      ? currentPeriodSessions.reduce((acc, s) => {
+          const duration = s.sessionEnd 
+            ? Math.floor((s.sessionEnd.getTime() - s.sessionStart.getTime()) / 1000)
+            : Math.floor((new Date().getTime() - s.sessionStart.getTime()) / 1000);
+          return acc + duration;
+        }, 0) / currentPeriodSessions.length
+      : 0;
+    
+    const previousAvgSessionDuration = previousPeriodSessions.length > 0
+      ? previousPeriodSessions.reduce((acc, s) => {
+          const duration = s.sessionEnd 
+            ? Math.floor((s.sessionEnd.getTime() - s.sessionStart.getTime()) / 1000)
+            : Math.floor((new Date().getTime() - s.sessionStart.getTime()) / 1000);
+          return acc + duration;
+        }, 0) / previousPeriodSessions.length
+      : 0;
+    
+    // Calculate productivity trends
+    const currentCompletions = taskAnalytics.filter(t => 
+      t.action === "task_completed" && t.timestamp >= fifteenDaysAgo
+    ).length;
+    const currentCreations = taskAnalytics.filter(t => 
+      t.action === "task_created" && t.timestamp >= fifteenDaysAgo
+    ).length;
+    const currentProductivity = currentCreations > 0 ? (currentCompletions / currentCreations) * 100 : 0;
+    
+    const previousCompletions = taskAnalytics.filter(t => 
+      t.action === "task_completed" && t.timestamp < fifteenDaysAgo
+    ).length;
+    const previousCreations = taskAnalytics.filter(t => 
+      t.action === "task_created" && t.timestamp < fifteenDaysAgo
+    ).length;
+    const previousProductivity = previousCreations > 0 ? (previousCompletions / previousCreations) * 100 : 0;
+    
+    // Calculate consistency trends
+    const currentActiveDays = new Set(
+      currentPeriodSessions.map(s => s.sessionStart.toDateString())
+    ).size;
+    const previousActiveDays = new Set(
+      previousPeriodSessions.map(s => s.sessionStart.toDateString())
+    ).size;
+    
+    const currentConsistency = (currentActiveDays / 15) * 100;
+    const previousConsistency = (previousActiveDays / 15) * 100;
+    
+    // Calculate percentage changes (trends)
+    const sessionDurationTrend = previousAvgSessionDuration > 0 
+      ? Math.round(((currentAvgSessionDuration - previousAvgSessionDuration) / previousAvgSessionDuration) * 100)
+      : 0;
+    
+    const productivityTrend = previousProductivity > 0 
+      ? Math.round(((currentProductivity - previousProductivity) / previousProductivity) * 100)
+      : 0;
+    
+    const consistencyTrend = previousConsistency > 0 
+      ? Math.round(((currentConsistency - previousConsistency) / previousConsistency) * 100)
+      : 0;
+
+    // Return analytics data with calculated values and trends
     return {
       sessionDuration: avgSessionDuration,
       pageViews: totalPageViews,
@@ -463,6 +530,11 @@ export const getAnalyticsData = async (
       completionRateHistory,
       consistencyScore,
       productivityScore,
+      trends: {
+        sessionDurationTrend,
+        productivityTrend,
+        consistencyTrend,
+      },
       recentAchievements,
       achievementsByType,
     };

@@ -57,8 +57,9 @@ export const trackAppOpen = () => {
   });
 };
 
-// Maybe combine AnalyticsData and SessionData
+// Enhanced setUserProperties combining AnalyticsData, SessionData, and user data
 export const setUserAnalyticsProperties = (properties: {
+  // User profile data
   currentStreak?: number;
   totalTasksCompleted?: number;
   rewardPoints?: number;
@@ -67,8 +68,110 @@ export const setUserAnalyticsProperties = (properties: {
   notificationsEnabled?: boolean;
   lastLoginAt?: Date;
   createdAt?: Date;
+  
+  // Analytics data
+  sessionDuration?: number;
+  pageViews?: number;
+  activeTime?: number;
+  productivityScore?: number;
+  consistencyScore?: number;
+  averageCompletionTime?: number;
+  
+  // Session data
+  totalSessions?: number;
+  averageSessionDuration?: number;
+  
+  // Trends
+  sessionDurationTrend?: number;
+  productivityTrend?: number;
+  consistencyTrend?: number;
+  
+  // Feature usage (top 3 most used features)
+  topFeatures?: string[];
+  
+  // Achievement data
+  totalAchievements?: number;
+  recentAchievementCount?: number;
 }) => {
   if (!analytics) return;
 
-  setUserProperties(analytics, properties);
+  // Convert Date objects to timestamps for Firebase Analytics
+  const processedProperties = {
+    ...properties,
+    lastLoginAt: properties.lastLoginAt?.getTime(),
+    createdAt: properties.createdAt?.getTime(),
+  };
+
+  setUserProperties(analytics, processedProperties);
+};
+
+// Helper function to combine user data and analytics data for Firebase Analytics
+export const updateUserPropertiesFromData = (
+  userData: {
+    currentStreak?: number;
+    completedTasksCount?: number;
+    rewardPoints?: number;
+    notifyReminders?: boolean;
+    notifyAchievements?: boolean;
+    createdAt?: Date;
+    achievements?: any[];
+  },
+  analyticsData?: {
+    sessionDuration?: number;
+    pageViews?: number;
+    activeTime?: number;
+    productivityScore?: number;
+    consistencyScore?: number;
+    averageCompletionTime?: number;
+    featureUsage?: Record<string, number>;
+    trends?: {
+      sessionDurationTrend?: number;
+      productivityTrend?: number;
+      consistencyTrend?: number;
+    };
+    recentAchievements?: any[];
+  },
+  sessionCount?: number
+) => {
+  // Get top 3 most used features
+  const topFeatures = analyticsData?.featureUsage
+    ? Object.entries(analyticsData.featureUsage)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 3)
+        .map(([feature]) => feature)
+    : [];
+
+  setUserAnalyticsProperties({
+    // User profile data
+    currentStreak: userData.currentStreak,
+    totalTasksCompleted: userData.completedTasksCount,
+    rewardPoints: userData.rewardPoints,
+    notifyReminders: userData.notifyReminders,
+    notifyAchievements: userData.notifyAchievements,
+    createdAt: userData.createdAt,
+    
+    // Analytics data
+    sessionDuration: analyticsData?.sessionDuration,
+    pageViews: analyticsData?.pageViews,
+    activeTime: analyticsData?.activeTime,
+    productivityScore: analyticsData?.productivityScore,
+    consistencyScore: analyticsData?.consistencyScore,
+    averageCompletionTime: analyticsData?.averageCompletionTime,
+    
+    // Session data
+    totalSessions: sessionCount,
+    averageSessionDuration: analyticsData?.sessionDuration,
+    
+    // Trends
+    sessionDurationTrend: analyticsData?.trends?.sessionDurationTrend,
+    productivityTrend: analyticsData?.trends?.productivityTrend,
+    consistencyTrend: analyticsData?.trends?.consistencyTrend,
+    
+    // Feature usage
+    topFeatures,
+    
+    // Achievement data
+    totalAchievements: userData.achievements?.length || 0,
+    recentAchievementCount: analyticsData?.recentAchievements?.length || 0,
+  });
 };

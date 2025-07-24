@@ -106,6 +106,13 @@ export interface AnalyticsData {
   consistencyScore: number;
   productivityScore: number;
 
+  // Trend data (percentage change from previous period)
+  trends: {
+    sessionDurationTrend: number;
+    productivityTrend: number;
+    consistencyTrend: number;
+  };
+
   // Achievement analytics
   recentAchievements: Achievement[];
   achievementsByType: Record<string, number>;
