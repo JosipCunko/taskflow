@@ -47,13 +47,6 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
     return <AnalyticsErrorState onRetry={fetchAnalyticsData} />;
   }
 
-  const formatHour = (hour: number): string => {
-    if (hour === 0) return "12 AM";
-    if (hour === 12) return "12 PM";
-    if (hour < 12) return `${hour} AM`;
-    return `${hour - 12} PM`;
-  };
-
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -80,7 +73,7 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
         />
         <AnalyticsCard
           title="Most Productive Hour"
-          value={formatHour(analyticsData.mostProductiveHour)}
+          value={`${analyticsData.mostProductiveHour}`}
           icon={<Clock className="text-purple-400" size={24} />}
           subtitle="Peak completion time"
           trend={null}

@@ -4,11 +4,6 @@ caching - buggy unstable_cache to getTasksByUserId
 
 sometimes i get task.dueDate.getHours is not a function
 
-trend in analyticsdashboard
+pageViews are not correctly updated. Page views can be a total of 7 (dashboard, calendar, tasks, today, inbox, profile and notes), but it updates on every session update
 
-// Maybe combine AnalyticsData and SessionData, currently using existing stats fetched from getUserById
-
-- `mostProductiveHour`: Most active hours
-- `averageSessionDuration`: User engagement level
-- `featuresUsed`: Count of different features accessed
-- `achievementCount`: Total achievements unlocked
+userBeahvior collection is maybe unnecassary

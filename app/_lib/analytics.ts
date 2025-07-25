@@ -13,32 +13,6 @@ export const trackTaskEvent = (
   logEvent(analytics, eventType, data);
 };
 
-/**
- * Track feature usage via API route
- * @param userId - User ID
- * @param feature - Feature name (e.g., 'tasks', 'notes', 'calendar')
- * @param duration - Optional duration in seconds
- */
-export const trackFeatureUsage = async (
-  userId: string,
-  feature: string,
-  duration?: number
-) => {
-  try {
-    await fetch("/api/analytics/feature", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId,
-        feature,
-        duration: duration || 0,
-      }),
-    });
-  } catch (error) {
-    console.error("Error tracking feature usage:", error);
-  }
-};
-
 /** 
  - Logs achievement_unlocked event to Firebase Analytics with an achievementId and unlockedAt
  - Firebase Analytics automatically associates events with the current user session, so userId attached to the log is unnecessary**
