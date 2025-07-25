@@ -2,7 +2,11 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { setUserAnalyticsProperties, trackAppOpen, trackPageView } from "@/app/_lib/analytics";
+import {
+  setUserAnalyticsProperties,
+  trackAppOpen,
+  trackPageView,
+} from "@/app/_lib/analytics";
 import { AppUser } from "../_types/types";
 
 // Api routes are a bridge for the functions for analytics-admin.ts
@@ -55,14 +59,20 @@ export default function AnalyticsTracker({
       }
 
       // Track app open in Firebase Analytics
+      // Track app open in Firebase Analytics
       trackAppOpen();
-      
+
       const feature = getFeatureFromPath(pathname);
       currentFeature.current = feature;
-      
+
       // Track initial page view in Firebase Analytics
       trackPageView(feature, pathname);
-      
+
+      currentFeature.current = feature;
+
+      // Track initial page view in Firebase Analytics
+      trackPageView(feature, pathname);
+
       const data = await postToServer("session/start", {
         userId: userData.uid,
         pageTitle: feature,
@@ -72,15 +82,7 @@ export default function AnalyticsTracker({
         sessionIdRef.current = data.sessionId;
         sessionStorage.setItem("sessionId", data.sessionId);
       }
-      
-      // Track initial feature usage
-      await postToServer("feature", {
-        userId: userData.uid,
-        feature: feature,
-        duration: 0, // Initial load
-      });
     };
-    
     const updateUserProperties = async () => {
       try {
         setUserAnalyticsProperties({
@@ -101,8 +103,10 @@ export default function AnalyticsTracker({
     const endSession = () => {
       if (sessionIdRef.current) {
         // Calculate time spent on current page before ending session
-        const timeSpentOnPage = Math.round((Date.now() - pageStartTime.current) / 1000);
-        
+        const timeSpentOnPage = Math.round(
+          (Date.now() - pageStartTime.current) / 1000
+        );
+
         // Track final feature usage before ending session
         if (currentFeature.current && timeSpentOnPage > 0) {
           postToServer("feature", {
@@ -124,8 +128,10 @@ export default function AnalyticsTracker({
     const handleVisibilityChange = () => {
       if (document.visibilityState === "hidden") {
         // Calculate time spent before hiding
-        const timeSpentOnPage = Math.round((Date.now() - pageStartTime.current) / 1000);
-        
+        const timeSpentOnPage = Math.round(
+          (Date.now() - pageStartTime.current) / 1000
+        );
+
         if (sessionIdRef.current && timeSpentOnPage > 0) {
           // Update session with time spent
           postToServer("session/update", {
@@ -133,7 +139,7 @@ export default function AnalyticsTracker({
             pageTitle: currentFeature.current,
             timeSpent: timeSpentOnPage,
           });
-          
+
           // Track feature usage
           postToServer("feature", {
             userId: userData.uid,
@@ -141,14 +147,20 @@ export default function AnalyticsTracker({
             duration: timeSpentOnPage,
           });
         }
-        
+
         endSession();
       } else {
         // Reset timers when page becomes visible again
+        // Reset timers when page becomes visible again
         lastActivityTime.current = Date.now();
+        pageStartTime.current = Date.now();
         pageStartTime.current = Date.now();
       }
     };
+
+    // Reset page start time for initial load
+    pageStartTime.current = Date.now();
+    lastActivityTime.current = Date.now();
 
     // Reset page start time for initial load
     pageStartTime.current = Date.now();
@@ -167,14 +179,17 @@ export default function AnalyticsTracker({
   }, [userData?.uid]); // Removed pathname from dependency to avoid restart on route change
 
   // Handle pathname changes separately to properly track page transitions
+  // Handle pathname changes separately to properly track page transitions
   useEffect(() => {
     if (!userData?.uid || !sessionIdRef.current) return;
 
     const newFeature = getFeatureFromPath(pathname);
-    
+
     // Calculate time spent on previous page
-    const timeSpentOnPreviousPage = Math.round((Date.now() - pageStartTime.current) / 1000);
-    
+    const timeSpentOnPreviousPage = Math.round(
+      (Date.now() - pageStartTime.current) / 1000
+    );
+
     // Track feature usage for previous page if we spent meaningful time there
     if (currentFeature.current && timeSpentOnPreviousPage > 1) {
       postToServer("feature", {
@@ -192,15 +207,14 @@ export default function AnalyticsTracker({
         timeSpent: timeSpentOnPreviousPage,
       });
     }
-    
+
     // Track new page view in Firebase Analytics
     trackPageView(newFeature, pathname);
-    
+
     // Update current feature and reset timers
     currentFeature.current = newFeature;
     pageStartTime.current = Date.now();
     lastActivityTime.current = Date.now();
-    
   }, [pathname, userData?.uid]);
 
   return null;

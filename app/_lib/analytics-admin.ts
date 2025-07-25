@@ -150,7 +150,6 @@ export const trackFeatureUsage = async (
   try {
     const behaviorData: UserBehaviorData = {
       userId,
-      date: new Date(),
       featureUsed: feature,
       duration,
       timestamp: new Date(),
@@ -321,6 +320,20 @@ export const getAnalyticsData = async (
           )
         : 0;
 
+    // Calculate most productive hour (hour when most tasks are completed)
+    const completedTasksWithHour = taskAnalytics.filter(
+      (task) => task.action === "task_completed" && task.hour !== undefined
+    );
+
+    const hourCounts = Array.from({ length: 24 }, () => 0);
+    completedTasksWithHour.forEach((task) => {
+      if (task.hour !== undefined) {
+        hourCounts[task.hour]++;
+      }
+    });
+
+    const mostProductiveHour = hourCounts.indexOf(Math.max(...hourCounts));
+
     // Process user behavior data for feature usage
     const behaviorData: UserBehaviorData[] = behaviorSnapshot.docs.map(
       (doc) => {
@@ -458,6 +471,7 @@ export const getAnalyticsData = async (
       dailyTaskCompletions,
       weeklyTaskTrends,
       averageCompletionTime: avgCompletionTime,
+      mostProductiveHour,
       pointsGrowth,
       featureUsage: defaultFeatureUsage,
       completionRateHistory,

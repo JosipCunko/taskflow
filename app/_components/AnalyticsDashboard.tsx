@@ -9,6 +9,7 @@ import {
   Activity,
   Zap,
   Award,
+  Clock,
 } from "lucide-react";
 import { AnalyticsData, AppUser } from "../_types/types";
 import { getAnalyticsDataAction } from "../_lib/actions";
@@ -69,6 +70,13 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
           icon={<Zap className="text-yellow-400" size={24} />}
           subtitle="Daily engagement level"
           trend={8}
+        />
+        <AnalyticsCard
+          title="Most Productive Hour"
+          value={`${analyticsData.mostProductiveHour}`}
+          icon={<Clock className="text-purple-400" size={24} />}
+          subtitle="Peak completion time"
+          trend={null}
         />
       </div>
 
@@ -268,7 +276,7 @@ interface AnalyticsCardProps {
   value: string;
   icon: React.ReactNode;
   subtitle: string;
-  trend: number;
+  trend: number | null;
 }
 
 function AnalyticsCard({
@@ -287,7 +295,7 @@ function AnalyticsCard({
       <p className="text-2xl font-bold text-text-high">{value}</p>
       <div className="flex items-center justify-between mt-2">
         <p className="text-sm text-text-low">{subtitle}</p>
-        {trend !== 0 && (
+        {trend !== null && trend !== 0 && (
           <span
             className={`text-xs px-2 py-1 rounded-full ${
               trend > 0

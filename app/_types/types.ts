@@ -96,6 +96,7 @@ export interface AnalyticsData {
   dailyTaskCompletions: number[];
   weeklyTaskTrends: number[];
   averageCompletionTime: number;
+  mostProductiveHour: number;
 
   // User behavior
   pointsGrowth: number[];
@@ -140,7 +141,6 @@ export type TaskEventType =
 
 export interface UserBehaviorData {
   userId: string;
-  date: Date;
   featureUsed: string;
   duration: number; // time spent in seconds
   timestamp: Date;
