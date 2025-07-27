@@ -3,15 +3,21 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const { sessionId } = await req.json();
+    const { sessionId, timeSpent } = await req.json();
     if (!sessionId) {
-      return new NextResponse("Missing sessionId", { status: 400 });
+      return NextResponse.json({ error: "Missing sessionId" }, { status: 400 });
     }
 
-    await endUserSession(sessionId);
-    return new NextResponse("Session ended", { status: 200 });
+    await endUserSession(sessionId, timeSpent);
+    return NextResponse.json(
+      { success: true, message: "Session ended" },
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error in /api/analytics/session/end:", error);
-    return new NextResponse("Internal Server Error", { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }

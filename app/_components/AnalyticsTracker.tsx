@@ -2,15 +2,11 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import {
-  setUserAnalyticsProperties,
-  trackAppOpen,
-  trackPageView,
-} from "@/app/_lib/analytics";
-import { AppUser } from "../_types/types";
+import { trackAppOpen, setUserAnalyticsProperties } from "@/app/_lib/analytics";
+import { AppUser, AnalyticsData } from "../_types/types";
 
 // Api routes are a bridge for the functions for analytics-admin.ts
-async function postToServer(endpoint: string, data: object) {
+async function postToAnalyticsRoute(endpoint: string, data: object) {
   try {
     const response = await fetch(`/api/analytics/${endpoint}`, {
       method: "POST",
@@ -28,13 +24,13 @@ async function postToServer(endpoint: string, data: object) {
 }
 
 function getFeatureFromPath(pathname: string): string {
-  if (pathname.includes("/tasks")) return "tasks";
-  if (pathname.includes("/calendar")) return "calendar";
-  if (pathname.includes("/notes")) return "notes";
   if (pathname.includes("/inbox")) return "inbox";
-  if (pathname.includes("/profile")) return "profile";
-  if (pathname.includes("/webapp")) return "dashboard";
-  return "app";
+  else if (pathname.includes("/calendar")) return "calendar";
+  else if (pathname.includes("/tasks")) return "tasks";
+  else if (pathname.includes("/today")) return "today";
+  else if (pathname.includes("/notes")) return "notes";
+  else if (pathname.includes("/profile")) return "profile";
+  else return "dashboard";
 }
 
 export default function AnalyticsTracker({
@@ -45,35 +41,21 @@ export default function AnalyticsTracker({
   const pathname = usePathname();
   const lastActivityTime = useRef(Date.now());
   const sessionIdRef = useRef<string | null>(null);
-  const pageStartTime = useRef(Date.now());
-  const currentFeature = useRef<string>("");
 
   useEffect(() => {
     if (!userData?.uid) return;
 
-    const startSession = async () => {
+    const startOrLoadSession = async () => {
       const storedSessionId = sessionStorage.getItem("sessionId");
       if (storedSessionId) {
         sessionIdRef.current = storedSessionId;
         return;
       }
 
-      // Track app open in Firebase Analytics
-      // Track app open in Firebase Analytics
       trackAppOpen();
-
       const feature = getFeatureFromPath(pathname);
-      currentFeature.current = feature;
-
-      // Track initial page view in Firebase Analytics
-      trackPageView(feature, pathname);
-
-      currentFeature.current = feature;
-
-      // Track initial page view in Firebase Analytics
-      trackPageView(feature, pathname);
-
-      const data = await postToServer("session/start", {
+      // Call startUserSession from an api route
+      const data = await postToAnalyticsRoute("session/start", {
         userId: userData.uid,
         pageTitle: feature,
       });
@@ -83,139 +65,94 @@ export default function AnalyticsTracker({
         sessionStorage.setItem("sessionId", data.sessionId);
       }
     };
+
     const updateUserProperties = async () => {
       try {
-        setUserAnalyticsProperties({
-          currentStreak: userData.currentStreak,
-          totalTasksCompleted: userData.completedTasksCount,
-          rewardPoints: userData.rewardPoints,
-          notifyReminders: userData.notifyReminders,
-          notifyAchievements: userData.notifyAchievements,
-          notificationsEnabled:
-            userData.notifyReminders || userData.notifyAchievements,
-          lastLoginAt: new Date(),
-        });
+        const analyticsResponse = await fetch("/api/analytics/data");
+        let analyticsData: AnalyticsData | null = null;
+        let sessionsCount = 0;
+
+        if (analyticsResponse.ok) {
+          const result = await analyticsResponse.json();
+          analyticsData = result.analyticsData;
+          sessionsCount = result.sessionsCount || 0;
+        }
+
+        // Use the enhanced function that combines user data and analytics data
+        setUserAnalyticsProperties(
+          userData,
+          analyticsData || undefined,
+          sessionsCount
+        );
       } catch (error) {
         console.error("Error setting user analytics properties:", error);
+        // Fallback to basic user properties if analytics fetch fails
+        setUserAnalyticsProperties(userData);
       }
     };
 
     const endSession = () => {
       if (sessionIdRef.current) {
-        // Calculate time spent on current page before ending session
-        const timeSpentOnPage = Math.round(
-          (Date.now() - pageStartTime.current) / 1000
+        const timeSpent = Math.round(
+          (Date.now() - lastActivityTime.current) / 1000
         );
-
-        // Track final feature usage before ending session
-        if (currentFeature.current && timeSpentOnPage > 0) {
-          postToServer("feature", {
-            userId: userData.uid,
-            feature: currentFeature.current,
-            duration: timeSpentOnPage,
-          });
-        }
 
         const payload = JSON.stringify({
           sessionId: sessionIdRef.current,
+          timeSpent,
         });
 
+        // async sends post req to a web server, intended for sending analytics
+        // cals endUserSession
         navigator.sendBeacon("/api/analytics/session/end", payload);
         sessionStorage.removeItem("sessionId");
+        sessionIdRef.current = null;
       }
     };
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") {
-        // Calculate time spent before hiding
-        const timeSpentOnPage = Math.round(
-          (Date.now() - pageStartTime.current) / 1000
-        );
-
-        if (sessionIdRef.current && timeSpentOnPage > 0) {
-          // Update session with time spent
-          postToServer("session/update", {
-            sessionId: sessionIdRef.current,
-            pageTitle: currentFeature.current,
-            timeSpent: timeSpentOnPage,
-          });
-
-          // Track feature usage
-          postToServer("feature", {
-            userId: userData.uid,
-            feature: currentFeature.current,
-            duration: timeSpentOnPage,
-          });
-        }
-
-        endSession();
-      } else {
-        // Reset timers when page becomes visible again
-        // Reset timers when page becomes visible again
+      if (document.visibilityState === "visible") {
         lastActivityTime.current = Date.now();
-        pageStartTime.current = Date.now();
-        pageStartTime.current = Date.now();
       }
     };
 
-    // Reset page start time for initial load
-    pageStartTime.current = Date.now();
-    lastActivityTime.current = Date.now();
-
-    // Reset page start time for initial load
-    pageStartTime.current = Date.now();
-    lastActivityTime.current = Date.now();
-
-    startSession();
+    startOrLoadSession();
     updateUserProperties();
 
+    // Only end session on actual page unload (browser/app close)
     window.addEventListener("beforeunload", endSession);
+    // Switches or closes tab, minimizes or closes the browser, or on mobile swithces to a diff app
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       window.removeEventListener("beforeunload", endSession);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [userData?.uid]); // Removed pathname from dependency to avoid restart on route change
+  }, [userData?.uid, pathname]);
 
-  // Handle pathname changes separately to properly track page transitions
-  // Handle pathname changes separately to properly track page transitions
   useEffect(() => {
-    if (!userData?.uid || !sessionIdRef.current) return;
+    async function updateOnPathChange() {
+      if (!sessionIdRef.current) return;
 
-    const newFeature = getFeatureFromPath(pathname);
-
-    // Calculate time spent on previous page
-    const timeSpentOnPreviousPage = Math.round(
-      (Date.now() - pageStartTime.current) / 1000
-    );
-
-    // Track feature usage for previous page if we spent meaningful time there
-    if (currentFeature.current && timeSpentOnPreviousPage > 1) {
-      postToServer("feature", {
-        userId: userData.uid,
-        feature: currentFeature.current,
-        duration: timeSpentOnPreviousPage,
-      });
-    }
-
-    // Update session with page transition
-    if (timeSpentOnPreviousPage > 0) {
-      postToServer("session/update", {
+      const timeSpent = Math.round(
+        (Date.now() - lastActivityTime.current) / 1000
+      );
+      // cals updateUserSession with these properties from an api route
+      // Update session with time spent on previous page and new page visit
+      await postToAnalyticsRoute("session/update", {
         sessionId: sessionIdRef.current,
-        pageTitle: newFeature,
-        timeSpent: timeSpentOnPreviousPage,
+        pageTitle: getFeatureFromPath(pathname),
+        //Increments activeTime
+        timeSpent,
       });
+
+      lastActivityTime.current = Date.now();
     }
 
-    // Track new page view in Firebase Analytics
-    trackPageView(newFeature, pathname);
-
-    // Update current feature and reset timers
-    currentFeature.current = newFeature;
-    pageStartTime.current = Date.now();
-    lastActivityTime.current = Date.now();
-  }, [pathname, userData?.uid]);
+    if (sessionIdRef.current) {
+      updateOnPathChange();
+    }
+  }, [pathname]);
 
   return null;
 }

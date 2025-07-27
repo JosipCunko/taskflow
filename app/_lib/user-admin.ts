@@ -114,14 +114,19 @@ export async function updateUserCompletionStats(
       if (!userDoc.exists) throw new Error("User not found");
 
       const userData = userDoc.data();
-      const currentGainedPoints = userData?.gainedPoints || [];
-      const currentRewardPoints = userData?.rewardPoints || 0;
+      const lastLogin = userData?.lastLoginAt?.toDate() || new Date();
+      const isNewDay = new Date().getDate() !== lastLogin.getDate();
+
+      const gainedPoints: number[] = userData?.gainedPoints || [
+        0, 0, 0, 0, 0, 0, 0,
+      ];
 
       // Always increment completed tasks count regardless of points
       const updates: {
         completedTasksCount: FieldValue;
         rewardPoints?: FieldValue;
         gainedPoints?: number[];
+        lastLoginAt?: Date;
       } = {
         completedTasksCount: FieldValue.increment(1),
       };
@@ -129,14 +134,17 @@ export async function updateUserCompletionStats(
       // Only update points if there are points to add
       if (pointsDiff !== 0) {
         updates.rewardPoints = FieldValue.increment(pointsDiff);
+        updates.lastLoginAt = new Date();
 
-        // Update gainedPoints array - maintain max length of 7
-        const newTotalPoints = currentRewardPoints + pointsDiff;
-        let updatedGainedPoints = [...currentGainedPoints, newTotalPoints];
-        if (updatedGainedPoints.length > 7) {
-          updatedGainedPoints = updatedGainedPoints.slice(-7); // Keep only last 7 entries
+        if (isNewDay) {
+          // Shift array to the left and add a new day
+          gainedPoints.shift();
+          gainedPoints.push(pointsDiff);
+        } else {
+          // Add points to the current day (last element)
+          gainedPoints[gainedPoints.length - 1] += pointsDiff;
         }
-        updates.gainedPoints = updatedGainedPoints;
+        updates.gainedPoints = gainedPoints;
       }
 
       transaction.update(userDocRef, updates);

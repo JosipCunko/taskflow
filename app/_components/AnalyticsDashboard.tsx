@@ -3,23 +3,60 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 import {
   BarChart3,
-  TrendingUp,
   Target,
   Eye,
   Activity,
   Zap,
   Award,
-  Clock,
+  TrendingUp,
 } from "lucide-react";
 import { AnalyticsData, AppUser } from "../_types/types";
 import { getAnalyticsDataAction } from "../_lib/actions";
-import { formatDateTime } from "../_utils/utils";
+import { formatDateTime, formatDuration, formatHour } from "../_utils/utils";
+import { format, subDays, isToday } from "date-fns";
+import { Tooltip } from "react-tooltip";
+
+interface DayData {
+  date: Date;
+  dayNumber: number;
+  dayName: string;
+  tasksCompleted: number;
+  isToday: boolean;
+}
+
+const WeeklyCompletionsChart = ({ data }: { data: number[] }) => {
+  const maxVal = Math.max(...data, 1); // Avoid division by zero
+  return (
+    <div className="bg-background-700 rounded-lg p-6">
+      <h3 className="text-lg font-semibold text-text-high mb-4 flex items-center">
+        <TrendingUp className="w-5 h-5 mr-2 text-purple-400" />
+        Weekly Completions
+      </h3>
+      <div className="flex justify-between items-end h-32 space-x-2">
+        {data.map((value, index) => (
+          <div key={index} className="flex-1 flex flex-col items-center">
+            <div
+              className="w-full bg-purple-400/50 rounded-t-md"
+              style={{
+                height: `${(value / maxVal) * 100}%`,
+                transition: "height 0.5s ease-in-out",
+              }}
+            ></div>
+            <span className="text-xs text-text-low mt-2">Week {index + 1}</span>
+            <span className="text-sm font-bold text-text-high">{value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 export default function AnalyticsDashboard({ user }: { user: AppUser }) {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(
     null
   );
   const [isLoading, startTransition] = useTransition();
+  const today = new Date();
 
   const fetchAnalyticsData = useCallback(async () => {
     try {
@@ -47,39 +84,55 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
     return <AnalyticsErrorState onRetry={fetchAnalyticsData} />;
   }
 
+  const days: DayData[] = [];
+
+  for (let i = 13; i >= 0; i--) {
+    const date = subDays(today, i);
+    const tasksCompleted = analyticsData.dailyTaskCompletions[13 - i] || 0;
+
+    days.push({
+      date,
+      dayNumber: date.getDate(),
+      dayName: format(date, "EEE"),
+      tasksCompleted,
+      isToday: isToday(date),
+    });
+  }
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <AnalyticsCard
-          title="App Usage"
-          value={`${Math.round(analyticsData.sessionDuration / 60)}m`}
+          title="Total Session Duration"
+          value={formatDuration(analyticsData.sessionDuration)}
           icon={<Activity className="text-blue-400" size={24} />}
           subtitle={`${analyticsData.pageViews} page views`}
-          trend={12}
+          trend={analyticsData.trends.sessionDurationTrend}
+        />
+        <AnalyticsCard
+          title="Active Time"
+          value={formatDuration(analyticsData.activeTime)}
+          icon={<Zap className="text-teal-400" size={24} />}
+          subtitle="Focused engagement"
+          trend={
+            analyticsData.trends.sessionDurationTrend
+          } /* Trend for active time can be similar to session duration */
         />
         <AnalyticsCard
           title="Productivity Score"
           value={`${analyticsData.productivityScore}%`}
           icon={<Target className="text-green-400" size={24} />}
           subtitle="Based on completion patterns"
-          trend={5}
+          trend={analyticsData.trends.productivityTrend}
         />
         <AnalyticsCard
           title="Consistency Score"
           value={`${analyticsData.consistencyScore}%`}
           icon={<Zap className="text-yellow-400" size={24} />}
           subtitle="Daily engagement level"
-          trend={8}
-        />
-        <AnalyticsCard
-          title="Most Productive Hour"
-          value={`${analyticsData.mostProductiveHour}`}
-          icon={<Clock className="text-purple-400" size={24} />}
-          subtitle="Peak completion time"
-          trend={null}
+          trend={analyticsData.trends.consistencyTrend}
         />
       </div>
-
       <div className="bg-background-700 rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-text-high flex items-center">
@@ -89,8 +142,10 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
           <span className="text-sm text-text-low">Last 30 days</span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {Object.entries(analyticsData.featureUsage).map(
-            ([feature, usage]) => (
+          {Object.entries(analyticsData.pagesVisited)
+            .filter(([, usage]) => usage > 0)
+            .sort(([, a], [, b]) => b - a)
+            .map(([feature, usage]) => (
               <div key={feature} className="text-center">
                 <div className="text-2xl font-bold text-primary-400">
                   {usage}
@@ -105,7 +160,9 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
                       width: `${
                         (usage /
                           Math.max(
-                            ...Object.values(analyticsData.featureUsage)
+                            ...Object.values(analyticsData.pagesVisited).filter(
+                              (v) => v > 0
+                            )
                           )) *
                         100
                       }%`,
@@ -113,38 +170,13 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
                   />
                 </div>
               </div>
-            )
-          )}
+            ))}
         </div>
       </div>
+      <WeeklyCompletionsChart data={analyticsData.weeklyTaskCompletions} />
 
       {/* Performance Trends */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-background-700 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-text-high mb-4 flex items-center">
-            <TrendingUp className="w-5 h-5 mr-2 text-green-400" />
-            Completion Rate Trend
-          </h3>
-          <div className="space-y-3">
-            {analyticsData.completionRateHistory.map((rate, index) => (
-              <div key={index} className="flex items-center justify-between">
-                <span className="text-sm text-text-low">Day {index + 1}</span>
-                <div className="flex items-center space-x-2">
-                  <div className="w-20 bg-background-600 rounded-full h-2">
-                    <div
-                      className="bg-success h-2 rounded-full transition-all duration-500"
-                      style={{ width: `${rate}%` }}
-                    />
-                  </div>
-                  <span className="text-sm font-medium text-success">
-                    {rate}%
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
         <div className="bg-background-700 rounded-lg p-6">
           <h3 className="text-lg font-semibold text-text-high mb-4 flex items-center">
             <Award className="w-5 h-5 mr-2 text-accent" />
@@ -180,7 +212,6 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
           </div>
         </div>
       </div>
-
       {/* Achievement Analytics */}
       <div className="bg-background-700 rounded-lg p-6 relative">
         <h3 className="text-lg font-semibold text-text-high mb-4 flex items-center">
@@ -221,13 +252,13 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
             <div className="absolute top-2 right-2 flex items-center gap-2 ">
               Total:
               <span>
-                🔥 {analyticsData.achievementsByType.streak_milestone}
+                🔥 {analyticsData.achievementsByType.streak_milestone || 0}
               </span>
               <span>
-                🏆 {analyticsData.achievementsByType.streak_milestone}
+                🏆 {analyticsData.achievementsByType.points_milestone || 0}
               </span>
               <span>
-                ✅ {analyticsData.achievementsByType.streak_milestone}
+                ✅ {analyticsData.achievementsByType.task_completionist || 0}
               </span>
             </div>
           </>
@@ -235,7 +266,6 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
           <p className="text-text-low text-sm">No recent achievements</p>
         )}
       </div>
-
       {/* Quick Insights */}
       <div className="bg-background-700 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-text-high mb-4 flex items-center">
@@ -246,37 +276,113 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
           <InsightCard
             title="Best Day"
             value={`${Math.max(...analyticsData.dailyTaskCompletions)} tasks`}
-            description="Your highest completion day this week"
+            description="Your highest completion day in the last 14 days"
             icon="🏆"
           />
           <InsightCard
-            title="Avg. Session"
-            value={`${Math.round(analyticsData.sessionDuration / 60)}min`}
-            description="Time spent in app per session"
+            title="Productive Hour"
+            value={formatHour(analyticsData.mostProductiveHour)}
+            description="Best time to focus"
+            icon="💡"
+          />
+          <InsightCard
+            title="Avg. Completion"
+            value={formatDuration(analyticsData.averageCompletionTime)}
+            description="From creation to completion"
             icon="⏱️"
           />
           <InsightCard
             title="Weekly Growth"
             value={`+${
-              analyticsData.weeklyTaskTrends[
-                analyticsData.weeklyTaskTrends.length - 1
-              ] - analyticsData.weeklyTaskTrends[0]
+              analyticsData.weeklyTaskCompletions[
+                analyticsData.weeklyTaskCompletions.length - 1
+              ] - analyticsData.weeklyTaskCompletions[0]
             }`}
             description="Tasks improvement this month"
             icon="📈"
           />
         </div>
       </div>
+      <div className="bg-background-700 rounded-lg p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-semibold text-text-low">
+            14-Day Overview
+          </h2>
+          <div className="text-right tooltip-container">
+            <div className="text-sm text-text-gray">Current Streak</div>
+            <span
+              className="text-lg font-bold text-primary"
+              data-tooltip-id="current-streak-tooltip"
+              data-tooltip-content="Streak is preserved if you were logged in for that day"
+            >
+              {user.currentStreak} day{user.currentStreak !== 1 ? "s" : ""}
+            </span>
+            <Tooltip
+              id="current-streak-tooltip"
+              className="tooltip-diff-arrow"
+              classNameArrow="tooltip-arrow"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-7 gap-3 mb-3">
+          {days.map((day, index) => (
+            <DayBox key={index} day={day} />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
+function DayBox({ day }: { day: DayData }) {
+  const hasCompletedTasks = day.tasksCompleted > 0;
 
+  return (
+    <div
+      className={`
+        relative rounded-lg p-3 text-center min-h-[80px] flex flex-col justify-between
+        ${
+          hasCompletedTasks
+            ? "bg-green-500/10 border border-green-500/30"
+            : "bg-background-600 border border-background-500"
+        }
+        ${day.isToday ? "ring-2 ring-blue-400/50" : ""}
+        transition-all duration-200 hover:bg-opacity-80
+      `}
+    >
+      <div className="text-xs text-text-gray font-medium mb-1">
+        {day.dayName}
+      </div>
+
+      <div
+        className={`
+          text-xl font-bold mb-1
+          ${hasCompletedTasks ? "text-green-400" : "text-text-low"}
+        `}
+      >
+        {day.dayNumber}
+      </div>
+
+      {hasCompletedTasks && (
+        <div className="text-xs text-green-400 font-medium leading-tight">
+          {day.tasksCompleted} task{day.tasksCompleted !== 1 ? "s" : ""}
+          <br />
+          completed
+        </div>
+      )}
+
+      {day.isToday && (
+        <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-400 rounded-full"></div>
+      )}
+    </div>
+  );
+}
 interface AnalyticsCardProps {
   title: string;
   value: string;
   icon: React.ReactNode;
   subtitle: string;
-  trend: number | null;
+  trend: number;
 }
 
 function AnalyticsCard({
@@ -295,7 +401,7 @@ function AnalyticsCard({
       <p className="text-2xl font-bold text-text-high">{value}</p>
       <div className="flex items-center justify-between mt-2">
         <p className="text-sm text-text-low">{subtitle}</p>
-        {trend !== null && trend !== 0 && (
+        {trend !== 0 && (
           <span
             className={`text-xs px-2 py-1 rounded-full ${
               trend > 0

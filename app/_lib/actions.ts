@@ -86,14 +86,20 @@ export async function completeTaskAction(
       if (!userDoc.exists) throw new Error("User not found");
 
       const userData = userDoc.data();
-      const currentGainedPoints = userData?.gainedPoints || [];
-      const currentRewardPoints = userData?.rewardPoints || 0;
-      const newTotalPoints = currentRewardPoints + task.points;
+      const lastLogin = userData?.lastLoginAt?.toDate() || new Date();
+      const isNewDay = new Date().getDate() !== lastLogin.getDate();
 
-      // Update gainedPoints array - maintain max length of 7
-      let updatedGainedPoints = [...currentGainedPoints, newTotalPoints];
-      if (updatedGainedPoints.length > 7) {
-        updatedGainedPoints = updatedGainedPoints.slice(-7); // Keep only last 7 entries
+      const gainedPoints: number[] = userData?.gainedPoints || [
+        0, 0, 0, 0, 0, 0, 0,
+      ];
+
+      if (isNewDay) {
+        // Shift array to the left and add a new day (0 points)
+        gainedPoints.shift();
+        gainedPoints.push(task.points);
+      } else {
+        // Add points to the current day (last element)
+        gainedPoints[gainedPoints.length - 1] += task.points;
       }
 
       transaction.update(taskRef, {
@@ -104,7 +110,8 @@ export async function completeTaskAction(
       transaction.update(userRef, {
         completedTasksCount: FieldValue.increment(1),
         rewardPoints: FieldValue.increment(task.points),
-        gainedPoints: updatedGainedPoints,
+        gainedPoints: gainedPoints,
+        lastLoginAt: new Date(), // Update last login to today
       });
     });
 
@@ -125,14 +132,15 @@ export async function completeTaskAction(
         },
       });
 
-      // Track task completion analytics
       await trackTaskAnalytics(userId, taskId, "task_completed", {
         dueDate: task.dueDate,
+        isReminder: task.isReminder,
         isPriority: task.isPriority,
-        isRepeating: task.isRepeating || false,
+        isRepeating: false,
         createdAt: task.createdAt,
         completedAt: new Date(),
         delayCount: task.delayCount || 0,
+        points: task.points,
       });
     }
 
@@ -240,13 +248,15 @@ export async function delayTaskAction(
         },
       });
 
-      // Track task delay analytics
       await trackTaskAnalytics(userId, taskId, "task_delayed", {
         dueDate: updatedTask.dueDate,
         isPriority: updatedTask.isPriority,
+        isReminder: updatedTask.isReminder,
         isRepeating: updatedTask.isRepeating || false,
+        risk: updatedTask.risk,
         createdAt: updatedTask.createdAt,
         delayCount: updatedTask.delayCount || 0,
+        points: updatedTask.points,
       });
     }
 
@@ -292,12 +302,13 @@ export async function deleteTaskAction(
         activityIcon: "Delete",
       });
 
-      // Track task deletion analytics
       await trackTaskAnalytics(session.user.id, taskId, "task_deleted", {
         dueDate: deletedTask.dueDate,
         isPriority: deletedTask.isPriority,
+        isReminder: deletedTask.isReminder,
         isRepeating: deletedTask.isRepeating || false,
         createdAt: deletedTask.createdAt,
+        points: deletedTask.points,
       });
     }
     revalidatePath("/tasks");
@@ -376,7 +387,7 @@ export async function createTaskAction(
   isRepeating: boolean,
   repetitionRule: RepetitionRule | undefined,
   startDate?: Date
-): Promise<ActionResult> {
+): Promise<ActionResult<Task>> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     throw new Error("User not authenticated");
@@ -408,7 +419,6 @@ export async function createTaskAction(
     newTaskData.repetitionRule = repetitionRule;
   }
 
-  console.log("ACTION: Task to be created:", newTaskData);
   try {
     const createdTask = await createTask(newTaskData);
 
@@ -429,7 +439,7 @@ export async function createTaskAction(
         activityIcon: "CircleCheckBig",
       });
 
-      // Track task creation analytics
+      console.log(createdTask);
       await trackTaskAnalytics(
         session.user.id,
         createdTask.id,
@@ -439,18 +449,27 @@ export async function createTaskAction(
           isPriority: createdTask.isPriority,
           isRepeating: createdTask.isRepeating || false,
           createdAt: createdTask.createdAt,
+          points: createdTask.points,
+          isReminder: createdTask.isReminder,
+          risk: createdTask.risk,
+          delayCount: createdTask.delayCount || 0,
         }
       );
+      return {
+        success: true,
+        message: "Task created successfully",
+        data: createdTask,
+      };
+    } else {
+      console.warn("ACTION: createdTask is null or undefined after creation.");
+      return {
+        success: false,
+        error: "Task creation returned no data.",
+      };
     }
-
-    revalidatePath("/tasks");
-    revalidatePath("/webapp/inbox");
-    return {
-      success: true,
-      message: "Task created successfully",
-    };
   } catch (err) {
     const error = err as ActionError;
+    console.error("ACTION: Error in createTaskAction:", error);
     return {
       success: false,
       error: error.message || "Failed to create a task",
@@ -513,6 +532,18 @@ export async function completeRepeatingTaskWithInterval(
 
     // Check for achievements after task completion
     await checkAndAwardAchievements(session.user.id);
+
+    await trackTaskAnalytics(session.user.id, task.id, "task_completed", {
+      dueDate: task.dueDate,
+      isReminder: task.isReminder,
+      isPriority: task.isPriority,
+      isRepeating: true,
+      createdAt: task.createdAt,
+      completedAt: new Date(),
+      delayCount: task.delayCount || 0,
+      points: task.points,
+      risk: false,
+    });
 
     return {
       success: true,
@@ -597,6 +628,18 @@ export async function completeRepeatingTaskWithTimesPerWeek(
 
     // Check for achievements after task completion
     await checkAndAwardAchievements(session.user.id);
+
+    await trackTaskAnalytics(session.user.id, task.id, "task_completed", {
+      dueDate: task.dueDate,
+      isReminder: task.isReminder,
+      isPriority: task.isPriority,
+      isRepeating: true,
+      createdAt: task.createdAt,
+      completedAt: new Date(),
+      delayCount: task.delayCount || 0,
+      points: task.points,
+      risk: false,
+    });
 
     return {
       success: true,
@@ -683,6 +726,18 @@ export async function completeRepeatingTaskWithDaysOfWeek(
 
     // Check for achievements after task completion
     await checkAndAwardAchievements(session.user.id);
+
+    await trackTaskAnalytics(session.user.id, task.id, "task_completed", {
+      dueDate: task.dueDate,
+      isReminder: task.isReminder,
+      isPriority: task.isPriority,
+      isRepeating: true,
+      createdAt: task.createdAt,
+      completedAt: new Date(),
+      delayCount: task.delayCount || 0,
+      points: task.points,
+      risk: false,
+    });
 
     return {
       success: true,

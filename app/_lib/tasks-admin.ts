@@ -234,6 +234,7 @@ export const updateTask = async (
         new Date(updates.completedAt)
       );
     }
+    updates.risk = isTaskAtRisk(updates as Task);
 
     await taskRef.update(updateData);
     revalidateTag("tasks");

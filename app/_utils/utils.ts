@@ -7,7 +7,6 @@ export function cn(...inputs: ClassValue[]) {
 
 import {
   Home,
-  FileText,
   Inbox,
   Calendar,
   ChartColumn,
@@ -87,26 +86,20 @@ export const navItemsToSearch = [
   {
     icon: ChartColumn,
     label: "Tasks",
-    command: ["Ctrl", "F"],
+    command: ["Ctrl", "U"],
     link: "/webapp/tasks",
   },
   {
     icon: CalendarArrowUp,
     label: "Calendar",
-    command: ["Ctrl", "U"],
+    command: ["Ctrl", "F1"],
     link: "/webapp/calendar",
   },
   {
     icon: Calendar,
     label: "Today",
-    command: ["Ctrl", "F1"],
-    link: "/webapp/today",
-  },
-  {
-    icon: FileText,
-    label: "Notes",
     command: ["Ctrl", "F2"],
-    link: "/webapp/notes",
+    link: "/webapp/today",
   },
 ];
 
@@ -787,3 +780,19 @@ export const calcNextPointsMilestone = (
 
   return { nextMilestone, currentMilestoneColor };
 };
+
+export function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  if (remainingMinutes === 0) return `${hours}h`;
+  return `${hours}h ${remainingMinutes}m`;
+}
+
+export function formatHour(hour: number): string {
+  const ampm = hour >= 12 ? "PM" : "AM";
+  const formattedHour = hour % 12 || 12; // Converts 0 to 12
+  return `${formattedHour} ${ampm}`;
+}

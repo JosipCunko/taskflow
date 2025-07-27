@@ -2,7 +2,12 @@
 //Needs to be client side
 import { logEvent, setUserProperties } from "firebase/analytics";
 import { analytics } from "./firebase";
-import { TaskEventType, TaskAnalytics } from "../_types/types";
+import {
+  TaskEventType,
+  TaskAnalytics,
+  Achievement,
+  AnalyticsData,
+} from "../_types/types";
 
 /** Logs "task_completed" | "task_created" | "task_deleted" | "task_delayed" event to Firebase Analytics with a whole data */
 export const trackTaskEvent = (
@@ -26,29 +31,7 @@ export const trackAchievementUnlocked = (achievementId: string) => {
   });
 };
 
-// It was part of the previous analytics setup. Its functionality has been replaced by the more robust session tracking system we just implemented, which now correctly calculates active time on the server.
-export const trackUserEngagement = (
-  engagementTimeMsec: number,
-  pageTitle?: string
-) => {
-  if (!analytics) return;
-
-  logEvent(analytics, "user_engagement", {
-    engagementTimeMsec,
-    pageTitle,
-  });
-};
-
-// Removed from AnalyticsTracker as part of the new session tracking implementation to avoid duplicate page view events.
-export const trackPageView = (pageTitle: string, pagePath?: string) => {
-  if (!analytics) return;
-
-  logEvent(analytics, "page_view", {
-    pageTitle,
-    pagePath: pagePath || window.location.pathname,
-  });
-};
-
+/**Logs app_open event to Firebase Analytics with a timestamp */
 export const trackAppOpen = () => {
   if (!analytics) return;
 
@@ -57,18 +40,44 @@ export const trackAppOpen = () => {
   });
 };
 
-// Maybe combine AnalyticsData and SessionData
-export const setUserAnalyticsProperties = (properties: {
-  currentStreak?: number;
-  totalTasksCompleted?: number;
-  rewardPoints?: number;
-  notifyReminders?: boolean;
-  notifyAchievements?: boolean;
-  notificationsEnabled?: boolean;
-  lastLoginAt?: Date;
-  createdAt?: Date;
-}) => {
+export const setUserAnalyticsProperties = (
+  userData: {
+    currentStreak: number;
+    bestStreak: number;
+    completedTasksCount: number;
+    rewardPoints: number;
+    createdAt: Date;
+    lastLoginAt?: Date;
+    gainedPoints: number[];
+    achievements: Achievement[];
+  },
+  analyticsData?: AnalyticsData,
+  sessionsCount?: number
+) => {
   if (!analytics) return;
 
-  setUserProperties(analytics, properties);
+  const properties = {
+    currentStreak: userData.currentStreak,
+    bestStreak: userData.bestStreak,
+    completedTasksCount: userData.completedTasksCount,
+    rewardPoints: userData.rewardPoints,
+    createdAt: userData.createdAt,
+    lastLoginAt: userData.lastLoginAt,
+    gainedPoints: userData.gainedPoints,
+    achievements: userData.achievements,
+    ...analyticsData,
+    sessionsCount,
+  };
+
+  const processedProperties = {
+    ...properties,
+    lastLoginAt: properties.lastLoginAt?.getTime
+      ? properties.lastLoginAt.getTime()
+      : properties.lastLoginAt,
+    createdAt: properties.createdAt?.getTime
+      ? properties.createdAt.getTime()
+      : properties.createdAt,
+  };
+
+  setUserProperties(analytics, processedProperties);
 };

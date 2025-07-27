@@ -87,27 +87,28 @@ export interface Achievement {
 }
 
 export interface AnalyticsData {
-  // App usage analytics
   sessionDuration: number;
   pageViews: number;
   activeTime: number;
 
-  // Task analytics
   dailyTaskCompletions: number[];
-  weeklyTaskTrends: number[];
+  weeklyTaskCompletions: number[];
   averageCompletionTime: number;
   mostProductiveHour: number;
 
-  // User behavior
   pointsGrowth: number[];
-  featureUsage: Record<string, number>;
+  pagesVisited: Record<string, number>;
 
   // Performance insights
-  completionRateHistory: number[];
   consistencyScore: number;
   productivityScore: number;
 
-  // Achievement analytics
+  trends: {
+    sessionDurationTrend: number;
+    productivityTrend: number;
+    consistencyTrend: number;
+  };
+
   recentAchievements: Achievement[];
   achievementsByType: Record<string, number>;
 }
@@ -115,9 +116,11 @@ export interface AnalyticsData {
 export interface SessionData {
   userId: string;
   sessionStart: Date;
+  // This calculates the entire timespan from the moment the app is opened to the moment it's closed. This includes any time the app was left idle or was running in a background tab.
   sessionEnd?: Date;
   pageViews: number;
-  activeTime: number; // in seconds
+  // User is actively engaged with the app. It excludes the idle time.
+  activeTime: number;
   pagesVisited: string[];
 }
 
@@ -129,22 +132,18 @@ export interface TaskAnalytics {
   completionTime?: number; // seconds from creation to completion
   dueDate: Date;
   isPriority: boolean;
+  isReminder: boolean;
   isRepeating: boolean;
   delayCount?: number;
+  risk?: boolean;
   hour: number; // hour of day when action occurred
+  points: number;
 }
 export type TaskEventType =
   | "task_completed"
   | "task_created"
   | "task_deleted"
   | "task_delayed";
-
-export interface UserBehaviorData {
-  userId: string;
-  featureUsed: string;
-  duration: number; // time spent in seconds
-  timestamp: Date;
-}
 
 export type DayOfWeek = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 export type TaskToCreateData = Omit<
@@ -214,10 +213,11 @@ export type NotificationType =
   | "SYSTEM";
 export type NotificationPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
-export interface ActionResult {
+export interface ActionResult<T = null> {
   success: boolean;
   message?: string;
   error?: string;
+  data?: T;
 }
 export interface ActionError extends Error {
   message: string;

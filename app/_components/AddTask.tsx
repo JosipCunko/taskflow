@@ -25,7 +25,7 @@ import AnimatedPlaceholderInput from "./reusable/AnimatedPlaceholderInput";
 import Modal, { ModalContext } from "./Modal";
 import { createTaskAction } from "../_lib/actions";
 import TagInput from "./TagInput";
-import { DayOfWeek } from "../_types/types";
+import { DayOfWeek, RepetitionRule, TaskAnalytics } from "../_types/types";
 import SwitchComponent from "./reusable/Switch";
 import { preCreateRepeatingTask } from "../_lib/repeatingTasks";
 import RepetitionRulesModal from "./RepetitionRules";
@@ -34,6 +34,7 @@ import { InputGroup } from "./reusable/InputGroup";
 import { endOfWeek, startOfWeek } from "date-fns";
 import DateInput from "./reusable/DateInput";
 import Location from "./Location";
+import { trackTaskEvent } from "../_lib/analytics";
 
 export type Action = {
   type: string;
@@ -241,6 +242,9 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
           minute: state.startTime[1],
         };
 
+        let firstInstanceDueDate: Date | undefined = baseDueDate;
+        let repetitionRule: RepetitionRule | undefined;
+
         if (state.isRepeating && activeRepetitionType !== "none") {
           let argInterval: number | undefined;
           let argTimesPerWeek: number | undefined;
@@ -259,53 +263,55 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
               break;
           }
 
-          const { dueDate: firstInstanceDueDate, repetitionRule } =
-            preCreateRepeatingTask(
-              argInterval,
-              argTimesPerWeek,
-              argDaysOfWeek,
-              baseDueDate,
-              state.startDate
-            );
-
-          const res = await createTaskAction(
-            formData,
-            state.isPriority,
-            state.isReminder,
-            state.selectedColor,
-            TASK_ICONS.filter((icon) => icon.icon === state.selectedIcon)[0]
-              .label,
-            firstInstanceDueDate as Date,
-            taskTimeObject,
-            state.tags,
-            durationObject,
-            true,
-            repetitionRule,
-            state.startDate
-          );
-          handleToast(res, () => {
-            onCloseModal?.();
-          });
-        } else {
-          const res = await createTaskAction(
-            formData,
-            state.isPriority,
-            state.isReminder,
-            state.selectedColor,
-            TASK_ICONS.filter((icon) => icon.icon === state.selectedIcon)[0]
-              .label,
+          const result = preCreateRepeatingTask(
+            argInterval,
+            argTimesPerWeek,
+            argDaysOfWeek,
             baseDueDate,
-            taskTimeObject,
-            state.tags,
-            durationObject,
-            false,
-            undefined,
             state.startDate
           );
-          handleToast(res, () => {
-            onCloseModal?.();
-          });
+          firstInstanceDueDate = result.dueDate as Date;
+          repetitionRule = result.repetitionRule;
         }
+
+        const res = await createTaskAction(
+          formData,
+          state.isPriority,
+          state.isReminder,
+          state.selectedColor,
+          TASK_ICONS.filter((icon) => icon.icon === state.selectedIcon)[0]
+            .label,
+          firstInstanceDueDate,
+          taskTimeObject,
+          state.tags,
+          durationObject,
+          state.isRepeating,
+          repetitionRule,
+          state.startDate
+        );
+
+        handleToast(res, () => {
+          if (res.success && res.data) {
+            const createdTask = res.data;
+            const analyticsData: TaskAnalytics = {
+              userId: createdTask.userId,
+              taskId: createdTask.id,
+              action: "task_created",
+              timestamp: new Date(),
+              completionTime: undefined,
+              dueDate: new Date(createdTask.dueDate),
+              isPriority: createdTask.isPriority,
+              isReminder: createdTask.isReminder,
+              isRepeating: createdTask.isRepeating || false,
+              delayCount: createdTask.delayCount,
+              risk: createdTask.risk,
+              hour: new Date().getHours(),
+              points: createdTask.points,
+            };
+            trackTaskEvent("task_created", analyticsData);
+          }
+          onCloseModal?.();
+        });
       } catch (err) {
         const error = err as Error;
         console.error("Error in handleSubmit:", error);
