@@ -72,6 +72,8 @@ const initialState = {
   startDate: new Date(),
   location: "",
   wholeDay: true,
+  title: "",
+  description: "",
 };
 
 const reducer = (state: typeof initialState, action: Action) => {
@@ -362,10 +364,12 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
                 type="text"
                 id="title"
                 name="title"
+                value={state.title}
                 isFocused={isTitleFocused}
                 onBlur={(e) => setIsTitleFocused(e.target.value.length > 0)}
-                onChange={() => {
+                onChange={(e) => {
                   setIsTitleFocused(true);
+                  dispatch({ type: "title", payload: e.target.value });
                 }}
                 required
               />
@@ -658,6 +662,10 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
               <textarea
                 placeholder="Description"
                 name="description"
+                value={state.description}
+                onChange={(e) =>
+                  dispatch({ type: "description", payload: e.target.value })
+                }
                 className="w-full min-h-24 max-h-24 px-3 py-2 rounded-md focus-within:outline-none placeholder:text-text-gray resize-none"
               />
             </InputGroup>

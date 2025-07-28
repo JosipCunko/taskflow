@@ -16,41 +16,6 @@ import { formatDateTime, formatDuration, formatHour } from "../_utils/utils";
 import { format, subDays, isToday } from "date-fns";
 import { Tooltip } from "react-tooltip";
 
-interface DayData {
-  date: Date;
-  dayNumber: number;
-  dayName: string;
-  tasksCompleted: number;
-  isToday: boolean;
-}
-
-const WeeklyCompletionsChart = ({ data }: { data: number[] }) => {
-  const maxVal = Math.max(...data, 1); // Avoid division by zero
-  return (
-    <div className="bg-background-700 rounded-lg p-6">
-      <h3 className="text-lg font-semibold text-text-high mb-4 flex items-center">
-        <TrendingUp className="w-5 h-5 mr-2 text-purple-400" />
-        Weekly Completions
-      </h3>
-      <div className="flex justify-between items-end h-32 space-x-2">
-        {data.map((value, index) => (
-          <div key={index} className="flex-1 flex flex-col items-center">
-            <div
-              className="w-full bg-purple-400/50 rounded-t-md"
-              style={{
-                height: `${(value / maxVal) * 100}%`,
-                transition: "height 0.5s ease-in-out",
-              }}
-            ></div>
-            <span className="text-xs text-text-low mt-2">Week {index + 1}</span>
-            <span className="text-sm font-bold text-text-high">{value}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
 export default function AnalyticsDashboard({ user }: { user: AppUser }) {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(
     null
@@ -101,6 +66,7 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
 
   return (
     <div className="space-y-6">
+      <p className="text-text-low">All data is stored for 30 days.</p>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <AnalyticsCard
           title="Total Session Duration"
@@ -114,9 +80,7 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
           value={formatDuration(analyticsData.activeTime)}
           icon={<Zap className="text-teal-400" size={24} />}
           subtitle="Focused engagement"
-          trend={
-            analyticsData.trends.sessionDurationTrend
-          } /* Trend for active time can be similar to session duration */
+          trend={null}
         />
         <AnalyticsCard
           title="Productivity Score"
@@ -334,6 +298,41 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
     </div>
   );
 }
+interface DayData {
+  date: Date;
+  dayNumber: number;
+  dayName: string;
+  tasksCompleted: number;
+  isToday: boolean;
+}
+
+const WeeklyCompletionsChart = ({ data }: { data: number[] }) => {
+  const maxVal = Math.max(...data, 1); // Avoid division by zero
+  return (
+    <div className="bg-background-700 rounded-lg p-6">
+      <h3 className="text-lg font-semibold text-text-high mb-4 flex items-center">
+        <TrendingUp className="w-5 h-5 mr-2 text-purple-400" />
+        Weekly Completions
+      </h3>
+      <div className="flex justify-between items-end h-32 space-x-2">
+        {data.map((value, index) => (
+          <div key={index} className="flex-1 flex flex-col items-center">
+            <div
+              className="w-full bg-purple-400/50 rounded-t-md"
+              style={{
+                height: `${(value / maxVal) * 100}%`,
+                transition: "height 0.5s ease-in-out",
+              }}
+            ></div>
+            <span className="text-xs text-text-low mt-2">Week {index + 1}</span>
+            <span className="text-sm font-bold text-text-high">{value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 function DayBox({ day }: { day: DayData }) {
   const hasCompletedTasks = day.tasksCompleted > 0;
 
@@ -377,13 +376,6 @@ function DayBox({ day }: { day: DayData }) {
     </div>
   );
 }
-interface AnalyticsCardProps {
-  title: string;
-  value: string;
-  icon: React.ReactNode;
-  subtitle: string;
-  trend: number;
-}
 
 function AnalyticsCard({
   title,
@@ -391,7 +383,13 @@ function AnalyticsCard({
   icon,
   subtitle,
   trend,
-}: AnalyticsCardProps) {
+}: {
+  title: string;
+  value: string;
+  icon: React.ReactNode;
+  subtitle: string;
+  trend: number | null;
+}) {
   return (
     <div className="bg-background-700 rounded-lg p-6 hover:bg-background-600 transition-colors duration-200">
       <div className="flex items-center justify-between mb-4">
@@ -399,19 +397,28 @@ function AnalyticsCard({
         {icon}
       </div>
       <p className="text-2xl font-bold text-text-high">{value}</p>
-      <div className="flex items-center justify-between mt-2">
+      <div className="flex items-center justify-between mt-2 tooltip-container">
         <p className="text-sm text-text-low">{subtitle}</p>
-        {trend !== 0 && (
-          <span
-            className={`text-xs px-2 py-1 rounded-full ${
-              trend > 0
-                ? "bg-success/20 text-success"
-                : "bg-error/20 text-error"
-            }`}
-          >
-            {trend > 0 ? "+" : ""}
-            {trend}%
-          </span>
+        {trend != null && trend !== 0 && (
+          <>
+            <span
+              data-tooltip-id="trend-tooltip"
+              data-tooltip-content="Trend is calculated by comparing current period (last 15 days) to previous period (15-30 days ago)"
+              className={`text-xs px-2 py-1 rounded-full ${
+                trend > 0
+                  ? "bg-success/20 text-success"
+                  : "bg-error/20 text-error"
+              }`}
+            >
+              {trend > 0 ? "+" : ""}
+              {trend}%
+            </span>
+            <Tooltip
+              id="trend-tooltip"
+              className="tooltip-diff-arrow"
+              classNameArrow="tooltip-arrow"
+            />
+          </>
         )}
       </div>
     </div>

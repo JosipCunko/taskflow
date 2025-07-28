@@ -200,6 +200,14 @@ export const createTask = async (taskData: TaskToCreateData): Promise<Task> => {
     const createdTask = fromFirestore(
       createdDocSnap as admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData>
     );
+
+    // Calculate and update risk after creation
+    const risk = isTaskAtRisk(createdTask);
+    if (risk !== createdTask.risk) {
+      await docRef.update({ risk });
+      createdTask.risk = risk;
+    }
+
     revalidateTag("tasks");
     return createdTask;
   } catch (error) {

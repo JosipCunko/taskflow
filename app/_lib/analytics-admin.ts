@@ -125,10 +125,14 @@ export const getAnalyticsData = async (
 ): Promise<AnalyticsData | null> => {
   try {
     const now = new Date();
+    // Calculate trends by comparing current period (last 15 days) to previous period (15-30 days ago)
+    const fifteenDaysAgo = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     const sessionsSnapshot = await adminDb
       .collection("userSessions")
       .where("userId", "==", userId)
+      .where("sessionStart", ">=", thirtyDaysAgo)
       .orderBy("sessionStart", "desc")
       .get();
 
@@ -258,7 +262,10 @@ export const getAnalyticsData = async (
         hourCounts[task.hour]++;
       }
     });
-    const mostProductiveHour = hourCounts.indexOf(Math.max(...hourCounts));
+    const mostProductiveHour =
+      completedTasksWithHour.length > 0
+        ? hourCounts.indexOf(Math.max(...hourCounts))
+        : -1; // no data available
 
     // Derive from session pagesVisited data
     const pagesVisited = sessions.reduce((acc, session) => {
@@ -333,10 +340,6 @@ export const getAnalyticsData = async (
       },
       {}
     );
-
-    // Calculate trends by comparing current period (last 15 days) to previous period (15-30 days ago)
-    const fifteenDaysAgo = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     // Split sessions into current and previous periods
     const currentPeriodSessions = sessions.filter(

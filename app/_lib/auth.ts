@@ -124,6 +124,18 @@ export async function updateUserRepeatingTasks(userId: string) {
       daysToCheck: Date[],
       currentPoints: number
     ): number => {
+      // Don't apply penalty to recently created tasks (within last 24 hours)
+      const taskCreatedAt =
+        task.createdAt instanceof Date
+          ? task.createdAt
+          : (task.createdAt as Timestamp).toDate();
+      const isRecentlyCreated =
+        differenceInCalendarDays(today, taskCreatedAt) < 1;
+
+      if (isRecentlyCreated) {
+        return currentPoints;
+      }
+
       let missedDays = 0;
       daysToCheck.forEach((dayToCheck) => {
         if (isPast(dayToCheck) && !isToday(dayToCheck)) {
@@ -204,7 +216,11 @@ export async function updateUserRepeatingTasks(userId: string) {
         setIfChanged("status", "pending", task.status);
       }
 
-      if (!isSameWeek(currentWeekStart, taskWeekStart, MONDAY_START_OF_WEEK)) {
+      // Only update if task week has passed (not for future weeks)
+      if (
+        !isSameWeek(currentWeekStart, taskWeekStart, MONDAY_START_OF_WEEK) &&
+        taskWeekStart < currentWeekStart
+      ) {
         setIfChanged("status", "pending", task.status);
         setNestedIfChanged("repetitionRule.completions", 0, rule.completions);
 
@@ -256,7 +272,8 @@ export async function updateUserRepeatingTasks(userId: string) {
 
       if (
         isPast(taskDueDate) &&
-        !isSameWeek(currentWeekStart, taskWeekStart, MONDAY_START_OF_WEEK)
+        !isSameWeek(currentWeekStart, taskWeekStart, MONDAY_START_OF_WEEK) &&
+        taskWeekStart < currentWeekStart
       ) {
         setIfChanged("status", "pending", task.status);
         setNestedIfChanged("repetitionRule.completions", 0, rule.completions);

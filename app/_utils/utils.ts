@@ -526,8 +526,9 @@ export function isTaskAtRisk(task: Task): boolean {
 
   if (rule?.timesPerWeek) {
     const remainingCompletions = rule.timesPerWeek - rule.completions;
-    const daysLeftInWeek = 7 - getDay(currentDate);
-    return remainingCompletions >= daysLeftInWeek;
+    const currentDay = getDay(currentDate);
+    const daysLeftInWeek = currentDay === 0 ? 1 : 8 - currentDay; // Sunday = 1 day left, Monday = 7 days left
+    return remainingCompletions > daysLeftInWeek;
   }
 
   return (
@@ -623,6 +624,13 @@ export function getCompletionAvailabilityInfo(
     }
 
     if (!isDueToday) {
+      // Fix: 5 times a week starting Tomorrow => On Dropdown.tsx it says on a complete button: Available on sunday which somehow is its dueDate
+      if (task.repetitionRule?.timesPerWeek) {
+        return {
+          text: `Available ${formatDate(task.startDate)}`,
+          canComplete: false,
+        };
+      }
       return {
         text: `Available ${formatDate(task.dueDate)}`,
         canComplete: false,
@@ -792,6 +800,9 @@ export function formatDuration(seconds: number): string {
 }
 
 export function formatHour(hour: number): string {
+  if (hour === -1) {
+    return "Not recorded yet";
+  }
   const ampm = hour >= 12 ? "PM" : "AM";
   const formattedHour = hour % 12 || 12; // Converts 0 to 12
   return `${formattedHour} ${ampm}`;
