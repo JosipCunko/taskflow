@@ -13,12 +13,14 @@ export default function DateInput({
   children,
   placement = "bottom",
   className,
+  disableDaysBefore = true,
 }: {
   date: Date;
   setDate: (date: Date) => void;
   children: React.ReactNode;
   placement?: "top" | "bottom";
   className?: string;
+  disableDaysBefore?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useOutsideClick(() => setIsOpen(false));
@@ -30,7 +32,7 @@ export default function DateInput({
   };
 
   const today = new Date();
-  const disabledDays = { before: today };
+  const disabledDays = disableDaysBefore ? { before: today } : undefined;
 
   const placementClass =
     placement === "top"

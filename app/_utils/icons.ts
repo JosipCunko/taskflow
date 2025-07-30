@@ -57,6 +57,9 @@ import {
   Clock7,
   MapPin,
   MapPinOff,
+  Ham,
+  Wheat,
+  BatteryFull,
 } from "lucide-react";
 import { NotificationType } from "../_types/types";
 
@@ -301,4 +304,11 @@ export const getNotificationIcon = (type: NotificationType) => {
   };
 
   return iconMap[type] || Bell;
+};
+
+export const FoodIcons = {
+  Calories: BatteryFull,
+  Protein: Ham,
+  Carbs: Wheat,
+  Fat: Hamburger,
 };

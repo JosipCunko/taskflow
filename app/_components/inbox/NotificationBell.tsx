@@ -3,21 +3,39 @@
 import { Bell } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { onAuthStateChanged, User } from "firebase/auth";
 import { NotificationStats } from "@/app/_types/types";
 import { getNotificationStats } from "@/app/_lib/notifications";
+import { auth } from "@/app/_lib/firebase";
 import { formatNotificationCount } from "@/app/_utils/utils";
 import Link from "next/link";
 import { Tooltip } from "react-tooltip";
 
 export default function NotificationBell() {
   const { data: session } = useSession();
+  //NotificationBell component is trying to fetch data before the FirebaseAuthProvider has finished signing in the user to Firebase client SDK.
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [stats, setStats] = useState<NotificationStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Listen to Firebase auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setFirebaseUser(user);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const fetchStats = async () => {
       setIsLoading(true);
-      if (!session?.user?.id) return;
+
+      // Wait for both NextAuth session AND Firebase auth to be ready
+      if (!session?.user?.id || !firebaseUser) {
+        setIsLoading(false);
+        return;
+      }
 
       try {
         const notificationStats = await getNotificationStats(session.user.id);
@@ -33,13 +51,19 @@ export default function NotificationBell() {
 
     // Also update when page gains focus
     const handleFocus = () => {
-      fetchStats();
+      if (session?.user?.id && firebaseUser) {
+        fetchStats();
+      }
     };
     window.addEventListener("focus", handleFocus);
 
     // Listen for storage events (when notifications are updated in other tabs)
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "notifications-updated") {
+      if (
+        e.key === "notifications-updated" &&
+        session?.user?.id &&
+        firebaseUser
+      ) {
         fetchStats();
       }
     };
@@ -49,7 +73,7 @@ export default function NotificationBell() {
       window.removeEventListener("focus", handleFocus);
       window.removeEventListener("storage", handleStorageChange);
     };
-  }, [session?.user?.id]);
+  }, [session?.user?.id, firebaseUser]);
 
   if (!session?.user?.id || isLoading) {
     return (

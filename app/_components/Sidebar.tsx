@@ -11,6 +11,7 @@ import {
   ChartColumn,
   FileText,
   CalendarArrowUp,
+  Heart,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -51,6 +52,11 @@ export default function Sidebar() {
         label: "Today",
         href: "/webapp/today",
         icon: Calendar,
+      },
+      {
+        label: "Health",
+        href: "/webapp/health",
+        icon: Heart,
       },
     ],
     me: [

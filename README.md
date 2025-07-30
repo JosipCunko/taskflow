@@ -53,19 +53,35 @@ TaskFlow is a modern, feature-rich task management application designed to help 
   - **Dashboard Analytics**: Visual charts and stats provide an at-a-glance overview of your productivity.
 - **Detailed Activity Log**: A comprehensive, immutable log of all task interactions, including creation, updates, completion, delays, and deletions, providing a full audit trail of your work.
 
-### 5. Notes Feature
+### 5. Health & Nutrition Tracker
+
+- **Calorie & Macro Tracking**: Comprehensive nutrition tracking integrated directly into your productivity workflow.
+- **USDA Food Database Integration**: Search from over 300,000 foods using the official USDA FoodData Central API.
+- **Daily Nutrition Dashboard**:
+  - Visual progress bars showing calories, protein, carbs, and fat intake vs. goals.
+  - Color-coded progress indicators (blue < 80%, yellow 80-100%, green 100%+).
+  - Real-time calculations and updates.
+- **Meal Logging**:
+  - Log foods for breakfast, lunch, dinner, or snacks.
+  - Flexible serving sizes with custom units.
+  - Automatic nutrient calculation based on serving size.
+- **Goal Setting**: Set personalized daily targets for calories and macronutrients.
+- **Daily History**: View and manage your complete meal log for any date.
+- **Seamless Integration**: Part of your holistic life management dashboard alongside task tracking.
+
+### 6. Notes Feature
 
 - **Personal Notes**: A dedicated space to create, view, edit, and delete personal notes.
 - **Simple & Effective**: Each note has a title and content, with automatic tracking of the last update time.
 - **Centralized Management**: Easily manage all notes from the clean `/notes` interface.
 
-### 6. User Profile & Settings
+### 7. User Profile & Settings
 
 - **Personalized Experience**: Customize notification preferences for reminders and achievements.
 - **Profile Overview**: View key stats like total completed tasks, reward points, and current streak directly on your profile.
 - **Authentication Management**: Securely manage your account connected via Email/Password or Google.
 
-### 7. User Experience
+### 8. User Experience
 
 - **Modern UI**: A clean, dark-themed interface designed for focus and clarity.
 - **Responsive Design**: Fully functional and accessible across desktop and mobile devices.
@@ -113,6 +129,7 @@ TaskFlow is a modern, feature-rich task management application designed to help 
 - **Calendar**: Calendar view of tasks.
 - **Completed**: View of completed tasks.
 - **Notes**: Dedicated section for managing personal notes.
+- **Health**: Calorie and macro tracking with food search and goal setting.
 - **Inbox**: Real-time notification management center.
 - **Profile**: User settings and preferences.
 - **Login**: Secure authentication page with multiple sign-in options.
@@ -217,6 +234,7 @@ TaskFlow is a modern, feature-rich task management application designed to help 
     - Fill in your Firebase project configuration details.
     - Fill in your NextAuth secret and URL.
     - If using GitHub OAuth, add `GITHUB_ID` and `GITHUB_SECRET` from your GitHub OAuth App settings. The callback URL will be `http://localhost:3000/api/auth/callback/github` for local development.
+    - For the Health feature, add your `USDA_API_KEY` from the [USDA FoodData Central API](https://fdc.nal.usda.gov/api-guide.html). The API is free but requires registration.
 
 4.  **Run the development server**:
     ```bash

@@ -5,31 +5,11 @@ import {
   ActionResult,
   ActionError,
   Achievement,
+  UserNutritionGoals,
 } from "../_types/types";
 import { Timestamp, FieldValue } from "firebase-admin/firestore";
 import { unstable_cache } from "next/cache";
-
-export async function getUserPreferences(userId: string): Promise<{
-  notifyReminders?: boolean;
-  notifyAchievements?: boolean;
-} | null> {
-  try {
-    const userRef = adminDb.collection("users").doc(userId);
-    const userSnap = await userRef.get();
-
-    if (userSnap.exists) {
-      const userData = userSnap.data();
-      return {
-        notifyReminders: userData?.notifyReminders ?? true,
-        notifyAchievements: userData?.notifyAchievements ?? true,
-      };
-    }
-    return null;
-  } catch (error) {
-    console.error("Error getting user preferences:", error);
-    return null;
-  }
-}
+import { defaultNutritionGoals } from "../_utils/healthUtils";
 
 export const getUserById = unstable_cache(
   async (userId: string): Promise<AppUser | null> => {
@@ -65,6 +45,23 @@ export const getUserById = unstable_cache(
         currentStreak: userData.currentStreak || 0,
         bestStreak: userData.bestStreak || 0,
         gainedPoints: userData.gainedPoints || [],
+        nutritionGoals: userData.nutritionGoals
+          ? {
+              calories: userData.nutritionGoals.dailyCalories,
+              protein: userData.nutritionGoals.dailyProtein,
+              carbs: userData.nutritionGoals.dailyCarbs,
+              fat: userData.nutritionGoals.dailyFat,
+              updatedAt: (
+                userData.nutritionGoals.updatedAt as Timestamp
+              ).toDate(),
+            }
+          : {
+              calories: defaultNutritionGoals.calories,
+              protein: defaultNutritionGoals.protein,
+              carbs: defaultNutritionGoals.carbs,
+              fat: defaultNutritionGoals.fat,
+              updatedAt: (userData.createdAt as Timestamp).toDate(),
+            },
       };
     } catch (error) {
       console.error("Error fetching user by ID:", error);
@@ -72,6 +69,64 @@ export const getUserById = unstable_cache(
     }
   }
 );
+
+export async function getUserPreferences(userId: string): Promise<{
+  notifyReminders?: boolean;
+  notifyAchievements?: boolean;
+} | null> {
+  try {
+    const userRef = adminDb.collection("users").doc(userId);
+    const userSnap = await userRef.get();
+
+    if (userSnap.exists) {
+      const userData = userSnap.data();
+      return {
+        notifyReminders: userData?.notifyReminders ?? true,
+        notifyAchievements: userData?.notifyAchievements ?? true,
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("Error getting user preferences:", error);
+    return null;
+  }
+}
+
+export async function getUserNutritionGoals(
+  userId: string
+): Promise<UserNutritionGoals> {
+  try {
+    const userDoc = await adminDb.collection("users").doc(userId).get();
+    const userData = userDoc.data();
+    if (!userData?.nutritionGoals) {
+      throw new Error("There are no nutrition goals linked to the user");
+    }
+    return {
+      ...userData.nutritionGoals,
+      updatedAt: userData.nutritionGoals.updatedAt.toDate(),
+    };
+  } catch (error) {
+    console.error("Error getting nutrition goals:", error);
+    return {
+      ...defaultNutritionGoals,
+      updatedAt: new Date(),
+    };
+  }
+}
+
+export async function updateUser(
+  userId: string,
+  data: Partial<Omit<AppUser, "id" | "createdAt">>
+): Promise<ActionResult> {
+  const userRef = adminDb.collection("users").doc(userId);
+  try {
+    await userRef.update(data);
+    return { success: true, message: "User updated" };
+  } catch (err) {
+    const error = err as ActionError;
+    return { success: false, error: error.message || "Failed to update user" };
+  }
+}
 
 export async function updateUserRewardPoints(
   userId: string,
@@ -151,19 +206,5 @@ export async function updateUserCompletionStats(
     });
   } catch (error) {
     console.error(`Error updating completion stats for user ${userId}:`, error);
-  }
-}
-
-export async function updateUser(
-  userId: string,
-  data: Partial<Omit<AppUser, "id" | "createdAt">>
-): Promise<ActionResult> {
-  const userRef = adminDb.collection("users").doc(userId);
-  try {
-    await userRef.update(data);
-    return { success: true, message: "User updated" };
-  } catch (err) {
-    const error = err as ActionError;
-    return { success: false, error: error.message || "Failed to update user" };
   }
 }

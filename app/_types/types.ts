@@ -56,7 +56,14 @@ export interface AppUser {
   lastLoginAt?: Date;
   notesCount?: number; // Added field in /webapp/profile
   gainedPoints: number[]; // max length 7
-  //Removed todayPoints
+  nutritionGoals: UserNutritionGoals;
+}
+export interface UserNutritionGoals {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  updatedAt: Date;
 }
 
 export interface Notification {

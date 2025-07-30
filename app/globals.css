@@ -71,8 +71,7 @@ body::after {
   --color-success: #00c853;
   --color-error: #cf6679;
   --color-warning: #ffd600;
-  --color-info: #29b6f6;
-  --radius-sm: 100px;
+  --color-info: #0d97d6;
 }
 
 .animate-fadeIn {

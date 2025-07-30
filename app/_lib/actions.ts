@@ -24,6 +24,7 @@ import {
   AppUser,
   CampaignNotification,
   AnalyticsData,
+  UserNutritionGoals,
 } from "../_types/types";
 import {
   createTask,
@@ -37,7 +38,7 @@ import { authOptions } from "./auth";
 import { revalidatePath } from "next/cache";
 import { updateUser, updateUserCompletionStats } from "./user-admin";
 import { adminDb } from "./admin";
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { sendCampaignNotification } from "./notifications-admin";
 import { checkAndAwardAchievements } from "./achievements";
 import { trackTaskAnalytics, getAnalyticsData } from "./analytics-admin";
@@ -58,322 +59,55 @@ export async function updateUserAction(
   }
   return result;
 }
-
-/* Update */
-export async function completeTaskAction(
-  formData: FormData
-): Promise<ActionResult> {
-  const taskId = formData.get("taskId") as string;
-  const session = await getServerSession(authOptions);
-  const userId = session?.user?.id;
-
-  if (!userId) {
-    return { success: false, error: "User not authenticated" };
-  }
-
-  console.log(`ACTION: Mark Task ${taskId} as completed`);
-
+export async function setUserNutritionGoalsAction(
+  dailyCalories: number,
+  dailyProtein: number,
+  dailyCarbs: number,
+  dailyFat: number
+): Promise<ActionResult<UserNutritionGoals>> {
   try {
-    const taskRef = adminDb.collection("tasks").doc(taskId);
-    const userRef = adminDb.collection("users").doc(userId);
-    const task = await getTaskByTaskId(taskId);
-    if (!task) {
-      return { success: false, error: "Task not found" };
-    }
-
-    await adminDb.runTransaction(async (transaction) => {
-      const userDoc = await transaction.get(userRef);
-      if (!userDoc.exists) throw new Error("User not found");
-
-      const userData = userDoc.data();
-      const lastLogin = userData?.lastLoginAt?.toDate() || new Date();
-      const isNewDay = new Date().getDate() !== lastLogin.getDate();
-
-      const gainedPoints: number[] = userData?.gainedPoints || [
-        0, 0, 0, 0, 0, 0, 0,
-      ];
-
-      if (isNewDay) {
-        // Shift array to the left and add a new day (0 points)
-        gainedPoints.shift();
-        gainedPoints.push(task.points);
-      } else {
-        // Add points to the current day (last element)
-        gainedPoints[gainedPoints.length - 1] += task.points;
-      }
-
-      transaction.update(taskRef, {
-        status: "completed",
-        completedAt: new Date(),
-      });
-
-      transaction.update(userRef, {
-        completedTasksCount: FieldValue.increment(1),
-        rewardPoints: FieldValue.increment(task.points),
-        gainedPoints: gainedPoints,
-        lastLoginAt: new Date(), // Update last login to today
-      });
-    });
-
-    if (task) {
-      await logUserActivity(userId, {
-        type: "TASK_COMPLETED",
-        taskId,
-        activityColor: "var(--color-success)",
-        activityIcon: "CircleCheckBig",
-        taskSnapshot: {
-          title: task.title,
-          color: task.color,
-          icon: task.icon,
-          dueDate: task.dueDate,
-          status: "completed",
-          isPriority: task.isPriority,
-          isReminder: task.isReminder,
-        },
-      });
-
-      await trackTaskAnalytics(userId, taskId, "task_completed", {
-        dueDate: task.dueDate,
-        isReminder: task.isReminder,
-        isPriority: task.isPriority,
-        isRepeating: false,
-        createdAt: task.createdAt,
-        completedAt: new Date(),
-        delayCount: task.delayCount || 0,
-        points: task.points,
-      });
-    }
-
-    // Check for achievements after task completion
-    await checkAndAwardAchievements(userId);
-
-    revalidatePath("/tasks");
-    return { success: true, message: `Task marked as completed` };
-  } catch (err) {
-    const error = err as ActionError;
-    return {
-      success: false,
-      error: error.message || "Failed to update task status",
-    };
-  }
-}
-
-export async function updateTaskExperienceAction(
-  formData: FormData
-): Promise<ActionResult> {
-  const taskId = formData.get("taskId") as string;
-  const newExperience = formData.get("experience") as Task["experience"];
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return { success: false, error: "User not authenticated" };
-  }
-  try {
-    await updateTask(taskId, {
-      experience: newExperience,
-    });
-
-    revalidatePath("/tasks");
-    return {
-      success: true,
-    };
-  } catch (err) {
-    const error = err as ActionError;
-    return {
-      success: false,
-      error: error.message || "Failed to update task experience",
-    };
-  }
-}
-
-export async function delayTaskAction(
-  formData: FormData,
-  dueDate: Date,
-  delayCount: number,
-  currentTaskDueDate?: Date
-): Promise<ActionResult> {
-  const taskId = formData.get("taskId") as string;
-  const session = await getServerSession(authOptions);
-  const userId = session?.user?.id;
-
-  if (!userId) {
-    return { success: false, error: "User not authenticated" };
-  }
-  if (currentTaskDueDate) {
-    if (
-      isSameDay(dueDate, currentTaskDueDate) ||
-      isBefore(dueDate, new Date())
-    ) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
       return {
         success: false,
-        error: "Cannot delay task to the same day or before.",
+        error: "Not authenticated",
       };
     }
-  }
 
-  const delayOption = formData.get("delayOption") as "tomorrow" | "nextWeek";
-  const newDueDateString = formData.get("newDueDate") as string;
-  let newDueDate = new Date();
-  if (newDueDateString) {
-    newDueDate = new Date(newDueDateString);
-  }
-  if (delayOption === "tomorrow") {
-    newDueDate.setDate(newDueDate.getDate() + 1);
-  } else if (delayOption === "nextWeek") {
-    newDueDate.setDate(newDueDate.getDate() + 7);
-  }
-  newDueDate.setHours(dueDate.getHours(), dueDate.getMinutes());
+    const goals: UserNutritionGoals = {
+      calories: dailyCalories,
+      carbs: dailyCarbs,
+      protein: dailyProtein,
+      fat: dailyFat,
+      updatedAt: new Date(),
+    };
 
-  console.log(`ACTION: Task ${taskId} delayed to ${formatDate(newDueDate)}`);
-  try {
-    const updatedTask = await updateTask(taskId, {
-      dueDate: newDueDate,
-      status: "delayed",
-      delayCount: delayCount + 1,
-    });
-
-    if (updatedTask) {
-      await logUserActivity(userId, {
-        type: "TASK_DELAYED",
-        taskId,
-        activityColor: "var(--color-error)",
-        activityIcon: "ClockAlert",
-        taskSnapshot: {
-          title: updatedTask.title,
-          color: updatedTask.color,
-          icon: updatedTask.icon,
-          dueDate: updatedTask.dueDate,
-          status: updatedTask.status,
-          isPriority: updatedTask.isPriority,
-          isReminder: updatedTask.isReminder,
+    await adminDb
+      .collection("users")
+      .doc(session.user.id)
+      .update({
+        nutritionGoals: {
+          ...goals,
+          updatedAt: Timestamp.fromDate(goals.updatedAt),
         },
       });
 
-      await trackTaskAnalytics(userId, taskId, "task_delayed", {
-        dueDate: updatedTask.dueDate,
-        isPriority: updatedTask.isPriority,
-        isReminder: updatedTask.isReminder,
-        isRepeating: updatedTask.isRepeating || false,
-        risk: updatedTask.risk,
-        createdAt: updatedTask.createdAt,
-        delayCount: updatedTask.delayCount || 0,
-        points: updatedTask.points,
-      });
-    }
+    revalidatePath("/webapp/health");
 
-    revalidatePath("/tasks");
     return {
       success: true,
-      message: `Task delayed to ${formatDate(newDueDate)}`,
+      data: goals,
     };
-  } catch (err) {
-    const error = err as ActionError;
-    return { success: false, error: error.message || "Failed to delay task" };
-  }
-}
-
-export async function deleteTaskAction(
-  formData: FormData
-): Promise<ActionResult> {
-  const taskId = formData.get("taskId") as string;
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return { success: false, error: "User not authenticated" };
-  }
-
-  console.log(`ACTION: Delete Task ${taskId}`);
-
-  try {
-    const deletedTask = await deleteTask(taskId);
-
-    if (deletedTask) {
-      await logUserActivity(session.user.id, {
-        type: "TASK_DELETED",
-        taskId,
-        taskSnapshot: {
-          title: deletedTask.title,
-          color: deletedTask.color,
-          icon: deletedTask.icon,
-          dueDate: deletedTask.dueDate,
-          status: deletedTask.status,
-          isPriority: deletedTask.isPriority,
-          isReminder: deletedTask.isReminder,
-        },
-        activityColor: "var(--color-error)",
-        activityIcon: "Delete",
-      });
-
-      await trackTaskAnalytics(session.user.id, taskId, "task_deleted", {
-        dueDate: deletedTask.dueDate,
-        isPriority: deletedTask.isPriority,
-        isReminder: deletedTask.isReminder,
-        isRepeating: deletedTask.isRepeating || false,
-        createdAt: deletedTask.createdAt,
-        points: deletedTask.points,
-      });
-    }
-    revalidatePath("/tasks");
-    return { success: true, message: "Task deleted" };
-  } catch (err) {
-    const error = err as ActionError;
-    return { success: false, error: error.message || "Failed to delete task" };
-  }
-}
-
-export async function togglePriorityAction(
-  formData: FormData
-): Promise<ActionResult> {
-  const taskId = formData.get("taskId") as string;
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return { success: false, error: "User not authenticated" };
-  }
-  const currentTask = await getTaskByTaskId(taskId);
-  if (!currentTask) return { success: false, error: "Task not found" };
-  const newIsPriority = !currentTask.isPriority;
-  try {
-    await updateTask(taskId, { isPriority: newIsPriority });
-    revalidatePath("/tasks");
-    return {
-      success: true,
-      message: `Task priority ${newIsPriority ? "added" : "removed"}`,
-    };
-  } catch (err) {
-    const error = err as ActionError;
+  } catch (error) {
+    console.error("Error setting nutrition goals:", error);
     return {
       success: false,
-      error: error.message || "Failed to toggle priority",
+      error: "Failed to set nutrition goals",
     };
   }
 }
 
-export async function toggleReminderAction(
-  formData: FormData
-): Promise<ActionResult> {
-  const taskId = formData.get("taskId") as string;
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return { success: false, error: "User not authenticated" };
-  }
-  const currentTask = await getTaskByTaskId(taskId);
-  if (!currentTask) return { success: false, error: "Task not found" };
-  const newIsReminder = !currentTask.isReminder;
-
-  try {
-    await updateTask(taskId, { isReminder: newIsReminder });
-    revalidatePath("/tasks");
-    return {
-      success: true,
-      message: `Task reminder ${newIsReminder ? "added" : "removed"}`,
-    };
-  } catch (err) {
-    const error = err as ActionError;
-    return {
-      success: false,
-      error: error.message || "Failed to toggle reminder",
-    };
-  }
-}
-
+/* Tasks */
 export async function createTaskAction(
   formData: FormData,
   isPriority: boolean,
@@ -477,10 +211,321 @@ export async function createTaskAction(
   }
 }
 
-/**Repeating Tasks */
-/**Repeating Tasks */
-/**Repeating Tasks */
+export async function completeTaskAction(
+  formData: FormData
+): Promise<ActionResult> {
+  const taskId = formData.get("taskId") as string;
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
 
+  if (!userId) {
+    return { success: false, error: "User not authenticated" };
+  }
+
+  console.log(`ACTION: Mark Task ${taskId} as completed`);
+
+  try {
+    const taskRef = adminDb.collection("tasks").doc(taskId);
+    const userRef = adminDb.collection("users").doc(userId);
+    const task = await getTaskByTaskId(taskId);
+    if (!task) {
+      return { success: false, error: "Task not found" };
+    }
+
+    await adminDb.runTransaction(async (transaction) => {
+      const userDoc = await transaction.get(userRef);
+      if (!userDoc.exists) throw new Error("User not found");
+
+      const userData = userDoc.data();
+      const lastLogin = userData?.lastLoginAt?.toDate() || new Date();
+      const isNewDay = new Date().getDate() !== lastLogin.getDate();
+
+      const gainedPoints: number[] = userData?.gainedPoints || [
+        0, 0, 0, 0, 0, 0, 0,
+      ];
+
+      if (isNewDay) {
+        // Shift array to the left and add a new day (0 points)
+        gainedPoints.shift();
+        gainedPoints.push(task.points);
+      } else {
+        // Add points to the current day (last element)
+        gainedPoints[gainedPoints.length - 1] += task.points;
+      }
+
+      transaction.update(taskRef, {
+        status: "completed",
+        completedAt: new Date(),
+      });
+
+      transaction.update(userRef, {
+        completedTasksCount: FieldValue.increment(1),
+        rewardPoints: FieldValue.increment(task.points),
+        gainedPoints: gainedPoints,
+        lastLoginAt: new Date(), // Update last login to today
+      });
+    });
+
+    if (task) {
+      await logUserActivity(userId, {
+        type: "TASK_COMPLETED",
+        taskId,
+        activityColor: "var(--color-success)",
+        activityIcon: "CircleCheckBig",
+        taskSnapshot: {
+          title: task.title,
+          color: task.color,
+          icon: task.icon,
+          dueDate: task.dueDate,
+          status: "completed",
+          isPriority: task.isPriority,
+          isReminder: task.isReminder,
+        },
+      });
+
+      await trackTaskAnalytics(userId, taskId, "task_completed", {
+        dueDate: task.dueDate,
+        isReminder: task.isReminder,
+        isPriority: task.isPriority,
+        isRepeating: false,
+        createdAt: task.createdAt,
+        completedAt: new Date(),
+        delayCount: task.delayCount || 0,
+        points: task.points,
+      });
+    }
+
+    // Check for achievements after task completion
+    await checkAndAwardAchievements(userId);
+
+    revalidatePath("/webapp/tasks");
+    return { success: true, message: `Task marked as completed` };
+  } catch (err) {
+    const error = err as ActionError;
+    return {
+      success: false,
+      error: error.message || "Failed to update task status",
+    };
+  }
+}
+
+export async function delayTaskAction(
+  formData: FormData,
+  dueDate: Date,
+  delayCount: number,
+  currentTaskDueDate?: Date
+): Promise<ActionResult> {
+  const taskId = formData.get("taskId") as string;
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+
+  if (!userId) {
+    return { success: false, error: "User not authenticated" };
+  }
+  if (currentTaskDueDate) {
+    if (
+      isSameDay(dueDate, currentTaskDueDate) ||
+      isBefore(dueDate, new Date())
+    ) {
+      return {
+        success: false,
+        error: "Cannot delay task to the same day or before.",
+      };
+    }
+  }
+
+  const delayOption = formData.get("delayOption") as "tomorrow" | "nextWeek";
+  const newDueDateString = formData.get("newDueDate") as string;
+  let newDueDate = new Date();
+  if (newDueDateString) {
+    newDueDate = new Date(newDueDateString);
+  }
+  if (delayOption === "tomorrow") {
+    newDueDate.setDate(newDueDate.getDate() + 1);
+  } else if (delayOption === "nextWeek") {
+    newDueDate.setDate(newDueDate.getDate() + 7);
+  }
+  newDueDate.setHours(dueDate.getHours(), dueDate.getMinutes());
+
+  console.log(`ACTION: Task ${taskId} delayed to ${formatDate(newDueDate)}`);
+  try {
+    const updatedTask = await updateTask(taskId, {
+      dueDate: newDueDate,
+      status: "delayed",
+      delayCount: delayCount + 1,
+    });
+
+    if (updatedTask) {
+      await logUserActivity(userId, {
+        type: "TASK_DELAYED",
+        taskId,
+        activityColor: "var(--color-error)",
+        activityIcon: "ClockAlert",
+        taskSnapshot: {
+          title: updatedTask.title,
+          color: updatedTask.color,
+          icon: updatedTask.icon,
+          dueDate: updatedTask.dueDate,
+          status: updatedTask.status,
+          isPriority: updatedTask.isPriority,
+          isReminder: updatedTask.isReminder,
+        },
+      });
+
+      await trackTaskAnalytics(userId, taskId, "task_delayed", {
+        dueDate: updatedTask.dueDate,
+        isPriority: updatedTask.isPriority,
+        isReminder: updatedTask.isReminder,
+        isRepeating: updatedTask.isRepeating || false,
+        risk: updatedTask.risk,
+        createdAt: updatedTask.createdAt,
+        delayCount: updatedTask.delayCount || 0,
+        points: updatedTask.points,
+      });
+    }
+
+    revalidatePath("/webapp/tasks");
+    return {
+      success: true,
+      message: `Task delayed to ${formatDate(newDueDate)}`,
+    };
+  } catch (err) {
+    const error = err as ActionError;
+    return { success: false, error: error.message || "Failed to delay task" };
+  }
+}
+
+export async function deleteTaskAction(
+  formData: FormData
+): Promise<ActionResult> {
+  const taskId = formData.get("taskId") as string;
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return { success: false, error: "User not authenticated" };
+  }
+
+  console.log(`ACTION: Delete Task ${taskId}`);
+
+  try {
+    const deletedTask = await deleteTask(taskId);
+
+    if (deletedTask) {
+      await logUserActivity(session.user.id, {
+        type: "TASK_DELETED",
+        taskId,
+        taskSnapshot: {
+          title: deletedTask.title,
+          color: deletedTask.color,
+          icon: deletedTask.icon,
+          dueDate: deletedTask.dueDate,
+          status: deletedTask.status,
+          isPriority: deletedTask.isPriority,
+          isReminder: deletedTask.isReminder,
+        },
+        activityColor: "var(--color-error)",
+        activityIcon: "Delete",
+      });
+
+      await trackTaskAnalytics(session.user.id, taskId, "task_deleted", {
+        dueDate: deletedTask.dueDate,
+        isPriority: deletedTask.isPriority,
+        isReminder: deletedTask.isReminder,
+        isRepeating: deletedTask.isRepeating || false,
+        createdAt: deletedTask.createdAt,
+        points: deletedTask.points,
+      });
+    }
+    revalidatePath("/webapp/tasks");
+    return { success: true, message: "Task deleted" };
+  } catch (err) {
+    const error = err as ActionError;
+    return { success: false, error: error.message || "Failed to delete task" };
+  }
+}
+
+export async function togglePriorityAction(
+  formData: FormData
+): Promise<ActionResult> {
+  const taskId = formData.get("taskId") as string;
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return { success: false, error: "User not authenticated" };
+  }
+  const currentTask = await getTaskByTaskId(taskId);
+  if (!currentTask) return { success: false, error: "Task not found" };
+  const newIsPriority = !currentTask.isPriority;
+  try {
+    await updateTask(taskId, { isPriority: newIsPriority });
+    revalidatePath("/webapp/tasks");
+    return {
+      success: true,
+      message: `Task priority ${newIsPriority ? "added" : "removed"}`,
+    };
+  } catch (err) {
+    const error = err as ActionError;
+    return {
+      success: false,
+      error: error.message || "Failed to toggle priority",
+    };
+  }
+}
+
+export async function toggleReminderAction(
+  formData: FormData
+): Promise<ActionResult> {
+  const taskId = formData.get("taskId") as string;
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return { success: false, error: "User not authenticated" };
+  }
+  const currentTask = await getTaskByTaskId(taskId);
+  if (!currentTask) return { success: false, error: "Task not found" };
+  const newIsReminder = !currentTask.isReminder;
+
+  try {
+    await updateTask(taskId, { isReminder: newIsReminder });
+    revalidatePath("/webapp/tasks");
+    return {
+      success: true,
+      message: `Task reminder ${newIsReminder ? "added" : "removed"}`,
+    };
+  } catch (err) {
+    const error = err as ActionError;
+    return {
+      success: false,
+      error: error.message || "Failed to toggle reminder",
+    };
+  }
+}
+
+export async function updateTaskExperienceAction(
+  formData: FormData
+): Promise<ActionResult> {
+  const taskId = formData.get("taskId") as string;
+  const newExperience = formData.get("experience") as Task["experience"];
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return { success: false, error: "User not authenticated" };
+  }
+  try {
+    await updateTask(taskId, {
+      experience: newExperience,
+    });
+
+    revalidatePath("/webapp/tasks");
+    return {
+      success: true,
+    };
+  } catch (err) {
+    const error = err as ActionError;
+    return {
+      success: false,
+      error: error.message || "Failed to update task experience",
+    };
+  }
+}
+
+/* Repeating Tasks */
 export async function completeRepeatingTaskWithInterval(
   task: Task,
   completionDate: Date = new Date()
@@ -757,6 +802,7 @@ export async function completeRepeatingTaskWithDaysOfWeek(
   }
 }
 
+/* FCM  */
 export async function sendCampaignNotificationAction(
   userIds: string[],
   campaign: CampaignNotification
@@ -781,7 +827,8 @@ export async function sendCampaignNotificationAction(
   }
 }
 
-// NEeds to be an action performing server side because getAnalyticsData needs to be called server side, and we are doing that by an action in AnalyticsDashboard.tsx
+/* Analytics */
+// Needs to be an action performing server side because getAnalyticsData needs to be called server side, and we are doing that by an action in AnalyticsDashboard.tsx
 export async function getAnalyticsDataAction(): Promise<AnalyticsData | null> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
