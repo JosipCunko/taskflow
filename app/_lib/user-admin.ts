@@ -107,10 +107,7 @@ export async function getUserNutritionGoals(
     };
   } catch (error) {
     console.error("Error getting nutrition goals:", error);
-    return {
-      ...defaultNutritionGoals,
-      updatedAt: new Date(),
-    };
+    return defaultNutritionGoals;
   }
 }
 

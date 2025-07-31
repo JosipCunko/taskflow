@@ -7,11 +7,12 @@ import {
 } from "../_types/spoonacularTypes";
 import { UserNutritionGoals } from "../_types/types";
 
-export const defaultNutritionGoals: Omit<UserNutritionGoals, "updatedAt"> = {
+export const defaultNutritionGoals: UserNutritionGoals = {
   calories: 2000,
   carbs: 270,
   protein: 105,
   fat: 55,
+  updatedAt: new Date(),
 };
 
 export const defaultDailyNutritionSummary: DailyNutritionSummary = {

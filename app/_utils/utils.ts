@@ -11,6 +11,11 @@ import {
   Calendar,
   ChartColumn,
   CalendarArrowUp,
+  CheckSquare,
+  FileText,
+  Heart,
+  Bot,
+  User,
 } from "lucide-react";
 import {
   DayOfWeek,
@@ -68,6 +73,61 @@ export const TASK_PLACEHOLDERS = [
   "Clean out garage",
   "Research vacation destinations",
 ];
+
+export const navItems = {
+  general: [
+    {
+      label: "Dashboard",
+      href: "/webapp",
+      icon: Home,
+    },
+    { label: "Inbox", icon: Inbox, href: "/webapp/inbox" },
+  ],
+  tasks: [
+    {
+      label: "Calendar",
+      href: "/webapp/calendar",
+      icon: CalendarArrowUp,
+    },
+    {
+      label: "Tasks",
+      href: "/webapp/tasks",
+      icon: ChartColumn,
+    },
+    {
+      label: "Completed",
+      href: "/webapp/completed",
+      icon: CheckSquare,
+    },
+    {
+      label: "Notes",
+      href: "/webapp/notes",
+      icon: FileText,
+    },
+    {
+      label: "Today",
+      href: "/webapp/today",
+      icon: Calendar,
+    },
+    {
+      label: "Health",
+      href: "/webapp/health",
+      icon: Heart,
+    },
+  ],
+  me: [
+    {
+      label: "AI",
+      href: "/webapp/ai",
+      icon: Bot,
+    },
+    {
+      label: "Profile",
+      href: "/webapp/profile",
+      icon: User,
+    },
+  ],
+};
 
 /** Search feature */
 export const navItemsToSearch = [

@@ -49,10 +49,7 @@ async function makeSpoonacularRequestServer<T>(
   }
 }
 
-/**
- * GET /recipes/random
- */
-export async function getRandomRecipes(
+async function getRandomRecipesPreCached(
   options: {
     limitLicense?: boolean;
     includeTags?: string;
@@ -70,6 +67,7 @@ export async function getRandomRecipes(
     }
   );
 }
+export const getRandomRecipes = unstable_cache(getRandomRecipesPreCached);
 
 // ============= Recipe Information Functions =============
 

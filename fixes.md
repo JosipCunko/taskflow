@@ -75,6 +75,7 @@ const calculatedCalories =
 nutrients.protein _ 4 + nutrients.carbs _ 4 + nutrients.fat \* 9;
 const calorieDiscrepancy = Math.abs(nutrients.calories - calculatedCalories);
 {calorieDiscrepancy > 50 && (
+
 <div className="text-xs text-yellow-600 bg-yellow-100 dark:bg-yellow-900/20 p-2 rounded">
 ⚠️ Nutritional data may be incomplete - calorie calculation
 doesn&apos;t match macros
@@ -142,6 +143,7 @@ nutrients: [
 ];
 
 return (
+
 <div className={`space-y-6 p-4 bg-background-600 rounded-lg ${className}`}>
 <div className="text-center relative isolate">
 <h3 className="text-lg font-semibold text-text-high">{foodName}</h3>
@@ -338,3 +340,5 @@ return (
 
 );
 \*/
+
+add favorite recipes functionality to recipes that are logged. "You can mark this recipe as favourite only if you log it"

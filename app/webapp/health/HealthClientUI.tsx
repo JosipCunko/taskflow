@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  useState,
-  useEffect,
-  useMemo,
-  useReducer,
-  useTransition,
-  useCallback,
-} from "react";
+import { useState, useEffect, useMemo, useReducer, useTransition } from "react";
 import {
   Search,
   Target,
@@ -19,6 +12,7 @@ import {
   Shuffle,
   Activity,
   Calendar,
+  Plus,
 } from "lucide-react";
 import { customToast } from "../../_utils/toasts";
 import Button from "../../_components/reusable/Button";
@@ -26,20 +20,12 @@ import Input from "../../_components/reusable/Input";
 import Modal, { ModalContext } from "../../_components/Modal";
 import DateInput from "@/app/_components/reusable/DateInput";
 import {
-  MealLog,
   SpoonacularFood,
   SpoonacularRecipeInfo,
   CuisineType,
   DietType,
   MealType,
-  MealNutrition,
 } from "@/app/_types/spoonacularTypes";
-import {
-  getDailyNutritionSummaryAction,
-  getRandomRecipesAction,
-  getRecipeInformationAction,
-  getUserNutritionGoalsAction,
-} from "@/app/_lib/spoonacularActions";
 import {
   cuisineOptions,
   defaultDailyNutritionSummary,
@@ -56,33 +42,24 @@ import {
   searchRecipesByIngredients,
 } from "@/app/_lib/spoonacular";
 import { CardSpecificIcons, FoodIcons } from "@/app/_utils/icons";
-import MealCard from "@/app/_components/MealCard";
+import LogMealForm from "@/app/_components/LogMealForm";
+import LoggedMealCard from "@/app/_components/LoggedMealCard";
+import SpoonacularMealCard from "@/app/_components/SpoonacularMealCard";
 
 /* State */
 const initialState = {
   searchQuery: "",
   searchResults: [] as SpoonacularFood[],
-  selectedFood: null as SpoonacularFood | SpoonacularRecipeInfo | null,
-  selectedFoodDetails: null as SpoonacularRecipeInfo | null,
-  mealType: "breakfast" as MealLog["mealType"],
-  servings: 1,
-  servingSize: 1,
-  servingUnit: "serving",
   currentDate: new Date(),
   dailyNutritionSummary: defaultDailyNutritionSummary,
   nutritionGoals: defaultNutritionGoals,
   selectedCuisine: "" as CuisineType | "",
   selectedDiet: "" as DietType | "",
   selectedMealType: "" as MealType | "",
-  maxReadyTime: 0,
-  minHealthScore: 0,
   showFilters: false,
   ingredientSearchMode: false,
   availableIngredients: "",
   randomRecipes: [] as SpoonacularRecipeInfo[],
-  favoriteRecipes: [] as number[],
-  selectedNutrientPreview: null as MealNutrition | null,
-  showWeeklyView: false,
 };
 type State = typeof initialState;
 type SetFieldAction<Key extends keyof State> = {
@@ -94,7 +71,6 @@ type SetFieldAction<Key extends keyof State> = {
 };
 type OtherAction =
   | { type: "resetFilters"; payload: null }
-  | { type: "closeModalAndReset"; payload: null }
   | { type: "toggleIngredientMode"; payload: null };
 
 type Action = SetFieldAction<keyof State> | OtherAction;
@@ -104,16 +80,6 @@ const reducer = (state: State, action: Action) => {
       if (action.payload)
         return { ...state, [action.payload.field]: action.payload.value };
       return state;
-    case "closeModalAndReset":
-      return {
-        ...state,
-        selectedFood: null,
-        selectedFoodDetails: null,
-        servings: 1,
-        servingSize: 1,
-        servingUnit: "serving",
-        selectedNutrientPreview: null,
-      };
     case "resetFilters":
       return {
         ...state,
@@ -121,7 +87,6 @@ const reducer = (state: State, action: Action) => {
         selectedDiet: "" as DietType | "",
         selectedMealType: "" as MealType | "",
         maxReadyTime: 0,
-        minHealthScore: 0,
       };
     case "toggleIngredientMode":
       return {
@@ -138,14 +103,12 @@ const reducer = (state: State, action: Action) => {
 
 export default function HealthClientUI() {
   const [isPending, startTransition] = useTransition();
-  const [searchAbortController, setSearchAbortController] =
-    useState<AbortController | null>(null);
   const [state, dispatch] = useReducer(reducer, initialState);
-
   const dispatchField = (field: keyof State, value: State[keyof State]) => {
     dispatch({ type: "SET_FIELD", payload: { field, value } });
   };
 
+  /* Modals */
   const [goalsModalOpenName, setGoalsModalOpenName] = useState<string>("");
   const openGoalsModal = (name: string) => setGoalsModalOpenName(name);
   const closeGoalsModal = () => setGoalsModalOpenName("");
@@ -157,80 +120,87 @@ export default function HealthClientUI() {
     }),
     [goalsModalOpenName]
   );
+  const [logMealModalOpenName, setLogMealModalOpenName] = useState<string>("");
+  const openLogMealModal = (name: string) => setLogMealModalOpenName(name);
+  const closeLogMealModal = () => setLogMealModalOpenName("");
+  const logMealModalContextValue = useMemo(
+    () => ({
+      openName: logMealModalOpenName,
+      open: openLogMealModal,
+      close: closeLogMealModal,
+    }),
+    [logMealModalOpenName]
+  );
 
-  const loadFoodDetails = useCallback(async () => {
-    startTransition(async () => {
-      try {
-        if (!state.selectedFood) return;
-        const result = await getRecipeInformationAction(state.selectedFood.id);
-        dispatchField("selectedFoodDetails", result);
-        if (result.nutrition) {
-          const nutrition = extractNutritionFromRecipe(result, state.servings);
-          dispatchField("selectedNutrientPreview", nutrition);
-        }
-      } catch (error) {
-        console.error("Error loading food details:", error);
-        customToast("Error", "Failed to load food details");
-      }
-    });
-  }, [state.selectedFood, state.servings]);
-
-  const extractNutritionFromRecipe = (
-    recipe: SpoonacularRecipeInfo,
-    servings: number
-  ): MealNutrition => {
-    const nutrition: MealNutrition = {
-      calories: 0,
-      protein: 0,
-      carbs: 0,
-      fat: 0,
-      fiber: 0,
-      sugar: 0,
-      sodium: 0,
-    };
-    if (!recipe.nutrition?.nutrients) return nutrition;
-
-    const baseServings = recipe.servings > 0 ? recipe.servings : 1;
-    const findNutrient = (name: string) => {
-      const nutrient = recipe?.nutrition?.nutrients.find(
-        (n) => n.name.toLowerCase() === name.toLowerCase()
-      );
-      return nutrient ? (nutrient.amount / baseServings) * servings : 0;
-    };
-    return {
-      calories: findNutrient("Calories"),
-      protein: findNutrient("Protein"),
-      carbs: findNutrient("Carbohydrates"),
-      fat: findNutrient("Fat"),
-      fiber: findNutrient("Fiber"),
-      sugar: findNutrient("Sugar"),
-      sodium: findNutrient("Sodium"),
-    };
-  };
+  const nutrients = [
+    {
+      label: "Calories",
+      current: state.dailyNutritionSummary.totalCalories,
+      goal: state.nutritionGoals.calories,
+      unit: "kcal",
+      icon: FoodIcons.Calories,
+      color: "text-primary-500",
+    },
+    {
+      label: "Protein",
+      current: state.dailyNutritionSummary.totalProtein,
+      goal: state.nutritionGoals.protein,
+      unit: "g",
+      icon: FoodIcons.Protein,
+      color: "text-accent",
+    },
+    {
+      label: "Carbs",
+      current: state.dailyNutritionSummary.totalCarbs,
+      goal: state.nutritionGoals.carbs,
+      unit: "g",
+      icon: FoodIcons.Carbs,
+      color: "text-success",
+    },
+    {
+      label: "Fat",
+      current: state.dailyNutritionSummary.totalFat,
+      goal: state.nutritionGoals.fat,
+      unit: "g",
+      icon: FoodIcons.Fat,
+      color: "text-warning",
+    },
+  ];
 
   const loadDailyNutritionSummary = async () => {
     startTransition(async () => {
-      const result = await getDailyNutritionSummaryAction(
-        state.currentDate.toISOString().split("T")[0]
-      );
-      dispatchField("dailyNutritionSummary", result);
+      const request = await fetch("/api/health/dailySummary", {
+        method: "POST",
+        body: JSON.stringify({
+          date: state.currentDate.toISOString().split("T")[0],
+        }),
+      });
+      const data = await request.json();
+      dispatchField("dailyNutritionSummary", data.data);
     });
   };
 
   const loadUserNutritionGoals = async () => {
-    const result = await getUserNutritionGoalsAction();
-    console.log(result);
-    dispatchField("nutritionGoals", result);
+    startTransition(async () => {
+      const request = await fetch("/api/user/nutritionGoals");
+      const data = await request.json();
+      dispatchField("nutritionGoals", data.data);
+    });
   };
 
   const loadRandomRecipes = async () => {
     startTransition(async () => {
-      try {
-        const result = await getRandomRecipesAction(3);
-        dispatchField("randomRecipes", result);
-      } catch (error) {
-        console.error("Error loading random recipes:", error);
-      }
+      const request = await fetch("/api/health/randomRecipes", {
+        method: "POST",
+        body: JSON.stringify({
+          number: 3,
+          includeTags: undefined,
+          excludeTags: undefined,
+          limitLicense: undefined,
+        }),
+      });
+      const data = await request.json();
+      dispatchField("randomRecipes", data.data);
     });
   };
 
@@ -244,23 +214,6 @@ export default function HealthClientUI() {
     loadDailyNutritionSummary();
   }, [state.currentDate]);
 
-  useEffect(() => {
-    if (state.selectedFood) {
-      loadFoodDetails();
-    }
-  }, [state.selectedFood, loadFoodDetails]);
-
-  // Recalculate nutrition when servings change
-  useEffect(() => {
-    if (state.selectedFoodDetails) {
-      const nutrition = extractNutritionFromRecipe(
-        state.selectedFoodDetails,
-        state.servings
-      );
-      dispatchField("selectedNutrientPreview", nutrition);
-    }
-  }, [state.servings, state.selectedFoodDetails]);
-
   const handleSearch = async () => {
     if (
       (!state.searchQuery.trim() && !state.ingredientSearchMode) ||
@@ -268,21 +221,13 @@ export default function HealthClientUI() {
     )
       return;
 
-    if (searchAbortController) {
-      searchAbortController.abort();
-    }
-
-    const abortController = new AbortController();
-    setSearchAbortController(abortController);
-
     startTransition(async () => {
       try {
         let result;
         if (state.ingredientSearchMode) {
           result = await searchRecipesByIngredients(
             state.availableIngredients,
-            { number: 12 },
-            abortController.signal
+            { number: 12 }
           );
           dispatchField("searchResults", result || ([] as SpoonacularFood[]));
         } else {
@@ -291,13 +236,11 @@ export default function HealthClientUI() {
             cuisine: state.selectedCuisine || undefined,
             diet: state.selectedDiet || undefined,
             type: state.selectedMealType || undefined,
-            maxReadyTime:
-              state.maxReadyTime > 0 ? state.maxReadyTime : undefined,
             number: 12,
             addRecipeInformation: true,
             fillIngredients: true,
           };
-          result = await searchRecipes(searchParams, abortController.signal);
+          result = await searchRecipes(searchParams);
           dispatchField(
             "searchResults",
             result.results || ([] as SpoonacularFood[])
@@ -306,10 +249,6 @@ export default function HealthClientUI() {
       } catch (error) {
         console.error("Search error:", error);
         customToast("Error", "Search failed. Please try again.");
-      } finally {
-        if (!abortController.signal.aborted) {
-          setSearchAbortController(null);
-        }
       }
     });
   };
@@ -364,9 +303,18 @@ export default function HealthClientUI() {
         </DateInput>
         <ModalContext.Provider value={goalsModalContextValue}>
           <Modal.Open opens="nutrition-goals">
-            <Button className="flex items-center gap-2">
-              <Target className="w-4 h-4" />
+            <Button>
+              <Target className="w-4 aspect-square" />
               Set Goals
+            </Button>
+          </Modal.Open>
+        </ModalContext.Provider>
+
+        <ModalContext.Provider value={logMealModalContextValue}>
+          <Modal.Open opens="log-meal">
+            <Button>
+              <Plus className="w-4 aspect-square" />
+              Log your meal
             </Button>
           </Modal.Open>
         </ModalContext.Provider>
@@ -379,40 +327,7 @@ export default function HealthClientUI() {
           Daily nutrition summary for {formatDate(state.currentDate)}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[
-            {
-              label: "Calories",
-              current: state.dailyNutritionSummary.totalCalories,
-              goal: state.nutritionGoals.calories,
-              unit: "kcal",
-              icon: FoodIcons.Calories,
-              color: "text-primary-500",
-            },
-            {
-              label: "Protein",
-              current: state.dailyNutritionSummary.totalProtein,
-              goal: state.nutritionGoals.protein,
-              unit: "g",
-              icon: FoodIcons.Protein,
-              color: "text-accent",
-            },
-            {
-              label: "Carbs",
-              current: state.dailyNutritionSummary.totalCarbs,
-              goal: state.nutritionGoals.carbs,
-              unit: "g",
-              icon: FoodIcons.Carbs,
-              color: "text-success",
-            },
-            {
-              label: "Fat",
-              current: state.dailyNutritionSummary.totalFat,
-              goal: state.nutritionGoals.fat,
-              unit: "g",
-              icon: FoodIcons.Fat,
-              color: "text-warning",
-            },
-          ].map((nutrient) => {
+          {nutrients.map((nutrient) => {
             const percentage = getProgressPercentage(
               nutrient.current,
               nutrient.goal
@@ -462,9 +377,9 @@ export default function HealthClientUI() {
           <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
             {state.dailyNutritionSummary.mealLogs.length > 0 ? (
               state.dailyNutritionSummary.mealLogs.map((log) => (
-                <MealCard
+                <LoggedMealCard
                   key={log.id}
-                  data={log}
+                  mealLog={log}
                   onActionComplete={loadDailyNutritionSummary}
                 />
               ))
@@ -499,9 +414,9 @@ export default function HealthClientUI() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {state.randomRecipes.map((recipe) => (
-              <MealCard
+              <SpoonacularMealCard
                 key={recipe.id}
-                data={recipe}
+                recipe={recipe as SpoonacularRecipeInfo}
                 onActionComplete={loadDailyNutritionSummary}
               />
             ))}
@@ -570,7 +485,7 @@ export default function HealthClientUI() {
           </Button>
         </div>
 
-        {state.showFilters && (
+        {state.showFilters && !state.ingredientSearchMode && (
           <div className="border-t border-background-500 pt-4 mb-4 animate-fade-in-down">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <div>
@@ -630,21 +545,6 @@ export default function HealthClientUI() {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-text-high mb-1">
-                  Max Ready Time (min)
-                </label>
-                <Input
-                  type="number"
-                  name="maxReadyTime"
-                  value={state.maxReadyTime || ""}
-                  onChange={(e) =>
-                    dispatchField("maxReadyTime", parseInt(e.target.value) || 0)
-                  }
-                  className="w-full"
-                  placeholder="e.g., 30"
-                />
-              </div>
               <div className="flex items-end">
                 <Button
                   onClick={() =>
@@ -668,9 +568,9 @@ export default function HealthClientUI() {
           ) : state.searchResults.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {state.searchResults.map((recipe) => (
-                <MealCard
+                <SpoonacularMealCard
                   key={recipe.id}
-                  data={recipe as SpoonacularRecipeInfo}
+                  recipe={recipe as SpoonacularRecipeInfo}
                   onActionComplete={loadDailyNutritionSummary}
                 />
               ))}
@@ -689,7 +589,7 @@ export default function HealthClientUI() {
 
       <ModalContext.Provider value={goalsModalContextValue}>
         <Modal.Window name="nutrition-goals">
-          <div className="p-4">
+          <div className="modal">
             <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
               <Target />
               Set Daily Nutrition Goals
@@ -739,6 +639,12 @@ export default function HealthClientUI() {
               </Button>
             </div>
           </div>
+        </Modal.Window>
+      </ModalContext.Provider>
+
+      <ModalContext.Provider value={logMealModalContextValue}>
+        <Modal.Window name="log-meal">
+          <LogMealForm />
         </Modal.Window>
       </ModalContext.Provider>
     </div>

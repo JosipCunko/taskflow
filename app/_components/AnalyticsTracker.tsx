@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { trackAppOpen, setUserAnalyticsProperties } from "@/app/_lib/analytics";
 import { AppUser, AnalyticsData } from "../_types/types";
+import { navItems } from "../_utils/utils";
 
 // Api routes are a bridge for the functions for analytics-admin.ts
 async function postToAnalyticsRoute(endpoint: string, data: object) {
@@ -24,13 +25,12 @@ async function postToAnalyticsRoute(endpoint: string, data: object) {
 }
 
 function getFeatureFromPath(pathname: string): string {
-  if (pathname.includes("/inbox")) return "inbox";
-  else if (pathname.includes("/calendar")) return "calendar";
-  else if (pathname.includes("/tasks")) return "tasks";
-  else if (pathname.includes("/today")) return "today";
-  else if (pathname.includes("/notes")) return "notes";
-  else if (pathname.includes("/profile")) return "profile";
-  else return "dashboard";
+  // remove /webapp
+  const navItemsArr = Object.values(navItems).flat().slice(1, -1);
+  navItemsArr.forEach((item) => {
+    if (pathname.includes(item.href)) return item.label;
+  });
+  return "dashboard";
 }
 
 export default function AnalyticsTracker({

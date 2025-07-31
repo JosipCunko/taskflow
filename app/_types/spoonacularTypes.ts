@@ -247,11 +247,8 @@ export interface MealLog {
   title: string;
   image: string;
   servings: number;
-  servingSize: number;
-  servingUnit: string;
   nutrition: MealNutrition;
   spoonacularData: SpoonacularRecipeInfo; // Store full recipe data for reference
-  loggedAt: string;
 }
 
 export interface MealNutrition {

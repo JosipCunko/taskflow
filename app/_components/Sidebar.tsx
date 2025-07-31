@@ -2,72 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  CheckSquare,
-  User,
-  Calendar,
-  Home,
-  Inbox,
-  ChartColumn,
-  FileText,
-  CalendarArrowUp,
-  Heart,
-} from "lucide-react";
 import Image from "next/image";
+import { navItems } from "../_utils/utils";
 
 export default function Sidebar() {
   const pathname = usePathname();
-
-  const navItems = {
-    general: [
-      {
-        label: "Dashboard",
-        href: "/webapp",
-        icon: Home,
-      },
-      { label: "Inbox", icon: Inbox, href: "/webapp/inbox" },
-    ],
-    tasks: [
-      {
-        label: "Calendar",
-        href: "/webapp/calendar",
-        icon: CalendarArrowUp,
-      },
-      {
-        label: "Tasks",
-        href: "/webapp/tasks",
-        icon: ChartColumn,
-      },
-      {
-        label: "Completed",
-        href: "/webapp/completed",
-        icon: CheckSquare,
-      },
-      {
-        label: "Notes",
-        href: "/webapp/notes",
-        icon: FileText,
-      },
-      {
-        label: "Today",
-        href: "/webapp/today",
-        icon: Calendar,
-      },
-      {
-        label: "Health",
-        href: "/webapp/health",
-        icon: Heart,
-      },
-    ],
-    me: [
-      {
-        label: "Profile",
-        href: "/webapp/profile",
-        icon: User,
-      },
-    ],
-  };
-
   return (
     <aside className="w-64 h-full bg-background-700 flex flex-col ">
       <div className="">
