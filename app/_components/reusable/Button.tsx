@@ -19,7 +19,7 @@ export default function Button({
   ...rest
 }: ButtonProps) {
   const baseStyles =
-    "relative isolate px-4 py-1 rounded-md transition-all duration-200 flex items-center gap-2 text-sm sm:text-base cursor-pointer font-semibold";
+    "relative isolate px-4 py-1 rounded-md transition-all duration-200 flex items-center gap-2 text-sm sm:text-base cursor-pointer font-semibold disabled:opacity-50 disabled:cursor-not-allowed";
 
   const variantStyles = {
     primary:

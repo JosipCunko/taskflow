@@ -238,47 +238,6 @@ export interface RecipeSearchParams {
   number?: number;
 }
 
-export interface MealLog {
-  id: string;
-  userId: string;
-  date: string; // YYYY-MM-DD format
-  mealType: "breakfast" | "lunch" | "dinner" | "snack";
-  spoonacularId: number;
-  title: string;
-  image: string;
-  servings: number;
-  nutrition: MealNutrition;
-  spoonacularData: SpoonacularRecipeInfo; // Store full recipe data for reference
-}
-
-export interface MealNutrition {
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  fiber?: number;
-  sugar?: number;
-  sodium?: number;
-  potassium?: number;
-  calcium?: number;
-  zinc?: number;
-  magnesium?: number;
-  omega3?: number;
-  omega6?: number;
-  vitaminC?: number;
-  vitaminD?: number;
-  vitaminA?: number;
-}
-
-export interface DailyNutritionSummary {
-  date: string; // YYYY-MM-DD format
-  totalCalories: number;
-  totalProtein: number;
-  totalCarbs: number;
-  totalFat: number;
-  mealLogs: MealLog[];
-}
-
 // ============= Complex Food Search Types =============
 export interface ComplexFoodSearchResponse {
   results: SpoonacularFood[];

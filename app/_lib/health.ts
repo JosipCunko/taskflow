@@ -5,9 +5,9 @@ import {
   RecipeByIngredientsResponse,
   RecipeSearchParams,
 } from "../_types/spoonacularTypes";
-import { SPOONACULAR_BASE_URL } from "../_utils/healthUtils";
 
 const SPOONACULAR_API_KEY = process.env.NEXT_PUBLIC_SPOONACULAR_API_KEY;
+const SPOONACULAR_BASE_URL = "https://api.spoonacular.com";
 
 async function makeSpoonacularRequest<T>(
   endpoint: string,

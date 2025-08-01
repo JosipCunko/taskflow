@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import { getUserNutritionGoals } from "@/app/_lib/user-admin";
 import { authOptions } from "@/app/_lib/auth";
-import { defaultNutritionGoals } from "@/app/_utils/healthUtils";
+import { defaultNutritionGoals } from "@/app/_utils/utils";
 
 export async function GET() {
   try {

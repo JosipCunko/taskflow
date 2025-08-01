@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { Camera, Grid3x3, Code, Zap } from "lucide-react";
 import { motion } from "framer-motion";
-import { images } from "@/app/_utils/landingPageUtils";
+import { images } from "@/app/_utils/utils";
 
 // Tech Background Pattern Component
 function TechBackgroundPattern() {

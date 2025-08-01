@@ -16,6 +16,12 @@ import {
   Heart,
   Bot,
   User,
+  ListChecks,
+  Tags,
+  BellRing,
+  BarChart3,
+  Sparkles,
+  Rocket,
 } from "lucide-react";
 import {
   DayOfWeek,
@@ -24,6 +30,9 @@ import {
   TimeManagementStats,
   NotificationType,
   NotificationPriority,
+  LoggedMeal,
+  UserNutritionGoals,
+  DailyNutritionSummary,
 } from "../_types/types";
 import {
   differenceInDays,
@@ -37,7 +46,137 @@ import {
 } from "date-fns";
 import { isFuture, isToday } from "date-fns";
 import { customToast } from "./toasts";
-import { CardSpecificIcons } from "./icons";
+import { CardSpecificIcons, FoodIcons } from "./icons";
+import { CuisineType, DietType, MealType } from "../_types/spoonacularTypes";
+
+/* Landing Page */
+export const stats = [
+  {
+    icon: CardSpecificIcons.User,
+    value: 1,
+    label: "Active Users",
+    suffix: "",
+  },
+  {
+    icon: CardSpecificIcons.MarkComplete,
+    value: 460,
+    label: "Total tasks Created",
+    suffix: "+",
+  },
+  {
+    icon: CardSpecificIcons.Time,
+    value: 7200,
+    label: "Tasks reviewed",
+    suffix: "",
+  },
+  {
+    icon: CardSpecificIcons.Priority,
+    value: 100,
+    label: "Reliability",
+    suffix: "%",
+  },
+];
+
+export const images = [
+  {
+    src: "/addTask.png",
+    alt: "A user adds a new task to their list in the TaskFlow application.",
+    title: "Add New Task",
+    category: "Management",
+  },
+  {
+    src: "/calendar.png",
+    alt: "A user views their calendar in the TaskFlow application.",
+    title: "View Your Calendar",
+    category: "Planning",
+  },
+  {
+    src: "/taskCustomization.png",
+    alt: "A user customizes a task, setting a due date and duration.",
+    title: "Customize Your Tasks",
+    category: "Customization",
+  },
+  {
+    src: "/profile.png",
+    alt: "The user profile page, displaying statistics and settings.",
+    title: "Manage Your Profile",
+    category: "Analytics",
+  },
+  {
+    src: "/tasks.png",
+    alt: "The user tasks page, displaying tasks and settings.",
+    title: "Manage Your Tasks",
+    category: "Organization",
+  },
+  {
+    src: "/today.png",
+    alt: "A user views their tasks for the current day in the TaskFlow application.",
+    title: "Tasks for Today",
+    category: "Focus",
+  },
+];
+
+export const features = [
+  {
+    icon: ListChecks,
+    label: "Smart Task Management",
+    description:
+      "Create tasks with dependencies, enjoy auto-rescheduling for missed items, track statuses (pending, completed, delayed), and earn experience points for completion.",
+  },
+  {
+    icon: Tags,
+    label: "Advanced Tagging & Customization",
+    description:
+      "Organize with custom tags (e.g., morning routine, gym), a versatile color palette, priority focus tags, and a wide selection of task icons.",
+  },
+  {
+    icon: BellRing,
+    label: "Intelligent Reminders",
+    description:
+      "Set flexible reminders with snooze functionality and multiple dismiss options to stay on top of your schedule effortlessly.",
+  },
+  {
+    icon: BarChart3,
+    label: "Progress Tracking & Analytics",
+    description:
+      "Monitor your consistency with streak visuals, earn reward points, and view detailed performance metrics like completion rates and delay statistics on your dashboard.",
+  },
+  {
+    icon: Sparkles,
+    label: "Seamless User Experience",
+    description:
+      "Enjoy a modern, eye-friendly dark theme, fully responsive design for all devices, intuitive navigation, and smooth loading states for a delightful experience.",
+  },
+  {
+    icon: Rocket,
+    label: "Optimized & Modern Tech",
+    description:
+      "Built with Next.js 15 (App Router), React 19, and Firebase for a fast, scalable, and reliable task management solution with real-time updates.",
+  },
+];
+
+export const programmingFeatures = [
+  {
+    title: "Real-time Data Sync",
+    tag: "SYS_SYNC",
+    imgPath: "/database.png",
+  },
+  {
+    title: "Secure Auth Layer",
+    tag: "AUTH_GATE",
+    imgPath: "/security.png",
+  },
+  {
+    title: "Popular and Optimized",
+    tag: "BEST_POPULAR",
+    imgPath: "/usage.png",
+  },
+  {
+    title: "Analytics & Insights",
+    tag: "ANALYTICS_CORE",
+    imgPath: "/analytics.png",
+  },
+];
 
 export const colorsColorPicker = [
   "var(--color-primary-500)",
@@ -838,15 +977,24 @@ export const calcNextPointsMilestone = (
 
   if (currentPoints >= 10000) {
     nextMilestone = 10000;
-    currentMilestoneColor = "#00c853";
+    currentMilestoneColor = "var(--color-success)";
   }
-  if (currentPoints > nextMilestone * 0.2) currentMilestoneColor = "#cf6679";
-  if (currentPoints > nextMilestone * 0.4) currentMilestoneColor = "#fbabab";
-  if (currentPoints > nextMilestone * 0.6) currentMilestoneColor = "#ffd600";
-  if (currentPoints > nextMilestone * 0.8) currentMilestoneColor = "#0ea5e9";
-  if (currentPoints > nextMilestone * 0.9) currentMilestoneColor = "#00c853";
+  if (currentPoints > nextMilestone * 0.2)
+    currentMilestoneColor = "var(--color-error)";
+  if (currentPoints > nextMilestone * 0.4)
+    currentMilestoneColor = "var(--color-accent-400)";
+  if (currentPoints > nextMilestone * 0.6)
+    currentMilestoneColor = "var(--color-warning)";
+  if (currentPoints > nextMilestone * 0.8)
+    currentMilestoneColor = "var(--color-primary-500)";
+  if (currentPoints > nextMilestone * 0.9)
+    currentMilestoneColor = "var(--color-success)";
 
   return { nextMilestone, currentMilestoneColor };
+};
+
+export const getProgressPercentage = (points: number, currentGoal: number) => {
+  return Math.min(Math.max((points / currentGoal) * 100, 0), 100);
 };
 
 export function formatDuration(seconds: number): string {
@@ -867,3 +1015,135 @@ export function formatHour(hour: number): string {
   const formattedHour = hour % 12 || 12; // Converts 0 to 12
   return `${formattedHour} ${ampm}`;
 }
+
+/* Health */
+
+export const defaultNutritionGoals: UserNutritionGoals = {
+  calories: 2000,
+  carbs: 270,
+  protein: 105,
+  fat: 55,
+  updatedAt: new Date(),
+};
+
+export const defaultDailyNutritionSummary: DailyNutritionSummary = {
+  date: new Date(),
+  totalCalories: 0,
+  totalProtein: 0,
+  totalCarbs: 0,
+  totalFat: 0,
+  loggedMeals: [] as LoggedMeal[],
+};
+
+export const generateNutrients = (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  nutrients?: any,
+  nutritionGoals?: UserNutritionGoals
+) => [
+  {
+    label: "Calories",
+    current: nutrients?.totalCalories || nutrients?.calories,
+    goal: nutritionGoals?.calories,
+    unit: "kcal",
+    icon: FoodIcons.Calories,
+    color: "text-primary-500",
+  },
+  {
+    label: "Protein",
+    current: nutrients?.totalProtein || nutrients?.protein,
+    goal: nutritionGoals?.protein,
+    unit: "g",
+    icon: FoodIcons.Protein,
+    color: "text-accent",
+  },
+  {
+    label: "Carbs",
+    current: nutrients?.totalCarbs || nutrients?.carbs,
+    goal: nutritionGoals?.carbs,
+    unit: "g",
+    icon: FoodIcons.Carbs,
+    color: "text-success",
+  },
+  {
+    label: "Fat",
+    current: nutrients?.totalFat || nutrients?.fat,
+    goal: nutritionGoals?.fat,
+    unit: "g",
+    icon: FoodIcons.Fat,
+    color: "text-warning",
+  },
+];
+
+export const cuisineOptions: CuisineType[] = [
+  "american",
+  "asian",
+  "british",
+  "caribbean",
+  "chinese",
+  "french",
+  "german",
+  "greek",
+  "indian",
+  "italian",
+  "japanese",
+  "korean",
+  "mediterranean",
+  "mexican",
+  "middle eastern",
+  "spanish",
+  "thai",
+];
+export const dietOptions: DietType[] = [
+  "gluten free",
+  "ketogenic",
+  "vegetarian",
+  "vegan",
+  "pescetarian",
+  "paleo",
+  "primal",
+  "whole30",
+];
+export const mealTypeOptions: MealType[] = [
+  "main course",
+  "side dish",
+  "dessert",
+  "appetizer",
+  "salad",
+  "breakfast",
+  "soup",
+  "snack",
+];
+export const mealTypes = [
+  "breakfast",
+  "lunch",
+  "dinner",
+  "snack",
+] as LoggedMeal["mealType"][];
+
+export const getProgressColor = (percentage: number) => {
+  if (percentage >= 100) return "bg-success";
+  if (percentage >= 50) return "bg-warning";
+  return "bg-info";
+};
+
+export const getRecipeImageUrl = (
+  recipeId: number,
+  imageType: string = "jpg"
+): string => {
+  return `https://img.spoonacular.com/recipes/${recipeId}-312x231.${imageType}`;
+};
+
+export const getHealthScoreColor = (score: number) => {
+  if (score >= 80) return "text-success";
+  if (score >= 60) return "text-warning";
+  return "text-error";
+};
+
+export const getDifficultyBadge = (readyInMinutes: number | undefined) => {
+  if (readyInMinutes === undefined)
+    return { text: "Unknown", color: "bg-primary-500" };
+  if (readyInMinutes <= 20) return { text: "Quick", color: "bg-success" };
+  if (readyInMinutes <= 45) return { text: "Easy", color: "bg-info" };
+  if (readyInMinutes <= 90) return { text: "Medium", color: "bg-warning" };
+  return { text: "Hard", color: "bg-error" };
+};

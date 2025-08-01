@@ -257,3 +257,50 @@ export interface CampaignNotification {
   type: NotificationType;
   priority: NotificationPriority;
 }
+
+export interface SavedMeal {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  producer?: string;
+  nutrientsPer100g: MealNutrition;
+  ingredients: string[];
+  createdAt: Date;
+  readyInMinutes?: number;
+}
+
+export interface LoggedMeal extends SavedMeal {
+  mealType: "breakfast" | "lunch" | "dinner" | "snack";
+  servingSize: number;
+  calculatedNutrients: MealNutrition;
+  loggedAt: Date;
+}
+
+export interface MealNutrition {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber?: number;
+  sugar?: number;
+  sodium?: number;
+  potassium?: number;
+  calcium?: number;
+  zinc?: number;
+  magnesium?: number;
+  omega3?: number;
+  omega6?: number;
+  vitaminC?: number;
+  vitaminD?: number;
+  vitaminA?: number;
+}
+
+export interface DailyNutritionSummary {
+  date: Date;
+  totalCalories: number;
+  totalProtein: number;
+  totalCarbs: number;
+  totalFat: number;
+  loggedMeals: LoggedMeal[];
+}

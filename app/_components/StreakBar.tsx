@@ -1,4 +1,7 @@
-import { calcNextPointsMilestone } from "../_utils/utils";
+import {
+  calcNextPointsMilestone,
+  getProgressPercentage,
+} from "../_utils/utils";
 
 type StreakBarProps = {
   points: number;
@@ -8,8 +11,7 @@ export default function StreakBar({ points }: StreakBarProps) {
   const { nextMilestone: currentGoal, currentMilestoneColor } =
     calcNextPointsMilestone(points);
 
-  // Calculate percentage, ensuring it stays between 0 and 100
-  const percentage = Math.min(Math.max((points / currentGoal) * 100, 0), 100);
+  const percentage = getProgressPercentage(points, currentGoal);
 
   return (
     <div className="w-full space-y-2">

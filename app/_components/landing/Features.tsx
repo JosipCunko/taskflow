@@ -2,7 +2,7 @@
 "use client";
 import DecryptedText from "../animations/DecryptedText";
 import { LucideIcon, Zap } from "lucide-react";
-import { features } from "@/app/_utils/landingPageUtils";
+import { features } from "@/app/_utils/utils";
 import { motion } from "framer-motion";
 
 export default function Features() {

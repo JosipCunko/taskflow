@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authOptions } from "@/app/_lib/auth";
-import { getRandomRecipes } from "@/app/_lib/spoonacular-admin";
+import { getRandomRecipes } from "@/app/_lib/health-admin";
 import { SpoonacularRecipeInfo } from "@/app/_types/spoonacularTypes";
 
 export async function POST(request: NextRequest) {

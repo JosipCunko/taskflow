@@ -1,6 +1,6 @@
 import AnimatedNumber from "../animations/AnimatedNumber";
 import GridAndDotsBackground from "../animations/GridAndDotsBackground";
-import { stats } from "@/app/_utils/landingPageUtils";
+import { stats } from "@/app/_utils/utils";
 
 function StatsSection() {
   return (

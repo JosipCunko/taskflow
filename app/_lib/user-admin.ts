@@ -9,7 +9,7 @@ import {
 } from "../_types/types";
 import { Timestamp, FieldValue } from "firebase-admin/firestore";
 import { unstable_cache } from "next/cache";
-import { defaultNutritionGoals } from "../_utils/healthUtils";
+import { defaultNutritionGoals } from "../_utils/utils";
 
 export const getUserById = unstable_cache(
   async (userId: string): Promise<AppUser | null> => {

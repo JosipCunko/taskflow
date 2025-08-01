@@ -3,18 +3,19 @@ import "server-only";
 import { adminDb } from "./admin";
 import {
   SpoonacularRecipeInfo,
-  MealLog,
-  MealNutrition,
-  DailyNutritionSummary,
-  BulkRecipeInfoResponse,
   RandomRecipesResponse,
 } from "../_types/spoonacularTypes";
-import { unstable_cache } from "next/cache";
 import {
-  defaultDailyNutritionSummary,
-  SPOONACULAR_BASE_URL,
-} from "../_utils/healthUtils";
+  LoggedMeal,
+  DailyNutritionSummary,
+  SavedMeal,
+  ActionResult,
+} from "../_types/types";
+import { unstable_cache } from "next/cache";
+import { defaultDailyNutritionSummary } from "../_utils/utils";
+import { isSameDay } from "date-fns";
 const SPOONACULAR_API_KEY = process.env.NEXT_PUBLIC_SPOONACULAR_API_KEY;
+const SPOONACULAR_BASE_URL = "https://api.spoonacular.com";
 
 async function makeSpoonacularRequestServer<T>(
   endpoint: string,
@@ -93,101 +94,92 @@ export async function getRecipeInformation(
   );
 }
 
-/**
- * Get information about multiple recipes at once
- * GET /recipes/informationBulk
- */
-export async function getBulkRecipeInformation(
-  recipeIds: number[],
-  includeNutrition: boolean = true
-): Promise<BulkRecipeInfoResponse> {
-  return makeSpoonacularRequestServer<BulkRecipeInfoResponse>(
-    "/recipes/informationBulk",
-    {
-      ids: recipeIds.join(","),
-      includeNutrition,
-    }
-  );
-}
-
-// ============= Meal Logging Helper Functions =============
-export function extractNutritionFromRecipe(
-  recipe: SpoonacularRecipeInfo,
-  servings: number = 1
-): MealNutrition {
-  const nutrition: MealNutrition = {
-    calories: 0,
-    protein: 0,
-    carbs: 0,
-    fat: 0,
-    fiber: 0,
-    sugar: 0,
-    sodium: 0,
-  };
-
-  if (recipe.nutrition && recipe.nutrition.nutrients) {
-    const nutrients = recipe.nutrition.nutrients;
-
-    const findNutrient = (name: string): number => {
-      const nutrient = nutrients.find((n) =>
-        n.name.toLowerCase().includes(name.toLowerCase())
-      );
-      return nutrient ? (nutrient.amount * servings) / recipe.servings : 0;
-    };
-
-    nutrition.calories = findNutrient("Calories");
-    nutrition.protein = findNutrient("Protein");
-    nutrition.carbs = findNutrient("Carbohydrates");
-    nutrition.fat = findNutrient("Fat");
-    nutrition.fiber = findNutrient("Fiber");
-    nutrition.sugar = findNutrient("Sugar");
-    nutrition.sodium = findNutrient("Sodium");
-  }
-
-  return nutrition;
-}
-
-// ============= DB Functions =============
-
-export async function getMealLogsForDate(
+export async function getLoggedMealsForDate(
   userId: string,
-  date: string
-): Promise<MealLog[]> {
+  date: Date
+): Promise<LoggedMeal[]> {
   try {
     const snapshot = await adminDb
-      .collection("mealLogs")
+      .collection("loggedMeals")
       .where("userId", "==", userId)
-      .where("date", "==", date)
       .orderBy("loggedAt", "asc")
       .get();
 
-    const mealLogs: MealLog[] = [];
+    const loggedMeals: LoggedMeal[] = [];
     snapshot.forEach((doc) => {
-      mealLogs.push(doc.data() as MealLog);
-    });
+      const data = doc.data();
+      const loggedAt = data.loggedAt?.toDate
+        ? data.loggedAt.toDate()
+        : new Date(data.loggedAt);
 
-    return mealLogs;
+      if (isSameDay(loggedAt, date)) {
+        const plainLoggedMeal = {
+          id: doc.id,
+          userId: data.userId,
+          name: data.name,
+          description: data.description,
+          producer: data.producer,
+          nutrientsPer100g: data.nutrientsPer100g,
+          ingredients: data.ingredients,
+          createdAt: data.createdAt?.toDate
+            ? data.createdAt.toDate()
+            : new Date(data.createdAt),
+          readyInMinutes: data.readyInMinutes,
+          mealType: data.mealType,
+          servingSize: data.servingSize,
+          calculatedNutrients: data.calculatedNutrients,
+          loggedAt,
+        } as LoggedMeal;
+        loggedMeals.push(plainLoggedMeal);
+      }
+    });
+    return loggedMeals;
   } catch (error) {
     console.error("Error fetching meal logs:", error);
     return [];
   }
 }
+export async function getLoggedMealsForDateRange(
+  userId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<LoggedMeal[]> {
+  try {
+    const snapshot = await adminDb
+      .collection("loggedMeals")
+      .where("userId", "==", userId)
+      .where("loggedAt", ">=", startDate)
+      .where("loggedAt", "<=", endDate)
+      .orderBy("loggedAt", "asc")
+      .get();
+
+    const loggedMeals: LoggedMeal[] = [];
+    snapshot.forEach((doc) => {
+      loggedMeals.push(doc.data() as LoggedMeal);
+    });
+
+    return loggedMeals;
+  } catch (error) {
+    console.error("Error fetching meal logs for date range:", error);
+    return [];
+  }
+}
 
 export const getDailyNutritionSummary = unstable_cache(
-  async (userId: string, date: string): Promise<DailyNutritionSummary> => {
+  async (userId: string, date: Date): Promise<DailyNutritionSummary> => {
     try {
-      const mealLogs = await getMealLogsForDate(userId, date);
+      const loggedMeals = await getLoggedMealsForDate(userId, date);
 
-      if (!mealLogs) {
+      if (!loggedMeals) {
         return defaultDailyNutritionSummary;
       }
 
-      const totals = mealLogs.reduce(
+      const totals = loggedMeals.reduce(
         (acc, log) => ({
-          calories: acc.calories + log.nutrition.calories,
-          protein: acc.protein + log.nutrition.protein,
-          carbs: acc.carbs + log.nutrition.carbs,
-          fat: acc.fat + log.nutrition.fat,
+          calories: acc.calories + log.calculatedNutrients.calories,
+          protein: acc.protein + log.calculatedNutrients.protein,
+          carbs: acc.carbs + log.calculatedNutrients.carbs,
+          fat: acc.fat + log.calculatedNutrients.fat,
         }),
         { calories: 0, protein: 0, carbs: 0, fat: 0 }
       );
@@ -198,7 +190,7 @@ export const getDailyNutritionSummary = unstable_cache(
         totalProtein: Math.round(totals.protein),
         totalCarbs: Math.round(totals.carbs),
         totalFat: Math.round(totals.fat),
-        mealLogs,
+        loggedMeals,
       };
 
       return summary;
@@ -209,29 +201,31 @@ export const getDailyNutritionSummary = unstable_cache(
   }
 );
 
-export async function getMealLogsForDateRange(
-  userId: string,
-  startDate: string,
-  endDate: string
-): Promise<MealLog[]> {
+export const getSavedMeals = async (
+  userId: string
+): Promise<ActionResult<SavedMeal[]>> => {
   try {
-    const snapshot = await adminDb
-      .collection("mealLogs")
-      .where("userId", "==", userId)
-      .where("date", ">=", startDate)
-      .where("date", "<=", endDate)
-      .orderBy("date", "asc")
-      .orderBy("loggedAt", "asc")
-      .get();
+    const savedMealsQuery = adminDb
+      .collection("savedMeals")
+      .where("userId", "==", userId);
 
-    const mealLogs: MealLog[] = [];
-    snapshot.forEach((doc) => {
-      mealLogs.push(doc.data() as MealLog);
+    const querySnapshot = await savedMealsQuery.get();
+    const savedMeals: SavedMeal[] = [];
+
+    querySnapshot.forEach((doc) => {
+      savedMeals.push({ id: doc.id, ...doc.data() } as SavedMeal);
     });
 
-    return mealLogs;
+    return {
+      success: true,
+      data: savedMeals,
+    };
   } catch (error) {
-    console.error("Error fetching meal logs for date range:", error);
-    return [];
+    console.error("Error fetching saved meals:", error);
+    return {
+      success: false,
+      error: "Failed to fetch saved meals",
+      data: [] as SavedMeal[],
+    };
   }
-}
+};

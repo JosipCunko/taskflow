@@ -1,7 +1,7 @@
 "use client";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { programmingFeatures } from "@/app/_utils/landingPageUtils";
+import { programmingFeatures } from "@/app/_utils/utils";
 
 const cardVariants = {
   initial: { opacity: 0, y: 20 },

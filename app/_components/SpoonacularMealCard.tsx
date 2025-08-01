@@ -1,29 +1,20 @@
 "use client";
 
-import { useState, useTransition, useMemo, useCallback } from "react";
+import { useCallback } from "react";
 import Image from "next/image";
-import {
-  SpoonacularRecipeInfo,
-  MealNutrition,
-  MealType,
-  MealLog,
-} from "@/app/_types/spoonacularTypes";
-import { createMealLog } from "@/app/_lib/spoonacularActions";
-import { customToast } from "@/app/_utils/toasts";
+import { SpoonacularRecipeInfo } from "@/app/_types/spoonacularTypes";
 import Button from "./reusable/Button";
-import Input from "./reusable/Input";
 import {
   Utensils,
   Clock,
-  Plus,
   AlertTriangle,
   Flame,
   Beef,
   Wheat,
   Drumstick,
-  DollarSign,
   Heart,
 } from "lucide-react";
+import { MealNutrition } from "../_types/types";
 
 const getDifficultyBadge = (readyInMinutes: number) => {
   if (readyInMinutes <= 20) return { text: "Quick", color: "bg-success" };
@@ -73,14 +64,11 @@ const NutritionDisplay = ({
     );
   }
 
-  // Calculate calories from macros for verification
   const calculatedCalories =
     nutrients.protein * 4 + nutrients.carbs * 4 + nutrients.fat * 9;
   const calorieDiscrepancy = Math.abs(nutrients.calories - calculatedCalories);
-
   const totalMacroCalories =
     (nutrients.protein + nutrients.carbs) * 4 + nutrients.fat * 9;
-
   const macroNutrients = [
     {
       name: "Calories",
@@ -227,28 +215,9 @@ const DietaryBadges = ({ recipe }: { recipe: SpoonacularRecipeInfo }) => {
 
 export default function SpoonacularMealCard({
   recipe,
-  onActionComplete,
 }: {
   recipe: SpoonacularRecipeInfo;
-  onActionComplete: () => void;
 }) {
-  const [isPending, startTransition] = useTransition();
-  const [selectedData, setSelectedData] = useState({
-    mealType: "lunch" as MealLog["mealType"],
-    servings: 1,
-  });
-
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    const isNumeric = name === "servings";
-    setSelectedData((prev) => ({
-      ...prev,
-      [name]: isNumeric ? parseFloat(value) : value,
-    }));
-  };
-
   const extractNutritionFromRecipe = useCallback(
     (servings: number): MealNutrition => {
       const nutrition: MealNutrition = {
@@ -302,43 +271,24 @@ export default function SpoonacularMealCard({
     [recipe]
   );
 
-  const currentNutrition = useMemo((): MealNutrition => {
-    return extractNutritionFromRecipe(selectedData.servings);
-  }, [selectedData.servings, extractNutritionFromRecipe]);
-
-  const handleLog = () => {
-    startTransition(async () => {
-      const result = await createMealLog(
-        new Date().toISOString().split("T")[0],
-        selectedData.mealType,
-        selectedData.servings,
-        recipe
-      );
-      if (result.success) {
-        customToast("Success", "Meal logged successfully!");
-        onActionComplete();
-      } else {
-        customToast("Error", result.error || "Failed to log meal.");
-      }
-    });
-  };
-
   const difficultyBadge = getDifficultyBadge(recipe.readyInMinutes);
 
   return (
     <div className="bg-background-600 border border-background-500 rounded-xl shadow-lg p-4 space-y-4">
-      {/* Header with Title and Image */}
-      <div className="flex gap-4 items-start">
-        <Image
-          src={getRecipeImageUrl(recipe.id, recipe.imageType)}
-          alt={recipe.title}
-          width={80}
-          height={80}
-          className="rounded-lg object-cover"
-        />
+      <div className="flex flex-col gap-4 items-start">
+        <div className="w-full h-40 relative">
+          <Image
+            src={getRecipeImageUrl(recipe.id, recipe.imageType)}
+            alt={recipe.title}
+            fill
+            className="rounded-lg object-cover w-full"
+          />
+        </div>
         <div className="flex-1">
-          <h2 className="text-xl font-bold text-text-high">{recipe.title}</h2>
-          <div className="flex items-center gap-4 text-sm text-text-low mt-1 flex-wrap">
+          <h2 className="text-xl font-bold text-pretty text-text-high">
+            {recipe.title}
+          </h2>
+          <div className="flex items-center gap-2 text-sm text-text-low mt-1 flex-wrap">
             {recipe.readyInMinutes && (
               <span className="flex items-center gap-1">
                 <Clock size={14} /> {recipe.readyInMinutes} min
@@ -364,8 +314,7 @@ export default function SpoonacularMealCard({
             )}
             {recipe.pricePerServing > 0 && (
               <span className="flex items-center gap-1">
-                <DollarSign size={14} />
-                <span className="text-text-medium">
+                <span className="text-text-gray">
                   ${(recipe.pricePerServing / 100).toFixed(2)}/serving
                 </span>
               </span>
@@ -376,7 +325,6 @@ export default function SpoonacularMealCard({
         </div>
       </div>
 
-      {/* Cuisines and Dish Types */}
       {(recipe.cuisines.length > 0 || recipe.dishTypes.length > 0) && (
         <div className="space-y-2">
           {recipe.cuisines.length > 0 && (
@@ -400,9 +348,9 @@ export default function SpoonacularMealCard({
             </div>
           )}
           {recipe.dishTypes.length > 0 && (
-            <div className="flex items-center gap-2 text-sm">
+            <div className="text-sm">
               <span className="text-text-high font-medium">Types:</span>
-              <div className="flex flex-wrap gap-1">
+              <div className="flex items-center flex-wrap gap-1">
                 {recipe.dishTypes.slice(0, 3).map((type) => (
                   <span
                     key={type}
@@ -423,50 +371,10 @@ export default function SpoonacularMealCard({
       )}
 
       <NutritionDisplay
-        nutrients={currentNutrition}
+        nutrients={extractNutritionFromRecipe(1)}
         servingSize={recipe.nutrition?.weightPerServing?.amount || 1}
         servingUnit={recipe.nutrition?.weightPerServing?.unit || "serving"}
       />
-
-      {/* Logging Controls */}
-      <div className="space-y-4 pt-4 border-t border-background-500">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-text-high mb-1">
-              Meal Type
-            </label>
-            <select
-              name="mealType"
-              value={selectedData.mealType}
-              onChange={handleInputChange}
-              className="w-full capitalize px-3 py-2 bg-background-625 border border-background-500 rounded-lg text-text-high focus:ring-primary-500"
-            >
-              {["breakfast", "lunch", "dinner", "snack"].map((type) => (
-                <option key={type} value={type as MealType}>
-                  {type}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-text-high mb-1">
-              Servings
-            </label>
-            <Input
-              name="servings"
-              type="number"
-              value={selectedData.servings}
-              onChange={handleInputChange}
-              min={0.25}
-              step={0.25}
-            />
-          </div>
-        </div>
-
-        <Button onClick={handleLog} disabled={isPending} className="w-full">
-          <Plus size={16} /> {isPending ? "Logging..." : "Log this Meal"}
-        </Button>
-      </div>
     </div>
   );
 }

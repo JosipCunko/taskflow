@@ -32,17 +32,16 @@ import {
   defaultNutritionGoals,
   dietOptions,
   getProgressColor,
+  formatDate,
   getProgressPercentage,
   mealTypeOptions,
-} from "@/app/_utils/healthUtils";
-import { formatDate } from "@/app/_utils/utils";
+  generateNutrients,
+} from "@/app/_utils/utils";
 import { setUserNutritionGoalsAction } from "@/app/_lib/actions";
-import {
-  searchRecipes,
-  searchRecipesByIngredients,
-} from "@/app/_lib/spoonacular";
-import { CardSpecificIcons, FoodIcons } from "@/app/_utils/icons";
-import LogMealForm from "@/app/_components/LogMealForm";
+import { searchRecipes, searchRecipesByIngredients } from "@/app/_lib/health";
+import { CardSpecificIcons } from "@/app/_utils/icons";
+import AddLoggedMeal from "@/app/_components/AddLoggedMeal";
+import AddSavedMeal from "@/app/_components/AddSavedMeal";
 import LoggedMealCard from "@/app/_components/LoggedMealCard";
 import SpoonacularMealCard from "@/app/_components/SpoonacularMealCard";
 
@@ -132,78 +131,73 @@ export default function HealthClientUI() {
     [logMealModalOpenName]
   );
 
-  const nutrients = [
-    {
-      label: "Calories",
-      current: state.dailyNutritionSummary.totalCalories,
-      goal: state.nutritionGoals.calories,
-      unit: "kcal",
-      icon: FoodIcons.Calories,
-      color: "text-primary-500",
-    },
-    {
-      label: "Protein",
-      current: state.dailyNutritionSummary.totalProtein,
-      goal: state.nutritionGoals.protein,
-      unit: "g",
-      icon: FoodIcons.Protein,
-      color: "text-accent",
-    },
-    {
-      label: "Carbs",
-      current: state.dailyNutritionSummary.totalCarbs,
-      goal: state.nutritionGoals.carbs,
-      unit: "g",
-      icon: FoodIcons.Carbs,
-      color: "text-success",
-    },
-    {
-      label: "Fat",
-      current: state.dailyNutritionSummary.totalFat,
-      goal: state.nutritionGoals.fat,
-      unit: "g",
-      icon: FoodIcons.Fat,
-      color: "text-warning",
-    },
-  ];
+  const [saveMealModalOpenName, setSaveMealModalOpenName] =
+    useState<string>("");
+  const openSaveMealModal = (name: string) => setSaveMealModalOpenName(name);
+  const closeSaveMealModal = () => setSaveMealModalOpenName("");
+  const saveMealModalContextValue = useMemo(
+    () => ({
+      openName: saveMealModalOpenName,
+      open: openSaveMealModal,
+      close: closeSaveMealModal,
+    }),
+    [saveMealModalOpenName]
+  );
 
   const loadDailyNutritionSummary = async () => {
     startTransition(async () => {
-      const request = await fetch("/api/health/dailySummary", {
-        method: "POST",
-        body: JSON.stringify({
-          date: state.currentDate.toISOString().split("T")[0],
-        }),
-      });
-      const data = await request.json();
-      dispatchField("dailyNutritionSummary", data.data);
+      try {
+        const res = await fetch("/api/health/dailySummary", {
+          method: "POST",
+          body: JSON.stringify({
+            date: state.currentDate,
+          }),
+        });
+        const data = await res.json();
+        if (data.data) {
+          dispatchField("dailyNutritionSummary", data.data);
+        }
+      } catch (error) {
+        console.error("Error loading daily nutrition summary:", error);
+        customToast("Error", "Failed to load daily nutrition summary");
+      }
     });
   };
 
   const loadUserNutritionGoals = async () => {
     startTransition(async () => {
-      const request = await fetch("/api/user/nutritionGoals");
-      const data = await request.json();
-      dispatchField("nutritionGoals", data.data);
+      try {
+        const res = await fetch("/api/user/nutritionGoals");
+        const data = await res.json();
+        dispatchField("nutritionGoals", data.data);
+      } catch {
+        customToast("Error", "Failed to load nutrition goals");
+      }
     });
   };
 
   const loadRandomRecipes = async () => {
     startTransition(async () => {
-      const request = await fetch("/api/health/randomRecipes", {
-        method: "POST",
-        body: JSON.stringify({
-          number: 3,
-          includeTags: undefined,
-          excludeTags: undefined,
-          limitLicense: undefined,
-        }),
-      });
-      const data = await request.json();
-      dispatchField("randomRecipes", data.data);
+      try {
+        const res = await fetch("/api/health/randomRecipes", {
+          method: "POST",
+          body: JSON.stringify({
+            number: 3,
+            includeTags: undefined,
+            excludeTags: undefined,
+            limitLicense: undefined,
+          }),
+        });
+        const data = await res.json();
+        if (data.data) {
+          dispatchField("randomRecipes", data.data);
+        }
+      } catch (error) {
+        console.error("Error loading random recipes:", error);
+        customToast("Error", "Failed to load recipe suggestions");
+      }
     });
   };
-
   useEffect(() => {
     loadDailyNutritionSummary();
     loadUserNutritionGoals();
@@ -318,6 +312,15 @@ export default function HealthClientUI() {
             </Button>
           </Modal.Open>
         </ModalContext.Provider>
+
+        <ModalContext.Provider value={saveMealModalContextValue}>
+          <Modal.Open opens="save-meal">
+            <Button>
+              <Plus className="w-4 aspect-square" />
+              Save your meal
+            </Button>
+          </Modal.Open>
+        </ModalContext.Provider>
       </div>
 
       {/* Daily Summary */}
@@ -327,10 +330,13 @@ export default function HealthClientUI() {
           Daily nutrition summary for {formatDate(state.currentDate)}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {nutrients.map((nutrient) => {
+          {generateNutrients(
+            state.dailyNutritionSummary,
+            state.nutritionGoals
+          ).map((nutrient) => {
             const percentage = getProgressPercentage(
-              nutrient.current,
-              nutrient.goal
+              nutrient.current!,
+              nutrient.goal!
             );
             const Icon = nutrient.icon;
             return (
@@ -345,7 +351,7 @@ export default function HealthClientUI() {
                   {nutrient.label}
                 </h3>
                 <div className="text-2xl font-bold text-text-high mb-2">
-                  {Math.round(nutrient.current)}
+                  {Math.round(nutrient.current!)}
                   <span className="text-sm font-normal text-text-low">
                     /{nutrient.goal} {nutrient.unit}
                   </span>
@@ -375,11 +381,11 @@ export default function HealthClientUI() {
             Meals recorded on {formatDate(state.currentDate)}
           </h2>
           <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
-            {state.dailyNutritionSummary.mealLogs.length > 0 ? (
-              state.dailyNutritionSummary.mealLogs.map((log) => (
+            {state.dailyNutritionSummary.loggedMeals.length > 0 ? (
+              state.dailyNutritionSummary.loggedMeals.map((loggedMeal) => (
                 <LoggedMealCard
-                  key={log.id}
-                  mealLog={log}
+                  key={loggedMeal.id}
+                  loggedMeal={loggedMeal}
                   onActionComplete={loadDailyNutritionSummary}
                 />
               ))
@@ -391,7 +397,6 @@ export default function HealthClientUI() {
           </div>
         </div>
 
-        {/* Recipe Suggestions Column */}
         <div className="lg:col-span-2 bg-background-600 border border-background-500 rounded-xl shadow-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-text-high flex items-center gap-2">
@@ -413,18 +418,28 @@ export default function HealthClientUI() {
             </Button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {state.randomRecipes.map((recipe) => (
-              <SpoonacularMealCard
-                key={recipe.id}
-                recipe={recipe as SpoonacularRecipeInfo}
-                onActionComplete={loadDailyNutritionSummary}
-              />
-            ))}
+            {isPending
+              ? // Loading skeleton for random recipes
+                [1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="bg-background-500 rounded-lg p-4 animate-pulse"
+                  >
+                    <div className="h-32 bg-background-400 rounded mb-3" />
+                    <div className="h-4 w-3/4 bg-background-400 rounded mb-2" />
+                    <div className="h-3 w-1/2 bg-background-400 rounded" />
+                  </div>
+                ))
+              : state.randomRecipes.map((recipe) => (
+                  <SpoonacularMealCard
+                    key={recipe.id}
+                    recipe={recipe as SpoonacularRecipeInfo}
+                  />
+                ))}
           </div>
         </div>
       </div>
 
-      {/* Food Search Section */}
       <div className="bg-background-600 border border-background-500 rounded-xl shadow-lg p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-text-high flex items-center gap-2">
@@ -458,7 +473,6 @@ export default function HealthClientUI() {
           </div>
         </div>
 
-        {/* Search Input */}
         <div className="flex gap-4 mb-4">
           <Input
             placeholder={
@@ -571,7 +585,6 @@ export default function HealthClientUI() {
                 <SpoonacularMealCard
                   key={recipe.id}
                   recipe={recipe as SpoonacularRecipeInfo}
-                  onActionComplete={loadDailyNutritionSummary}
                 />
               ))}
             </div>
@@ -595,36 +608,18 @@ export default function HealthClientUI() {
               Set Daily Nutrition Goals
             </h2>
             <div className="space-y-4">
-              {[
-                {
-                  name: "calories",
-                  label: "Calories (kcal)",
-                  value: state.nutritionGoals.calories,
-                },
-                {
-                  name: "protein",
-                  label: "Protein (g)",
-                  value: state.nutritionGoals.protein,
-                },
-                {
-                  name: "carbs",
-                  label: "Carbohydrates (g)",
-                  value: state.nutritionGoals.carbs,
-                },
-                {
-                  name: "fat",
-                  label: "Fat (g)",
-                  value: state.nutritionGoals.fat,
-                },
-              ].map((goal) => (
-                <div key={goal.name}>
+              {generateNutrients(
+                state.dailyNutritionSummary,
+                state.nutritionGoals
+              ).map((goal) => (
+                <div key={goal.label}>
                   <label className="block text-sm font-medium text-text-high mb-1">
                     {goal.label}
                   </label>
                   <Input
                     type="number"
-                    name={goal.name}
-                    value={goal.value}
+                    name={goal.label}
+                    value={goal.goal}
                     onChange={handleGoalInputChange}
                   />
                 </div>
@@ -642,9 +637,15 @@ export default function HealthClientUI() {
         </Modal.Window>
       </ModalContext.Provider>
 
+      <ModalContext.Provider value={saveMealModalContextValue}>
+        <Modal.Window name="save-meal">
+          <AddSavedMeal />
+        </Modal.Window>
+      </ModalContext.Provider>
+
       <ModalContext.Provider value={logMealModalContextValue}>
         <Modal.Window name="log-meal">
-          <LogMealForm />
+          <AddLoggedMeal />
         </Modal.Window>
       </ModalContext.Provider>
     </div>
