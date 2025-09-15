@@ -3,12 +3,11 @@ import { authOptions } from "../_lib/auth";
 import { getTasksByUserId } from "../_lib/tasks-admin";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
-import { Toaster } from "react-hot-toast";
-
 import TopSidebar from "../_components/TopSidebar";
 import AnimatedSidebar from "../_components/AnimatedSidebar";
 import AnalyticsTracker from "../_components/AnalyticsTracker";
 import { getUserById } from "../_lib/user-admin";
+import Providers from "./providers";
 
 export const metadata: Metadata = {
   title: "TaskFlow - WebApp",
@@ -27,7 +26,7 @@ export default async function RootLayout({
   const userData = await getUserById(userId);
 
   return (
-    <>
+    <Providers>
       <AnalyticsTracker userData={userData} />
       <main className="grid grid-rows-1 grid-cols-1 sm:grid-cols-[16rem_1fr] overflow-hidden relative h-screen bg-background-625">
         <AnimatedSidebar />
@@ -36,7 +35,6 @@ export default async function RootLayout({
           {children}
         </div>
       </main>
-      <Toaster position="top-center" containerStyle={{ zIndex: 999999 }} />
-    </>
+    </Providers>
   );
 }

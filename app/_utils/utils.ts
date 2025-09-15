@@ -966,29 +966,28 @@ export const taskCompletionistMilestones = [
 export const calcNextPointsMilestone = (
   currentPoints: number
 ): { nextMilestone: number; currentMilestoneColor: string } => {
-  let nextMilestone = 0;
-  let currentMilestoneColor = "#f75454";
+  const nextMilestone =
+    pointsMilestones.find((m) => m > currentPoints) ||
+    pointsMilestones[pointsMilestones.length - 1];
 
-  pointsMilestones.forEach((milestone, index) => {
-    if (currentPoints >= milestone) {
-      nextMilestone = pointsMilestones[index + 1];
-    }
-  });
+  let currentMilestoneColor = "var(--color-error)"; // Default color
 
-  if (currentPoints >= 10000) {
-    nextMilestone = 10000;
-    currentMilestoneColor = "var(--color-success)";
+  if (nextMilestone) {
+    const percentage = (currentPoints / nextMilestone) * 100;
+    if (percentage >= 90) currentMilestoneColor = "var(--color-success)";
+    else if (percentage >= 80)
+      currentMilestoneColor = "var(--color-primary-500)";
+    else if (percentage >= 60) currentMilestoneColor = "var(--color-warning)";
+    else if (percentage >= 40)
+      currentMilestoneColor = "var(--color-accent-400)";
   }
-  if (currentPoints > nextMilestone * 0.2)
-    currentMilestoneColor = "var(--color-error)";
-  if (currentPoints > nextMilestone * 0.4)
-    currentMilestoneColor = "var(--color-accent-400)";
-  if (currentPoints > nextMilestone * 0.6)
-    currentMilestoneColor = "var(--color-warning)";
-  if (currentPoints > nextMilestone * 0.8)
-    currentMilestoneColor = "var(--color-primary-500)";
-  if (currentPoints > nextMilestone * 0.9)
-    currentMilestoneColor = "var(--color-success)";
+
+  if (currentPoints >= pointsMilestones[pointsMilestones.length - 1]) {
+    return {
+      nextMilestone: pointsMilestones[pointsMilestones.length - 1],
+      currentMilestoneColor: "var(--color-success)",
+    };
+  }
 
   return { nextMilestone, currentMilestoneColor };
 };

@@ -1,5 +1,5 @@
 "use client";
-import { BarChart3, Bell, Settings, Trophy } from "lucide-react";
+import { BarChart3, Bell, Settings, Trophy, Palette } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ActivityLog, Task, AppUser } from "../_types/types";
@@ -9,6 +9,7 @@ import TaskCardSmall from "./TaskCardSmall";
 import Checkbox from "./reusable/Checkbox";
 import { updateUserAction } from "../_lib/actions";
 import { handleToast } from "../_utils/utils";
+import { useTheme } from "../_context/ThemeContext";
 
 export default function ProfileTabs({
   activityLogs,
@@ -20,6 +21,7 @@ export default function ProfileTabs({
   const [activeTab, setActiveTab] = useState<"overview" | "settings">(
     "overview"
   );
+  const { theme, setTheme } = useTheme();
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -238,27 +240,29 @@ export default function ProfileTabs({
 
             <div className="bg-background-600 rounded-lg p-4 sm:p-6 border border-divider shadow-md">
               <div className="flex items-center gap-3 mb-4">
-                <Settings size={20} className="text-primary-400" />
+                <Palette size={20} className="text-primary-400" />
                 <h3 className="text-lg font-semibold text-text-high">
-                  Display Settings
+                  Theme Settings
                 </h3>
               </div>
-              <div className="space-y-4">
-                <Checkbox
-                  id="darkMode"
-                  name="darkMode"
-                  label={
-                    <div>
-                      <p className="font-medium text-text-high">Dark Mode</p>
-                      <p className="text-sm text-text-low">
-                        App is currently in dark mode
-                      </p>
-                    </div>
+              <div className="space-y-2">
+                <label
+                  htmlFor="theme-select"
+                  className="block text-sm font-medium text-text-low"
+                >
+                  Choose a theme for your application.
+                </label>
+                <select
+                  id="theme-select"
+                  value={theme}
+                  onChange={(e) =>
+                    setTheme(e.target.value as "default-blue" | "dark-crt")
                   }
-                  checked
-                  onChange={() => {}}
-                  disabled
-                />
+                  className="w-full px-3 py-2 bg-background-625 border border-background-500 rounded-lg text-text-high focus:ring-primary-500"
+                >
+                  <option value="default-blue">Default Blue</option>
+                  <option value="dark-crt">Dark CRT</option>
+                </select>
               </div>
             </div>
           </motion.div>

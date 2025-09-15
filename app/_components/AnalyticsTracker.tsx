@@ -25,12 +25,13 @@ async function postToAnalyticsRoute(endpoint: string, data: object) {
 }
 
 function getFeatureFromPath(pathname: string): string {
-  // remove /webapp
-  const navItemsArr = Object.values(navItems).flat().slice(1, -1);
-  navItemsArr.forEach((item) => {
-    if (pathname.includes(item.href)) return item.label;
-  });
-  return "dashboard";
+  const basePath = pathname.replace("/webapp/", "");
+  const navItemsArr = Object.values(navItems).flat();
+  const matchedItem = navItemsArr.find((item) =>
+    basePath.startsWith(item.href.replace("/", ""))
+  );
+
+  return matchedItem ? matchedItem.label.toLowerCase() : "dashboard";
 }
 
 export default function AnalyticsTracker({

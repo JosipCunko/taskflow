@@ -7,6 +7,9 @@
 body {
   scroll-snap-stop: always;
   background-color: var(--color-background-700);
+}
+
+[data-theme="dark-crt"] body {
   background-image: radial-gradient(
     var(--color-primary-500, #0ea5e9) 0.5px,
     transparent 0.5px
@@ -19,7 +22,7 @@ body {
 flicker animation that constantly changes opacities
 background dot patter that simulate an old CRT monitor
 */
-body::after {
+[data-theme="dark-crt"] body::after {
   content: "";
   position: fixed;
   top: 0;
@@ -47,6 +50,36 @@ body::after {
 }
 
 @theme {
+  --color-primary-200: #a0d8ff;
+  --color-primary-300: #7cc6ff;
+  --color-primary-400: #56b3ff;
+  --color-primary-500: #3399ff;
+  --color-primary-600: #2d89e6;
+  --color-primary-700: #2779cc;
+  --color-primary-800: #2169b3;
+
+  --color-divider: #16426b;
+  --color-accent-400: #ffc6a6;
+  --color-accent: #ff944d;
+  --color-accent-600: #ff7a26;
+  --color-background-500: #192444;
+  --color-background-600: #121a33;
+  --color-background-625: #10162d;
+  --color-background-650: #0e1327;
+  --color-background-700: #0b0f20;
+
+  --color-text-high: #ffffff;
+  --color-text-medium: #3a455b;
+  --color-text-low: #c5d1e1;
+  --color-text-blue: #3399ff;
+  --color-text-gray: #6b7280;
+  --color-success: #00c853;
+  --color-error: #cf6679;
+  --color-warning: #ffd600;
+  --color-info: #2d89e6;
+}
+
+[data-theme="dark-crt"] {
   --color-primary-200: #54c3f5;
   --color-primary-300: #41bcf4;
   --color-primary-400: #2db5f2;

@@ -26,6 +26,8 @@ import {
   getDaysInMonth,
 } from "date-fns";
 import { checkAndAwardAchievements } from "./achievements";
+import { getTasksByUserId } from "./tasks-admin";
+import { generateNotificationsForUser } from "./notifications-admin";
 
 interface FirebaseUser {
   uid: string;
@@ -612,6 +614,8 @@ export const authOptions: NextAuthOptions = {
                 lastLoginAt: Timestamp;
                 currentStreak?: number;
                 bestStreak?: number;
+                // New, may need to add to types.ts
+                gainedPoints?: number[];
               } = {
                 lastLoginAt: Timestamp.now(),
               };
@@ -633,6 +637,7 @@ export const authOptions: NextAuthOptions = {
                   // Gap in login days - restart streak at 1 for today
                   updates.currentStreak = 1;
                   updates.bestStreak = Math.max(1, userData.bestStreak || 0);
+                  updates.gainedPoints = [];
                 }
                 // If diff === 0, it's the same day - no streak changes needed
               } else {
@@ -641,12 +646,13 @@ export const authOptions: NextAuthOptions = {
                 updates.bestStreak = 1;
               }
 
-              // const tasks = await getTasksByUserId(token.uid);
+              // Recently added notif generation on jwt callback, because noitfs are created only when the user goes to the inbox page
+              const tasks = await getTasksByUserId(token.uid);
               await Promise.all([
                 userDocRef.update(updates),
                 updateUserRepeatingTasks(token.uid),
                 checkAndAwardAchievements(token.uid),
-                //generateNotificationsForUser(token.uid, tasks),
+                generateNotificationsForUser(token.uid, tasks),
               ]);
             }
           }
