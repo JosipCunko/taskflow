@@ -46,6 +46,14 @@ export default function Sidebar() {
                         <item.icon size={20} />
                       </div>
                       <span>{item.label}</span>
+                      {item?.badge && (
+                        <span
+                          className="ml-auto font-bold  text-text-low  rounded-md text-[0.8rem] px-1 py-0.5"
+                          style={{ backgroundColor: item.badge.color }}
+                        >
+                          {item.badge.label}
+                        </span>
+                      )}
                     </Link>
                   </li>
                 );

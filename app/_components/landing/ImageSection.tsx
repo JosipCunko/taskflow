@@ -190,10 +190,7 @@ export default function ImageSection() {
                 <h3 className="text-lg font-bold text-text-high group-hover:text-primary-300 transition-colors duration-300">
                   {image.title}
                 </h3>
-                <p className="text-sm text-text-low mt-1">
-                  Experience seamless {image.category.toLowerCase()}{" "}
-                  capabilities
-                </p>
+                <p className="text-sm text-text-low mt-1">{image.alt}</p>
               </div>
 
               {/* Floating Tech Elements */}

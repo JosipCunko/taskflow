@@ -22,6 +22,8 @@ import {
   BarChart3,
   Sparkles,
   Rocket,
+  LucideIcon,
+  Brain,
 } from "lucide-react";
 import {
   DayOfWeek,
@@ -80,39 +82,51 @@ export const stats = [
 export const images = [
   {
     src: "/addTask.png",
-    alt: "A user adds a new task to their list in the TaskFlow application.",
+    alt: "Add as many tasks as you want.",
     title: "Add New Task",
     category: "Management",
   },
   {
     src: "/calendar.png",
-    alt: "A user views their calendar in the TaskFlow application.",
+    alt: "View your calendar and see upcoming tasks.",
     title: "View Your Calendar",
     category: "Planning",
   },
   {
     src: "/taskCustomization.png",
-    alt: "A user customizes a task, setting a due date and duration.",
+    alt: "Customize your tasks with many, many options.",
     title: "Customize Your Tasks",
     category: "Customization",
   },
   {
     src: "/profile.png",
-    alt: "The user profile page, displaying statistics and settings.",
+    alt: "View your profile and see your statistics.",
     title: "Manage Your Profile",
     category: "Analytics",
   },
   {
     src: "/tasks.png",
-    alt: "The user tasks page, displaying tasks and settings.",
+    alt: "All your tasks in one place.",
     title: "Manage Your Tasks",
     category: "Organization",
   },
   {
     src: "/today.png",
-    alt: "A user views their tasks for the current day in the TaskFlow application.",
+    alt: "Organize your tasks for today.",
     title: "Tasks for Today",
     category: "Focus",
+  },
+  {
+    src: "/health.png",
+    alt: "Manage your health and nutrition.",
+    title: "Keep track of your health",
+    category: "Health",
+  },
+  {
+    src: "/ai.png",
+    alt: "Get super productive with AI.",
+    title: "AI assistant",
+    category: "AI",
   },
 ];
 
@@ -152,6 +166,12 @@ export const features = [
     label: "Optimized & Modern Tech",
     description:
       "Built with Next.js 15 (App Router), React 19, and Firebase for a fast, scalable, and reliable task management solution with real-time updates.",
+  },
+  {
+    icon: Brain,
+    label: "AI Integration",
+    description:
+      "Get super productive with AI, manage your health, and stay on top of your schedule with our AI assistant.",
   },
 ];
 
@@ -213,7 +233,17 @@ export const TASK_PLACEHOLDERS = [
   "Research vacation destinations",
 ];
 
-export const navItems = {
+interface NavItem {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  badge?: {
+    label: string;
+    color: string;
+  };
+}
+type NavGroups = Record<string, NavItem[]>;
+export const navItems: NavGroups = {
   general: [
     {
       label: "Dashboard",
@@ -252,6 +282,10 @@ export const navItems = {
       label: "Health",
       href: "/webapp/health",
       icon: Heart,
+      badge: {
+        label: "New",
+        color: "var(--color-error)",
+      },
     },
   ],
   me: [
@@ -259,6 +293,10 @@ export const navItems = {
       label: "AI",
       href: "/webapp/ai",
       icon: Bot,
+      badge: {
+        label: "New",
+        color: "var(--color-primary-500)",
+      },
     },
     {
       label: "Profile",

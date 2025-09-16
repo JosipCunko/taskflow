@@ -304,3 +304,9 @@ export interface DailyNutritionSummary {
   totalFat: number;
   loggedMeals: LoggedMeal[];
 }
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+  duration?: number;
+}

@@ -99,6 +99,7 @@ export default function NotificationBell() {
       <Bell
         size={20}
         className={`
+            focus:outline-none
             transition-colors
             ${hasUnreadNotifications ? "text-blue-500" : "text-text-low"}
             ${priorityCount > 0 ? "text-orange-500" : ""}

@@ -1,0 +1,32 @@
+import Button from "../reusable/Button";
+
+interface EmptyChatProps {
+  onExampleClick: (query: string) => void;
+}
+
+export default function EmptyChat({ onExampleClick }: EmptyChatProps) {
+  const exampleQueries = [
+    "Explain the concept of AI in a way that is easy to understand.",
+    "What are some healthy, quick lunch ideas?",
+    "Generate a gym workout plan for 3 days a week.",
+    "Give me 5 tips to stay focused and avoid procrastination.",
+  ];
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full">
+      <h1 className="text-4xl font-bold mb-8">What can I help with?</h1>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl">
+        {exampleQueries.map((query) => (
+          <Button
+            variant="secondary"
+            key={query}
+            onClick={() => onExampleClick(query)}
+            className="text-left"
+          >
+            <p className="text-sm">{query}</p>
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
