@@ -36,62 +36,41 @@ Integrate a recipe discovery feature that allows users to search for recipes by 
   The Blaze plan unlocks a suite of powerful tools essential for building a feature-rich application. This includes **Cloud Functions**, which allow for running server-side code in response to events (e.g., sending a welcome email on user signup or processing an image after upload). It also provides **Cloud Messaging (FCM)** for sending push notifications to keep users engaged. For more advanced capabilities, it opens up Firebase's **AI/ML services** for tasks like text recognition or creating smart replies, expanded **Cloud Storage** quotas, and **Crashlytics** for real-time crash reporting to quickly identify and fix bugs.
 
 **5. Super Advanced Gym Tracking Module**
-
 - **Idea:** Create a new, dedicated route (`/gym`) for comprehensive workout and progress tracking.
 - **Why?** Many users, including myself, struggle to track gym progress effectively. A dedicated tool for this would add significant value to the app's health and wellness offerings.
 - **Implementation Idea:**
   - Design a data model in Firestore to store exercises, sets, reps, and weight.
-  - Create a UI where users can log their workouts for a specific day.
-  - Implement an analytics backend (potentially using Cloud Functions) to process this data.
+  - Implement an analytics backend (potentially using Cloud Functions) to process this data. // Will do cloud functions on firebase later, ignore them for now
   - Use a charting library (like Chart.js or Recharts) to display progress for specific exercises over time with line graphs, showing trends in weight, reps, or volume.
-
 ### Extended Plan for Gym Tracking Module
-
 Here is a more detailed breakdown of how the Gym Tracking Module could be implemented, turning it into a core feature of TaskFlow.
 
----
+#### **5.1. Detailed Data Model (Firestore)**
 
-#### **1. Detailed Data Model (Firestore)**
-
-A structured database is key. We'd create a few collections, mostly nested under the `users` collection to keep data user-specific and secure.
+A structured database is key. We'd create a few collections, mostly nested under the `users` collection to keep data user-specific and secure. That's different what our db structure was before.
 
 - **Workout Sessions:**
 
   - `users/{userId}/workouts/{workoutId}`
     - `date`: `Timestamp` - When the workout started.
-    - `name`: `String` - e.g., "Morning Push Day", "Leg Annihilation".
+    - `name`: `String` - e.g., "Morning Push Day", "Pull day", "Leg day"
     - `duration`: `Number` - Total minutes, calculated on completion.
-    - `volume`: `Number` - Total weight lifted (Sets x Reps x Weight) for the session.
     - `notes`: `String` - (Optional) General notes about the session.
-
+      
 - **Logged Exercises (within a workout):**
-
   - `users/{userId}/workouts/{workoutId}/loggedExercises/{loggedExerciseId}`
     - `exerciseName`: `String` - e.g., "Barbell Bench Press". Denormalized for easy display.
-    - `exerciseRef`: `String` - Reference to the global `exercises` collection for details.
-    - `order`: `Number` - To keep exercises in the order they were performed.
-
-- **Sets (within a logged exercise):**
-
-  - `users/{userId}/workouts/{workoutId}/loggedExercises/{loggedExerciseId}/sets/{setId}`
-    - `reps`: `Number` - Repetitions performed.
-    - `weight`: `Number` - Weight used for the set.
-    - `unit`: `String` - "kg" or "lbs".
-    - `isWarmup`: `Boolean` - To distinguish from working sets.
-    - `completedAt`: `Timestamp` - To track time between sets.
-
-- **Global Exercise Library:**
-  - `exercises/{exerciseId}`
-    - `name`: `String` - "Barbell Bench Press".
-    - `muscleGroup`: `String` - "Chest", "Back", "Legs", etc.
-    - `equipment`: `String` - "Barbell", "Dumbbell", "Cable", etc.
-    - `videoUrl`: `String` - (Optional) Link to an instructional video.
-    - `isCustom`: `Boolean` - To differentiate pre-defined exercises from user-created ones.
-    - `userId`: `String` - (Optional) If it's a custom exercise, this links to the user who created it.
-
+    - `order`: `Number` (Optional) - To keep exercises in the order they were performed.
+    - `volume`: `array` - each item is an object with this properties, every new item represents a new set, so "set" as a property we wont track
+      {
+          weight: number,
+          reps: number,
+          rest?: number,
+          //maybe more later
+      }
 ---
 
-#### **2. UI/UX and User Flow**
+#### **5.2. UI/UX and User Flow**
 
 The user journey should be smooth and intuitive, from starting a workout to viewing progress.
 
@@ -100,6 +79,7 @@ The user journey should be smooth and intuitive, from starting a workout to view
   - This will be the main hub. It should feature a calendar view highlighting past workout days.
   - A prominent "Start New Workout" button. Users can either start an empty session or choose from a pre-saved template.
   - A section for "My Workout Templates" for quick access.
+    
 
 - **Workout Logging Screen (Active Session):**
 
@@ -122,10 +102,10 @@ The user journey should be smooth and intuitive, from starting a workout to view
 
 ---
 
-#### **3. Advanced Features & Logic**
+#### **5.3. Advanced Features & Logic** // I will implement later, dont do this now
 
 - **Estimated 1 Rep Max (e1RM) Calculation:** After every heavy set (e.g., < 10 reps), automatically calculate the e1RM using a standard formula. This is the single best metric for tracking strength over time.
-  - `e1RM = Weight / (1.0278 - 0.0278 * Reps)`
+  - `e1RM = Weight / (1.0278 - 0.0278 * Reps)` 
 - **Volume Tracking:** On workout completion, a Cloud Function could process all sets to calculate the total volume for the session and for each muscle group worked, which can be stored in the workout document.
 - **Workout Templates:** Allow users to create and save a list of exercises as a template. When they start a workout from a template, all exercises are pre-loaded, saving time.
 
