@@ -310,3 +310,59 @@ export interface ChatMessage {
   content: string;
   duration?: number;
 }
+
+// Gym Tracking Types
+export interface WorkoutSet {
+  weight: number;
+  reps: number;
+  rest?: number;
+}
+
+export interface LoggedExercise {
+  id: string;
+  exerciseName: string;
+  order?: number;
+  volume: WorkoutSet[];
+}
+
+export interface WorkoutSession {
+  id: string;
+  userId: string;
+  date: Date;
+  name: string;
+  duration?: number;
+  notes?: string;
+  loggedExercises: LoggedExercise[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Exercise {
+  id: string;
+  name: string;
+  category: string;
+  muscleGroups: string[];
+  equipment?: string;
+  instructions?: string[];
+}
+
+export interface WorkoutTemplate {
+  id: string;
+  userId: string;
+  name: string;
+  exercises: string[]; // Exercise names
+  createdAt: Date;
+}
+
+export interface ExerciseProgress {
+  exerciseName: string;
+  maxWeight: number;
+  totalVolume: number;
+  estimatedOneRepMax: number;
+  lastPerformed: Date;
+  personalRecord: {
+    weight: number;
+    reps: number;
+    date: Date;
+  };
+}
