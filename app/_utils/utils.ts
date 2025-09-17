@@ -417,7 +417,8 @@ export const getPhaseOfTheDay = () => {
 
 export const formatDate = (
   date: Date | string | undefined,
-  options?: Intl.DateTimeFormatOptions
+  options?: Intl.DateTimeFormatOptions,
+  namedDates: boolean = true
 ): string => {
   if (!date) return "N/A";
   try {
@@ -432,8 +433,10 @@ export const formatDate = (
 
     const givenDate = startOfDay(dateObj);
 
-    if (isEqual(givenDate, today)) return "Today";
-    if (isEqual(givenDate, tomorrow)) return "Tomorrow";
+    if (namedDates) {
+      if (isEqual(givenDate, today)) return "Today";
+      if (isEqual(givenDate, tomorrow)) return "Tomorrow";
+    }
 
     return dateObj.toLocaleDateString(
       undefined,

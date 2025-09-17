@@ -311,7 +311,6 @@ export interface ChatMessage {
   duration?: number;
 }
 
-// Gym Tracking Types
 export interface WorkoutSet {
   weight: number;
   reps: number;
@@ -328,8 +327,7 @@ export interface LoggedExercise {
 export interface WorkoutSession {
   id: string;
   userId: string;
-  date: Date;
-  name: string;
+  name?: string;
   duration?: number;
   notes?: string;
   loggedExercises: LoggedExercise[];

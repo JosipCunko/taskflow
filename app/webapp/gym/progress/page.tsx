@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { authOptions } from "../../../_lib/auth";
 import ProgressVisualization from "./ProgressVisualization";
 import Loader from "../../../_components/Loader";
+import { TrendingUp } from "lucide-react";
 
 export const metadata = {
   title: "Progress Tracking - TaskFlow",
@@ -13,21 +14,21 @@ export const metadata = {
 export default async function ProgressPage() {
   const session = await getServerSession(authOptions);
   if (!session || !session.user || !session.user.id) redirect("/login");
-  
+
   const userId = session.user.id;
 
   return (
-    <div className="h-full overflow-auto bg-background-625 p-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-text-high mb-2">
-            Progress Tracking
-          </h1>
-          <p className="text-text-medium">
-            Visualize your fitness journey and track your personal records
-          </p>
-        </div>
-        
+    <div className="p-1 sm:p-6 container overflow-y-auto mx-auto">
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-3xl sm:text-4xl font-bold text-primary-400 flex items-center">
+          <TrendingUp className="w-8 h-8 mr-3 text-primary-500 icon-glow" />
+          <span className="text-glow">Progress tracking</span>
+        </h1>
+
+        <p className="text-text-low">
+          Stay on top of your tasks with smart notifications and alerts.
+        </p>
+
         <Suspense fallback={<Loader />}>
           <ProgressVisualization userId={userId} />
         </Suspense>

@@ -1,0 +1,68 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Checks if the requesting user is the owner of the document,
+    // used for collections where the document ID is the user's UID.
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Checks if the requesting user's UID matches the 'userId' field
+    // in an existing document.
+    function isResourceOwner() {
+        return isSignedIn() && request.auth.uid == resource.data.userId;
+    }
+
+    // Checks if the requesting user's UID matches the 'userId' field
+    // in a new document being created.
+    function isCreatingOwner() {
+        return isSignedIn() && request.auth.uid == request.resource.data.userId;
+    }
+
+    // Users can only read, update, or delete their own document.
+    match /users/{userId} {
+      allow read, update, delete: if isOwner(userId);
+      allow create: if isOwner(userId);
+
+      // Rules for user's gym related subcollections
+      match /workouts/{workout} {
+        allow read, update, delete: if isOwner(userId);
+        allow create: if isOwner(userId) && isCreatingOwner();
+      }
+
+      match /workoutTemplates/{template} {
+        allow read, update, delete: if isOwner(userId);
+        allow create: if isOwner(userId) && isCreatingOwner();
+      }
+    }
+    
+    // Public exercise library, readable by any signed-in user.
+    match /exercises/{exercise} {
+      allow read: if isSignedIn();
+      allow write: if false; // Disallow client-side writes
+    }
+
+    // Rules for collections where documents contain a `userId` field.
+    match /{collection}/{doc} {
+      allow read, update, delete: if isResourceOwner();
+      allow create: if isCreatingOwner();
+    }
+
+    // --- Analytics Collections ---
+    // These collections are written to by the backend using the Admin SDK,
+    // so client-side access should be denied completely.
+    match /userSessions/{session} {
+        allow read, write: if false;
+    }
+
+    match /taskAnalytics/{analytic} {
+        allow read, write: if false;
+    }
+  }
+}

@@ -17,13 +17,13 @@ interface WorkoutPageProps {
 export default async function WorkoutPage({ searchParams }: WorkoutPageProps) {
   const session = await getServerSession(authOptions);
   if (!session || !session.user || !session.user.id) redirect("/login");
-  
+
   const userId = session.user.id;
   const resolvedSearchParams = await searchParams;
   const workoutId = resolvedSearchParams.id;
 
   return (
-    <div className="h-full overflow-auto bg-background-625 p-4">
+    <div className="container mx-auto p-2 sm:p-6 max-h-full overflow-auto">
       <div className="max-w-4xl mx-auto">
         <Suspense fallback={<Loader />}>
           <WorkoutSession userId={userId} workoutId={workoutId} />

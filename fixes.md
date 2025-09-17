@@ -30,3 +30,5 @@ When inputs are hovered on alraedy executed input submit, bg turns white
 place theme in the user object in firestore
 
 Feature usage analytics still only tracks dashboard views. I am not 100% sure, but it stays on 7 even when I switch through all routes.
+
+use my handleToast everywhere instead of toast(...)
