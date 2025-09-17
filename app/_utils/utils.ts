@@ -24,6 +24,7 @@ import {
   Rocket,
   LucideIcon,
   Brain,
+  Dumbbell,
 } from "lucide-react";
 import {
   DayOfWeek,
@@ -285,6 +286,15 @@ export const navItems: NavGroups = {
       badge: {
         label: "New",
         color: "var(--color-error)",
+      },
+    },
+    {
+      label: "Gym",
+      href: "/webapp/gym",
+      icon: Dumbbell,
+      badge: {
+        label: "New",
+        color: "var(--color-primary-500)",
       },
     },
   ],
