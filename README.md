@@ -69,19 +69,56 @@ TaskFlow is a modern, feature-rich task management application designed to help 
 - **Daily History**: View and manage your complete meal log for any date.
 - **Seamless Integration**: Part of your holistic life management dashboard alongside task tracking.
 
-### 6. Notes Feature
+### 6. Advanced Gym Tracking Module
+
+- **Comprehensive Workout Logging**:
+  - **Workout Sessions**: Create and track detailed workout sessions with duration, exercises, sets, reps, and weights.
+  - **Exercise Library**: Access to extensive exercise database with categories and muscle group targeting.
+  - **Real-time Workout Timer**: Built-in workout duration tracking and rest timers between sets.
+  - **Session Notes**: Add personal notes and observations to each workout session.
+
+- **Workout Templates**:
+  - **Template Creation**: Save frequently used workout routines as reusable templates.
+  - **Quick Start**: Launch workouts instantly from saved templates with pre-loaded exercises.
+  - **Template Management**: Organize and categorize workout templates by type (Push, Pull, Legs, etc.).
+
+- **Progress Visualization & Analytics**:
+  - **Interactive Charts**: Visualize progress over time with line graphs showing weight, volume, and strength trends.
+  - **Multiple Metrics**: Track max weight, total volume, and estimated one-rep max (1RM) for each exercise.
+  - **Exercise-Specific Analysis**: Detailed progress tracking for individual exercises with historical data.
+  - **Personal Records**: Automatic tracking of personal bests with estimated 1RM calculations using the Brzycki formula.
+
+- **Progressive Overload Intelligence**:
+  - **Smart Suggestions**: AI-powered recommendations based on previous performance data.
+  - **Last Performance Hints**: See your previous workout stats for each exercise to guide progressive overload.
+  - **Strength Progression**: Automatic suggestions for weight and rep increases based on historical data.
+
+- **Dashboard & Analytics**:
+  - **Weekly Overview**: Calendar view showing workout frequency and consistency.
+  - **Workout Statistics**: Track weekly workout count, total sessions, and average duration.
+  - **Recent Activity**: Quick access to recent workouts and performance summaries.
+
+### 7. AI Assistant Integration
+
+- **Intelligent Chatbot**: Built-in AI assistant powered by advanced language models for contextual help and guidance.
+- **App Navigation**: Get help navigating TaskFlow features and finding specific functionality.
+- **Productivity Insights**: Receive personalized recommendations for task management and goal achievement.
+- **Contextual Support**: AI understands your current app context to provide relevant assistance.
+- **Chat History**: Persistent conversation history for ongoing productivity coaching.
+
+### 8. Notes Feature
 
 - **Personal Notes**: A dedicated space to create, view, edit, and delete personal notes.
 - **Simple & Effective**: Each note has a title and content, with automatic tracking of the last update time.
 - **Centralized Management**: Easily manage all notes from the clean `/notes` interface.
 
-### 7. User Profile & Settings
+### 9. User Profile & Settings
 
 - **Personalized Experience**: Customize notification preferences for reminders and achievements.
 - **Profile Overview**: View key stats like total completed tasks, reward points, and current streak directly on your profile.
 - **Authentication Management**: Securely manage your account connected via Email/Password or Google.
 
-### 8. User Experience
+### 10. User Experience
 
 - **Modern UI**: A clean, dark-themed interface designed for focus and clarity.
 - **Responsive Design**: Fully functional and accessible across desktop and mobile devices.
@@ -103,11 +140,12 @@ TaskFlow is a modern, feature-rich task management application designed to help 
 - **Lucide React**: Modern icon library.
 - **React Hot Toast**: Toast notifications.
 - **React Tooltip**: Enhanced tooltip functionality.
+- **Recharts**: Interactive charts for gym progress visualization.
 
 ### Backend & Authentication
 
 - **Firebase**: Backend-as-a-Service
-  - Firestore: NoSQL database for task and notes storage.
+  - Firestore: NoSQL database for tasks, notes, health data, and workout tracking.
   - Authentication: Handles user creation and sign-in for Email/Password and Google (via ID token).
 - **NextAuth.js**: Authentication framework integrating multiple providers:
   - Credentials (for Firebase ID tokens from Google Sign-In & Email/Password).
@@ -130,6 +168,8 @@ TaskFlow is a modern, feature-rich task management application designed to help 
 - **Completed**: View of completed tasks.
 - **Notes**: Dedicated section for managing personal notes.
 - **Health**: Calorie and macro tracking with food search and goal setting.
+- **Gym**: Comprehensive workout tracking and progress monitoring.
+- **AI Assistant**: Intelligent chatbot for app navigation and productivity guidance.
 - **Inbox**: Real-time notification management center.
 - **Profile**: User settings and preferences.
 - **Login**: Secure authentication page with multiple sign-in options.
@@ -201,6 +241,14 @@ TaskFlow is a modern, feature-rich task management application designed to help 
   - **Search Component**: Universal search interface with task filtering, keyboard navigation, and quick actions.
   - **Command Palette**: Keyboard-driven navigation system (Ctrl+K) for power users.
   - **Sidebar Navigation**: Organized navigation with section grouping and active state indicators.
+
+  #### Gym Tracking Interface
+
+  - **Gym Dashboard**: Comprehensive workout overview with statistics, weekly calendar, recent workouts, and template management.
+  - **Workout Session**: Live workout tracking interface with exercise logging, set/rep recording, rest timers, and progressive overload hints.
+  - **Progress Visualization**: Interactive charts and analytics showing exercise progress, personal records, and strength trends over time.
+  - **Create Template Modal**: Template creation interface for saving and organizing workout routines.
+  - **Exercise Library**: Searchable database of exercises with categories, muscle groups, and detailed information.
 
   #### AI Integration
 
@@ -331,6 +379,51 @@ interface Notification {
   readAt?: Date;
   data?: Record<string, unknown>; // Additional data for the notification
   expiresAt?: Date;
+}
+```
+
+#### Gym Tracking Schemas
+
+```typescript
+interface WorkoutSession {
+  id: string;
+  userId: string;
+  name?: string;
+  duration?: number;
+  notes?: string;
+  loggedExercises: LoggedExercise[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface LoggedExercise {
+  id: string;
+  exerciseName: string;
+  order?: number;
+  volume: WorkoutSet[];
+}
+
+interface WorkoutSet {
+  weight: number;
+  reps: number;
+  rest?: number;
+}
+
+interface WorkoutTemplate {
+  id: string;
+  userId: string;
+  name: string;
+  exercises: string[]; // Exercise names
+  createdAt: Date;
+}
+
+interface Exercise {
+  id: string;
+  name: string;
+  category: string;
+  muscleGroups: string[];
+  equipment?: string;
+  instructions?: string[];
 }
 ```
 

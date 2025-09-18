@@ -18,9 +18,8 @@ import {
   Award,
   Zap,
 } from "lucide-react";
-// Remove unused import
-// Remove direct import - we'll use API or server component
 import { defaultExercises } from "../../../_lib/exerciseLibrary";
+import { getExerciseProgressAction, getPersonalRecordsAction } from "../../../_lib/gymActions";
 import { cn } from "../../../_utils/utils";
 
 interface ProgressVisualizationProps {
@@ -36,6 +35,13 @@ interface ProgressData {
   estimatedOneRepMax: number;
 }
 
+interface ExerciseProgressData {
+  date: Date;
+  maxWeight: number;
+  totalVolume: number;
+  sets: number;
+}
+
 export default function ProgressVisualization({
   userId,
 }: ProgressVisualizationProps) {
@@ -44,6 +50,7 @@ export default function ProgressVisualization({
   );
   const [selectedMetric, setSelectedMetric] = useState<MetricType>("maxWeight");
   const [progressData, setProgressData] = useState<ProgressData[]>([]);
+  const [personalRecords, setPersonalRecords] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showExerciseDropdown, setShowExerciseDropdown] = useState(false);
 
@@ -53,54 +60,57 @@ export default function ProgressVisualization({
     const loadProgressData = async () => {
       setIsLoading(true);
       try {
-        // TODO: Fetch from API endpoint in a real app
-        // For now, use mock data for demonstration
-        setProgressData([
-          {
-            date: "Jan 1",
-            maxWeight: 80,
-            totalVolume: 2400,
-            estimatedOneRepMax: 100,
-          },
-          {
-            date: "Jan 8",
-            maxWeight: 82.5,
-            totalVolume: 2475,
-            estimatedOneRepMax: 103,
-          },
-          {
-            date: "Jan 15",
-            maxWeight: 85,
-            totalVolume: 2550,
-            estimatedOneRepMax: 106,
-          },
-          {
-            date: "Jan 22",
-            maxWeight: 87.5,
-            totalVolume: 2625,
-            estimatedOneRepMax: 109,
-          },
-          {
-            date: "Jan 29",
-            maxWeight: 90,
-            totalVolume: 2700,
-            estimatedOneRepMax: 112,
-          },
-          {
-            date: "Feb 5",
-            maxWeight: 92.5,
-            totalVolume: 2775,
-            estimatedOneRepMax: 115,
-          },
-        ]);
+        const result = await getExerciseProgressAction(selectedExercise);
+        
+        if (result.success && result.data) {
+          const rawData = result.data as ExerciseProgressData[];
+          
+          // Transform the data for the chart
+          const chartData: ProgressData[] = rawData.map((item) => {
+            // Estimate 1RM based on max weight (assuming it was performed for ~5-8 reps)
+            const estimatedReps = 6; // Conservative estimate
+            const estimatedOneRepMax = calculateOneRepMax(item.maxWeight, estimatedReps);
+            
+            return {
+              date: new Intl.DateTimeFormat('en-US', { 
+                month: 'short', 
+                day: 'numeric' 
+              }).format(item.date),
+              maxWeight: item.maxWeight,
+              totalVolume: item.totalVolume,
+              estimatedOneRepMax,
+            };
+          });
+          
+          setProgressData(chartData);
+        } else {
+          // No data available for this exercise
+          setProgressData([]);
+        }
       } catch (error) {
         console.error("Error loading progress data:", error);
+        setProgressData([]);
       }
       setIsLoading(false);
     };
 
     loadProgressData();
   }, [userId, selectedExercise]);
+
+  useEffect(() => {
+    const loadPersonalRecords = async () => {
+      try {
+        const result = await getPersonalRecordsAction();
+        if (result.success && result.data) {
+          setPersonalRecords(result.data);
+        }
+      } catch (error) {
+        console.error("Error loading personal records:", error);
+      }
+    };
+
+    loadPersonalRecords();
+  }, [userId]);
 
   const calculateOneRepMax = (weight: number, reps: number): number => {
     // Brzycki formula: 1RM = Weight / (1.0278 - 0.0278 * Reps)
@@ -144,18 +154,6 @@ export default function ProgressVisualization({
         100
       : 0;
 
-  //placeholder data
-  const personalRecords = [
-    {
-      exercise: "Barbell Bench Press",
-      weight: 92.5,
-      reps: 8,
-      date: "Feb 5, 2024",
-    },
-    { exercise: "Deadlift", weight: 140, reps: 5, date: "Feb 3, 2024" },
-    { exercise: "Barbell Squat", weight: 120, reps: 6, date: "Feb 1, 2024" },
-    { exercise: "Overhead Press", weight: 65, reps: 8, date: "Jan 30, 2024" },
-  ];
 
   if (isLoading) {
     return (
@@ -371,29 +369,44 @@ export default function ProgressVisualization({
           </h2>
         </div>
 
-        <div className="space-y-3">
-          {personalRecords.map((record, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between p-4 bg-background-700 rounded-lg border border-background-500"
-            >
-              <div>
-                <h3 className="font-medium text-text-high">
-                  {record.exercise}
-                </h3>
-                <p className="text-sm text-text-low">{record.date}</p>
-              </div>
-              <div className="text-right">
-                <div className="text-lg font-bold text-text-high">
-                  {record.weight}kg × {record.reps}
+        {personalRecords.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="text-text-low mb-2">No personal records yet</div>
+            <p className="text-text-low text-sm">
+              Complete some workouts to see your personal records here
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {personalRecords.map((record, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between p-4 bg-background-700 rounded-lg border border-background-500"
+              >
+                <div>
+                  <h3 className="font-medium text-text-high">
+                    {record.exercise}
+                  </h3>
+                  <p className="text-sm text-text-low">
+                    {new Intl.DateTimeFormat('en-US', { 
+                      month: 'short', 
+                      day: 'numeric',
+                      year: 'numeric'
+                    }).format(record.date)}
+                  </p>
                 </div>
-                <div className="text-sm text-accent">
-                  {calculateOneRepMax(record.weight, record.reps)}kg 1RM
+                <div className="text-right">
+                  <div className="text-lg font-bold text-text-high">
+                    {record.weight}kg × {record.reps}
+                  </div>
+                  <div className="text-sm text-accent">
+                    {record.estimatedOneRepMax}kg 1RM
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
