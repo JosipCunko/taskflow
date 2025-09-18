@@ -22,6 +22,7 @@ import {
   updateWorkoutAction,
   completeWorkoutSessionAction,
   getWorkoutAction,
+  getLastPerformanceAction,
 } from "../../../_lib/gymActions";
 import { formatDate, handleToast } from "../../../_utils/utils";
 import { isToday } from "date-fns";
@@ -415,6 +416,18 @@ function ExerciseCard({
 }: ExerciseCardProps) {
   const [weight, setWeight] = useState("");
   const [reps, setReps] = useState("");
+  const [lastPerformance, setLastPerformance] = useState<any>(null);
+
+  useEffect(() => {
+    const loadLastPerformance = async () => {
+      const result = await getLastPerformanceAction(exercise.exerciseName);
+      if (result.success && result.data) {
+        setLastPerformance(result.data);
+      }
+    };
+
+    loadLastPerformance();
+  }, [exercise.exerciseName]);
 
   const handleAddSet = () => {
     const weightNum = parseFloat(weight);
@@ -500,11 +513,15 @@ function ExerciseCard({
         </div>
       )}
 
-      {/* Previous Performance Hint */}
-      {exercise.volume.length === 0 && (
+      {/* Progressive Overload Hint */}
+      {exercise.volume.length === 0 && lastPerformance && (
         <div className="mt-3 p-3 bg-info/10 border border-info/20 rounded-lg">
           <p className="text-sm text-info">
-            💡 Progressive Overload Hint: Last time you did 3×8 @ 80kg
+            💡 Progressive Overload Hint: Last time you did {lastPerformance.sets}×{lastPerformance.reps} @ {lastPerformance.weight}kg
+            <br />
+            <span className="text-xs text-text-low">
+              Try: {lastPerformance.weight + 2.5}kg × {lastPerformance.reps} or {lastPerformance.weight}kg × {lastPerformance.reps + 1}
+            </span>
           </p>
         </div>
       )}

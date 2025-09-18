@@ -247,3 +247,109 @@ export async function getExerciseProgress(
     return [];
   }
 }
+
+export async function getPersonalRecords(userId: string) {
+  try {
+    const workoutsCol = adminDb.collection(`users/${userId}/workouts`);
+    const querySnapshot = await workoutsCol.get();
+
+    const exerciseRecords: Record<string, {
+      exercise: string;
+      weight: number;
+      reps: number;
+      date: Date;
+      estimatedOneRepMax: number;
+    }> = {};
+
+    querySnapshot.docs.forEach((doc) => {
+      const workout = doc.data();
+      const workoutDate = workout.createdAt.toDate();
+
+      workout.loggedExercises?.forEach((exercise: any) => {
+        if (exercise.volume && exercise.volume.length > 0) {
+          exercise.volume.forEach((set: { weight: number; reps: number }) => {
+            const currentRecord = exerciseRecords[exercise.exerciseName];
+            const estimatedOneRepMax = set.weight / (1.0278 - 0.0278 * set.reps);
+
+            if (!currentRecord || estimatedOneRepMax > currentRecord.estimatedOneRepMax) {
+              exerciseRecords[exercise.exerciseName] = {
+                exercise: exercise.exerciseName,
+                weight: set.weight,
+                reps: set.reps,
+                date: workoutDate,
+                estimatedOneRepMax: Math.round(estimatedOneRepMax),
+              };
+            }
+          });
+        }
+      });
+    });
+
+    return Object.values(exerciseRecords)
+      .sort((a, b) => b.estimatedOneRepMax - a.estimatedOneRepMax)
+      .slice(0, 10); // Top 10 records
+  } catch (error) {
+    console.error("Error getting personal records:", error);
+    return [];
+  }
+}
+
+export async function getLastPerformance(
+  userId: string,
+  exerciseName: string
+): Promise<{
+  weight: number;
+  reps: number;
+  sets: number;
+  date: Date;
+} | null> {
+  try {
+    const workoutsCol = adminDb.collection(`users/${userId}/workouts`);
+    const q = workoutsCol.orderBy("createdAt", "desc").limit(10);
+    const querySnapshot = await q.get();
+
+    for (const doc of querySnapshot.docs) {
+      const workout = doc.data();
+      const exercise = workout.loggedExercises?.find(
+        (ex: { exerciseName: string }) => ex.exerciseName === exerciseName
+      );
+
+      if (exercise && exercise.volume.length > 0) {
+        // Get the most common weight and reps from the last session
+        const sets = exercise.volume;
+        const totalSets = sets.length;
+        
+        // Find the most common weight
+        const weightCounts: Record<number, number> = {};
+        sets.forEach((set: { weight: number }) => {
+          weightCounts[set.weight] = (weightCounts[set.weight] || 0) + 1;
+        });
+        
+        const mostCommonWeight = Object.entries(weightCounts)
+          .sort(([,a], [,b]) => b - a)[0][0];
+        
+        // Get average reps for that weight
+        const setsWithWeight = sets.filter((set: { weight: number }) => 
+          set.weight === parseFloat(mostCommonWeight)
+        );
+        const avgReps = Math.round(
+          setsWithWeight.reduce((sum: number, set: { reps: number }) => 
+            sum + set.reps, 0
+          ) / setsWithWeight.length
+        );
+
+        return {
+          weight: parseFloat(mostCommonWeight),
+          reps: avgReps,
+          sets: totalSets,
+          date: workout.createdAt.toDate(),
+        };
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error getting last performance:", error);
+    return null;
+  }
+}

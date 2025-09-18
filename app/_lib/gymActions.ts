@@ -10,8 +10,12 @@ import {
   getExercises,
   getWorkout,
   getWorkouts,
+  getWorkoutTemplates,
   searchExercises,
   updateWorkout,
+  getExerciseProgress,
+  getPersonalRecords,
+  getLastPerformance,
 } from "./gym-admin";
 import {
   ActionResult,
@@ -264,6 +268,167 @@ export async function searchExerciseLibraryAction(
       error:
         error instanceof Error ? error.message : "Failed to search exercises",
       data: [],
+    };
+  }
+}
+
+export async function getWorkoutTemplatesAction(): Promise<
+  ActionResult<WorkoutTemplate[]>
+> {
+  try {
+    const userId = await getAuthenticatedUserId();
+    const templates = await getWorkoutTemplates(userId);
+    return {
+      success: true,
+      data: templates,
+    };
+  } catch (error) {
+    console.error("Error in getWorkoutTemplates action:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to get templates",
+      data: [],
+    };
+  }
+}
+
+export async function createWorkoutTemplateAction(
+  templateData: Omit<WorkoutTemplate, "id" | "userId" | "createdAt">
+): Promise<ActionResult<string>> {
+  try {
+    const userId = await getAuthenticatedUserId();
+    const templateId = await createWorkoutTemplate(userId, {
+      ...templateData,
+      userId,
+      createdAt: new Date(),
+    });
+
+    revalidatePath("/webapp/gym");
+    return {
+      success: true,
+      message: "Workout template created successfully",
+      data: templateId,
+    };
+  } catch (error) {
+    console.error("Error in createWorkoutTemplate action:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to create template",
+    };
+  }
+}
+
+export async function startWorkoutFromTemplateAction(
+  templateId: string,
+  workoutName: string
+): Promise<ActionResult<string>> {
+  try {
+    const userId = await getAuthenticatedUserId();
+    
+    // Get the template
+    const templates = await getWorkoutTemplates(userId);
+    const template = templates.find(t => t.id === templateId);
+    
+    if (!template) {
+      return {
+        success: false,
+        error: "Template not found",
+      };
+    }
+
+    // Create logged exercises from template exercises
+    const loggedExercises: LoggedExercise[] = template.exercises.map((exerciseName, index) => ({
+      id: Date.now().toString() + index,
+      exerciseName,
+      order: index,
+      volume: [],
+    }));
+
+    const workoutData: Omit<WorkoutSession, "id" | "createdAt" | "updatedAt"> = {
+      userId,
+      name: workoutName,
+      loggedExercises,
+    };
+    
+    const workoutId = await createWorkout(userId, workoutData);
+    revalidatePath("/webapp/gym");
+
+    return {
+      success: true,
+      message: "Workout started from template",
+      data: workoutId,
+    };
+  } catch (error) {
+    console.error("Error in startWorkoutFromTemplate action:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to start workout from template",
+    };
+  }
+}
+
+export async function getExerciseProgressAction(
+  exerciseName: string
+): Promise<ActionResult<any[]>> {
+  try {
+    const userId = await getAuthenticatedUserId();
+    const progressData = await getExerciseProgress(userId, exerciseName, 20);
+    return {
+      success: true,
+      data: progressData,
+    };
+  } catch (error) {
+    console.error("Error in getExerciseProgress action:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to get exercise progress",
+      data: [],
+    };
+  }
+}
+
+export async function getPersonalRecordsAction(): Promise<ActionResult<any[]>> {
+  try {
+    const userId = await getAuthenticatedUserId();
+    const records = await getPersonalRecords(userId);
+    return {
+      success: true,
+      data: records,
+    };
+  } catch (error) {
+    console.error("Error in getPersonalRecords action:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to get personal records",
+      data: [],
+    };
+  }
+}
+
+export async function getLastPerformanceAction(
+  exerciseName: string
+): Promise<ActionResult<any>> {
+  try {
+    const userId = await getAuthenticatedUserId();
+    const lastPerformance = await getLastPerformance(userId, exerciseName);
+    return {
+      success: true,
+      data: lastPerformance,
+    };
+  } catch (error) {
+    console.error("Error in getLastPerformance action:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to get last performance",
+      data: null,
     };
   }
 }

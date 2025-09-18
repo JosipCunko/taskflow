@@ -19,14 +19,17 @@ import {
   isToday,
   isSameDay,
 } from "date-fns";
-import { WorkoutSession } from "../../_types/types";
+import { WorkoutSession, WorkoutTemplate } from "../../_types/types";
 import { cn, formatDate } from "../../_utils/utils";
 import {
   startWorkoutSessionAction,
   getWorkoutsAction,
+  getWorkoutTemplatesAction,
+  startWorkoutFromTemplateAction,
 } from "../../_lib/gymActions";
 import { handleToast } from "../../_utils/utils";
 import Button from "@/app/_components/reusable/Button";
+import CreateTemplateModal from "../../_components/gym/CreateTemplateModal";
 
 interface GymDashboardProps {
   userId: string;
@@ -40,18 +43,28 @@ export default function GymDashboard({
   const router = useRouter();
   const [workoutSessions, setWorkoutSessions] =
     useState<WorkoutSession[]>(initialWorkouts);
+  const [workoutTemplates, setWorkoutTemplates] = useState<WorkoutTemplate[]>([]);
   const [isPending] = useTransition();
   const [currentWeek, setCurrentWeek] = useState(new Date());
+  const [showCreateTemplateModal, setShowCreateTemplateModal] = useState(false);
 
   useEffect(() => {
-    const loadWorkouts = async () => {
-      const result = await getWorkoutsAction();
-      if (result.success && result.data) {
-        setWorkoutSessions(result.data);
+    const loadData = async () => {
+      const [workoutsResult, templatesResult] = await Promise.all([
+        getWorkoutsAction(),
+        getWorkoutTemplatesAction(),
+      ]);
+      
+      if (workoutsResult.success && workoutsResult.data) {
+        setWorkoutSessions(workoutsResult.data);
+      }
+      
+      if (templatesResult.success && templatesResult.data) {
+        setWorkoutTemplates(templatesResult.data);
       }
     };
 
-    loadWorkouts();
+    loadData();
   }, [userId]);
 
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 });
@@ -128,6 +141,28 @@ export default function GymDashboard({
 
   const handleViewProgress = () => {
     router.push("/webapp/gym/progress");
+  };
+
+  const handleStartFromTemplate = async (templateId: string) => {
+    const template = workoutTemplates.find(t => t.id === templateId);
+    if (!template) return;
+
+    const workoutName = `${template.name} ${formatDate(new Date(), undefined, false)}`;
+    const result = await startWorkoutFromTemplateAction(templateId, workoutName);
+
+    if (result.success && result.data) {
+      router.push(`/webapp/gym/workout?id=${result.data}`);
+    } else {
+      handleToast(result);
+    }
+  };
+
+  const handleTemplateCreated = async () => {
+    // Reload templates
+    const result = await getWorkoutTemplatesAction();
+    if (result.success && result.data) {
+      setWorkoutTemplates(result.data);
+    }
   };
 
   return (
@@ -277,18 +312,70 @@ export default function GymDashboard({
           <h2 className="text-xl font-semibold text-text-high">
             My Workout Templates
           </h2>
-          <Button onClick={() => {}} disabled>
+          <Button onClick={() => setShowCreateTemplateModal(true)}>
             <Plus className="size-5" />
             Create Template
           </Button>
         </div>
-        <div className="text-center py-8">
-          <div className="text-text-low mb-2">No templates created yet</div>
-          <p className="text-text-low text-sm">
-            Create workout templates for quick access to your favorite routines
-          </p>
-        </div>
+        
+        {workoutTemplates.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="text-text-low mb-2">No templates created yet</div>
+            <p className="text-text-low text-sm">
+              Create workout templates for quick access to your favorite routines
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {workoutTemplates.map((template) => (
+              <div
+                key={template.id}
+                className="bg-background-700 rounded-lg p-4 border border-background-500"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-semibold text-text-high">{template.name}</h3>
+                  <span className="text-xs text-text-low">
+                    {template.exercises.length} exercises
+                  </span>
+                </div>
+                
+                <div className="mb-4">
+                  <div className="flex flex-wrap gap-1">
+                    {template.exercises.slice(0, 3).map((exercise, index) => (
+                      <span
+                        key={index}
+                        className="text-xs bg-background-600 text-text-low px-2 py-1 rounded"
+                      >
+                        {exercise}
+                      </span>
+                    ))}
+                    {template.exercises.length > 3 && (
+                      <span className="text-xs text-text-low px-2 py-1">
+                        +{template.exercises.length - 3} more
+                      </span>
+                    )}
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={() => handleStartFromTemplate(template.id)}
+                  variant="secondary"
+                  className="w-full text-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Start Workout
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      <CreateTemplateModal
+        isOpen={showCreateTemplateModal}
+        onClose={() => setShowCreateTemplateModal(false)}
+        onTemplateCreated={handleTemplateCreated}
+      />
     </div>
   );
 }
