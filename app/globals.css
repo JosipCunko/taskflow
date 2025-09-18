@@ -107,6 +107,23 @@ background dot patter that simulate an old CRT monitor
   --color-info: #0d97d6;
 }
 
+/* Autofill */
+/* For Chrome / Edge / Safari */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0px 1000px var(--color-background-600) inset;
+  -webkit-text-fill-color: var(--color-text-low);
+  font-family: inherit;
+  caret-color: var(--color-text-low);
+  transition: background-color 5000s ease-in-out 0s; /* prevents flash */
+}
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0px 1000px var(--color-background-600) inset;
+  -webkit-text-fill-color: var(--color-text-low);
+}
+
 .animate-fadeIn {
   animation: fadeIn 0.5s ease-out forwards;
 }

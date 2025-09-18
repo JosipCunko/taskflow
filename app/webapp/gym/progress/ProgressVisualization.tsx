@@ -10,36 +10,24 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { Trophy, Target, ChevronDown, Award, Zap } from "lucide-react";
+import { defaultExercises } from "../../../../public/exerciseLibrary";
 import {
-  TrendingUp,
-  Trophy,
-  Target,
-  ChevronDown,
-  Award,
-  Zap,
-} from "lucide-react";
-import { defaultExercises } from "../../../_lib/exerciseLibrary";
-import { getExerciseProgressAction, getPersonalRecordsAction } from "../../../_lib/gymActions";
+  getExerciseProgressAction,
+  getPersonalRecordsAction,
+} from "../../../_lib/gymActions";
 import { cn } from "../../../_utils/utils";
+import { ExerciseProgressPoint, PersonalRecord } from "../../../_types/types";
 
 interface ProgressVisualizationProps {
   userId: string;
 }
 
-type MetricType = "maxWeight" | "totalVolume" | "estimatedOneRepMax";
+type MetricType = "maxWeight";
 
 interface ProgressData {
   date: string;
   maxWeight: number;
-  totalVolume: number;
-  estimatedOneRepMax: number;
-}
-
-interface ExerciseProgressData {
-  date: Date;
-  maxWeight: number;
-  totalVolume: number;
-  sets: number;
 }
 
 export default function ProgressVisualization({
@@ -48,9 +36,8 @@ export default function ProgressVisualization({
   const [selectedExercise, setSelectedExercise] = useState(
     "Barbell Bench Press"
   );
-  const [selectedMetric, setSelectedMetric] = useState<MetricType>("maxWeight");
   const [progressData, setProgressData] = useState<ProgressData[]>([]);
-  const [personalRecords, setPersonalRecords] = useState<any[]>([]);
+  const [personalRecords, setPersonalRecords] = useState<PersonalRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showExerciseDropdown, setShowExerciseDropdown] = useState(false);
 
@@ -61,27 +48,21 @@ export default function ProgressVisualization({
       setIsLoading(true);
       try {
         const result = await getExerciseProgressAction(selectedExercise);
-        
+
         if (result.success && result.data) {
-          const rawData = result.data as ExerciseProgressData[];
-          
+          const rawData = result.data as ExerciseProgressPoint[];
+
           // Transform the data for the chart
           const chartData: ProgressData[] = rawData.map((item) => {
-            // Estimate 1RM based on max weight (assuming it was performed for ~5-8 reps)
-            const estimatedReps = 6; // Conservative estimate
-            const estimatedOneRepMax = calculateOneRepMax(item.maxWeight, estimatedReps);
-            
             return {
-              date: new Intl.DateTimeFormat('en-US', { 
-                month: 'short', 
-                day: 'numeric' 
-              }).format(item.date),
+              date: new Intl.DateTimeFormat("en-US", {
+                month: "short",
+                day: "numeric",
+              }).format(new Date(item.date)),
               maxWeight: item.maxWeight,
-              totalVolume: item.totalVolume,
-              estimatedOneRepMax,
             };
           });
-          
+
           setProgressData(chartData);
         } else {
           // No data available for this exercise
@@ -102,7 +83,7 @@ export default function ProgressVisualization({
       try {
         const result = await getPersonalRecordsAction();
         if (result.success && result.data) {
-          setPersonalRecords(result.data);
+          setPersonalRecords(result.data as PersonalRecord[]);
         }
       } catch (error) {
         console.error("Error loading personal records:", error);
@@ -111,11 +92,6 @@ export default function ProgressVisualization({
 
     loadPersonalRecords();
   }, [userId]);
-
-  const calculateOneRepMax = (weight: number, reps: number): number => {
-    // Brzycki formula: 1RM = Weight / (1.0278 - 0.0278 * Reps)
-    return Math.round(weight / (1.0278 - 0.0278 * reps));
-  };
 
   const getMetricConfig = (metric: MetricType) => {
     switch (metric) {
@@ -126,23 +102,10 @@ export default function ProgressVisualization({
           color: "#3b82f6",
           icon: Target,
         };
-      case "totalVolume":
-        return {
-          label: "Total Volume",
-          unit: "kg",
-          color: "#10b981",
-          icon: TrendingUp,
-        };
-      case "estimatedOneRepMax":
-        return {
-          label: "Est. 1RM",
-          unit: "kg",
-          color: "#f59e0b",
-          icon: Zap,
-        };
     }
   };
 
+  const selectedMetric: MetricType = "maxWeight";
   const currentConfig = getMetricConfig(selectedMetric);
   const latestData = progressData[progressData.length - 1];
   const previousData = progressData[progressData.length - 2];
@@ -153,7 +116,6 @@ export default function ProgressVisualization({
           previousData[selectedMetric]) *
         100
       : 0;
-
 
   if (isLoading) {
     return (
@@ -177,7 +139,7 @@ export default function ProgressVisualization({
       <div className="bg-background-600 rounded-lg p-6 border border-background-500">
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Exercise Dropdown */}
-          <div className="flex-1 relative">
+          <div className="w-full relative">
             <label className="block text-sm font-medium text-text-low mb-2">
               Select Exercise
             </label>
@@ -207,37 +169,34 @@ export default function ProgressVisualization({
             )}
           </div>
 
-          {/* Metric Selection */}
+          {/* Metric Selection 
           <div className="flex-1">
             <label className="block text-sm font-medium text-text-low mb-2">
               Metric to Track
             </label>
             <div className="flex gap-2">
-              {(
-                [
-                  "maxWeight",
-                  "totalVolume",
-                  "estimatedOneRepMax",
-                ] as MetricType[]
-              ).map((metric) => {
-                const config = getMetricConfig(metric);
-                return (
-                  <button
-                    key={metric}
-                    onClick={() => setSelectedMetric(metric)}
-                    className={cn(
-                      "flex-1 px-3 py-2 rounded-lg border transition-colors text-sm",
-                      selectedMetric === metric
-                        ? "bg-primary-500 text-white border-primary-500"
-                        : "bg-background-700 text-text-low border-background-500 hover:bg-background-600"
-                    )}
-                  >
-                    {config.label}
-                  </button>
-                );
-              })}
+              {(["maxWeight", "estimatedOneRepMax"] as MetricType[]).map(
+                (metric) => {
+                  const config = getMetricConfig(metric);
+                  return (
+                    <button
+                      key={metric}
+                      onClick={() => setSelectedMetric(metric)}
+                      className={cn(
+                        "flex-1 px-3 py-2 rounded-lg border transition-colors text-sm",
+                        selectedMetric === metric
+                          ? "bg-primary-500 text-white border-primary-500"
+                          : "bg-background-700 text-text-low border-background-500 hover:bg-background-600"
+                      )}
+                    >
+                      {config.label}
+                    </button>
+                  );
+                }
+              )}
             </div>
           </div>
+        */}
         </div>
       </div>
 
@@ -274,7 +233,7 @@ export default function ProgressVisualization({
                     improvement > 0 ? "text-success" : "text-error"
                   )}
                 >
-                  <TrendingUp className="w-3 h-3" />
+                  <Zap className="w-3 h-3" />
                   {improvement > 0 ? "+" : ""}
                   {improvement.toFixed(1)}%
                 </div>
@@ -283,79 +242,63 @@ export default function ProgressVisualization({
           )}
         </div>
 
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={progressData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} />
-              <YAxis stroke="#9ca3af" fontSize={12} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "#1f2937",
-                  border: "1px solid #374151",
-                  borderRadius: "8px",
-                  color: "#f9fafb",
-                }}
-              />
-              <Line
-                type="monotone"
-                dataKey={selectedMetric}
-                stroke={currentConfig.color}
-                strokeWidth={3}
-                dot={{ fill: currentConfig.color, strokeWidth: 2, r: 4 }}
-                activeDot={{
-                  r: 6,
-                  stroke: currentConfig.color,
-                  strokeWidth: 2,
-                }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="h-80 relative">
+          <div
+            className={cn(
+              "w-full h-full",
+              progressData.length === 0 && "opacity-0"
+            )}
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={progressData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} />
+                <YAxis stroke="#9ca3af" fontSize={12} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#1f2937",
+                    border: "1px solid #374151",
+                    borderRadius: "8px",
+                    color: "#f9fafb",
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey={selectedMetric}
+                  stroke={currentConfig.color}
+                  strokeWidth={3}
+                  dot={{ fill: currentConfig.color, strokeWidth: 2, r: 4 }}
+                  activeDot={{
+                    r: 6,
+                    stroke: currentConfig.color,
+                    strokeWidth: 2,
+                  }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          {progressData.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background-600/50 rounded-lg opacity-80">
+              <p className="text-text-high font-semibold">
+                No data for this exercise
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-background-600 rounded-lg p-6 border border-background-500">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-success/10 rounded-lg">
-              <Trophy className="w-5 h-5 text-success" />
-            </div>
-            <h3 className="font-semibold text-text-high">Current Best</h3>
+      <div className="bg-background-600 rounded-lg p-6 border border-background-500">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2 bg-success/10 rounded-lg">
+            <Trophy className="w-5 h-5 text-success" />
           </div>
-          <div className="text-2xl font-bold text-text-high">
-            {latestData ? `${latestData.maxWeight} kg` : "No data"}
-          </div>
-          <p className="text-sm text-text-low">Personal record weight</p>
+          <h3 className="font-semibold text-text-high">Current Best</h3>
         </div>
-
-        <div className="bg-background-600 rounded-lg p-6 border border-background-500">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-info/10 rounded-lg">
-              <Zap className="w-5 h-5 text-info" />
-            </div>
-            <h3 className="font-semibold text-text-high">Est. 1RM</h3>
-          </div>
-          <div className="text-2xl font-bold text-text-high">
-            {latestData ? `${latestData.estimatedOneRepMax} kg` : "No data"}
-          </div>
-          <p className="text-sm text-text-low">Estimated one rep max</p>
+        <div className="text-2xl font-bold text-text-high">
+          {latestData ? `${latestData.maxWeight} kg` : "No data"}
         </div>
-
-        <div className="bg-background-600 rounded-lg p-6 border border-background-500">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-warning/10 rounded-lg">
-              <TrendingUp className="w-5 h-5 text-warning" />
-            </div>
-            <h3 className="font-semibold text-text-high">Total Volume</h3>
-          </div>
-          <div className="text-2xl font-bold text-text-high">
-            {latestData
-              ? `${latestData.totalVolume.toLocaleString()} kg`
-              : "No data"}
-          </div>
-          <p className="text-sm text-text-low">Last session volume</p>
-        </div>
+        <p className="text-sm text-text-low">Personal record weight</p>
       </div>
 
       {/* Personal Records */}
@@ -388,19 +331,16 @@ export default function ProgressVisualization({
                     {record.exercise}
                   </h3>
                   <p className="text-sm text-text-low">
-                    {new Intl.DateTimeFormat('en-US', { 
-                      month: 'short', 
-                      day: 'numeric',
-                      year: 'numeric'
-                    }).format(record.date)}
+                    {new Intl.DateTimeFormat("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    }).format(new Date(record.date))}
                   </p>
                 </div>
                 <div className="text-right">
                   <div className="text-lg font-bold text-text-high">
                     {record.weight}kg × {record.reps}
-                  </div>
-                  <div className="text-sm text-accent">
-                    {record.estimatedOneRepMax}kg 1RM
                   </div>
                 </div>
               </div>

@@ -1,7 +1,15 @@
 import "server-only";
 import { adminDb } from "./admin";
 import admin from "firebase-admin";
-import { WorkoutSession, Exercise, WorkoutTemplate } from "../_types/types";
+import {
+  WorkoutSession,
+  Exercise,
+  WorkoutTemplate,
+  LoggedExercise,
+  PersonalRecord,
+  ExerciseProgressPoint,
+  LastPerformance,
+} from "../_types/types";
 
 export async function getWorkouts(userId: string): Promise<WorkoutSession[]> {
   try {
@@ -203,18 +211,13 @@ export async function getExerciseProgress(
   userId: string,
   exerciseName: string,
   limitResults: number = 10
-) {
+): Promise<ExerciseProgressPoint[]> {
   try {
     const workoutsCol = adminDb.collection(`users/${userId}/workouts`);
     const q = workoutsCol.orderBy("createdAt", "desc").limit(limitResults);
     const querySnapshot = await q.get();
 
-    const progressData: Array<{
-      date: Date;
-      maxWeight: number;
-      totalVolume: number;
-      sets: number;
-    }> = [];
+    const progressData: ExerciseProgressPoint[] = [];
 
     querySnapshot.docs.forEach((doc) => {
       const workout = doc.data();
@@ -226,16 +229,10 @@ export async function getExerciseProgress(
         const maxWeight = Math.max(
           ...exercise.volume.map((set: { weight: number }) => set.weight)
         );
-        const totalVolume = exercise.volume.reduce(
-          (sum: number, set: { weight: number; reps: number }) =>
-            sum + set.weight * set.reps,
-          0
-        );
 
         progressData.push({
           date: workout.createdAt.toDate(),
           maxWeight,
-          totalVolume,
           sets: exercise.volume.length,
         });
       }
@@ -248,36 +245,30 @@ export async function getExerciseProgress(
   }
 }
 
-export async function getPersonalRecords(userId: string) {
+export async function getPersonalRecords(
+  userId: string
+): Promise<PersonalRecord[]> {
   try {
     const workoutsCol = adminDb.collection(`users/${userId}/workouts`);
     const querySnapshot = await workoutsCol.get();
 
-    const exerciseRecords: Record<string, {
-      exercise: string;
-      weight: number;
-      reps: number;
-      date: Date;
-      estimatedOneRepMax: number;
-    }> = {};
+    const exerciseRecords: Record<string, PersonalRecord> = {};
 
     querySnapshot.docs.forEach((doc) => {
       const workout = doc.data();
       const workoutDate = workout.createdAt.toDate();
 
-      workout.loggedExercises?.forEach((exercise: any) => {
+      workout.loggedExercises?.forEach((exercise: LoggedExercise) => {
         if (exercise.volume && exercise.volume.length > 0) {
           exercise.volume.forEach((set: { weight: number; reps: number }) => {
             const currentRecord = exerciseRecords[exercise.exerciseName];
-            const estimatedOneRepMax = set.weight / (1.0278 - 0.0278 * set.reps);
 
-            if (!currentRecord || estimatedOneRepMax > currentRecord.estimatedOneRepMax) {
+            if (!currentRecord || set.weight > currentRecord.weight) {
               exerciseRecords[exercise.exerciseName] = {
                 exercise: exercise.exerciseName,
                 weight: set.weight,
                 reps: set.reps,
                 date: workoutDate,
-                estimatedOneRepMax: Math.round(estimatedOneRepMax),
               };
             }
           });
@@ -286,7 +277,7 @@ export async function getPersonalRecords(userId: string) {
     });
 
     return Object.values(exerciseRecords)
-      .sort((a, b) => b.estimatedOneRepMax - a.estimatedOneRepMax)
+      .sort((a, b) => b.weight - a.weight)
       .slice(0, 10); // Top 10 records
   } catch (error) {
     console.error("Error getting personal records:", error);
@@ -297,12 +288,7 @@ export async function getPersonalRecords(userId: string) {
 export async function getLastPerformance(
   userId: string,
   exerciseName: string
-): Promise<{
-  weight: number;
-  reps: number;
-  sets: number;
-  date: Date;
-} | null> {
+): Promise<LastPerformance | null> {
   try {
     const workoutsCol = adminDb.collection(`users/${userId}/workouts`);
     const q = workoutsCol.orderBy("createdAt", "desc").limit(10);
@@ -311,30 +297,33 @@ export async function getLastPerformance(
     for (const doc of querySnapshot.docs) {
       const workout = doc.data();
       const exercise = workout.loggedExercises?.find(
-        (ex: { exerciseName: string }) => ex.exerciseName === exerciseName
+        (ex: LoggedExercise) => ex.exerciseName === exerciseName
       );
 
       if (exercise && exercise.volume.length > 0) {
         // Get the most common weight and reps from the last session
         const sets = exercise.volume;
         const totalSets = sets.length;
-        
+
         // Find the most common weight
         const weightCounts: Record<number, number> = {};
         sets.forEach((set: { weight: number }) => {
           weightCounts[set.weight] = (weightCounts[set.weight] || 0) + 1;
         });
-        
-        const mostCommonWeight = Object.entries(weightCounts)
-          .sort(([,a], [,b]) => b - a)[0][0];
-        
+
+        const mostCommonWeight = Object.entries(weightCounts).sort(
+          ([, a], [, b]) => b - a
+        )[0][0];
+
         // Get average reps for that weight
-        const setsWithWeight = sets.filter((set: { weight: number }) => 
-          set.weight === parseFloat(mostCommonWeight)
+        const setsWithWeight = sets.filter(
+          (set: { weight: number }) =>
+            set.weight === parseFloat(mostCommonWeight)
         );
         const avgReps = Math.round(
-          setsWithWeight.reduce((sum: number, set: { reps: number }) => 
-            sum + set.reps, 0
+          setsWithWeight.reduce(
+            (sum: number, set: { reps: number }) => sum + set.reps,
+            0
           ) / setsWithWeight.length
         );
 

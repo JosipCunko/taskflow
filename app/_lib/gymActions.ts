@@ -23,6 +23,8 @@ import {
   WorkoutTemplate,
   Exercise,
   LoggedExercise,
+  PersonalRecord,
+  ExerciseProgressPoint,
 } from "../_types/types";
 
 async function getAuthenticatedUserId(): Promise<string> {
@@ -286,8 +288,7 @@ export async function getWorkoutTemplatesAction(): Promise<
     console.error("Error in getWorkoutTemplates action:", error);
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to get templates",
+      error: error instanceof Error ? error.message : "Failed to get templates",
       data: [],
     };
   }
@@ -326,11 +327,11 @@ export async function startWorkoutFromTemplateAction(
 ): Promise<ActionResult<string>> {
   try {
     const userId = await getAuthenticatedUserId();
-    
+
     // Get the template
     const templates = await getWorkoutTemplates(userId);
-    const template = templates.find(t => t.id === templateId);
-    
+    const template = templates.find((t) => t.id === templateId);
+
     if (!template) {
       return {
         success: false,
@@ -339,19 +340,22 @@ export async function startWorkoutFromTemplateAction(
     }
 
     // Create logged exercises from template exercises
-    const loggedExercises: LoggedExercise[] = template.exercises.map((exerciseName, index) => ({
-      id: Date.now().toString() + index,
-      exerciseName,
-      order: index,
-      volume: [],
-    }));
+    const loggedExercises: LoggedExercise[] = template.exercises.map(
+      (exerciseName, index) => ({
+        id: Date.now().toString() + index,
+        exerciseName,
+        order: index,
+        volume: [],
+      })
+    );
 
-    const workoutData: Omit<WorkoutSession, "id" | "createdAt" | "updatedAt"> = {
-      userId,
-      name: workoutName,
-      loggedExercises,
-    };
-    
+    const workoutData: Omit<WorkoutSession, "id" | "createdAt" | "updatedAt"> =
+      {
+        userId,
+        name: workoutName,
+        loggedExercises,
+      };
+
     const workoutId = await createWorkout(userId, workoutData);
     revalidatePath("/webapp/gym");
 
@@ -374,7 +378,7 @@ export async function startWorkoutFromTemplateAction(
 
 export async function getExerciseProgressAction(
   exerciseName: string
-): Promise<ActionResult<any[]>> {
+): Promise<ActionResult<ExerciseProgressPoint[]>> {
   try {
     const userId = await getAuthenticatedUserId();
     const progressData = await getExerciseProgress(userId, exerciseName, 20);
@@ -387,13 +391,17 @@ export async function getExerciseProgressAction(
     return {
       success: false,
       error:
-        error instanceof Error ? error.message : "Failed to get exercise progress",
+        error instanceof Error
+          ? error.message
+          : "Failed to get exercise progress",
       data: [],
     };
   }
 }
 
-export async function getPersonalRecordsAction(): Promise<ActionResult<any[]>> {
+export async function getPersonalRecordsAction(): Promise<
+  ActionResult<PersonalRecord[]>
+> {
   try {
     const userId = await getAuthenticatedUserId();
     const records = await getPersonalRecords(userId);
@@ -406,15 +414,22 @@ export async function getPersonalRecordsAction(): Promise<ActionResult<any[]>> {
     return {
       success: false,
       error:
-        error instanceof Error ? error.message : "Failed to get personal records",
+        error instanceof Error
+          ? error.message
+          : "Failed to get personal records",
       data: [],
     };
   }
 }
 
-export async function getLastPerformanceAction(
-  exerciseName: string
-): Promise<ActionResult<any>> {
+export async function getLastPerformanceAction(exerciseName: string): Promise<
+  ActionResult<{
+    weight: number;
+    reps: number;
+    sets: number;
+    date: Date;
+  } | null>
+> {
   try {
     const userId = await getAuthenticatedUserId();
     const lastPerformance = await getLastPerformance(userId, exerciseName);
@@ -427,7 +442,9 @@ export async function getLastPerformanceAction(
     return {
       success: false,
       error:
-        error instanceof Error ? error.message : "Failed to get last performance",
+        error instanceof Error
+          ? error.message
+          : "Failed to get last performance",
       data: null,
     };
   }

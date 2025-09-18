@@ -18,7 +18,7 @@ interface ThemeContextProps {
 const ThemeContext = createContext<ThemeContextProps | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [theme, setTheme] = useState<Theme>("dark-crt");
+  const [theme, setTheme] = useState<Theme>("default-blue");
 
   useEffect(() => {
     const storedTheme = localStorage.getItem("theme") as Theme | null;

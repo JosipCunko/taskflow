@@ -25,10 +25,14 @@ async function postToAnalyticsRoute(endpoint: string, data: object) {
 }
 
 function getFeatureFromPath(pathname: string): string {
-  const basePath = pathname.replace("/webapp/", "");
   const navItemsArr = Object.values(navItems).flat();
+
+  // Sort by href length descending to match more specific paths first
+  // e.g., /webapp/tasks before /webapp
+  navItemsArr.sort((a, b) => b.href.length - a.href.length);
+
   const matchedItem = navItemsArr.find((item) =>
-    basePath.startsWith(item.href.replace("/", ""))
+    pathname.startsWith(item.href)
   );
 
   return matchedItem ? matchedItem.label.toLowerCase() : "dashboard";

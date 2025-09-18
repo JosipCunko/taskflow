@@ -352,15 +352,34 @@ export interface WorkoutTemplate {
   createdAt: Date;
 }
 
+export interface PersonalRecord {
+  exercise: string;
+  weight: number;
+  reps: number;
+  date: Date;
+}
+
+export interface ExerciseProgressPoint {
+  date: Date;
+  maxWeight: number;
+  sets: number;
+}
+
 export interface ExerciseProgress {
   exerciseName: string;
   maxWeight: number;
   totalVolume: number;
-  estimatedOneRepMax: number;
   lastPerformed: Date;
   personalRecord: {
     weight: number;
     reps: number;
     date: Date;
   };
+}
+
+export interface LastPerformance {
+  weight: number;
+  reps: number;
+  sets: number;
+  date: Date;
 }

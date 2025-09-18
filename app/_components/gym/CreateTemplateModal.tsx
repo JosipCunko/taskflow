@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { X, Plus, Search, Trash2 } from "lucide-react";
 import { Exercise } from "../../_types/types";
-import { defaultExercises } from "../../_lib/exerciseLibrary";
+import { defaultExercises } from "../../../public/exerciseLibrary";
 import { createWorkoutTemplateAction } from "../../_lib/gymActions";
 import { handleToast } from "../../_utils/utils";
 import Button from "../reusable/Button";
@@ -145,7 +145,8 @@ export default function CreateTemplateModal({
             <div className="space-y-2 max-h-64 overflow-auto">
               {selectedExercises.length === 0 ? (
                 <div className="text-center py-8 text-text-low">
-                  No exercises added yet. Click "Add Exercise" to get started.
+                  No exercises added yet. Click &quot;Add Exercise&quot; to get
+                  started.
                 </div>
               ) : (
                 selectedExercises.map((exerciseName, index) => (
@@ -228,7 +229,9 @@ export default function CreateTemplateModal({
                       {exercise.category} • {exercise.muscleGroups.join(", ")}
                     </p>
                     {selectedExercises.includes(exercise.name) && (
-                      <p className="text-xs text-success mt-1">✓ Already added</p>
+                      <p className="text-xs text-success mt-1">
+                        ✓ Already added
+                      </p>
                     )}
                   </button>
                 ))}
