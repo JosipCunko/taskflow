@@ -50,7 +50,6 @@ import {
 import { isFuture, isToday } from "date-fns";
 import { customToast } from "./toasts";
 import { CardSpecificIcons, FoodIcons } from "./icons";
-import { CuisineType, DietType, MealType } from "../_types/spoonacularTypes";
 
 /* Landing Page */
 export const stats = [
@@ -1131,45 +1130,6 @@ export const generateNutrients = (
   },
 ];
 
-export const cuisineOptions: CuisineType[] = [
-  "american",
-  "asian",
-  "british",
-  "caribbean",
-  "chinese",
-  "french",
-  "german",
-  "greek",
-  "indian",
-  "italian",
-  "japanese",
-  "korean",
-  "mediterranean",
-  "mexican",
-  "middle eastern",
-  "spanish",
-  "thai",
-];
-export const dietOptions: DietType[] = [
-  "gluten free",
-  "ketogenic",
-  "vegetarian",
-  "vegan",
-  "pescetarian",
-  "paleo",
-  "primal",
-  "whole30",
-];
-export const mealTypeOptions: MealType[] = [
-  "main course",
-  "side dish",
-  "dessert",
-  "appetizer",
-  "salad",
-  "breakfast",
-  "soup",
-  "snack",
-];
 export const mealTypes = [
   "breakfast",
   "lunch",
@@ -1181,13 +1141,6 @@ export const getProgressColor = (percentage: number) => {
   if (percentage >= 100) return "bg-success";
   if (percentage >= 50) return "bg-warning";
   return "bg-info";
-};
-
-export const getRecipeImageUrl = (
-  recipeId: number,
-  imageType: string = "jpg"
-): string => {
-  return `https://img.spoonacular.com/recipes/${recipeId}-312x231.${imageType}`;
 };
 
 export const getHealthScoreColor = (score: number) => {

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useTransition, useMemo } from "react";
-import { MealType } from "@/app/_types/spoonacularTypes";
 import { updateLoggedMeal, deleteLoggedMeal } from "@/app/_lib/healthActions";
 import { customToast } from "@/app/_utils/toasts";
 import Button from "./reusable/Button";
@@ -10,7 +9,7 @@ import { Trash2, Edit, Save, X, Utensils, AlertTriangle } from "lucide-react";
 import { isToday } from "date-fns";
 import { LoggedMeal, MealNutrition } from "../_types/types";
 import { Tooltip } from "react-tooltip";
-import { generateNutrients } from "../_utils/utils";
+import { generateNutrients, mealTypes } from "../_utils/utils";
 
 export default function LoggedMealCard({
   loggedMeal,
@@ -145,8 +144,8 @@ export default function LoggedMealCard({
                   onChange={handleInputChange}
                   className="w-full capitalize px-3 py-2 bg-background-625 border border-background-500 rounded-lg text-text-low focus:ring-primary-500"
                 >
-                  {["breakfast", "lunch", "dinner", "snack"].map((type) => (
-                    <option key={type} value={type as MealType}>
+                  {mealTypes.map((type: LoggedMeal["mealType"]) => (
+                    <option key={type} value={type}>
                       {type}
                     </option>
                   ))}
