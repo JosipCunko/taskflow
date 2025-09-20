@@ -57,6 +57,11 @@ export interface AppUser {
   notesCount?: number; // Added field in /webapp/profile
   gainedPoints: number[]; // max length 7
   nutritionGoals: UserNutritionGoals;
+  youtubePreferences?: {
+    enabled: boolean;
+    createTasks: boolean;
+    createNotifications: boolean;
+  };
 }
 export interface UserNutritionGoals {
   calories: number;
@@ -217,7 +222,8 @@ export type NotificationType =
   | "TASK_DUE_SOON"
   | "WEEKLY_SUMMARY"
   | "ACHIEVEMENT_UNLOCKED"
-  | "SYSTEM";
+  | "SYSTEM"
+  | "YOUTUBE_SUMMARY";
 export type NotificationPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
 export interface ActionResult<T = null> {
@@ -384,4 +390,25 @@ export interface LastPerformance {
   reps: number;
   sets: number;
   date: Date;
+}
+
+export interface YouTubeVideo {
+  id: string;
+  title: string;
+  channelTitle: string;
+  channelId: string;
+  description: string;
+  publishedAt: Date;
+  thumbnailUrl: string;
+  duration?: string;
+  viewCount?: string;
+}
+
+export interface YouTubeSummary {
+  id: string;
+  userId: string;
+  videos: YouTubeVideo[];
+  summary: string;
+  createdAt: Date;
+  processedAt: Date;
 }

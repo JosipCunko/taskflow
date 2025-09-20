@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth";
 import TopSidebar from "../_components/TopSidebar";
 import AnimatedSidebar from "../_components/AnimatedSidebar";
 import AnalyticsTracker from "../_components/AnalyticsTracker";
+import YouTubeBackgroundProcessor from "../_components/YouTubeBackgroundProcessor";
 import { getUserById } from "../_lib/user-admin";
 import Providers from "./providers";
 
@@ -25,9 +26,12 @@ export default async function RootLayout({
   const tasks = await getTasksByUserId(userId);
   const userData = await getUserById(userId);
 
+  if (!userData) redirect("/login");
+
   return (
     <Providers>
       <AnalyticsTracker userData={userData} />
+      <YouTubeBackgroundProcessor userId={userId} userData={userData} />
       <main className="grid grid-rows-1 grid-cols-1 sm:grid-cols-[16rem_1fr] overflow-hidden relative h-screen bg-background-625">
         <AnimatedSidebar />
         <div className="overflow-hidden h-full grid grid-cols-1 grid-rows-[80px_1fr] px-2 sm:px-4 lg:px-6 relative">

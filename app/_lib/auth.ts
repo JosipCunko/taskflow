@@ -431,6 +431,11 @@ export const authOptions: NextAuthOptions = {
               achievements: [],
               gainedPoints: [],
               lastLoginAt: new Date(),
+              youtubePreferences: {
+                enabled: true, // Enable by default for testing
+                createTasks: true,
+                createNotifications: true
+              },
               ...(firebaseUser.email && { email: firebaseUser.email }),
               ...(firebaseUser.name && { displayName: firebaseUser.name }),
               ...(firebaseUser.picture && { photoURL: firebaseUser.picture }),
@@ -525,6 +530,11 @@ export const authOptions: NextAuthOptions = {
               achievements: [],
               gainedPoints: [],
               lastLoginAt: new Date(),
+              youtubePreferences: {
+                enabled: true, // Enable by default for testing
+                createTasks: true,
+                createNotifications: true
+              },
               ...(user.email && { email: user.email }),
               ...(user.name && { displayName: user.name }),
               ...(user.image && { photoURL: user.image }),

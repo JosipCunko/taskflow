@@ -837,3 +837,99 @@ export async function getAnalyticsDataAction(): Promise<AnalyticsData | null> {
 
   return getAnalyticsData(session.user.id);
 }
+
+/* YouTube Summarizer */
+export async function processYouTubeSummaryAction(): Promise<ActionResult> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return { success: false, error: "User not authenticated" };
+    }
+
+    // Check if user has already processed today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const existingSummary = await adminDb
+      .collection("youtubeSummaries")
+      .where("userId", "==", session.user.id)
+      .where("createdAt", ">=", today)
+      .limit(1)
+      .get();
+
+    if (!existingSummary.empty) {
+      return { 
+        success: false, 
+        message: "YouTube summary already processed today" 
+      };
+    }
+
+    // Make internal API call to process YouTube summary
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/youtube/process`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      }
+    });
+
+    if (!response.ok) {
+      return { 
+        success: false, 
+        error: "Failed to process YouTube summary" 
+      };
+    }
+
+    const result = await response.json();
+    
+    if (result.success) {
+      revalidatePath("/webapp/inbox");
+      revalidatePath("/webapp/tasks");
+      revalidatePath("/webapp");
+    }
+
+    return result;
+  } catch (error) {
+    console.error("Error processing YouTube summary:", error);
+    return { 
+      success: false, 
+      error: "Failed to process YouTube summary" 
+    };
+  }
+}
+
+export async function updateYouTubePreferencesAction(
+  enabled: boolean,
+  createTasks: boolean = true,
+  createNotifications: boolean = true
+): Promise<ActionResult> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return { success: false, error: "User not authenticated" };
+    }
+
+    await adminDb
+      .collection("users")
+      .doc(session.user.id)
+      .update({
+        youtubePreferences: {
+          enabled,
+          createTasks,
+          createNotifications
+        }
+      });
+
+    revalidatePath("/webapp/profile");
+    
+    return { 
+      success: true, 
+      message: "YouTube preferences updated successfully" 
+    };
+  } catch (error) {
+    console.error("Error updating YouTube preferences:", error);
+    return { 
+      success: false, 
+      error: "Failed to update YouTube preferences" 
+    };
+  }
+}
