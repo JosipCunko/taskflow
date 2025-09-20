@@ -552,6 +552,7 @@ export const getNotificationTypeLabel = (type: NotificationType): string => {
     WEEKLY_SUMMARY: "Weekly Summary",
     POINTS_MILESTONE: "Points Milestone",
     SYSTEM: "System Update",
+    YOUTUBE_SUMMARY: "YouTube Summary",
   };
 
   return labelMap[type] || "Notification";
