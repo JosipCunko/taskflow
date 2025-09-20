@@ -230,9 +230,16 @@ export async function getExerciseProgress(
           ...exercise.volume.map((set: { weight: number }) => set.weight)
         );
 
+        // Find the reps corresponding to the max weight (take the first occurrence)
+        const maxWeightSet = exercise.volume.find(
+          (set: { weight: number; reps: number }) => set.weight === maxWeight
+        );
+        const maxReps = maxWeightSet ? maxWeightSet.reps : 0;
+
         progressData.push({
           date: workout.createdAt.toDate(),
           maxWeight,
+          maxReps,
           sets: exercise.volume.length,
         });
       }
@@ -301,35 +308,14 @@ export async function getLastPerformance(
       );
 
       if (exercise && exercise.volume.length > 0) {
-        // Get the most common weight and reps from the last session
+        // Get the first set from the last session (when user is strongest)
         const sets = exercise.volume;
+        const firstSet = sets[0];
         const totalSets = sets.length;
 
-        // Find the most common weight
-        const weightCounts: Record<number, number> = {};
-        sets.forEach((set: { weight: number }) => {
-          weightCounts[set.weight] = (weightCounts[set.weight] || 0) + 1;
-        });
-
-        const mostCommonWeight = Object.entries(weightCounts).sort(
-          ([, a], [, b]) => b - a
-        )[0][0];
-
-        // Get average reps for that weight
-        const setsWithWeight = sets.filter(
-          (set: { weight: number }) =>
-            set.weight === parseFloat(mostCommonWeight)
-        );
-        const avgReps = Math.round(
-          setsWithWeight.reduce(
-            (sum: number, set: { reps: number }) => sum + set.reps,
-            0
-          ) / setsWithWeight.length
-        );
-
         return {
-          weight: parseFloat(mostCommonWeight),
-          reps: avgReps,
+          weight: firstSet.weight,
+          reps: firstSet.reps,
           sets: totalSets,
           date: workout.createdAt.toDate(),
         };

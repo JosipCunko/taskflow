@@ -449,3 +449,75 @@ export async function getLastPerformanceAction(exerciseName: string): Promise<
     };
   }
 }
+
+export async function likeWorkoutAction(
+  workoutId: string
+): Promise<ActionResult> {
+  try {
+    const userId = await getAuthenticatedUserId();
+    await updateWorkout(userId, workoutId, {
+      liked: true,
+      disliked: false,
+    });
+
+    return {
+      success: true,
+      message: "Workout liked",
+    };
+  } catch (error) {
+    console.error("Error in likeWorkout action:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to like workout",
+    };
+  }
+}
+
+export async function dislikeWorkoutAction(
+  workoutId: string
+): Promise<ActionResult> {
+  try {
+    const userId = await getAuthenticatedUserId();
+    await updateWorkout(userId, workoutId, {
+      liked: false,
+      disliked: true,
+    });
+
+    return {
+      success: true,
+      message: "Workout disliked",
+    };
+  } catch (error) {
+    console.error("Error in dislikeWorkout action:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to dislike workout",
+    };
+  }
+}
+
+export async function removeWorkoutRatingAction(
+  workoutId: string
+): Promise<ActionResult> {
+  try {
+    const userId = await getAuthenticatedUserId();
+    await updateWorkout(userId, workoutId, {
+      liked: false,
+      disliked: false,
+    });
+    return {
+      success: true,
+      message: "Workout rating removed",
+    };
+  } catch (error) {
+    console.error("Error in removeWorkoutRating action:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to remove workout rating",
+    };
+  }
+}

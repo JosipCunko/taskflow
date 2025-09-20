@@ -7,11 +7,14 @@ import {
   Plus,
   Trash2,
   Save,
-  Timer,
   Target,
   Search,
   X,
   Edit,
+  ThumbsUp,
+  ThumbsDown,
+  Clock,
+  ArrowLeft,
 } from "lucide-react";
 import {
   WorkoutSession as WorkoutSessionType,
@@ -19,19 +22,23 @@ import {
   WorkoutSet,
   Exercise,
   LastPerformance,
-} from "../../../_types/types";
+} from "../../_types/types";
 import {
   updateWorkoutAction,
   completeWorkoutSessionAction,
   getWorkoutAction,
   getLastPerformanceAction,
-} from "../../../_lib/gymActions";
-import { formatDate, handleToast } from "../../../_utils/utils";
-import { defaultExercises } from "../../../../public/exerciseLibrary";
+  likeWorkoutAction,
+  dislikeWorkoutAction,
+  removeWorkoutRatingAction,
+} from "../../_lib/gymActions";
+import { formatDate, handleToast } from "../../_utils/utils";
+import { defaultExercises } from "../../../public/exerciseLibrary";
 import Button from "@/app/_components/reusable/Button";
 import Input from "@/app/_components/reusable/Input";
 import Modal from "@/app/_components/Modal";
 import Loader from "@/app/_components/Loader";
+import Link from "next/link";
 
 export default function WorkoutSession({
   userId,
@@ -45,18 +52,17 @@ export default function WorkoutSession({
   const [isLoading, setIsLoading] = useState(true);
   const [startTime, setStartTime] = useState(new Date());
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [restTimer, setRestTimer] = useState(0);
-  const [isResting, setIsResting] = useState(false);
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [notes, setNotes] = useState("");
-  const restIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [timerMode, setTimerMode] = useState<"live" | "manual">("live");
+  const [manualDuration, setManualDuration] = useState<string>("");
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const isFinished = !!workout?.duration;
 
-  // Timer for workout duration
+  // Timer for workout duration (only for live mode)
   useEffect(() => {
-    if (isFinished) {
+    if (isFinished || timerMode === "manual") {
       if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
       return;
     }
@@ -70,37 +76,11 @@ export default function WorkoutSession({
         clearInterval(timerIntervalRef.current);
       }
     };
-  }, [isFinished]);
-
-  // Rest timer
-  useEffect(() => {
-    if (isResting && restTimer > 0) {
-      restIntervalRef.current = setInterval(() => {
-        setRestTimer((prev) => {
-          if (prev <= 1) {
-            setIsResting(false);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else {
-      if (restIntervalRef.current) {
-        clearInterval(restIntervalRef.current);
-      }
-    }
-
-    return () => {
-      if (restIntervalRef.current) {
-        clearInterval(restIntervalRef.current);
-      }
-    };
-  }, [isResting, restTimer]);
+  }, [isFinished, timerMode]);
 
   useEffect(() => {
     const loadWorkout = async () => {
       if (workoutId) {
-        // Fetch existing workout
         const result = await getWorkoutAction(workoutId);
         if (result.success && result.data) {
           setWorkout(result.data);
@@ -121,25 +101,25 @@ export default function WorkoutSession({
   }, [userId, workoutId]);
 
   useEffect(() => {
-    // Load exercises for search
     setExercises(
       defaultExercises.map((ex, index) => ({ ...ex, id: index.toString() }))
     );
   }, []);
 
-  const workoutDuration =
-    isFinished && workout.duration
-      ? workout.duration * 60
-      : Math.floor((currentTime.getTime() - startTime.getTime()) / 1000);
+  const getWorkoutDuration = () => {
+    if (isFinished && workout.duration) {
+      return workout.duration * 60;
+    }
+    if (timerMode === "manual" && manualDuration) {
+      return parseInt(manualDuration) * 60;
+    }
+    return Math.floor((currentTime.getTime() - startTime.getTime()) / 1000);
+  };
+
+  const workoutDuration = getWorkoutDuration();
   const hours = Math.floor(workoutDuration / 3600);
   const minutes = Math.floor((workoutDuration % 3600) / 60);
   const seconds = workoutDuration % 60;
-
-  const formatTime = (totalSeconds: number) => {
-    const mins = Math.floor(totalSeconds / 60);
-    const secs = totalSeconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
 
   const addExercise = (exercise: Exercise) => {
     if (!workout) return;
@@ -197,11 +177,6 @@ export default function WorkoutSession({
     });
   };
 
-  const startRestTimer = (seconds: number) => {
-    setRestTimer(seconds);
-    setIsResting(true);
-  };
-
   const saveWorkout = async () => {
     if (!workout) return;
 
@@ -217,9 +192,27 @@ export default function WorkoutSession({
   const finishWorkout = async () => {
     if (!workout) return;
 
+    // Check if at least one set was performed
+    const hasPerformedSets = workout.loggedExercises.some(
+      (exercise) => exercise.volume.length > 0
+    );
+
+    if (!hasPerformedSets) {
+      handleToast({
+        success: false,
+        error: "Cannot finish workout without performing any sets.",
+      });
+      return;
+    }
+
+    const durationInMinutes =
+      timerMode === "manual" && manualDuration
+        ? parseInt(manualDuration)
+        : Math.floor(workoutDuration / 60);
+
     const result = await completeWorkoutSessionAction(
       workout.id,
-      Math.floor(workoutDuration / 60),
+      durationInMinutes,
       notes,
       workout.loggedExercises
     );
@@ -229,8 +222,42 @@ export default function WorkoutSession({
     });
   };
 
+  const handleLikeWorkout = async () => {
+    if (!workout) return;
+
+    const result = workout.liked
+      ? await removeWorkoutRatingAction(workout.id)
+      : await likeWorkoutAction(workout.id);
+
+    if (result.success) {
+      setWorkout({
+        ...workout,
+        liked: !workout.liked,
+        disliked: false,
+      });
+    }
+    handleToast(result);
+  };
+
+  const handleDislikeWorkout = async () => {
+    if (!workout) return;
+
+    const result = workout.disliked
+      ? await removeWorkoutRatingAction(workout.id)
+      : await dislikeWorkoutAction(workout.id);
+
+    if (result.success) {
+      setWorkout({
+        ...workout,
+        liked: false,
+        disliked: !workout.disliked,
+      });
+    }
+    handleToast(result);
+  };
+
   if (isLoading) {
-    return <Loader />;
+    return <Loader label="Loading workout..." />;
   }
 
   if (!workout) {
@@ -244,6 +271,12 @@ export default function WorkoutSession({
   return (
     <Modal>
       <div className="space-y-6">
+        <Link href="/webapp/gym">
+          <Button variant="secondary">
+            <ArrowLeft className="w-8 h-8 mr-3 text-primary-500 icon-glow" />
+            <span className="text-glow">Back</span>
+          </Button>
+        </Link>
         {/* Header with Timer */}
         <div className="bg-background-600 rounded-lg p-6 border border-background-500">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -264,23 +297,59 @@ export default function WorkoutSession({
               <p className="text-text-low">{formatDate(workout.createdAt)}</p>
             </div>
 
-            <div className="flex items-center gap-4">
-              {isResting && (
-                <div className="flex items-center gap-2 text-warning">
-                  <Timer className="w-5 h-5" />
-                  <span className="font-mono text-lg">
-                    {formatTime(restTimer)}
-                  </span>
+            <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4">
+              {/* Timer Mode Switcher */}
+              {!isFinished && (
+                <div className="flex items-center gap-2 text-sm">
+                  <Button
+                    variant="secondary"
+                    onClick={() => setTimerMode("live")}
+                    className={`text-nowrap px-3 py-1 ${
+                      timerMode === "live"
+                        ? "bg-primary-500/20 text-primary-500"
+                        : "bg-background-700 text-text-low hover:bg-background-600"
+                    }`}
+                  >
+                    <Play className="size-3" />
+                    Live Timer
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setTimerMode("manual")}
+                    className={`text-nowrap px-3 py-1 ${
+                      timerMode === "manual"
+                        ? "bg-primary-500/20 text-primary-500"
+                        : "bg-background-700 text-text-low hover:bg-background-600"
+                    }`}
+                  >
+                    <Clock className="size-3" />
+                    Set Duration
+                  </Button>
                 </div>
               )}
 
+              {/* Timer Display */}
               <div className="flex items-center gap-2 text-primary-500">
-                <Play className="w-5 h-5" />
-                <span className="font-mono text-xl">
-                  {hours > 0 ? `${hours}:` : ""}
-                  {minutes.toString().padStart(2, "0")}:
-                  {seconds.toString().padStart(2, "0")}
-                </span>
+                {timerMode === "live" && <Play className="w-5 h-5" />}
+                {timerMode === "manual" && !isFinished ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      name="manual-duration"
+                      type="number"
+                      value={manualDuration}
+                      onChange={(e) => setManualDuration(e.target.value)}
+                      placeholder="Duration"
+                      className="w-24 text-center text-text-low bg-background-700 border border-background-500 rounded px-2 py-1 text-sm"
+                    />
+                    <span className="text-sm text-text-low">mins</span>
+                  </div>
+                ) : (
+                  <span className="font-mono text-xl">
+                    {hours > 0 ? `${hours}:` : ""}
+                    {minutes.toString().padStart(2, "0")}:
+                    {seconds.toString().padStart(2, "0")}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -295,7 +364,6 @@ export default function WorkoutSession({
               onAddSet={addSet}
               onRemoveSet={removeSet}
               onRemoveExercise={removeExercise}
-              onStartRest={startRestTimer}
               isPastWorkout={isFinished}
             />
           ))}
@@ -323,19 +391,61 @@ export default function WorkoutSession({
             className="w-full h-24 bg-background-700 border border-background-500 rounded-lg p-3 text-text-low placeholder-text-low resize-none focus-within:outline-none focus-within:ring-2 focus-within:ring-primary-500"
             disabled={isFinished}
           />
+
+          {/* Like/Dislike Buttons */}
+          {isFinished && (
+            <div className="mt-4 pt-4 border-t border-background-500">
+              <p className="text-sm text-text-low mb-3">
+                How was this workout?
+              </p>
+              <div className="flex gap-3">
+                <Button
+                  variant="secondary"
+                  onClick={handleLikeWorkout}
+                  className={`flex items-center gap-2 px-4 py-2 ${
+                    workout.liked
+                      ? "bg-success/20 text-success border-success/50"
+                      : "bg-background-700 text-text-low hover:bg-background-600"
+                  }`}
+                >
+                  <ThumbsUp
+                    className={`w-4 h-4 ${workout.liked ? "fill-current" : ""}`}
+                  />
+                  <span>Great workout!</span>
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={handleDislikeWorkout}
+                  className={`flex items-center gap-2 px-4 py-2 ${
+                    workout.disliked
+                      ? "bg-error/20 text-error border-error/50"
+                      : "bg-background-700 text-text-low hover:bg-background-600"
+                  }`}
+                >
+                  <ThumbsDown
+                    className={`w-4 h-4 ${
+                      workout.disliked ? "fill-current" : ""
+                    }`}
+                  />
+                  <span>Could be better</span>
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Action Buttons */}
         <div className="flex gap-4">
-          <Button
-            variant="secondary"
-            onClick={saveWorkout}
-            className="flex-1 justify-center"
-            disabled={isFinished}
-          >
-            <Save className="w-5 h-5" />
-            Save Progress
-          </Button>
+          {!isFinished && (
+            <Button
+              variant="secondary"
+              onClick={saveWorkout}
+              className="flex-1 justify-center"
+            >
+              <Save className="w-5 h-5" />
+              Save Progress
+            </Button>
+          )}
           {isFinished ? (
             <Button
               onClick={() => router.back()}
@@ -430,7 +540,6 @@ interface ExerciseCardProps {
   onAddSet: (exerciseId: string, weight: number, reps: number) => void;
   onRemoveSet: (exerciseId: string, setIndex: number) => void;
   onRemoveExercise: (exerciseId: string) => void;
-  onStartRest: (seconds: number) => void;
   isPastWorkout: boolean;
 }
 
@@ -439,7 +548,6 @@ function ExerciseCard({
   onAddSet,
   onRemoveSet,
   onRemoveExercise,
-  onStartRest,
   isPastWorkout,
 }: ExerciseCardProps) {
   const [weight, setWeight] = useState("");
@@ -496,24 +604,15 @@ function ExerciseCard({
             <span className="text-text-low">
               Set {index + 1}: {set.weight}kg × {set.reps} reps
             </span>
-            <div className="flex items-center gap-2">
+            {!isPastWorkout && (
               <Button
                 variant="secondary"
-                onClick={() => onStartRest(90)}
-                className="px-3 py-1 bg-warning/20 text-warning rounded text-sm hover:bg-warning/30 transition-colors"
+                onClick={() => onRemoveSet(exercise.id, index)}
+                className="p-1 hover:bg-background-500 rounded text-text-low hover:text-error transition-colors"
               >
-                Rest 90s
+                <Trash2 className="w-3 h-3" />
               </Button>
-              {!isPastWorkout && (
-                <Button
-                  variant="secondary"
-                  onClick={() => onRemoveSet(exercise.id, index)}
-                  className="p-1 hover:bg-background-500 rounded text-text-low hover:text-error transition-colors"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </Button>
-              )}
-            </div>
+            )}
           </div>
         ))}
       </div>
@@ -552,9 +651,8 @@ function ExerciseCard({
       {exercise.volume.length === 0 && lastPerformance && (
         <div className="mt-3 p-3 bg-info/10 border border-info/20 rounded-lg">
           <p className="text-sm text-info">
-            💡 Progressive Overload Hint: Last time you did{" "}
-            {lastPerformance.sets}×{lastPerformance.reps} @{" "}
-            {lastPerformance.weight}kg
+            💡 Progressive Overload Hint: Last time your first set was{" "}
+            {lastPerformance.weight}kg × {lastPerformance.reps} reps
             <br />
             <span className="text-xs text-text-low">
               Try: {lastPerformance.weight + 2.5}kg × {lastPerformance.reps} or{" "}

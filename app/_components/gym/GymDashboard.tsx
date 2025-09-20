@@ -9,7 +9,8 @@ import {
   Trophy,
   TrendingUp,
   Clock,
-  Target,
+  SquareArrowUpRight,
+  CalendarArrowUp,
 } from "lucide-react";
 import {
   format,
@@ -30,6 +31,7 @@ import {
 import { handleToast } from "../../_utils/utils";
 import Button from "@/app/_components/reusable/Button";
 import CreateTemplateModal from "../../_components/gym/CreateTemplateModal";
+import Loader from "../Loader";
 
 interface GymDashboardProps {
   userId: string;
@@ -43,25 +45,29 @@ export default function GymDashboard({
   const router = useRouter();
   const [workoutSessions, setWorkoutSessions] =
     useState<WorkoutSession[]>(initialWorkouts);
-  const [workoutTemplates, setWorkoutTemplates] = useState<WorkoutTemplate[]>([]);
-  const [isPending] = useTransition();
+  const [workoutTemplates, setWorkoutTemplates] = useState<WorkoutTemplate[]>(
+    []
+  );
+  const [isPending, startTransition] = useTransition();
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [showCreateTemplateModal, setShowCreateTemplateModal] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
-      const [workoutsResult, templatesResult] = await Promise.all([
-        getWorkoutsAction(),
-        getWorkoutTemplatesAction(),
-      ]);
-      
-      if (workoutsResult.success && workoutsResult.data) {
-        setWorkoutSessions(workoutsResult.data);
-      }
-      
-      if (templatesResult.success && templatesResult.data) {
-        setWorkoutTemplates(templatesResult.data);
-      }
+      startTransition(async () => {
+        const [workoutsResult, templatesResult] = await Promise.all([
+          getWorkoutsAction(),
+          getWorkoutTemplatesAction(),
+        ]);
+
+        if (workoutsResult.success && workoutsResult.data) {
+          setWorkoutSessions(workoutsResult.data);
+        }
+
+        if (templatesResult.success && templatesResult.data) {
+          setWorkoutTemplates(templatesResult.data);
+        }
+      });
     };
 
     loadData();
@@ -71,6 +77,10 @@ export default function GymDashboard({
   const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 1 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
+  const actualCurrentWeek = new Date();
+  const actualWeekStart = startOfWeek(actualCurrentWeek, { weekStartsOn: 1 });
+  const actualWeekEnd = endOfWeek(actualCurrentWeek, { weekStartsOn: 1 });
+
   const getWorkoutForDay = (date: Date) => {
     return workoutSessions.find((session) =>
       isSameDay(new Date(session.createdAt), date)
@@ -79,14 +89,14 @@ export default function GymDashboard({
 
   const thisWeekWorkouts = workoutSessions.filter((session) => {
     const sessionDate = new Date(session.createdAt);
-    return sessionDate >= weekStart && sessionDate <= weekEnd;
+    return sessionDate >= actualWeekStart && sessionDate <= actualWeekEnd;
   });
 
   const stats = [
     {
       label: "This Week",
       value: thisWeekWorkouts.length,
-      icon: Target,
+      icon: CalendarArrowUp,
       color: "text-primary-500",
       bgColor: "bg-primary-500/10",
     },
@@ -112,22 +122,6 @@ export default function GymDashboard({
     },
   ];
 
-  if (isPending) {
-    return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <div
-              key={i}
-              className="h-24 bg-background-600 rounded-lg animate-pulse"
-            />
-          ))}
-        </div>
-        <div className="h-64 bg-background-600 rounded-lg animate-pulse" />
-      </div>
-    );
-  }
-
   const handleStartWorkout = async () => {
     const workoutName = `Workout ${formatDate(new Date(), undefined, false)}`;
     const result = await startWorkoutSessionAction(workoutName);
@@ -144,11 +138,18 @@ export default function GymDashboard({
   };
 
   const handleStartFromTemplate = async (templateId: string) => {
-    const template = workoutTemplates.find(t => t.id === templateId);
+    const template = workoutTemplates.find((t) => t.id === templateId);
     if (!template) return;
 
-    const workoutName = `${template.name} ${formatDate(new Date(), undefined, false)}`;
-    const result = await startWorkoutFromTemplateAction(templateId, workoutName);
+    const workoutName = `${template.name} ${formatDate(
+      new Date(),
+      undefined,
+      false
+    )}`;
+    const result = await startWorkoutFromTemplateAction(
+      templateId,
+      workoutName
+    );
 
     if (result.success && result.data) {
       router.push(`/webapp/gym/workout?id=${result.data}`);
@@ -164,6 +165,13 @@ export default function GymDashboard({
       setWorkoutTemplates(result.data);
     }
   };
+  if (isPending) {
+    return (
+      <div className="relative h-[10rem]">
+        <Loader label="Loading data..." />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -284,17 +292,25 @@ export default function GymDashboard({
               <Link
                 href={`/webapp/gym/workout?id=${workout.id}`}
                 key={workout.id}
-                className="block p-4 bg-background-700 rounded-lg border border-background-500 hover:bg-background-600 transition-colors"
+                className={cn(
+                  "block p-4 bg-background-700 rounded-lg border border-background-500 hover:bg-background-600 transition-colors",
+                  !workout.duration &&
+                    "border-primary-500/50 bg-primary-500/10 hover:bg-primary-500/20"
+                )}
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-medium text-text-high">
-                      {workout.name}
+                    <h3 className="font-medium text-text-high flex items-center gap-2">
+                      <span>{workout.name}</span>
+                      {!workout.duration ? (
+                        <span className="text-xs font-semibold bg-primary-500/20 text-primary-400 px-2 py-0.5 rounded-full">
+                          In Progress
+                        </span>
+                      ) : null}
                     </h3>
                     <p className="text-sm text-text-low">
-                      {formatDate(new Date(workout.createdAt))} •{" "}
-                      {workout.duration || 0}
-                      min
+                      {formatDate(new Date(workout.createdAt))}
+                      {workout.duration ? ` • ${workout.duration} min` : ""}
                     </p>
                   </div>
                   <div className="text-sm text-text-low">
@@ -317,12 +333,13 @@ export default function GymDashboard({
             Create Template
           </Button>
         </div>
-        
+
         {workoutTemplates.length === 0 ? (
           <div className="text-center py-8">
             <div className="text-text-low mb-2">No templates created yet</div>
             <p className="text-text-low text-sm">
-              Create workout templates for quick access to your favorite routines
+              Create workout templates for quick access to your favorite
+              routines
             </p>
           </div>
         ) : (
@@ -333,12 +350,14 @@ export default function GymDashboard({
                 className="bg-background-700 rounded-lg p-4 border border-background-500"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-text-high">{template.name}</h3>
+                  <h3 className="font-semibold text-text-high">
+                    {template.name}
+                  </h3>
                   <span className="text-xs text-text-low">
                     {template.exercises.length} exercises
                   </span>
                 </div>
-                
+
                 <div className="mb-4">
                   <div className="flex flex-wrap gap-1">
                     {template.exercises.slice(0, 3).map((exercise, index) => (
@@ -356,13 +375,13 @@ export default function GymDashboard({
                     )}
                   </div>
                 </div>
-                
+
                 <Button
                   onClick={() => handleStartFromTemplate(template.id)}
                   variant="secondary"
                   className="w-full text-sm"
                 >
-                  <Plus className="w-4 h-4" />
+                  <SquareArrowUpRight className="w-4 h-4" />
                   Start Workout
                 </Button>
               </div>

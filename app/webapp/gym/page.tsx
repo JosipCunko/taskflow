@@ -1,9 +1,7 @@
-import { Suspense } from "react";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "../../_lib/auth";
-import GymDashboard from "./GymDashboard";
-import Loader from "../../_components/Loader";
+import GymDashboard from "../../_components/gym/GymDashboard";
 import { Dumbbell } from "lucide-react";
 
 export const metadata = {
@@ -22,17 +20,14 @@ export default async function GymPage() {
         <div className="mb-8">
           <h1 className="text-3xl sm:text-4xl font-bold text-primary-400 flex items-center">
             <Dumbbell className="w-8 h-8 mr-3 text-primary-500 icon-glow" />
-            <span className="text-glow">Gym progress tracker</span>
+            <span className="text-glow">Gym Dashboard</span>
           </h1>
           <p className="text-text-low">
             Track your workouts, monitor progress, and achieve your fitness
             goals
           </p>
         </div>
-
-        <Suspense fallback={<Loader />}>
-          <GymDashboard userId={userId} />
-        </Suspense>
+        <GymDashboard userId={userId} />
       </div>
     </div>
   );

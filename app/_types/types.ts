@@ -314,7 +314,6 @@ export interface ChatMessage {
 export interface WorkoutSet {
   weight: number;
   reps: number;
-  rest?: number;
 }
 
 export interface LoggedExercise {
@@ -331,6 +330,8 @@ export interface WorkoutSession {
   duration?: number;
   notes?: string;
   loggedExercises: LoggedExercise[];
+  liked?: boolean;
+  disliked?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -362,6 +363,7 @@ export interface PersonalRecord {
 export interface ExerciseProgressPoint {
   date: Date;
   maxWeight: number;
+  maxReps: number;
   sets: number;
 }
 

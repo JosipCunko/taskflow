@@ -7,6 +7,7 @@ import { defaultExercises } from "../../../public/exerciseLibrary";
 import { createWorkoutTemplateAction } from "../../_lib/gymActions";
 import { handleToast } from "../../_utils/utils";
 import Button from "../reusable/Button";
+import Input from "../reusable/Input";
 
 interface CreateTemplateModalProps {
   isOpen: boolean;
@@ -155,12 +156,13 @@ export default function CreateTemplateModal({
                     className="flex items-center justify-between bg-background-700 rounded-lg p-3 border border-background-500"
                   >
                     <span className="text-text-high">{exerciseName}</span>
-                    <button
+                    <Button
+                      variant="secondary"
                       onClick={() => removeExercise(exerciseName)}
-                      className="p-1 hover:bg-background-500 rounded text-text-low hover:text-error transition-colors"
+                      className="hover:bg-background-500 hover:text-error"
                     >
                       <Trash2 className="w-4 h-4" />
-                    </button>
+                    </Button>
                   </div>
                 ))
               )}
@@ -205,12 +207,13 @@ export default function CreateTemplateModal({
 
               <div className="relative mb-4">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-low" />
-                <input
+                <Input
+                  name="search-exercise"
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search exercises..."
-                  className="w-full pl-10 pr-4 py-2 bg-background-700 border border-background-500 rounded-lg text-text-high"
+                  className="w-full pl-10 pr-4 py-2 bg-background-700 text-text-high"
                 />
               </div>
 

@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "../../../_lib/auth";
-import WorkoutSession from "./WorkoutSession";
+import WorkoutSession from "../../../_components/gym/WorkoutSession";
 import Loader from "../../../_components/Loader";
 
 export const metadata = {

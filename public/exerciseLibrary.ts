@@ -48,12 +48,12 @@ export const defaultExercises: Omit<Exercise, "id">[] = [
     ],
   },
   {
-    name: "Chest Fly (Dumbbell)",
+    name: "Chest Fly",
     category: "Chest",
     muscleGroups: ["Chest"],
-    equipment: "Dumbbells",
+    equipment: "Dumbbells or Pec Deck Machine",
     instructions: [
-      "Lie on bench holding dumbbells above chest",
+      "Lie on bench holding dumbbells above chest, or sit on pec deck machine and hold the handles.",
       "With elbows slightly bent, open arms wide",
       "Bring weights back together over chest",
     ],
@@ -348,6 +348,16 @@ export const defaultExercises: Omit<Exercise, "id">[] = [
       "Hinge at hips holding dumbbells",
       "Raise arms out to sides",
       "Lower slowly",
+    ],
+  },
+  {
+    name: "Shrugs",
+    category: "Shoulders",
+    muscleGroups: ["Rhomboids", "Middle Traps"],
+    equipment: "Barbell or Dumbbells",
+    instructions: [
+      "Stand with feet shoulder-width apart",
+      "Shrug shoulders up to ears",
     ],
   },
   {

@@ -124,6 +124,12 @@ export const images = [
     category: "Health",
   },
   {
+    src: "/gym.png",
+    alt: "Track your workouts and monitor your fitness progress.",
+    title: "Gym progress insights",
+    category: "Gym",
+  },
+  {
     src: "/ai.png",
     alt: "Get super productive with AI.",
     title: "AI assistant",
