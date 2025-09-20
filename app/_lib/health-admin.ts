@@ -2,10 +2,6 @@ import "server-only";
 
 import { adminDb } from "./admin";
 import {
-  SpoonacularRecipeInfo,
-  RandomRecipesResponse,
-} from "../_types/spoonacularTypes";
-import {
   LoggedMeal,
   DailyNutritionSummary,
   SavedMeal,
@@ -14,85 +10,6 @@ import {
 import { unstable_cache } from "next/cache";
 import { defaultDailyNutritionSummary } from "../_utils/utils";
 import { isSameDay } from "date-fns";
-const SPOONACULAR_API_KEY = process.env.NEXT_PUBLIC_SPOONACULAR_API_KEY;
-const SPOONACULAR_BASE_URL = "https://api.spoonacular.com";
-
-async function makeSpoonacularRequestServer<T>(
-  endpoint: string,
-  params: Record<string, unknown> = {}
-): Promise<T> {
-  try {
-    if (!SPOONACULAR_API_KEY) {
-      throw new Error("SPOONACULAR_API_KEY environment variable is required");
-    }
-
-    const searchParams = new URLSearchParams({
-      apiKey: SPOONACULAR_API_KEY,
-      ...Object.fromEntries(
-        Object.entries(params).filter(
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          ([_, value]) => value !== undefined && value !== null && value !== ""
-        )
-      ),
-    });
-    const response = await fetch(
-      `${SPOONACULAR_BASE_URL}${endpoint}?${searchParams.toString()}`
-    );
-    if (!response.ok) {
-      const errorData = await response.text();
-      throw new Error(`Spoonacular API error: ${response.status} ${errorData}`);
-    }
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Spoonacular API request failed:", error);
-    throw new Error("Spoonacular API request failed");
-  }
-}
-
-async function getRandomRecipesPreCached(
-  options: {
-    limitLicense?: boolean;
-    includeTags?: string;
-    excludeTags?: string;
-    number?: number;
-  } = {}
-): Promise<RandomRecipesResponse> {
-  return makeSpoonacularRequestServer<RandomRecipesResponse>(
-    "/recipes/random",
-    {
-      limitLicense: options.limitLicense,
-      "include-tags": options.includeTags,
-      "exclude-tags": options.excludeTags,
-      number: options.number || 1,
-    }
-  );
-}
-export const getRandomRecipes = unstable_cache(getRandomRecipesPreCached);
-
-// ============= Recipe Information Functions =============
-
-/**
- * Get detailed information about a recipe by ID
- * GET /recipes/{id}/information
- */
-export async function getRecipeInformation(
-  recipeId: number,
-  options: {
-    includeNutrition?: boolean;
-    addWinePairing?: boolean;
-    addTasteData?: boolean;
-  } = {}
-): Promise<SpoonacularRecipeInfo> {
-  return makeSpoonacularRequestServer<SpoonacularRecipeInfo>(
-    `/recipes/${recipeId}/information`,
-    {
-      includeNutrition: options.includeNutrition || true,
-      addWinePairing: options.addWinePairing || false,
-      addTasteData: options.addTasteData || false,
-    }
-  );
-}
 
 export async function getLoggedMealsForDate(
   userId: string,
