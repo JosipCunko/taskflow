@@ -10,6 +10,7 @@ import Image from "next/image";
 import Input from "../reusable/Input";
 import Button from "../reusable/Button";
 import EmptyChat from "./EmptyChat";
+import FunctionResults from "./FunctionResults";
 
 interface ChatProps {
   initialMessages: ChatMessage[];
@@ -119,6 +120,9 @@ export default function Chat({
 
                   <div className="rounded-xl p-4 max-w-xs md:max-w-md lg:max-w-lg bg-background-500 ml-10">
                     <p className="text-sm">{msg.content}</p>
+                    {msg.functionResults && (
+                      <FunctionResults results={msg.functionResults} />
+                    )}
                     {msg.duration && (
                       <p className="text-xs text-primary-300 pt-1">
                         {msg.duration}s

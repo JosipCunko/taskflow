@@ -6,10 +6,12 @@ interface EmptyChatProps {
 
 export default function EmptyChat({ onExampleClick }: EmptyChatProps) {
   const exampleQueries = [
-    "Explain the concept of AI in a way that is easy to understand.",
-    "What are some healthy, quick lunch ideas?",
-    "Generate a gym workout plan for 3 days a week.",
-    "Give me 5 tips to stay focused and avoid procrastination.",
+    "Show me my pending tasks for today",
+    "Create a task to review project proposal due tomorrow",
+    "Delay my gym workout task to next Monday",
+    "Show me my priority tasks and suggest a schedule",
+    "Complete my morning reading task with good experience",
+    "Create a note about meeting ideas",
   ];
 
   return (
