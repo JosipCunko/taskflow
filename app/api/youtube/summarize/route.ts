@@ -6,7 +6,8 @@ import { YouTubeVideo } from "@/app/_types/types";
 import { getDeepseekResponse } from "@/app/_lib/aiActions";
 import { Timestamp } from "firebase-admin/firestore";
 
-// const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY; // Currently unused
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
+console.log(YOUTUBE_API_KEY);
 
 // Currently unused - for future implementation with actual YouTube API
 // async function getYouTubeSubscriptions(accessToken: string): Promise<string[]> {
@@ -45,12 +46,12 @@ import { Timestamp } from "firebase-admin/firestore";
 //     const publishedAfter = yesterday.toISOString();
 
 //     const allVideos: YouTubeVideo[] = [];
-    
+
 //     // Process channels in batches to avoid API limits
 //     const batchSize = 5;
 //     for (let i = 0; i < channelIds.length; i += batchSize) {
 //       const batch = channelIds.slice(i, i + batchSize);
-      
+
 //       for (const channelId of batch) {
 //         try {
 //           const response = await fetch(
@@ -68,7 +69,7 @@ import { Timestamp } from "firebase-admin/firestore";
 //               publishedAt: new Date(item.snippet.publishedAt),
 //               thumbnailUrl: item.snippet.thumbnails?.medium?.url || item.snippet.thumbnails?.default?.url,
 //             })) || [];
-            
+
 //             allVideos.push(...videos);
 //           }
 //         } catch (error) {
@@ -92,9 +93,14 @@ async function generateVideoSummary(videos: YouTubeVideo[]): Promise<string> {
     return "No new videos found from your subscriptions in the last 24 hours.";
   }
 
-  const videoList = videos.map((video, index) => 
-    `${index + 1}. "${video.title}" by ${video.channelTitle}\n   Description: ${video.description.slice(0, 200)}...`
-  ).join('\n\n');
+  const videoList = videos
+    .map(
+      (video, index) =>
+        `${index + 1}. "${video.title}" by ${
+          video.channelTitle
+        }\n   Description: ${video.description.slice(0, 200)}...`
+    )
+    .join("\n\n");
 
   const prompt = `You are a helpful assistant that summarizes YouTube videos for busy users. Here are the latest videos from the user's subscriptions:
 
@@ -111,7 +117,7 @@ Focus on helping the user decide which videos are worth their time.`;
 
   try {
     const result = await getDeepseekResponse([
-      { role: "user", content: prompt }
+      { role: "user", content: prompt },
     ]);
 
     if (result.error) {
@@ -140,7 +146,7 @@ export async function POST() {
     // Check if we already processed today
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const existingSummary = await adminDb
       .collection("youtubeSummaries")
       .where("userId", "==", userId)
@@ -149,9 +155,9 @@ export async function POST() {
       .get();
 
     if (!existingSummary.empty) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         message: "YouTube summary already generated today",
-        summary: existingSummary.docs[0].data()
+        summary: existingSummary.docs[0].data(),
       });
     }
 
@@ -163,43 +169,46 @@ export async function POST() {
         title: "Daily Productivity Tips for 2025",
         channelTitle: "Productivity Pro",
         channelId: "UC_mock_channel_1",
-        description: "Learn the top 10 productivity tips that will transform your daily routine and help you achieve more in less time.",
+        description:
+          "Learn the top 10 productivity tips that will transform your daily routine and help you achieve more in less time.",
         publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-        thumbnailUrl: "https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg"
+        thumbnailUrl: "https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg",
       },
       {
         id: "mock_video_2",
         title: "Next.js 15 New Features Explained",
         channelTitle: "Web Dev Mastery",
         channelId: "UC_mock_channel_2",
-        description: "Comprehensive overview of all the new features in Next.js 15, including Server Components improvements and new caching strategies.",
+        description:
+          "Comprehensive overview of all the new features in Next.js 15, including Server Components improvements and new caching strategies.",
         publishedAt: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
-        thumbnailUrl: "https://img.youtube.com/vi/mock_video_2/mqdefault.jpg"
+        thumbnailUrl: "https://img.youtube.com/vi/mock_video_2/mqdefault.jpg",
       },
       {
         id: "mock_video_3",
         title: "Healthy Morning Routine for Better Focus",
         channelTitle: "Wellness Journey",
         channelId: "UC_mock_channel_3",
-        description: "Start your day right with this science-backed morning routine that improves focus, energy, and overall well-being.",
+        description:
+          "Start your day right with this science-backed morning routine that improves focus, energy, and overall well-being.",
         publishedAt: new Date(Date.now() - 6 * 60 * 60 * 1000), // 6 hours ago
-        thumbnailUrl: "https://img.youtube.com/vi/mock_video_3/mqdefault.jpg"
-      }
+        thumbnailUrl: "https://img.youtube.com/vi/mock_video_3/mqdefault.jpg",
+      },
     ];
-    
+
     // Generate AI summary
     const summary = await generateVideoSummary(videos);
 
     // Save to database
     const summaryDoc = {
       userId,
-      videos: videos.map(video => ({
+      videos: videos.map((video) => ({
         ...video,
-        publishedAt: Timestamp.fromDate(video.publishedAt)
+        publishedAt: Timestamp.fromDate(video.publishedAt),
       })),
       summary,
       createdAt: Timestamp.fromDate(new Date()),
-      processedAt: Timestamp.fromDate(new Date())
+      processedAt: Timestamp.fromDate(new Date()),
     };
 
     const docRef = await adminDb.collection("youtubeSummaries").add(summaryDoc);
@@ -208,9 +217,8 @@ export async function POST() {
       success: true,
       summaryId: docRef.id,
       summary,
-      videoCount: videos.length
+      videoCount: videos.length,
     });
-
   } catch (error) {
     console.error("Error in YouTube summarize route:", error);
     return NextResponse.json(

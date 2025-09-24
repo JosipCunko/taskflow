@@ -9,16 +9,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user has enabled YouTube summarizer
-    // This could be a user preference in the future
-    
-    // Step 1: Generate YouTube summary
-    const summarizeResponse = await fetch(`${process.env.NEXTAUTH_URL}/api/youtube/summarize`, {
+    // Generate YouTube summary
+    const summarizeResponse = await fetch(`/api/youtube/summarize`, {
       method: "POST",
       headers: {
-        "Cookie": request.headers.get("cookie") || "",
-        "Content-Type": "application/json"
-      }
+        Cookie: request.headers.get("cookie") || "",
+        "Content-Type": "application/json",
+      },
     });
 
     if (!summarizeResponse.ok) {
@@ -32,16 +29,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(summaryResult);
     }
 
-    // Step 2: Create tasks and notifications
-    const createTasksResponse = await fetch(`${process.env.NEXTAUTH_URL}/api/youtube/create-tasks`, {
+    // Create tasks and notifications
+    const createTasksResponse = await fetch(`/api/youtube/create-tasks`, {
       method: "POST",
       headers: {
-        "Cookie": request.headers.get("cookie") || "",
-        "Content-Type": "application/json"
+        Cookie: request.headers.get("cookie") || "",
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        summaryId: summaryResult.summaryId
-      })
+        summaryId: summaryResult.summaryId,
+      }),
     });
 
     if (!createTasksResponse.ok) {
@@ -57,9 +54,8 @@ export async function POST(request: NextRequest) {
       videoCount: summaryResult.videoCount,
       notificationId: tasksResult.notificationId,
       taskIds: tasksResult.taskIds,
-      message: `YouTube summary generated with ${summaryResult.videoCount} videos. Created ${tasksResult.taskIds.length} tasks and 1 notification.`
+      message: `YouTube summary generated with ${summaryResult.videoCount} videos. Created ${tasksResult.taskIds.length} tasks and 1 notification.`,
     });
-
   } catch (error) {
     console.error("Error in YouTube process route:", error);
     return NextResponse.json(

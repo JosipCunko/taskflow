@@ -17,6 +17,7 @@ import { useOutsideClick } from "../_hooks/useOutsideClick";
 import { ChevronDown, ChevronUp, Tag } from "lucide-react";
 import DurationCalculator from "./DurationCalculator";
 import Dropdown from "./Dropdown";
+import { Tooltip } from "react-tooltip";
 
 export const getExperienceIcon = (task: Task) => {
   if (!task.completedAt || !task.experience) return null;
@@ -98,9 +99,20 @@ export default function TaskCard({
             <TaskIcon size={20} style={{ color: task.color }} />
           </div>
           <div className="flex-grow min-w-0">
-            <h3 className="text-md font-semibold text-text-high break-words">
-              {task.title}
+            <h3
+              className="text-md font-semibold text-text-high break-words"
+              data-tooltip-id="task-title-tooltip"
+              data-tooltip-content={task.title}
+            >
+              {task.title.length > 20
+                ? `${task.title.slice(0, 20)}...`
+                : task.title}
             </h3>
+            <Tooltip
+              id="task-title-tooltip"
+              className="tooltip-diff-arrow"
+              classNameArrow="tooltip-arrow"
+            />
           </div>
         </div>
 

@@ -3,9 +3,15 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "./auth";
 import { saveChatMessages } from "./aiAdmin";
-import { ChatMessage } from "@/app/_types/types";
-import { AI_FUNCTIONS, executeFunctions } from "./aiFunctions";
+import { ChatMessage, FunctionResult } from "@/app/_types/types";
+import { executeFunctions } from "./aiFunctions";
+import { AI_FUNCTIONS } from "@/app/_utils/utils";
 const apiKey = process.env.OPENROUTER_DEEPSEEK_API_KEY;
+
+const tools = AI_FUNCTIONS.map((func) => ({
+  type: "function",
+  function: func,
+}));
 
 export async function getDeepseekResponse(
   messages: ChatMessage[],
@@ -29,8 +35,9 @@ export async function getDeepseekResponse(
 IMPORTANT FUNCTION CALLING RULES:
 - When users ask you to show, delay, update, complete, or create tasks/notes, you MUST call the appropriate functions
 - Always call functions when users request task or note operations
-- You have access to the following functions: ${AI_FUNCTIONS.map(f => f.name).join(', ')}
-- For schedule changes, ALWAYS propose the schedule first before applying changes
+- You have access to the following functions: ${AI_FUNCTIONS.map(
+      (f) => f.name
+    ).join(", ")}
 - Be proactive in suggesting task management improvements
 - When showing tasks, provide helpful insights about priorities, deadlines, and workload
 
@@ -40,14 +47,14 @@ RESPONSE GUIDELINES:
 - Offer productivity tips and suggestions when appropriate
 - If function calls fail, explain what went wrong and suggest alternatives
 
-Current date: ${new Date().toISOString().split('T')[0]}
+Current date: ${new Date().toISOString().split("T")[0]}
 
 Remember: You are not just answering questions - you are actively helping manage the user's productivity system through function calls.`;
 
     // Prepare messages with system prompt
     const messagesWithSystem = [
       { role: "system", content: systemPrompt },
-      ...messages
+      ...messages,
     ];
 
     const response = await fetch(
@@ -61,8 +68,8 @@ Remember: You are not just answering questions - you are actively helping manage
         body: JSON.stringify({
           model: "deepseek/deepseek-chat-v3.1:free",
           messages: messagesWithSystem,
-          functions: AI_FUNCTIONS,
-          function_call: "auto",
+          tools: tools,
+          tool_choice: "auto",
           temperature: 0.7,
         }),
       }
@@ -77,22 +84,59 @@ Remember: You are not just answering questions - you are actively helping manage
     const data = await response.json();
     const message = data.choices[0].message;
     let aiResponse = message.content || "";
-    let functionResults = [];
+    let functionResults: FunctionResult[] = [];
 
     // Handle function calls if present
-    if (message.function_call) {
+    if (message.tool_calls) {
       try {
-        const functionCall = {
-          name: message.function_call.name,
-          arguments: JSON.parse(message.function_call.arguments)
-        };
-        
-        functionResults = await executeFunctions([functionCall]);
-        
+        const functionCalls = message.tool_calls.map(
+          (call: { function: { name: string; arguments: string } }) => ({
+            name: call.function.name,
+            arguments: JSON.parse(call.function.arguments),
+          })
+        );
+
+        functionResults = await executeFunctions(functionCalls);
+
+        // Define a more specific type for API messages
+        type ApiChatMessage =
+          | ChatMessage
+          | { role: "system"; content: string }
+          | {
+              role: "assistant";
+              content: string | null;
+              tool_calls: {
+                id: string;
+                type: "function";
+                function: { name: string; arguments: string };
+              }[];
+            }
+          | {
+              role: "tool";
+              tool_call_id: string;
+              name: string;
+              content: string;
+            };
+
         // Generate a follow-up response based on function results
-        const functionResultsText = functionResults.map(result => 
-          `Function ${result.name}: ${JSON.stringify(result.result)}`
-        ).join('\n');
+        const followUpMessages: ApiChatMessage[] = [
+          { role: "system", content: systemPrompt },
+          ...messages,
+          {
+            role: "assistant",
+            content: aiResponse,
+            tool_calls: message.tool_calls,
+          },
+        ];
+
+        functionResults.forEach((result, i) => {
+          followUpMessages.push({
+            role: "tool",
+            tool_call_id: message.tool_calls[i].id,
+            name: result.name,
+            content: JSON.stringify(result.result),
+          });
+        });
 
         const followUpResponse = await fetch(
           "https://openrouter.ai/api/v1/chat/completions",
@@ -104,12 +148,7 @@ Remember: You are not just answering questions - you are actively helping manage
             },
             body: JSON.stringify({
               model: "deepseek/deepseek-chat-v3.1:free",
-              messages: [
-                { role: "system", content: systemPrompt },
-                ...messages,
-                { role: "assistant", content: aiResponse, function_call: message.function_call },
-                { role: "function", name: functionCall.name, content: functionResultsText }
-              ],
+              messages: followUpMessages,
               temperature: 0.7,
             }),
           }
@@ -121,7 +160,8 @@ Remember: You are not just answering questions - you are actively helping manage
         }
       } catch (funcError) {
         console.error("Error executing function:", funcError);
-        aiResponse = "I tried to help you with that task, but encountered an error. Please try again or rephrase your request.";
+        aiResponse =
+          "I tried to help you with that task, but encountered an error. Please try again or rephrase your request.";
       }
     }
 
@@ -132,13 +172,13 @@ Remember: You are not just answering questions - you are actively helping manage
       role: "assistant",
       content: aiResponse,
       duration,
-      functionResults: functionResults.length > 0 ? functionResults : undefined
+      functionResults: functionResults.length > 0 ? functionResults : undefined,
     };
-
-    const newMessages: ChatMessage[] = [
-      ...messages,
-      responseMessage,
-    ];
+    /*
+    { role: "assistant", content: aiResponse, duration },
+      response: { role: "assistant", content: aiResponse, duration },
+    */
+    const newMessages: ChatMessage[] = [...messages, responseMessage];
     const newChatId = await saveChatMessages(userId, newMessages, chatId);
 
     return {

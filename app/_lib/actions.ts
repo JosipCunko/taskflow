@@ -828,6 +828,8 @@ export async function sendCampaignNotificationAction(
 }
 
 /* Analytics */
+/* Analytics */
+/* Analytics */
 // Needs to be an action performing server side because getAnalyticsData needs to be called server side, and we are doing that by an action in AnalyticsDashboard.tsx
 export async function getAnalyticsDataAction(): Promise<AnalyticsData | null> {
   const session = await getServerSession(authOptions);
@@ -839,6 +841,8 @@ export async function getAnalyticsDataAction(): Promise<AnalyticsData | null> {
 }
 
 /* YouTube Summarizer */
+/* YouTube Summarizer */
+/* YouTube Summarizer */
 export async function processYouTubeSummaryAction(): Promise<ActionResult> {
   try {
     const session = await getServerSession(authOptions);
@@ -849,7 +853,7 @@ export async function processYouTubeSummaryAction(): Promise<ActionResult> {
     // Check if user has already processed today
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const existingSummary = await adminDb
       .collection("youtubeSummaries")
       .where("userId", "==", session.user.id)
@@ -858,29 +862,27 @@ export async function processYouTubeSummaryAction(): Promise<ActionResult> {
       .get();
 
     if (!existingSummary.empty) {
-      return { 
-        success: false, 
-        message: "YouTube summary already processed today" 
+      return {
+        success: true,
+        message: "YouTube summary already processed today",
       };
     }
 
     // Make internal API call to process YouTube summary
-    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/youtube/process`, {
+    const response = await fetch(`/api/youtube/process`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
-      }
+        "Content-Type": "application/json",
+      },
     });
 
     if (!response.ok) {
-      return { 
-        success: false, 
-        error: "Failed to process YouTube summary" 
+      return {
+        success: false,
+        error: "Failed to process YouTube summary",
       };
     }
-
     const result = await response.json();
-    
     if (result.success) {
       revalidatePath("/webapp/inbox");
       revalidatePath("/webapp/tasks");
@@ -890,9 +892,9 @@ export async function processYouTubeSummaryAction(): Promise<ActionResult> {
     return result;
   } catch (error) {
     console.error("Error processing YouTube summary:", error);
-    return { 
-      success: false, 
-      error: "Failed to process YouTube summary" 
+    return {
+      success: false,
+      error: "Failed to process YouTube summary",
     };
   }
 }
@@ -908,28 +910,25 @@ export async function updateYouTubePreferencesAction(
       return { success: false, error: "User not authenticated" };
     }
 
-    await adminDb
-      .collection("users")
-      .doc(session.user.id)
-      .update({
-        youtubePreferences: {
-          enabled,
-          createTasks,
-          createNotifications
-        }
-      });
+    await adminDb.collection("users").doc(session.user.id).update({
+      youtubePreferences: {
+        enabled,
+        createTasks,
+        createNotifications,
+      },
+    });
 
     revalidatePath("/webapp/profile");
-    
-    return { 
-      success: true, 
-      message: "YouTube preferences updated successfully" 
+
+    return {
+      success: true,
+      message: "YouTube preferences updated successfully",
     };
   } catch (error) {
     console.error("Error updating YouTube preferences:", error);
-    return { 
-      success: false, 
-      error: "Failed to update YouTube preferences" 
+    return {
+      success: false,
+      error: "Failed to update YouTube preferences",
     };
   }
 }

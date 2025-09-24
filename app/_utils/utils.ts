@@ -289,7 +289,7 @@ export const navItems: NavGroups = {
       href: "/webapp/health",
       icon: Heart,
       badge: {
-        label: "New",
+        label: "NEW",
         color: "var(--color-error)",
       },
     },
@@ -298,7 +298,7 @@ export const navItems: NavGroups = {
       href: "/webapp/gym",
       icon: Dumbbell,
       badge: {
-        label: "New",
+        label: "NEW",
         color: "var(--color-primary-500)",
       },
     },
@@ -309,7 +309,7 @@ export const navItems: NavGroups = {
       href: "/webapp/ai",
       icon: Bot,
       badge: {
-        label: "New",
+        label: "FREE",
         color: "var(--color-primary-500)",
       },
     },
@@ -1157,3 +1157,232 @@ export const getDifficultyBadge = (readyInMinutes: number | undefined) => {
   if (readyInMinutes <= 90) return { text: "Medium", color: "bg-warning" };
   return { text: "Hard", color: "bg-error" };
 };
+
+export const AI_FUNCTIONS = [
+  {
+    name: "show_tasks",
+    description: "Show user's tasks with optional filters",
+    parameters: {
+      type: "object",
+      properties: {
+        status: {
+          type: "string",
+          enum: ["pending", "completed", "delayed", "all"],
+          description: "Filter tasks by status. Default is 'pending'",
+        },
+        priority: {
+          type: "boolean",
+          description: "Filter for priority tasks only",
+        },
+        limit: {
+          type: "number",
+          description: "Maximum number of tasks to show. Default is 10",
+        },
+        due_today: {
+          type: "boolean",
+          description: "Show only tasks due today",
+        },
+        overdue: {
+          type: "boolean",
+          description: "Show only overdue tasks",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "delay_task",
+    description: "Delay a task to a new date",
+    parameters: {
+      type: "object",
+      properties: {
+        task_id: {
+          type: "string",
+          description: "The ID of the task to delay",
+        },
+        new_due_date: {
+          type: "string",
+          format: "date",
+          description: "New due date in YYYY-MM-DD format",
+        },
+        reason: {
+          type: "string",
+          description: "Optional reason for delaying the task",
+        },
+      },
+      required: ["task_id", "new_due_date"],
+    },
+  },
+  {
+    name: "update_task",
+    description:
+      "Update task properties like title, description, priority, etc.",
+    parameters: {
+      type: "object",
+      properties: {
+        task_id: {
+          type: "string",
+          description: "The ID of the task to update",
+        },
+        title: {
+          type: "string",
+          description: "New task title",
+        },
+        description: {
+          type: "string",
+          description: "New task description",
+        },
+        priority: {
+          type: "boolean",
+          description: "Set task priority status",
+        },
+        reminder: {
+          type: "boolean",
+          description: "Set task reminder status",
+        },
+        due_date: {
+          type: "string",
+          format: "date",
+          description: "New due date in YYYY-MM-DD format",
+        },
+        start_time: {
+          type: "object",
+          properties: {
+            hour: { type: "number", minimum: 0, maximum: 23 },
+            minute: { type: "number", minimum: 0, maximum: 59 },
+          },
+          description: "New start time for the task",
+        },
+      },
+      required: ["task_id"],
+    },
+  },
+  {
+    name: "complete_task",
+    description: "Mark a task as completed",
+    parameters: {
+      type: "object",
+      properties: {
+        task_id: {
+          type: "string",
+          description: "The ID of the task to complete",
+        },
+        experience: {
+          type: "string",
+          enum: ["bad", "okay", "good", "best"],
+          description: "Optional experience rating for the completed task",
+        },
+      },
+      required: ["task_id"],
+    },
+  },
+  {
+    name: "create_task",
+    description: "Create a new task",
+    parameters: {
+      type: "object",
+      properties: {
+        title: {
+          type: "string",
+          description: "Task title",
+        },
+        description: {
+          type: "string",
+          description: "Task description",
+        },
+        due_date: {
+          type: "string",
+          format: "date",
+          description: "Due date in YYYY-MM-DD format",
+        },
+        priority: {
+          type: "boolean",
+          description: "Is this a priority task",
+          default: false,
+        },
+        reminder: {
+          type: "boolean",
+          description: "Set reminder for this task",
+          default: false,
+        },
+        start_time: {
+          type: "object",
+          properties: {
+            hour: { type: "number", minimum: 0, maximum: 23 },
+            minute: { type: "number", minimum: 0, maximum: 59 },
+          },
+          description: "Start time for the task",
+        },
+        icon: {
+          type: "string",
+          description: "Icon for the task",
+          default: "📋",
+        },
+        color: {
+          type: "string",
+          description: "Color for the task",
+          default: "#3B82F6",
+        },
+      },
+      required: ["title", "due_date"],
+    },
+  },
+  {
+    name: "show_notes",
+    description: "Show user's notes",
+    parameters: {
+      type: "object",
+      properties: {
+        limit: {
+          type: "number",
+          description: "Maximum number of notes to show. Default is 5",
+        },
+        search: {
+          type: "string",
+          description: "Search term to filter notes",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "create_note",
+    description: "Create a new note",
+    parameters: {
+      type: "object",
+      properties: {
+        title: {
+          type: "string",
+          description: "Note title",
+        },
+        content: {
+          type: "string",
+          description: "Note content",
+        },
+      },
+      required: ["title", "content"],
+    },
+  },
+  {
+    name: "update_note",
+    description: "Update an existing note",
+    parameters: {
+      type: "object",
+      properties: {
+        note_id: {
+          type: "string",
+          description: "The ID of the note to update",
+        },
+        title: {
+          type: "string",
+          description: "New note title",
+        },
+        content: {
+          type: "string",
+          description: "New note content",
+        },
+      },
+      required: ["note_id"],
+    },
+  },
+];

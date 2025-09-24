@@ -311,52 +311,6 @@ export interface DailyNutritionSummary {
   loggedMeals: LoggedMeal[];
 }
 
-export interface FunctionResult {
-  name: string;
-  result: {
-    success?: boolean;
-    error?: string;
-    message?: string;
-    tasks?: Array<{
-      id: string;
-      title: string;
-      dueDate: string;
-      isPriority: boolean;
-      icon: string;
-      color: string;
-      points: number;
-      risk?: boolean;
-    }>;
-    notes?: Array<{
-      id: string;
-      title: string;
-      content: string;
-      updatedAt: string;
-    }>;
-    task?: {
-      id: string;
-      title: string;
-      dueDate?: string;
-      points?: number;
-    };
-    note?: {
-      id: string;
-      title: string;
-      content: string;
-    };
-    count?: number;
-    totalCount?: number;
-    [key: string]: unknown;
-  };
-}
-
-export interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-  duration?: number;
-  functionResults?: FunctionResult[];
-}
-
 export interface WorkoutSet {
   weight: number;
   reps: number;
@@ -451,4 +405,36 @@ export interface YouTubeSummary {
   summary: string;
   createdAt: Date;
   processedAt: Date;
+}
+
+export interface FunctionResult {
+  name: string;
+  result: {
+    success?: boolean;
+    error?: string;
+    message?: string;
+    tasks?: Task[];
+    notes?: Array<{
+      id: string;
+      title: string;
+      content: string;
+      updatedAt: string;
+    }>;
+    note?: {
+      id: string;
+      title: string;
+      content: string;
+    };
+    task?: Task;
+    count?: number;
+    totalCount?: number;
+    [key: string]: unknown;
+  };
+}
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+  duration?: number;
+  functionResults?: FunctionResult[];
 }

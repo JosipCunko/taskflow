@@ -29,6 +29,7 @@ import { useState } from "react";
 import DurationCalculator from "./DurationCalculator";
 import { useOutsideClick } from "../_hooks/useOutsideClick";
 import Dropdown from "./Dropdown";
+import { Tooltip } from "react-tooltip";
 
 export default function RepeatingTaskCard({
   notProcessedTask,
@@ -168,9 +169,20 @@ export default function RepeatingTaskCard({
                 }}
               />
             </div>
-            <h3 className="text-sm font-semibold text-text-high truncate">
-              {task.title}
+            <h3
+              className="text-sm font-semibold text-text-high truncate"
+              data-tooltip-id="task-title-tooltip"
+              data-tooltip-content={task.title}
+            >
+              {task.title.length > 20
+                ? `${task.title.slice(0, 20)}...`
+                : task.title}
             </h3>
+            <Tooltip
+              id="task-title-tooltip"
+              className="tooltip-diff-arrow"
+              classNameArrow="tooltip-arrow"
+            />
           </div>
           <Dropdown
             task={task}

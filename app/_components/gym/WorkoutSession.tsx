@@ -31,6 +31,7 @@ import {
   likeWorkoutAction,
   dislikeWorkoutAction,
   removeWorkoutRatingAction,
+  deleteWorkoutAction,
 } from "../../_lib/gymActions";
 import { formatDate, handleToast } from "../../_utils/utils";
 import { defaultExercises } from "../../../public/exerciseLibrary";
@@ -217,6 +218,15 @@ export default function WorkoutSession({
       workout.loggedExercises
     );
 
+    handleToast(result, () => {
+      router.push("/webapp/gym");
+    });
+  };
+
+  const handleDeleteWorkout = async () => {
+    if (!workout) return;
+
+    const result = await deleteWorkoutAction(workout.id);
     handleToast(result, () => {
       router.push("/webapp/gym");
     });
@@ -436,6 +446,14 @@ export default function WorkoutSession({
 
         {/* Action Buttons */}
         <div className="flex gap-4">
+          <Button
+            variant="danger"
+            onClick={handleDeleteWorkout}
+            className="flex-1 justify-center"
+          >
+            <Trash2 className="w-5 h-5" />
+            Delete Workout
+          </Button>
           {!isFinished && (
             <Button
               variant="secondary"
