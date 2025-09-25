@@ -73,7 +73,7 @@ export default function TaskCard({
 
   const formattedDueDate = useMemo(() => {
     if (!task.dueDate || !isValid(new Date(task.dueDate))) return "N/A";
-    return formatDate(task.dueDate);
+    return formatDate(task.dueDate, undefined, false);
   }, [task.dueDate]);
 
   const { startTime, endTime } = getStartAndEndTime(task);

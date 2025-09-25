@@ -11,6 +11,7 @@ import Input from "../reusable/Input";
 import Button from "../reusable/Button";
 import EmptyChat from "./EmptyChat";
 import FunctionResults from "./FunctionResults";
+import ModelDropdown from "./ModelDropdown";
 
 interface ChatProps {
   initialMessages: ChatMessage[];
@@ -119,7 +120,10 @@ export default function Chat({
                   </div>
 
                   <div className="rounded-xl p-4 max-w-xs md:max-w-md lg:max-w-lg bg-background-500 ml-10">
-                    <p className="text-sm">{msg.content}</p>
+                    <div
+                      className="text-sm ai-response"
+                      dangerouslySetInnerHTML={{ __html: msg.content }}
+                    />
                     {msg.functionResults && (
                       <FunctionResults results={msg.functionResults} />
                     )}
@@ -178,7 +182,7 @@ export default function Chat({
         }`}
       >
         <div
-          className={`relative max-w-2xl mx-auto ${
+          className={`relative mx-auto ${
             messages.length === 0 ? "text-center" : ""
           }`}
         >
@@ -210,24 +214,30 @@ export default function Chat({
               </div>
             </>
           )}
-          <form onSubmit={handleSubmit} className="flex items-center gap-2">
-            <Input
-              type="text"
-              name="message"
-              value={input}
-              onChange={handleInputChange}
-              placeholder="Ask me anything..."
-              className="border border-primary-800/50"
-              disabled={isPending}
-            />
-            <button
-              type="submit"
-              className="bg-primary-800/50 text-primary-500 rounded-full p-2 disabled:opacity-50 transition-all duration-200 hover:bg-primary-800/60"
-              disabled={isPending || !input.trim()}
+          <div className="flex items-center gap-2">
+            <ModelDropdown className="mr-auto" />
+            <form
+              onSubmit={handleSubmit}
+              className="flex items-center gap-2 w-full"
             >
-              <Send size={20} />
-            </button>
-          </form>
+              <Input
+                type="text"
+                name="message"
+                value={input}
+                onChange={handleInputChange}
+                placeholder="Ask me anything..."
+                className="border border-primary-800/50 w-full"
+                disabled={isPending}
+              />
+              <button
+                type="submit"
+                className="bg-primary-800/50 text-primary-500 rounded-full p-2 disabled:opacity-50 transition-all duration-200 hover:bg-primary-800/60"
+                disabled={isPending || !input.trim()}
+              >
+                <Send size={20} />
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </div>

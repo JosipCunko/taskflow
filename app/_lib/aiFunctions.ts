@@ -2,16 +2,71 @@
 
 import { getServerSession } from "next-auth";
 import { authOptions } from "./auth";
+import { getTasksByUserId, getTaskByTaskId, updateTask } from "./tasks-admin";
 import {
-  getTasksByUserId,
-  getTaskByTaskId,
-  updateTask,
-  createTask,
-} from "./tasks-admin";
-import { loadNotesByUserId } from "./notes";
-import { addNoteAction, updateNoteAction } from "./notesActions";
-import { TaskToCreateData, FunctionResult, Task } from "../_types/types";
-import { format, parseISO, isValid } from "date-fns";
+  createTaskAction,
+  completeTaskAction,
+  delayTaskAction,
+} from "./actions";
+import {
+  FunctionResult,
+  TaskToCreateData,
+  TaskToUpdateData,
+  RepetitionRule,
+} from "../_types/types";
+import { isToday, isPast } from "date-fns";
+import { formatDate } from "../_utils/utils";
+
+// AI Function Parameter Interfaces
+interface AIShowTasksParams {
+  status?: "pending" | "completed" | "delayed" | "all";
+  priority?: boolean;
+  limit?: number;
+  due_today?: boolean;
+  overdue?: boolean;
+}
+
+interface AIDelayTaskParams {
+  task_id: string;
+  newDueDate: string; // ISO date string
+}
+
+interface AIUpdateTaskParams {
+  task_id: string;
+  title?: string;
+  description?: string;
+  isPriority?: boolean;
+  isReminder?: boolean;
+  dueDate?: Date;
+  startTime?: { hour: number; minute: number };
+  repetitionRule?: RepetitionRule;
+  color?: string;
+  icon?: string;
+  tags?: string[];
+  duration?: { hours: number; minutes: number };
+  location?: string;
+}
+
+interface AICompleteTaskParams {
+  task_id: string;
+}
+
+interface AICreateTaskParams {
+  title: string;
+  description?: string;
+  dueDate: string; // ISO date string from AI
+  isPriority?: boolean;
+  isReminder?: boolean;
+  startTime?: { hour: number; minute: number };
+  icon?: string;
+  color?: string;
+  duration?: { hours: number; minutes: number };
+  tags?: string[];
+  location?: string;
+  repetitionRule?: RepetitionRule;
+}
+
+const defaultAIOutputLimit = 10;
 
 export async function executeFunctions(
   functionCalls: {
@@ -32,48 +87,29 @@ export async function executeFunctions(
       let result;
       switch (call.name) {
         case "show_tasks":
-          result = await showTasks(userId, call.arguments);
+          result = await showTasks(
+            userId,
+            call.arguments as unknown as AIShowTasksParams
+          );
           break;
         case "delay_task":
-          result = await delayTask(
-            userId,
-            call.arguments as unknown as DelayTaskParams
+          result = await delayTaskAI(
+            call.arguments as unknown as AIDelayTaskParams
           );
           break;
         case "update_task":
-          result = await updateTaskFunction(
-            userId,
-            call.arguments as unknown as UpdateTaskParams
+          result = await updateTaskAI(
+            call.arguments as unknown as AIUpdateTaskParams
           );
           break;
         case "complete_task":
-          result = await completeTask(
-            userId,
-            call.arguments as unknown as CompleteTaskParams
+          result = await completeTaskAI(
+            call.arguments as unknown as AICompleteTaskParams
           );
           break;
         case "create_task":
-          result = await createTaskFunction(
-            userId,
-            call.arguments as unknown as CreateTaskParams
-          );
-          break;
-        case "show_notes":
-          result = await showNotes(
-            userId,
-            call.arguments as unknown as ShowNotesParams
-          );
-          break;
-        case "create_note":
-          result = await createNote(
-            userId,
-            call.arguments as unknown as CreateNoteParams
-          );
-          break;
-        case "update_note":
-          result = await updateNote(
-            userId,
-            call.arguments as unknown as UpdateNoteParams
+          result = await createTaskAI(
+            call.arguments as unknown as AICreateTaskParams
           );
           break;
         default:
@@ -96,7 +132,7 @@ export async function executeFunctions(
   return results;
 }
 
-async function showTasks(userId: string, params: Record<string, unknown>) {
+async function showTasks(userId: string, params: AIShowTasksParams) {
   const tasks = await getTasksByUserId(userId);
   let filteredTasks = tasks;
 
@@ -112,27 +148,19 @@ async function showTasks(userId: string, params: Record<string, unknown>) {
   }
 
   if (params.due_today) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
     filteredTasks = filteredTasks.filter((task) => {
-      const taskDate = new Date(task.dueDate);
-      taskDate.setHours(0, 0, 0, 0);
-      return taskDate >= today && taskDate < tomorrow;
+      return isToday(task.dueDate);
     });
   }
 
   if (params.overdue) {
-    const now = new Date();
     filteredTasks = filteredTasks.filter(
-      (task) => task.status === "pending" && new Date(task.dueDate) < now
+      (task) => task.status === "pending" && isPast(task.dueDate)
     );
   }
 
-  // Apply limit
-  const limit = typeof params.limit === "number" ? params.limit : 10;
+  const limit =
+    typeof params.limit === "number" ? params.limit : defaultAIOutputLimit;
   filteredTasks = filteredTasks.slice(0, limit);
 
   return {
@@ -143,101 +171,58 @@ async function showTasks(userId: string, params: Record<string, unknown>) {
   };
 }
 
-interface DelayTaskParams {
-  task_id: string;
-  new_due_date: string;
-  reason?: string;
-}
-
-async function delayTask(userId: string, params: DelayTaskParams) {
-  const { task_id, new_due_date, reason } = params;
+async function delayTaskAI(params: AIDelayTaskParams) {
+  const { task_id, newDueDate } = params;
 
   const task = await getTaskByTaskId(task_id);
   if (!task) {
     return { success: false, error: "Task not found" };
   }
 
-  if (task.userId !== userId) {
-    return { success: false, error: "Unauthorized" };
-  }
-
-  const newDate = parseISO(new_due_date);
-  if (!isValid(newDate)) {
-    return { success: false, error: "Invalid date format" };
-  }
-
-  // Preserve original time
-  const originalTime = new Date(task.dueDate);
-  newDate.setHours(originalTime.getHours(), originalTime.getMinutes());
-
   try {
-    const updatedTask = await updateTask(task_id, {
-      dueDate: newDate,
-      status: "delayed",
-      delayCount: task.delayCount + 1,
-    });
+    const formData = new FormData();
+    formData.append("taskId", task_id);
 
-    return {
-      success: true,
-      message: `Task "${task.title}" delayed to ${format(
-        newDate,
-        "yyyy-MM-dd HH:mm"
-      )}`,
-      task: updatedTask,
-      reason: reason || "No reason provided",
-    };
+    const result = await delayTaskAction(
+      formData,
+      new Date(newDueDate),
+      task.delayCount
+    );
+
+    if (result.success) {
+      return {
+        success: true,
+        message: `Task "${task.title}" delayed to ${formatDate(newDueDate)}`,
+        task: result.data || undefined,
+      };
+    } else {
+      return { success: false, error: result.error || "Failed to delay task" };
+    }
   } catch {
     return { success: false, error: "Failed to delay task" };
   }
 }
 
-interface UpdateTaskParams {
-  task_id: string;
-  title?: string;
-  description?: string;
-  priority?: boolean;
-  reminder?: boolean;
-  due_date?: string;
-  start_time?: { hour: number; minute: number };
-}
-
-async function updateTaskFunction(userId: string, params: UpdateTaskParams) {
+async function updateTaskAI(params: AIUpdateTaskParams) {
   const { task_id, ...updates } = params;
 
-  const task = await getTaskByTaskId(task_id);
-  if (!task) {
-    return { success: false, error: "Task not found" };
-  }
-
-  if (task.userId !== userId) {
-    return { success: false, error: "Unauthorized" };
-  }
-
-  const updateData: Partial<Task> = {};
-
-  if (updates.title) updateData.title = updates.title;
-  if (updates.description !== undefined)
-    updateData.description = updates.description;
-  if (updates.priority !== undefined) updateData.isPriority = updates.priority;
-  if (updates.reminder !== undefined) updateData.isReminder = updates.reminder;
-  if (updates.start_time) updateData.startTime = updates.start_time;
-
-  if (updates.due_date) {
-    const newDate = parseISO(updates.due_date);
-    if (!isValid(newDate)) {
-      return { success: false, error: "Invalid due date format" };
-    }
-    // Preserve original time if not updating start_time
-    if (!updates.start_time) {
-      const originalTime = new Date(task.dueDate);
-      newDate.setHours(originalTime.getHours(), originalTime.getMinutes());
-    }
-    updateData.dueDate = newDate;
-  }
+  const updateData: Partial<TaskToUpdateData> = {
+    title: updates.title,
+    description: updates.description,
+    isPriority: updates.isPriority,
+    isReminder: updates.isReminder,
+    dueDate: updates.dueDate,
+    startTime: updates.startTime,
+    repetitionRule: updates.repetitionRule,
+    color: updates.color,
+    icon: updates.icon,
+    tags: updates.tags,
+    duration: updates.duration,
+    location: updates.location,
+  };
 
   try {
     const updatedTask = await updateTask(task_id, updateData);
-
     return {
       success: true,
       message: `Task "${updatedTask.title}" updated successfully`,
@@ -248,207 +233,100 @@ async function updateTaskFunction(userId: string, params: UpdateTaskParams) {
   }
 }
 
-interface CompleteTaskParams {
-  task_id: string;
-  experience?: "bad" | "okay" | "good" | "best";
-}
-
-async function completeTask(userId: string, params: CompleteTaskParams) {
-  const { task_id, experience } = params;
-
-  const task = await getTaskByTaskId(task_id);
-  if (!task) {
-    return { success: false, error: "Task not found" };
-  }
-
-  if (task.userId !== userId) {
-    return { success: false, error: "Unauthorized" };
-  }
-
-  const updateData: Partial<Task> = {
-    status: "completed",
-    completedAt: new Date(),
-  };
-
-  if (experience) {
-    updateData.experience = experience;
-  }
+async function completeTaskAI(params: AICompleteTaskParams) {
+  const { task_id } = params;
 
   try {
-    const updatedTask = await updateTask(task_id, updateData);
+    // Create FormData to match the action function signature
+    const formData = new FormData();
+    formData.append("taskId", task_id);
+    const result = await completeTaskAction(formData);
 
-    return {
-      success: true,
-      message: `Task "${updatedTask.title}" completed successfully! You earned ${updatedTask.points} points.`,
-      task: updatedTask,
-    };
+    if (result.success) {
+      return {
+        success: true,
+        message: `Task completed successfully!`,
+        task: result.data || undefined,
+      };
+    } else {
+      return {
+        success: false,
+        error: result.error || "Failed to complete task",
+      };
+    }
   } catch {
     return { success: false, error: "Failed to complete task" };
   }
 }
 
-interface CreateTaskParams {
-  title: string;
-  description?: string;
-  due_date: string;
-  priority?: boolean;
-  reminder?: boolean;
-  start_time?: { hour: number; minute: number };
-  icon?: string;
-  color?: string;
-}
-
-async function createTaskFunction(userId: string, params: CreateTaskParams) {
-  const {
-    title,
-    description,
-    due_date,
-    priority,
-    reminder,
-    start_time,
-    icon,
-    color,
-  } = params;
-
-  const dueDate = parseISO(due_date);
-  if (!isValid(dueDate)) {
-    return { success: false, error: "Invalid due date format" };
-  }
-
-  // Set time if provided
-  if (start_time) {
-    dueDate.setHours(start_time.hour, start_time.minute);
-  }
-
-  const taskData: TaskToCreateData = {
-    userId,
-    title,
-    description: description || "",
-    dueDate,
-    isPriority: priority || false,
-    isReminder: reminder || false,
-    startTime: start_time || { hour: 9, minute: 0 },
-    icon: icon || "📋",
-    color: color || "#3B82F6",
-    tags: [],
-    duration: { hours: 0, minutes: 30 }, // Default 30 minutes
-  };
-
+async function createTaskAI(params: AICreateTaskParams) {
   try {
-    const newTask = await createTask(taskData);
+    // Convert AI params to TaskToCreateData
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return { success: false, error: "User not authenticated" };
+    }
 
-    return {
-      success: true,
-      message: `Task "${newTask.title}" created successfully for ${format(
-        newTask.dueDate,
-        "yyyy-MM-dd HH:mm"
-      )}`,
-      task: newTask,
+    const dueDate = new Date(params.dueDate);
+    if (isNaN(dueDate.getTime())) {
+      return { success: false, error: "Invalid due date format" };
+    }
+
+    // Set time if provided
+    if (params.startTime) {
+      dueDate.setHours(params.startTime.hour, params.startTime.minute);
+    }
+
+    const taskData: TaskToCreateData = {
+      userId: session.user.id,
+      title: params.title,
+      description: params.description || "",
+      dueDate,
+      isPriority: params.isPriority || false,
+      isReminder: params.isReminder || false,
+      icon: params.icon || "ClipboardList",
+      color: params.color || "var(--color-primary-500)",
+      startTime: params.startTime,
+      duration: params.duration || { hours: 0, minutes: 0 },
+      tags: params.tags || [],
+      location: params.location,
+      isRepeating: !!params.repetitionRule,
+      repetitionRule: params.repetitionRule,
     };
+
+    // Create FormData to match the action function signature
+    const formData = new FormData();
+    formData.append("title", taskData.title);
+    formData.append("description", taskData.description || "");
+    formData.append("location", taskData.location || "");
+
+    const result = await createTaskAction(
+      formData,
+      taskData.isPriority,
+      taskData.isReminder,
+      taskData.color,
+      taskData.icon,
+      taskData.dueDate,
+      taskData.startTime,
+      taskData.tags || [],
+      taskData.duration || { hours: 0, minutes: 0 },
+      taskData.isRepeating || false,
+      taskData.repetitionRule,
+      taskData.startDate
+    );
+
+    if (result.success) {
+      return {
+        success: true,
+        message: `Task "${
+          result.data?.title
+        }" created successfully for ${formatDate(taskData.dueDate)}`,
+        task: result.data || undefined,
+      };
+    } else {
+      return { success: false, error: result.error || "Failed to create task" };
+    }
   } catch {
     return { success: false, error: "Failed to create task" };
-  }
-}
-
-interface ShowNotesParams {
-  limit?: number;
-  search?: string;
-}
-
-async function showNotes(userId: string, params: ShowNotesParams) {
-  const notes = await loadNotesByUserId(userId);
-  let filteredNotes = notes;
-
-  // Apply search filter
-  if (params.search) {
-    const searchTerm = params.search.toLowerCase();
-    filteredNotes = filteredNotes.filter(
-      (note) =>
-        note.title.toLowerCase().includes(searchTerm) ||
-        note.content.toLowerCase().includes(searchTerm)
-    );
-  }
-
-  // Apply limit
-  const limit = params.limit || 5;
-  filteredNotes = filteredNotes.slice(0, limit);
-
-  return {
-    success: true,
-    notes: filteredNotes.map((note) => ({
-      id: note.id,
-      title: note.title,
-      content:
-        note.content.slice(0, 200) + (note.content.length > 200 ? "..." : ""),
-      updatedAt: format(note.updatedAt, "yyyy-MM-dd HH:mm"),
-    })),
-    count: filteredNotes.length,
-    totalCount: notes.length,
-  };
-}
-
-interface CreateNoteParams {
-  title: string;
-  content: string;
-}
-
-async function createNote(userId: string, params: CreateNoteParams) {
-  const { title, content } = params;
-
-  try {
-    const result = await addNoteAction(userId, title, content);
-
-    if (result.success) {
-      return {
-        success: true,
-        message: `Note "${title}" created successfully`,
-        note: {
-          id: result.newNoteId || "",
-          title,
-          content: content.slice(0, 100) + (content.length > 100 ? "..." : ""),
-        },
-      };
-    } else {
-      return { success: false, error: result.error || "Failed to create note" };
-    }
-  } catch {
-    return { success: false, error: "Failed to create note" };
-  }
-}
-
-interface UpdateNoteParams {
-  note_id: string;
-  title?: string;
-  content?: string;
-}
-
-async function updateNote(userId: string, params: UpdateNoteParams) {
-  const { note_id, title, content } = params;
-
-  try {
-    const result = await updateNoteAction(
-      note_id,
-      title || "",
-      content || "",
-      userId
-    );
-
-    if (result.success) {
-      return {
-        success: true,
-        message: `Note updated successfully`,
-        note: {
-          id: note_id,
-          title: title || "",
-          content:
-            content?.slice(0, 100) +
-            (content && content.length > 100 ? "..." : ""),
-        },
-      };
-    } else {
-      return { success: false, error: result.error || "Failed to update note" };
-    }
-  } catch {
-    return { success: false, error: "Failed to update note" };
   }
 }

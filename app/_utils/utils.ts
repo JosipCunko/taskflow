@@ -427,7 +427,8 @@ export const formatDate = (
 ): string => {
   if (!date) return "N/A";
   try {
-    const dateObj = typeof date === "string" ? new Date(date) : date;
+    // const dateObj = typeof date === "string" ? new Date(date) : date;
+    const dateObj = new Date(date);
     if (isNaN(dateObj.getTime())) return "Invalid Date";
 
     // Check for relative dates first
@@ -459,7 +460,8 @@ export const formatDate = (
 export const formatDateTime = (date: Date | string | undefined): string => {
   if (!date) return "N/A";
   try {
-    const dateObj = typeof date === "string" ? new Date(date) : date;
+    //const dateObj = typeof date === "string" ? new Date(date) : date;
+    const dateObj = new Date(date);
     if (isNaN(dateObj.getTime())) return "Invalid Date";
     return dateObj.toLocaleString(undefined, {
       month: "short",
@@ -1200,17 +1202,13 @@ export const AI_FUNCTIONS = [
           type: "string",
           description: "The ID of the task to delay",
         },
-        new_due_date: {
+        newDueDate: {
           type: "string",
           format: "date",
           description: "New due date in YYYY-MM-DD format",
         },
-        reason: {
-          type: "string",
-          description: "Optional reason for delaying the task",
-        },
       },
-      required: ["task_id", "new_due_date"],
+      required: ["task_id", "newDueDate"],
     },
   },
   {
@@ -1232,26 +1230,51 @@ export const AI_FUNCTIONS = [
           type: "string",
           description: "New task description",
         },
-        priority: {
+        isPriority: {
           type: "boolean",
           description: "Set task priority status",
         },
-        reminder: {
+        isReminder: {
           type: "boolean",
           description: "Set task reminder status",
         },
-        due_date: {
+        dueDate: {
           type: "string",
-          format: "date",
-          description: "New due date in YYYY-MM-DD format",
+          format: "date-time",
+          description: "New due date in ISO format",
         },
-        start_time: {
+        startTime: {
           type: "object",
           properties: {
             hour: { type: "number", minimum: 0, maximum: 23 },
             minute: { type: "number", minimum: 0, maximum: 59 },
           },
           description: "New start time for the task",
+        },
+        color: {
+          type: "string",
+          description: "Task color",
+        },
+        icon: {
+          type: "string",
+          description: "Task icon",
+        },
+        tags: {
+          type: "array",
+          items: { type: "string" },
+          description: "Task tags",
+        },
+        location: {
+          type: "string",
+          description: "Task location",
+        },
+        duration: {
+          type: "object",
+          properties: {
+            hours: { type: "number", minimum: 0 },
+            minutes: { type: "number", minimum: 0 },
+          },
+          description: "Task duration",
         },
       },
       required: ["task_id"],
@@ -1266,11 +1289,6 @@ export const AI_FUNCTIONS = [
         task_id: {
           type: "string",
           description: "The ID of the task to complete",
-        },
-        experience: {
-          type: "string",
-          enum: ["bad", "okay", "good", "best"],
-          description: "Optional experience rating for the completed task",
         },
       },
       required: ["task_id"],
@@ -1290,22 +1308,22 @@ export const AI_FUNCTIONS = [
           type: "string",
           description: "Task description",
         },
-        due_date: {
+        dueDate: {
           type: "string",
-          format: "date",
-          description: "Due date in YYYY-MM-DD format",
+          format: "date-time",
+          description: "Due date in ISO format",
         },
-        priority: {
+        isPriority: {
           type: "boolean",
           description: "Is this a priority task",
           default: false,
         },
-        reminder: {
+        isReminder: {
           type: "boolean",
           description: "Set reminder for this task",
           default: false,
         },
-        start_time: {
+        startTime: {
           type: "object",
           properties: {
             hour: { type: "number", minimum: 0, maximum: 23 },
@@ -1316,73 +1334,36 @@ export const AI_FUNCTIONS = [
         icon: {
           type: "string",
           description: "Icon for the task",
-          default: "📋",
+          default: "ClipboardList",
         },
         color: {
           type: "string",
           description: "Color for the task",
-          default: "#3B82F6",
+          default: "var(--color-primary-500)",
+        },
+        duration: {
+          type: "object",
+          properties: {
+            hours: { type: "number", minimum: 0 },
+            minutes: { type: "number", minimum: 0 },
+          },
+          description: "Task duration",
+        },
+        tags: {
+          type: "array",
+          items: { type: "string" },
+          description: "Task tags",
+        },
+        location: {
+          type: "string",
+          description: "Task location",
+        },
+        repetitionRule: {
+          type: "object",
+          description: "Repetition rule for recurring tasks",
         },
       },
-      required: ["title", "due_date"],
-    },
-  },
-  {
-    name: "show_notes",
-    description: "Show user's notes",
-    parameters: {
-      type: "object",
-      properties: {
-        limit: {
-          type: "number",
-          description: "Maximum number of notes to show. Default is 5",
-        },
-        search: {
-          type: "string",
-          description: "Search term to filter notes",
-        },
-      },
-      required: [],
-    },
-  },
-  {
-    name: "create_note",
-    description: "Create a new note",
-    parameters: {
-      type: "object",
-      properties: {
-        title: {
-          type: "string",
-          description: "Note title",
-        },
-        content: {
-          type: "string",
-          description: "Note content",
-        },
-      },
-      required: ["title", "content"],
-    },
-  },
-  {
-    name: "update_note",
-    description: "Update an existing note",
-    parameters: {
-      type: "object",
-      properties: {
-        note_id: {
-          type: "string",
-          description: "The ID of the note to update",
-        },
-        title: {
-          type: "string",
-          description: "New note title",
-        },
-        content: {
-          type: "string",
-          description: "New note content",
-        },
-      },
-      required: ["note_id"],
+      required: ["title", "dueDate"],
     },
   },
 ];

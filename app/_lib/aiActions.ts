@@ -6,7 +6,13 @@ import { saveChatMessages } from "./aiAdmin";
 import { ChatMessage, FunctionResult } from "@/app/_types/types";
 import { executeFunctions } from "./aiFunctions";
 import { AI_FUNCTIONS } from "@/app/_utils/utils";
+import { marked } from "marked";
+import DOMPurify from "dompurify";
+import { JSDOM } from "jsdom";
 const apiKey = process.env.OPENROUTER_DEEPSEEK_API_KEY;
+
+const window = new JSDOM("").window;
+const purify = DOMPurify(window);
 
 const tools = AI_FUNCTIONS.map((func) => ({
   type: "function",
@@ -165,12 +171,16 @@ Remember: You are not just answering questions - you are actively helping manage
       }
     }
 
+    const formattedResponse = aiResponse
+      ? purify.sanitize(marked(aiResponse) as string)
+      : "";
+
     const endTime = Date.now();
     const duration = parseFloat(((endTime - startTime) / 1000).toFixed(2));
 
     const responseMessage: ChatMessage = {
       role: "assistant",
-      content: aiResponse,
+      content: formattedResponse,
       duration,
       functionResults: functionResults.length > 0 ? functionResults : undefined,
     };
