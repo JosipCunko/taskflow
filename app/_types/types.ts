@@ -62,6 +62,9 @@ export interface AppUser {
     createTasks: boolean;
     createNotifications: boolean;
   };
+  // Anonymous user fields
+  isAnonymous?: boolean;
+  anonymousCreatedAt?: Date;
 }
 export interface UserNutritionGoals {
   calories: number;

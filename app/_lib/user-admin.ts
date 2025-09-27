@@ -62,6 +62,16 @@ export const getUserById = unstable_cache(
               fat: defaultNutritionGoals.fat,
               updatedAt: (userData.createdAt as Timestamp).toDate(),
             },
+        lastLoginAt: userData.lastLoginAt
+          ? (userData.lastLoginAt as Timestamp).toDate()
+          : undefined,
+        notesCount: userData.notesCount,
+        youtubePreferences: userData.youtubePreferences,
+        // Anonymous user fields
+        isAnonymous: userData.isAnonymous,
+        anonymousCreatedAt: userData.anonymousCreatedAt
+          ? (userData.anonymousCreatedAt as Timestamp).toDate()
+          : undefined,
       };
     } catch (error) {
       console.error("Error fetching user by ID:", error);

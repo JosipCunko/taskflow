@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/_lib/auth";
 import { getLatestChatForUser } from "@/app/_lib/aiAdmin";
 import { ChatMessage } from "@/app/_types/types";
+import ChatHistory from "@/app/_components/AI/ChatHistory";
 
 export default async function AI() {
   const session = await getServerSession(authOptions);
@@ -34,7 +35,8 @@ export default async function AI() {
         {`window.jotformEmbedHandler("iframe[id='JotFormIFrame-01982cd8d8e7774fbebc0a2dd460c49e2c67']",
         "https://eu.jotform.com")`}
       </Script> */}
-      <div className="p-1 sm:p-6 container overflow-y-auto overflow-x-hidden mx-auto">
+      <div className="p-1 sm:p-6 flex items-center w-full container overflow-y-auto overflow-x-hidden mx-auto">
+        <ChatHistory />
         <Chat
           initialMessages={initialMessages}
           chatId={chatId}

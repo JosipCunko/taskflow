@@ -14,7 +14,7 @@ export default function Sidebar() {
           <Image src="/logo.png" alt="Taskflow" width={150} height={150} />
         </div>
       </div>
-      <nav className="p-2 flex-1 flex flex-col">
+      <nav className="p-2 flex-1 flex flex-col overflow-y-auto">
         {Object.entries(navItems).map(([groupName, items]) => (
           <div
             key={groupName}

@@ -7,6 +7,7 @@ import {
   signInWithGoogle,
   signInWithEmailAndPasswordFirebase,
   signUpWithEmailAndPasswordFirebase,
+  signInAnonymously,
 } from "@/app/_lib/auth-client";
 import { Tooltip } from "react-tooltip";
 import { motion } from "framer-motion";
@@ -96,6 +97,18 @@ export default function LoginForm() {
     } catch (err: unknown) {
       const error = err as { message?: string };
       setError(error.message || "Failed to sign in with GitHub.");
+      setIsLoading(false);
+    }
+  };
+
+  const handleAnonymousSignIn = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await signInAnonymously();
+    } catch (err: unknown) {
+      const error = err as { message?: string };
+      setError(error.message || "Failed to sign in anonymously.");
       setIsLoading(false);
     }
   };
@@ -284,6 +297,37 @@ export default function LoginForm() {
           </svg>
           <span className="ml-2">Google</span>
         </Button>
+
+        <Button
+          variant="secondary"
+          className="flex items-center justify-center border border-amber-500/50 bg-amber-500/10 rounded py-2 px-4 mb-4 text-amber-200 hover:bg-amber-500/20 transition-colors w-full"
+          onClick={handleAnonymousSignIn}
+          disabled={isLoading}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="mr-2"
+          >
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          Try as Guest
+        </Button>
+
+        <div className="mb-4 text-center">
+          <p className="text-xs text-amber-300/80 bg-amber-500/10 p-2 rounded border border-amber-500/30">
+            ⚠️ Guest accounts are deleted after 1 hour. Your data will be lost
+            unless you create a permanent account.
+          </p>
+        </div>
 
         <div className="mt-6 text-center">
           <button

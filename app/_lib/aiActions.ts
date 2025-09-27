@@ -2,7 +2,12 @@
 
 import { getServerSession } from "next-auth";
 import { authOptions } from "./auth";
-import { saveChatMessages } from "./aiAdmin";
+import {
+  saveChatMessages,
+  getUserChats as getUserChatsAdmin,
+  getChat as getChatAdmin,
+  deleteChat as deleteChatAdmin,
+} from "./aiAdmin";
 import { ChatMessage, FunctionResult } from "@/app/_types/types";
 import { executeFunctions } from "./aiFunctions";
 import { AI_FUNCTIONS } from "@/app/_utils/utils";
@@ -201,5 +206,47 @@ Remember: You are not just answering questions - you are actively helping manage
       error
     );
     return { error: "An unexpected error occurred." };
+  }
+}
+
+export async function getChats() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return { error: "User not authenticated." };
+  }
+  try {
+    const chats = await getUserChatsAdmin(session.user.id);
+    return { chats };
+  } catch (error) {
+    console.error("Error getting chats:", error);
+    return { error: "Could not retrieve chats." };
+  }
+}
+
+export async function getChat(chatId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return { error: "User not authenticated." };
+  }
+  try {
+    const chat = await getChatAdmin(session.user.id, chatId);
+    return { chat };
+  } catch (error) {
+    console.error("Error getting chat:", error);
+    return { error: "Could not retrieve chat." };
+  }
+}
+
+export async function deleteChat(chatId: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return { error: "User not authenticated." };
+  }
+  try {
+    await deleteChatAdmin(session.user.id, chatId);
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting chat:", error);
+    return { error: "Could not delete chat." };
   }
 }

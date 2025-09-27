@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { getDeepseekResponse } from "@/app/_lib/aiActions";
 import { Send, Bot, User, PlusCircle } from "lucide-react";
 import { toast } from "react-hot-toast";
@@ -31,6 +32,12 @@ export default function Chat({
   const [input, setInput] = useState("");
   const [isPending, startTransition] = useTransition();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    setMessages(initialMessages);
+    setChatId(initialChatId);
+  }, [initialMessages, initialChatId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -52,9 +59,10 @@ export default function Chat({
 
   const handleExampleClick = (query: string) => {
     setInput(query);
-    handleSubmit(
-      new Event("submit") as unknown as React.FormEvent<HTMLFormElement>
-    );
+    const fakeEvent = {
+      preventDefault: () => {},
+    } as React.FormEvent<HTMLFormElement>;
+    handleSubmit(fakeEvent);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -77,8 +85,9 @@ export default function Chat({
         setMessages(updatedMessages);
       } else if (result.response) {
         setMessages([...newMessages, result.response as ChatMessage]);
-        if (result.chatId) {
+        if (result.chatId && !chatId) {
           setChatId(result.chatId);
+          router.push(`/webapp/ai/${result.chatId}`);
         }
       }
     });

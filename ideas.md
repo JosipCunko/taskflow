@@ -42,7 +42,3 @@ Integrate a recipe discovery feature that allows users to search for recipes by 
   - The AI could be "primed" with information about Taskflow's features to provide accurate answers.
   - saved chats
   - streaming data
-
-**6. Anonymous mode**
-
-- account will be deleted in 1 hour, because we dont have a way to track your identity.

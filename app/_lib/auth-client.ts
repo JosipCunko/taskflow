@@ -7,6 +7,7 @@ import {
   createUserWithEmailAndPassword as firebaseCreateUserWithEmailAndPassword,
   signInWithEmailAndPassword as firebaseSignInWithEmailAndPassword,
   updateProfile as firebaseUpdateProfile,
+  signInAnonymously as firebaseSignInAnonymously,
 } from "firebase/auth";
 import { auth } from "./firebase";
 import {
@@ -172,6 +173,41 @@ export const signInWithEmailAndPasswordFirebase = async (
     }
   } catch (error: unknown) {
     console.error("Error during email/password sign-in flow:", error);
+    throw error;
+  }
+};
+
+/**
+ * Signs in anonymously using Firebase, then signs into NextAuth.
+ * The account will be temporary and can be automatically deleted after a period.
+ */
+export const signInAnonymously = async (): Promise<void> => {
+  try {
+    const userCredential = await firebaseSignInAnonymously(auth);
+    const firebaseUser = userCredential.user;
+
+    if (firebaseUser) {
+      const idToken = await firebaseUser.getIdToken(true);
+
+      const nextAuthResult = await nextAuthSignIn("credentials", {
+        idToken,
+        redirect: false,
+      });
+
+      if (nextAuthResult?.error) {
+        console.error(
+          "NextAuth sign-in error after Firebase anonymous sign-in:",
+          nextAuthResult.error
+        );
+        throw new Error(nextAuthResult.error);
+      }
+
+      redirect("/webapp");
+    } else {
+      throw new Error("No user returned from Firebase anonymous sign-in.");
+    }
+  } catch (error: unknown) {
+    console.error("Error during anonymous sign-in flow:", error);
     throw error;
   }
 };

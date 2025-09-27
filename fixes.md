@@ -23,3 +23,13 @@ at async HealthPage (app\webapp\health\page.tsx:13:18)
 
 > 8 | function() { throw new Error("Attempted to call trackAchievementUnlocked() from the server but trackAchievementUnlocked is on the client. It's not possible to invoke a client function from the server, it can only be rendered as a Component or passed to props of a Client Component."); },
 > GET /webapp/health 200 in 4434ms
+
+Users can accidentally create two tasks by clicking on teh Add task button fast twice. We should use a transition and disable the button
+Weekly groth button rework => both logic and display. Show no data if no data. Show each week section only if points exist in that week. Max are four weeks.
+
+Response from the model:
+Let me show you all your pending tasks so we can identify what might need priority attention:<｜ tool▁calls▁begin ｜><｜ tool▁call▁begin ｜>show_tasks<｜ tool▁sep ｜>{"status": "pending"}<｜ tool▁call▁end ｜><｜ tool▁calls▁end ｜>
+
+EVERY ADMIN FUNCTION NEEDS ANA ACTION!!
+
+ai chats

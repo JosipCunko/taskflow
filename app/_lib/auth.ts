@@ -399,10 +399,15 @@ export const authOptions: NextAuthOptions = {
           // ----- USER DATA EXTRACTION -----
           // Extract user information from the verified Firebase token
           // Firebase tokens contain standard OpenID Connect claims
+          // For anonymous users: email, name, picture will be undefined/null
+          const isAnonymous = !decodedToken.email && !decodedToken.name;
           const firebaseUser: FirebaseUser = {
             uid: decodedToken.uid,
             email: decodedToken.email,
-            name: decodedToken.name || decodedToken.email?.split("@")[0],
+            name:
+              decodedToken.name ||
+              decodedToken.email?.split("@")[0] ||
+              (isAnonymous ? `Guest-${decodedToken.uid.slice(-8)}` : undefined),
             picture: decodedToken.picture,
             email_verified: decodedToken.email_verified,
           };
@@ -434,8 +439,13 @@ export const authOptions: NextAuthOptions = {
               youtubePreferences: {
                 enabled: true, // Enable by default for testing
                 createTasks: true,
-                createNotifications: true
+                createNotifications: true,
               },
+              // Mark anonymous users for potential cleanup
+              ...(isAnonymous && {
+                isAnonymous: true,
+                anonymousCreatedAt: new Date(),
+              }),
               ...(firebaseUser.email && { email: firebaseUser.email }),
               ...(firebaseUser.name && { displayName: firebaseUser.name }),
               ...(firebaseUser.picture && { photoURL: firebaseUser.picture }),
@@ -533,7 +543,7 @@ export const authOptions: NextAuthOptions = {
               youtubePreferences: {
                 enabled: true, // Enable by default for testing
                 createTasks: true,
-                createNotifications: true
+                createNotifications: true,
               },
               ...(user.email && { email: user.email }),
               ...(user.name && { displayName: user.name }),

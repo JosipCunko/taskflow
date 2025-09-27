@@ -680,7 +680,11 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isPending}>
+                <Button
+                  type="submit"
+                  disabled={isPending}
+                  className="disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   {isPending ? "Adding..." : "Add task"}
                 </Button>
               </div>
