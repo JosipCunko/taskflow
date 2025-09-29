@@ -1,5 +1,5 @@
 "use client";
-import { BarChart3, Bell, Settings, Trophy, Palette } from "lucide-react";
+import { BarChart3, Bell, Settings, Trophy, Palette, HelpCircle } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ActivityLog, Task, AppUser } from "../_types/types";
@@ -7,9 +7,11 @@ import { getTaskIconByName } from "../_utils/icons";
 import { formatDistanceToNowStrict } from "date-fns";
 import TaskCardSmall from "./TaskCardSmall";
 import Checkbox from "./reusable/Checkbox";
+import Button from "./reusable/Button";
 import { updateUserAction } from "../_lib/actions";
 import { handleToast } from "../_utils/utils";
 import { useTheme } from "../_context/ThemeContext";
+import { useTutorial } from "./tutorial/TutorialProvider";
 
 export default function ProfileTabs({
   activityLogs,
@@ -22,6 +24,7 @@ export default function ProfileTabs({
     "overview"
   );
   const { theme, setTheme } = useTheme();
+  const { showTutorial } = useTutorial();
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -263,6 +266,30 @@ export default function ProfileTabs({
                   <option value="default-blue">Default Blue</option>
                   <option value="dark-crt">Dark CRT</option>
                 </select>
+              </div>
+            </div>
+
+            <div className="bg-background-600 rounded-lg p-4 sm:p-6 border border-divider shadow-md">
+              <div className="flex items-center gap-3 mb-4">
+                <HelpCircle size={20} className="text-primary-400" />
+                <h3 className="text-lg font-semibold text-text-high">
+                  Help & Tutorial
+                </h3>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-text-low mb-3">
+                    Need help getting started? Take the interactive tutorial to learn about TaskFlow's key features.
+                  </p>
+                  <Button
+                    onClick={showTutorial}
+                    variant="secondary"
+                    className="flex items-center gap-2"
+                  >
+                    <HelpCircle size={16} />
+                    Start Tutorial
+                  </Button>
+                </div>
               </div>
             </div>
           </motion.div>

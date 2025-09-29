@@ -26,10 +26,22 @@ export default function Sidebar() {
             <ul className="space-y-1">
               {items.map((item) => {
                 const isActive = pathname === item.href;
+                // Add tutorial data attributes for specific items
+                const getTutorialAttribute = () => {
+                  if (groupName === "tasks" && (item.label === "Tasks" || item.label === "Today" || item.label === "Calendar")) {
+                    return "sidebar-tasks";
+                  }
+                  if (item.label === "Health") {
+                    return "sidebar-health";
+                  }
+                  return undefined;
+                };
+                
                 return (
                   <li key={item.href}>
                     <Link
                       href={item.href}
+                      data-tutorial={getTutorialAttribute()}
                       className={`
                           flex items-center gap-3 px-4 py-3 rounded-md transition-colors ${
                             isActive

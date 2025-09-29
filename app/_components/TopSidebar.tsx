@@ -98,7 +98,10 @@ export default function TopSidebar({
 
         <Modal>
           <Modal.Open opens="add-task">
-            <Button className="text-nowrap transition-all duration-200">
+            <Button 
+              className="text-nowrap transition-all duration-200"
+              data-tutorial="add-task-btn"
+            >
               <Plus size={18} />
               <span>New Task</span>
             </Button>
