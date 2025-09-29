@@ -1,5 +1,12 @@
 "use client";
-import { BarChart3, Bell, Settings, Trophy, Palette, HelpCircle } from "lucide-react";
+import {
+  BarChart3,
+  Bell,
+  Settings,
+  Trophy,
+  Palette,
+  HelpCircle,
+} from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ActivityLog, Task, AppUser } from "../_types/types";
@@ -11,7 +18,7 @@ import Button from "./reusable/Button";
 import { updateUserAction } from "../_lib/actions";
 import { handleToast } from "../_utils/utils";
 import { useTheme } from "../_context/ThemeContext";
-import { useTutorial } from "./tutorial/TutorialProvider";
+import { useTutorial } from "../_context/TutorialContext";
 
 export default function ProfileTabs({
   activityLogs,
@@ -279,7 +286,8 @@ export default function ProfileTabs({
               <div className="space-y-4">
                 <div>
                   <p className="text-sm text-text-low mb-3">
-                    Need help getting started? Take the interactive tutorial to learn about TaskFlow's key features.
+                    Need help getting started? Take the interactive tutorial to
+                    learn about TaskFlow&apos;s key features.
                   </p>
                   <Button
                     onClick={showTutorial}

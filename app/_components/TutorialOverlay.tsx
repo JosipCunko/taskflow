@@ -2,18 +2,18 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Plus, 
-  Calendar, 
-  Utensils, 
-  BookOpen, 
-  X, 
-  ChevronRight, 
+import {
+  Plus,
+  Calendar,
+  Utensils,
+  BookOpen,
+  X,
+  ChevronRight,
   ChevronLeft,
   Check,
-  Home
+  Home,
 } from "lucide-react";
-import Button from "../reusable/Button";
+import Button from "./reusable/Button";
 
 interface TutorialStep {
   id: string;
@@ -37,7 +37,8 @@ const tutorialSteps: TutorialStep[] = [
   {
     id: "welcome",
     title: "Welcome to TaskFlow!",
-    description: "Let's take a quick tour of the key features to help you get started with managing your tasks and health.",
+    description:
+      "Let's take a quick tour of the key features to help you get started with managing your tasks and health.",
     icon: <Home className="w-6 h-6" />,
     position: {
       top: "50%",
@@ -47,7 +48,8 @@ const tutorialSteps: TutorialStep[] = [
   {
     id: "dashboard",
     title: "Your Dashboard",
-    description: "This is your main dashboard where you can see your progress, upcoming tasks, and daily statistics.",
+    description:
+      "This is your main dashboard where you can see your progress, upcoming tasks, and daily statistics.",
     icon: <Home className="w-6 h-6" />,
     position: {
       top: "20%",
@@ -57,22 +59,24 @@ const tutorialSteps: TutorialStep[] = [
   {
     id: "add-task",
     title: "Creating Tasks",
-    description: "Click the '+' button in the top navigation to create new tasks. You can set due dates, priorities, and even make them repeating.",
+    description:
+      "Click the '+' button in the top navigation to create new tasks. You can set due dates, priorities, and even make them repeating.",
     icon: <Plus className="w-6 h-6" />,
-    targetSelector: '[data-tutorial="add-task-btn"]',
+    targetSelector: '[data-tutorial="btn-add-task"]',
     position: {
       top: "15%",
       right: "10%",
     },
     highlight: {
-      selector: '[data-tutorial="add-task-btn"]',
+      selector: '[data-tutorial="btn-add-task"]',
       padding: 8,
     },
   },
   {
-    id: "sidebar-tasks",
+    id: "tasks-view",
     title: "View Your Tasks",
-    description: "Use the sidebar to navigate to different views of your tasks - Today's tasks, All tasks, Calendar, and Completed tasks.",
+    description:
+      "Use the sidebar to navigate to different views of your tasks - Today's tasks, All tasks, Calendar, and Completed tasks.",
     icon: <Calendar className="w-6 h-6" />,
     targetSelector: '[data-tutorial="sidebar-tasks"]',
     position: {
@@ -85,9 +89,10 @@ const tutorialSteps: TutorialStep[] = [
     },
   },
   {
-    id: "health-section",
+    id: "health-view",
     title: "Health & Nutrition",
-    description: "Track your meals and nutrition in the Health section. You can save meal templates and log your daily food intake.",
+    description:
+      "Track your meals and nutrition in the Health section. You can save meal templates and log your daily food intake.",
     icon: <Utensils className="w-6 h-6" />,
     targetSelector: '[data-tutorial="sidebar-health"]',
     position: {
@@ -100,9 +105,26 @@ const tutorialSteps: TutorialStep[] = [
     },
   },
   {
+    id: "gym-view",
+    title: "Gym & Fitness",
+    description:
+      "Track your workouts and monitor your fitness progress in the Gym section. You can save your workout sessions and log your daily exercises.",
+    icon: <Utensils className="w-6 h-6" />,
+    targetSelector: '[data-tutorial="sidebar-gym"]',
+    position: {
+      top: "60%",
+      left: "20%",
+    },
+    highlight: {
+      selector: '[data-tutorial="sidebar-gym"]',
+      padding: 8,
+    },
+  },
+  {
     id: "save-meal",
     title: "Save Meals",
-    description: "In the Health section, you can save meal templates with nutritional information that you can reuse later.",
+    description:
+      "In the Health section, you can save meal templates with nutritional information that you can reuse later.",
     icon: <BookOpen className="w-6 h-6" />,
     position: {
       top: "40%",
@@ -112,7 +134,8 @@ const tutorialSteps: TutorialStep[] = [
   {
     id: "log-meal",
     title: "Log Your Meals",
-    description: "Log your daily food intake by selecting from your saved meals and specifying portion sizes. Track calories, proteins, carbs, and fats.",
+    description:
+      "Log your daily food intake by selecting from your saved meals and specifying portion sizes. Track calories, proteins, carbs, and fats.",
     icon: <Utensils className="w-6 h-6" />,
     position: {
       top: "50%",
@@ -126,7 +149,10 @@ interface TutorialOverlayProps {
   onSkip: () => void;
 }
 
-export default function TutorialOverlay({ onComplete, onSkip }: TutorialOverlayProps) {
+export default function TutorialOverlay({
+  onComplete,
+  onSkip,
+}: TutorialOverlayProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
 
@@ -143,7 +169,9 @@ export default function TutorialOverlay({ onComplete, onSkip }: TutorialOverlayP
         const padding = step.highlight.padding || 4;
         (element as HTMLElement).style.position = "relative";
         (element as HTMLElement).style.zIndex = "1001";
-        (element as HTMLElement).style.boxShadow = `0 0 0 ${padding}px rgba(59, 130, 246, 0.5), 0 0 0 2000px rgba(0, 0, 0, 0.5)`;
+        (
+          element as HTMLElement
+        ).style.boxShadow = `0 0 0 ${padding}px rgba(59, 130, 246, 0.5), 0 0 0 2000px rgba(0, 0, 0, 0.5)`;
         (element as HTMLElement).style.borderRadius = "8px";
       }
     }
@@ -181,13 +209,13 @@ export default function TutorialOverlay({ onComplete, onSkip }: TutorialOverlayP
     if (isLastStep) {
       handleComplete();
     } else {
-      setCurrentStep(prev => prev + 1);
+      setCurrentStep((prev) => prev + 1);
     }
   };
 
   const handlePrevious = () => {
     if (!isFirstStep) {
-      setCurrentStep(prev => prev - 1);
+      setCurrentStep((prev) => prev - 1);
     }
   };
 
@@ -245,7 +273,7 @@ export default function TutorialOverlay({ onComplete, onSkip }: TutorialOverlayP
           exit={{ opacity: 0, scale: 0.9, y: -20 }}
           transition={{ duration: 0.3 }}
           style={getTooltipStyle()}
-          className="bg-background-700 rounded-xl border border-background-500 p-6 max-w-lg w-full max-w-[480px] max-h-[480px] mx-4 shadow-2xl"
+          className="bg-background-700 rounded-xl border border-background-500 p-6 max-w-lg w-full max-h-[480px] mx-4 shadow-2xl"
         >
           {/* Header */}
           <div className="flex items-start justify-between mb-4">
@@ -274,10 +302,11 @@ export default function TutorialOverlay({ onComplete, onSkip }: TutorialOverlayP
           <p className="text-text-low mb-4 leading-relaxed">
             {currentStepData.description}
           </p>
-          
+
           {/* Keyboard shortcuts hint */}
           <div className="text-xs text-text-gray mb-6 bg-background-600 rounded-md p-2">
-            💡 Tip: Use arrow keys to navigate, Enter to continue, or Esc to skip
+            💡 Tip: Use arrow keys to navigate, Enter to continue, or Esc to
+            skip
           </div>
 
           {/* Progress bar */}
@@ -292,8 +321,8 @@ export default function TutorialOverlay({ onComplete, onSkip }: TutorialOverlayP
               <motion.div
                 className="bg-primary-500 h-2 rounded-full"
                 initial={{ width: 0 }}
-                animate={{ 
-                  width: `${((currentStep + 1) / tutorialSteps.length) * 100}%` 
+                animate={{
+                  width: `${((currentStep + 1) / tutorialSteps.length) * 100}%`,
                 }}
                 transition={{ duration: 0.3 }}
               />
@@ -313,19 +342,12 @@ export default function TutorialOverlay({ onComplete, onSkip }: TutorialOverlayP
                   Previous
                 </Button>
               )}
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                className="text-text-gray hover:text-text-low"
-              >
+              <Button variant="secondary" onClick={handleSkip}>
                 Skip Tutorial
               </Button>
             </div>
 
-            <Button
-              onClick={handleNext}
-              className="flex items-center gap-2"
-            >
+            <Button onClick={handleNext} className="flex items-center gap-2">
               {isLastStep ? (
                 <>
                   <Check className="w-4 h-4" />

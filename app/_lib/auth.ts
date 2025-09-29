@@ -416,6 +416,7 @@ export const authOptions: NextAuthOptions = {
           const userDocRef = adminDb.collection("users").doc(firebaseUser.uid);
           const userDocSnap = await userDocRef.get();
           let lastLoginAt: Timestamp | undefined;
+          let createdAt: Timestamp | undefined;
 
           if (!userDocSnap.exists) {
             // ----- NEW USER CREATION -----
@@ -461,6 +462,7 @@ export const authOptions: NextAuthOptions = {
             // User has signed in before - fetch their existing preferences and data
             const userData = userDocSnap.data();
             lastLoginAt = userData?.lastLoginAt;
+            createdAt = userData?.createdAt;
           }
 
           // Removed updateUserRepeatingTasks and userDocRef.update({ lastLoginAt: new Date() })
@@ -476,6 +478,7 @@ export const authOptions: NextAuthOptions = {
             email: firebaseUser.email,
             image: firebaseUser.picture,
             lastLoginAt: lastLoginAt?.toDate() || new Date(),
+            createdAt: createdAt?.toDate() || new Date(),
           };
 
           return returnedUser as NextAuthUser;
@@ -608,6 +611,7 @@ export const authOptions: NextAuthOptions = {
       if (account && user) {
         token.uid = user.id;
         token.provider = account.provider;
+        token.createdAt = user.createdAt;
         // name, email, and picture are automatically handled by NextAuth
       }
 
@@ -704,6 +708,7 @@ export const authOptions: NextAuthOptions = {
       if (session.user) {
         if (token.uid) session.user.id = token.uid;
         if (token.provider) session.user.provider = token.provider;
+        if (token.createdAt) session.user.createdAt = token.createdAt;
         // name, email, and image are already handled by NextAuth and are on the default session user
       }
       return session;

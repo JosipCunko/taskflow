@@ -26,17 +26,21 @@ export default function Sidebar() {
             <ul className="space-y-1">
               {items.map((item) => {
                 const isActive = pathname === item.href;
-                // Add tutorial data attributes for specific items
                 const getTutorialAttribute = () => {
-                  if (groupName === "tasks" && (item.label === "Tasks" || item.label === "Today" || item.label === "Calendar")) {
-                    return "sidebar-tasks";
+                  switch (item.label) {
+                    case "Tasks":
+                      return "sidebar-tasks";
+                    case "Health":
+                      return "sidebar-health";
+                    case "Calendar":
+                      return "sidebar-calendar";
+                    case "Gym":
+                      return "sidebar-gym";
+                    default:
+                      break;
                   }
-                  if (item.label === "Health") {
-                    return "sidebar-health";
-                  }
-                  return undefined;
                 };
-                
+
                 return (
                   <li key={item.href}>
                     <Link

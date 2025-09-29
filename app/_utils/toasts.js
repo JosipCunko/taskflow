@@ -2,7 +2,7 @@ import toast from "react-hot-toast";
 import Button from "../_components/reusable/Button";
 import { CheckCircle2, CircleX, Info, TriangleAlert } from "lucide-react";
 
-export function customToast(type, message) {
+export function customToast(type, message, duration = 5000) {
   const color =
     type === "Error"
       ? "text-error"
@@ -56,7 +56,7 @@ export function customToast(type, message) {
       </div>
     ),
     {
-      duration: 5000,
+      duration,
     }
   );
 }

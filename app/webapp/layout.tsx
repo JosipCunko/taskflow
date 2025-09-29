@@ -9,7 +9,7 @@ import AnalyticsTracker from "../_components/AnalyticsTracker";
 import YouTubeBackgroundProcessor from "../_components/YouTubeBackgroundProcessor";
 import { getUserById } from "../_lib/user-admin";
 import Providers from "./providers";
-import { TutorialProvider } from "../_components/tutorial/TutorialProvider";
+import { TutorialProvider } from "../_context/TutorialContext";
 
 export const metadata: Metadata = {
   title: "TaskFlow - WebApp",
