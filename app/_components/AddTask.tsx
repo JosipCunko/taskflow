@@ -224,6 +224,8 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
   }, [state.endTime, state.startTime]);
 
   const handleSubmit = async (formData: FormData) => {
+    if (isPending) return; // Prevent double submission
+    
     startTransition(async () => {
       try {
         const title = formData.get("title") as string;

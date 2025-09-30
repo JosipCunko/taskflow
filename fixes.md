@@ -30,6 +30,8 @@ Weekly groth button rework => both logic and display. Show no data if no data. S
 Response from the model:
 Let me show you all your pending tasks so we can identify what might need priority attention:<｜ tool▁calls▁begin ｜><｜ tool▁call▁begin ｜>show_tasks<｜ tool▁sep ｜>{"status": "pending"}<｜ tool▁call▁end ｜><｜ tool▁calls▁end ｜>
 
+**FIXED**: Added response cleaning logic in aiActions.ts to detect and remove raw tool call markup from AI responses. The system now properly handles cases where the AI model returns raw markup instead of proper tool calls.
+
 EVERY ADMIN FUNCTION NEEDS ANA ACTION!!
 
 ai chats

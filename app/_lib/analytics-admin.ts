@@ -221,9 +221,20 @@ export const getAnalyticsData = async (
     }).reverse();
 
     /** Each number is the total completed tasks for a specific week.
-     * length: 4
+     * Dynamic length based on available data
      */
-    const weeklyTaskCompletions = Array.from({ length: 4 }, (_, i) => {
+    const weeksWithData = taskAnalytics.length > 0 
+      ? Math.ceil(
+          Math.max(
+            ...taskAnalytics.map(task => 
+              Math.ceil((now.getTime() - task.timestamp.getTime()) / (7 * 24 * 60 * 60 * 1000))
+            ),
+            1
+          )
+        )
+      : 1;
+    
+    const weeklyTaskCompletions = Array.from({ length: Math.min(weeksWithData, 12) }, (_, i) => {
       const weekEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
       const weekStart = new Date(weekEnd.getTime() - 6 * 24 * 60 * 60 * 1000);
       weekStart.setHours(0, 0, 0, 0);
@@ -237,6 +248,28 @@ export const getAnalyticsData = async (
           taskDate <= weekEnd
         );
       }).length;
+    }).reverse();
+
+    /** Each number is the total points earned for a specific week.
+     * Dynamic length based on available data, no fixed limit
+     */
+    const weeklyPointsGrowth = Array.from({ length: Math.min(weeksWithData, 12) }, (_, i) => {
+      const weekEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+      const weekStart = new Date(weekEnd.getTime() - 6 * 24 * 60 * 60 * 1000);
+      weekStart.setHours(0, 0, 0, 0);
+      weekEnd.setHours(23, 59, 59, 999);
+
+      return taskAnalytics
+        .filter((task) => {
+          const taskDate = task.timestamp;
+          return (
+            task.action === "task_completed" &&
+            taskDate >= weekStart &&
+            taskDate <= weekEnd &&
+            task.points > 0
+          );
+        })
+        .reduce((totalPoints, task) => totalPoints + task.points, 0);
     }).reverse();
 
     const completedTasks = taskAnalytics.filter(
@@ -451,7 +484,7 @@ export const getAnalyticsData = async (
       weeklyTaskCompletions,
       averageCompletionTime: avgCompletionTime,
       mostProductiveHour,
-      pointsGrowth: userData?.gainedPoints || [],
+      pointsGrowth: weeklyPointsGrowth,
       pagesVisited,
       consistencyScore,
       productivityScore,
