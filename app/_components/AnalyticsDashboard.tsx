@@ -9,12 +9,22 @@ import {
   Zap,
   Award,
   TrendingUp,
+  LineChart,
 } from "lucide-react";
 import { AnalyticsData, AppUser } from "../_types/types";
 import { getAnalyticsDataAction } from "../_lib/actions";
 import { formatDateTime, formatDuration, formatHour } from "../_utils/utils";
 import { format, subDays, isToday } from "date-fns";
 import { Tooltip } from "react-tooltip";
+import {
+  LineChart as RechartsLineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as ChartTooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 export default function AnalyticsDashboard({ user }: { user: AppUser }) {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(
@@ -141,40 +151,7 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
 
       {/* Performance Trends */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-background-700 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-text-high mb-4 flex items-center">
-            <Award className="w-5 h-5 mr-2 text-accent" />
-            Points Growth
-          </h3>
-          <div className="space-y-3">
-            {user.gainedPoints.length > 0 ? (
-              user.gainedPoints.map((points, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <span className="text-sm text-text-low">Day {index + 1}</span>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-20 bg-background-600 rounded-full h-2">
-                      <div
-                        className="bg-accent h-2 rounded-full transition-all duration-500"
-                        style={{
-                          width: `${
-                            (points / Math.max(...user.gainedPoints)) * 100
-                          }%`,
-                        }}
-                      />
-                    </div>
-                    <span className="text-sm font-medium text-accent">
-                      {points}
-                    </span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-text-low text-sm">
-                Your points history is empty
-              </p>
-            )}
-          </div>
-        </div>
+        <WeeklyPointsGrowthChart data={analyticsData.pointsGrowth} />
       </div>
       {/* Achievement Analytics */}
       <div className="bg-background-700 rounded-lg p-6 relative">
@@ -328,6 +305,122 @@ const WeeklyCompletionsChart = ({ data }: { data: number[] }) => {
             <span className="text-sm font-bold text-text-high">{value}</span>
           </div>
         ))}
+      </div>
+    </div>
+  );
+};
+
+const WeeklyPointsGrowthChart = ({ data }: { data: number[] }) => {
+  // Filter out meaningless trailing zeros and empty data
+  if (!data || data.length === 0) {
+    return (
+      <div className="bg-background-700 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-text-high mb-4 flex items-center">
+          <Award className="w-5 h-5 mr-2 text-accent" />
+          Weekly Points Growth
+        </h3>
+        <div className="h-80 flex items-center justify-center">
+          <p className="text-text-high font-semibold">No data available</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Remove trailing zeros to show only meaningful data
+  let meaningfulData = [...data];
+  while (meaningfulData.length > 1 && meaningfulData[meaningfulData.length - 1] === 0) {
+    meaningfulData.pop();
+  }
+
+  // If all data is zeros, show no data message
+  if (meaningfulData.every(value => value === 0)) {
+    return (
+      <div className="bg-background-700 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-text-high mb-4 flex items-center">
+          <Award className="w-5 h-5 mr-2 text-accent" />
+          Weekly Points Growth
+        </h3>
+        <div className="h-80 flex items-center justify-center">
+          <p className="text-text-high font-semibold">No data available</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Transform data for the chart
+  const chartData = meaningfulData.map((points, index) => ({
+    week: `Week ${index + 1}`,
+    points: points,
+  }));
+
+  const maxPoints = Math.max(...meaningfulData);
+  const latestPoints = meaningfulData[meaningfulData.length - 1];
+  const previousPoints = meaningfulData.length > 1 ? meaningfulData[meaningfulData.length - 2] : 0;
+  const improvement = previousPoints > 0 ? ((latestPoints - previousPoints) / previousPoints) * 100 : 0;
+
+  return (
+    <div className="bg-background-700 rounded-lg p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-accent/10 rounded-lg">
+            <Award className="w-5 h-5 text-accent" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-text-high">
+              Weekly Points Growth
+            </h2>
+            <p className="text-text-low text-sm">Points earned over time</p>
+          </div>
+        </div>
+
+        {latestPoints > 0 && (
+          <div className="text-right">
+            <div className="text-2xl font-bold text-text-high">
+              {latestPoints} pts
+            </div>
+            {improvement !== 0 && meaningfulData.length > 1 && (
+              <div
+                className={`text-sm flex items-center gap-1 ${
+                  improvement > 0 ? "text-success" : "text-error"
+                }`}
+              >
+                <Zap className="w-3 h-3" />
+                {improvement > 0 ? "+" : ""}
+                {improvement.toFixed(1)}%
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="h-80 relative">
+        <ResponsiveContainer width="100%" height="100%">
+          <RechartsLineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+            <XAxis dataKey="week" stroke="#9ca3af" fontSize={12} />
+            <YAxis stroke="#9ca3af" fontSize={12} />
+            <ChartTooltip
+              contentStyle={{
+                backgroundColor: "#1f2937",
+                border: "1px solid #374151",
+                borderRadius: "8px",
+                color: "#f9fafb",
+              }}
+            />
+            <Line
+              type="monotone"
+              dataKey="points"
+              stroke="#f59e0b"
+              strokeWidth={3}
+              dot={{ fill: "#f59e0b", strokeWidth: 2, r: 4 }}
+              activeDot={{
+                r: 6,
+                stroke: "#f59e0b",
+                strokeWidth: 2,
+              }}
+            />
+          </RechartsLineChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );

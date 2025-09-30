@@ -97,6 +97,25 @@ Remember: You are not just answering questions - you are actively helping manage
     let aiResponse = message.content || "";
     let functionResults: FunctionResult[] = [];
 
+    // Check if the response contains raw tool call markup and clean it
+    if (aiResponse && aiResponse.includes("tool▁calls▁begin") || aiResponse.includes("tool▁call▁begin")) {
+      console.warn("Raw tool call markup detected in response, cleaning...");
+      // Remove raw tool call markup patterns
+      aiResponse = aiResponse
+        .replace(/<｜.*?tool.*?calls.*?begin.*?｜>/g, "")
+        .replace(/<｜.*?tool.*?call.*?begin.*?｜>/g, "")
+        .replace(/<｜.*?tool.*?sep.*?｜>/g, "")
+        .replace(/<｜.*?tool.*?call.*?end.*?｜>/g, "")
+        .replace(/<｜.*?tool.*?calls.*?end.*?｜>/g, "")
+        .replace(/^[^a-zA-Z]*/, "") // Remove leading non-alphabetic characters
+        .trim();
+      
+      // If the response is now empty or very short, provide a fallback
+      if (aiResponse.length < 10) {
+        aiResponse = "I apologize, but I encountered an issue processing your request. Please try rephrasing your question.";
+      }
+    }
+
     // Handle function calls if present
     if (message.tool_calls) {
       try {
