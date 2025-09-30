@@ -28,14 +28,20 @@ export default function Sidebar() {
                 const isActive = pathname === item.href;
                 const getTutorialAttribute = () => {
                   switch (item.label) {
+                    case "Dashboard":
+                      return "sidebar-dashboard";
                     case "Tasks":
                       return "sidebar-tasks";
                     case "Health":
                       return "sidebar-health";
+                    case "Today":
+                      return "sidebar-today";
                     case "Calendar":
                       return "sidebar-calendar";
                     case "Gym":
                       return "sidebar-gym";
+                    case "AI":
+                      return "sidebar-ai";
                     default:
                       break;
                   }

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
@@ -20,6 +21,7 @@ interface TutorialStep {
   title: string;
   description: string;
   icon: React.ReactNode;
+  route?: string;
   targetSelector?: string;
   position: {
     top?: string;
@@ -40,6 +42,7 @@ const tutorialSteps: TutorialStep[] = [
     description:
       "Let's take a quick tour of the key features to help you get started with managing your tasks and health.",
     icon: <Home className="w-6 h-6" />,
+    route: "/webapp",
     position: {
       top: "50%",
       left: "50%",
@@ -51,6 +54,12 @@ const tutorialSteps: TutorialStep[] = [
     description:
       "This is your main dashboard where you can see your progress, upcoming tasks, and daily statistics.",
     icon: <Home className="w-6 h-6" />,
+    route: "/webapp",
+    targetSelector: '[data-tutorial="sidebar-dashboard"]',
+    highlight: {
+      selector: '[data-tutorial="sidebar-dashboard"]',
+      padding: 8,
+    },
     position: {
       top: "20%",
       left: "50%",
@@ -62,6 +71,7 @@ const tutorialSteps: TutorialStep[] = [
     description:
       "Click the '+' button in the top navigation to create new tasks. You can set due dates, priorities, and even make them repeating.",
     icon: <Plus className="w-6 h-6" />,
+    route: "/webapp/tasks",
     targetSelector: '[data-tutorial="btn-add-task"]',
     position: {
       top: "15%",
@@ -78,6 +88,7 @@ const tutorialSteps: TutorialStep[] = [
     description:
       "Use the sidebar to navigate to different views of your tasks - Today's tasks, All tasks, Calendar, and Completed tasks.",
     icon: <Calendar className="w-6 h-6" />,
+    route: "/webapp/tasks",
     targetSelector: '[data-tutorial="sidebar-tasks"]',
     position: {
       top: "40%",
@@ -89,11 +100,46 @@ const tutorialSteps: TutorialStep[] = [
     },
   },
   {
+    id: "calendar-view",
+    title: "Calendar",
+    description:
+      "Plan ahead in the Calendar to visualize upcoming tasks on a timeline.",
+    icon: <Calendar className="w-6 h-6" />,
+    route: "/webapp/calendar",
+    targetSelector: '[data-tutorial="sidebar-calendar"]',
+    position: {
+      top: "45%",
+      left: "20%",
+    },
+    highlight: {
+      selector: '[data-tutorial="sidebar-calendar"]',
+      padding: 8,
+    },
+  },
+  {
+    id: "today-view",
+    title: "Today",
+    description:
+      "Focus on what's important today. See and complete tasks due now.",
+    icon: <Calendar className="w-6 h-6" />,
+    route: "/webapp/today",
+    targetSelector: '[data-tutorial="sidebar-today"]',
+    position: {
+      top: "50%",
+      left: "20%",
+    },
+    highlight: {
+      selector: '[data-tutorial="sidebar-today"]',
+      padding: 8,
+    },
+  },
+  {
     id: "health-view",
     title: "Health & Nutrition",
     description:
       "Track your meals and nutrition in the Health section. You can save meal templates and log your daily food intake.",
     icon: <Utensils className="w-6 h-6" />,
+    route: "/webapp/health",
     targetSelector: '[data-tutorial="sidebar-health"]',
     position: {
       top: "60%",
@@ -110,6 +156,7 @@ const tutorialSteps: TutorialStep[] = [
     description:
       "Track your workouts and monitor your fitness progress in the Gym section. You can save your workout sessions and log your daily exercises.",
     icon: <Utensils className="w-6 h-6" />,
+    route: "/webapp/gym",
     targetSelector: '[data-tutorial="sidebar-gym"]',
     position: {
       top: "60%",
@@ -126,6 +173,7 @@ const tutorialSteps: TutorialStep[] = [
     description:
       "In the Health section, you can save meal templates with nutritional information that you can reuse later.",
     icon: <BookOpen className="w-6 h-6" />,
+    route: "/webapp/health",
     position: {
       top: "40%",
       left: "50%",
@@ -137,9 +185,27 @@ const tutorialSteps: TutorialStep[] = [
     description:
       "Log your daily food intake by selecting from your saved meals and specifying portion sizes. Track calories, proteins, carbs, and fats.",
     icon: <Utensils className="w-6 h-6" />,
+    route: "/webapp/health",
     position: {
       top: "50%",
       left: "50%",
+    },
+  },
+  {
+    id: "ai-assistant",
+    title: "AI Assistant",
+    description:
+      "Use AI to summarize YouTube, plan tasks, and get insights. Chats are saved.",
+    icon: <Home className="w-6 h-6" />,
+    route: "/webapp/ai",
+    targetSelector: '[data-tutorial="sidebar-ai"]',
+    position: {
+      top: "55%",
+      left: "20%",
+    },
+    highlight: {
+      selector: '[data-tutorial="sidebar-ai"]',
+      padding: 8,
     },
   },
 ];
@@ -155,25 +221,48 @@ export default function TutorialOverlay({
 }: TutorialOverlayProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
+  const router = useRouter();
+  const pathname = usePathname();
 
   const currentStepData = tutorialSteps[currentStep];
   const isLastStep = currentStep === tutorialSteps.length - 1;
   const isFirstStep = currentStep === 0;
 
-  // Highlight the target element and add keyboard support
+  // Navigate to step route (if provided), wait for target, and highlight; add keyboard support
   useEffect(() => {
+    let highlightApplied = false;
+    let pollId: number | undefined;
+
     const step = tutorialSteps[currentStep];
-    if (step.highlight?.selector) {
-      const element = document.querySelector(step.highlight.selector);
-      if (element) {
-        const padding = step.highlight.padding || 4;
-        (element as HTMLElement).style.position = "relative";
-        (element as HTMLElement).style.zIndex = "1001";
-        (
-          element as HTMLElement
-        ).style.boxShadow = `0 0 0 ${padding}px rgba(59, 130, 246, 0.5), 0 0 0 2000px rgba(0, 0, 0, 0.5)`;
-        (element as HTMLElement).style.borderRadius = "8px";
+
+    // Navigate if route differs
+    if (step.route && pathname !== step.route) {
+      router.push(step.route);
+    }
+
+    const applyHighlightIfReady = () => {
+      if (highlightApplied) return;
+      if (step.highlight?.selector) {
+        const element = document.querySelector(step.highlight.selector);
+        if (element) {
+          const padding = step.highlight.padding || 4;
+          (element as HTMLElement).style.position = "relative";
+          (element as HTMLElement).style.zIndex = "1001";
+          (
+            element as HTMLElement
+          ).style.boxShadow = `0 0 0 ${padding}px rgba(59, 130, 246, 0.5), 0 0 0 2000px rgba(0, 0, 0, 0.5)`;
+          (element as HTMLElement).style.borderRadius = "8px";
+          highlightApplied = true;
+          if (pollId) window.clearInterval(pollId);
+        }
       }
+    };
+
+    // Poll until the element is rendered or up to timeout
+    if (step.highlight?.selector) {
+      pollId = window.setInterval(applyHighlightIfReady, 100);
+      // Failsafe: stop polling after 8s
+      window.setTimeout(() => pollId && window.clearInterval(pollId), 8000);
     }
 
     // Keyboard navigation
@@ -191,9 +280,9 @@ export default function TutorialOverlay({
 
     return () => {
       // Clean up highlights
-      const step = tutorialSteps[currentStep];
-      if (step.highlight?.selector) {
-        const element = document.querySelector(step.highlight.selector);
+      const stepCleanup = tutorialSteps[currentStep];
+      if (stepCleanup.highlight?.selector) {
+        const element = document.querySelector(stepCleanup.highlight.selector);
         if (element) {
           (element as HTMLElement).style.position = "";
           (element as HTMLElement).style.zIndex = "";
@@ -201,21 +290,22 @@ export default function TutorialOverlay({
           (element as HTMLElement).style.borderRadius = "";
         }
       }
+      if (pollId) window.clearInterval(pollId);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [currentStep]);
+  }, [currentStep, pathname, router]);
 
   const handleNext = () => {
     if (isLastStep) {
       handleComplete();
     } else {
-      setCurrentStep((prev) => prev + 1);
+      setCurrentStep((prev: number) => prev + 1);
     }
   };
 
   const handlePrevious = () => {
     if (!isFirstStep) {
-      setCurrentStep((prev) => prev - 1);
+      setCurrentStep((prev: number) => prev - 1);
     }
   };
 

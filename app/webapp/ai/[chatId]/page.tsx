@@ -5,13 +5,11 @@ import { getChat } from "@/app/_lib/aiAdmin";
 import { ChatMessage } from "@/app/_types/types";
 import { notFound } from "next/navigation";
 
-interface ChatPageProps {
-  params: {
-    chatId: string;
-  };
-}
-
-export default async function ChatPage({ params }: ChatPageProps) {
+export default async function ChatPage({
+  params,
+}: {
+  params: { chatId: string };
+}) {
   const { chatId } = params;
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
