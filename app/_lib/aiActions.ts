@@ -7,10 +7,10 @@ import {
   getUserChats as getUserChatsAdmin,
   getChat as getChatAdmin,
   deleteChat as deleteChatAdmin,
-} from "./aiAdmin";
+} from "./ai-admin";
 import { ChatMessage, FunctionResult } from "@/app/_types/types";
 import { executeFunctions } from "./aiFunctions";
-import { AI_FUNCTIONS } from "@/app/_utils/utils";
+import { AI_FUNCTIONS, systemPrompt } from "@/app/_utils/utils";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import { JSDOM } from "jsdom";
@@ -40,29 +40,6 @@ export async function getDeepseekResponse(
   }
 
   try {
-    // Enhanced system prompt with function calling instructions
-    const systemPrompt = `You are an AI assistant for TaskFlow, a personal productivity app. You help users manage their tasks and notes efficiently.
-
-IMPORTANT FUNCTION CALLING RULES:
-- When users ask you to show, delay, update, complete, or create tasks/notes, you MUST call the appropriate functions
-- Always call functions when users request task or note operations
-- You have access to the following functions: ${AI_FUNCTIONS.map(
-      (f) => f.name
-    ).join(", ")}
-- Be proactive in suggesting task management improvements
-- When showing tasks, provide helpful insights about priorities, deadlines, and workload
-
-RESPONSE GUIDELINES:
-- After calling functions, provide a natural language summary of what was done
-- Be encouraging and supportive in your responses
-- Offer productivity tips and suggestions when appropriate
-- If function calls fail, explain what went wrong and suggest alternatives
-
-Current date: ${new Date().toISOString().split("T")[0]}
-
-Remember: You are not just answering questions - you are actively helping manage the user's productivity system through function calls.`;
-
-    // Prepare messages with system prompt
     const messagesWithSystem = [
       { role: "system", content: systemPrompt },
       ...messages,
@@ -98,7 +75,10 @@ Remember: You are not just answering questions - you are actively helping manage
     let functionResults: FunctionResult[] = [];
 
     // Check if the response contains raw tool call markup and clean it
-    if (aiResponse && aiResponse.includes("tool▁calls▁begin") || aiResponse.includes("tool▁call▁begin")) {
+    if (
+      (aiResponse && aiResponse.includes("tool▁calls▁begin")) ||
+      aiResponse.includes("tool▁call▁begin")
+    ) {
       console.warn("Raw tool call markup detected in response, cleaning...");
       // Remove raw tool call markup patterns
       aiResponse = aiResponse
@@ -109,14 +89,8 @@ Remember: You are not just answering questions - you are actively helping manage
         .replace(/<｜.*?tool.*?calls.*?end.*?｜>/g, "")
         .replace(/^[^a-zA-Z]*/, "") // Remove leading non-alphabetic characters
         .trim();
-      
-      // If the response is now empty or very short, provide a fallback
-      if (aiResponse.length < 10) {
-        aiResponse = "I apologize, but I encountered an issue processing your request. Please try rephrasing your question.";
-      }
     }
 
-    // Handle function calls if present
     if (message.tool_calls) {
       try {
         const functionCalls = message.tool_calls.map(

@@ -55,7 +55,6 @@ export interface AppUser {
   bestStreak: number;
   lastLoginAt?: Date;
   notesCount?: number; // Added field in /webapp/profile
-  gainedPoints: number[]; // max length 7
   nutritionGoals: UserNutritionGoals;
   youtubePreferences?: {
     enabled: boolean;
@@ -92,11 +91,11 @@ export interface Notification {
   expiresAt?: Date;
 }
 
-// In the user document under achievements array
-// Since they aren't stored in a seperate collection, firebase doesnt need an id
+// Stored as a subcollection under users/{userId}/achievements/{achievementId}
 export interface Achievement {
   type: AchievementType;
-  id: string; // `task_completionist_${milestone}`
+  //id: string; // `task_completionist_${milestone}`
+  id: string;
   userId: string;
   unlockedAt: Date;
 }
@@ -107,7 +106,6 @@ export interface AnalyticsData {
   activeTime: number;
 
   dailyTaskCompletions: number[];
-  weeklyTaskCompletions: number[];
   averageCompletionTime: number;
   mostProductiveHour: number;
 
@@ -124,7 +122,7 @@ export interface AnalyticsData {
     consistencyTrend: number;
   };
 
-  recentAchievements: Achievement[];
+  allAchievements: Achievement[];
   achievementsByType: Record<string, number>;
 }
 

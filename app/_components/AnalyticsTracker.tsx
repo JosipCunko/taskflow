@@ -107,9 +107,11 @@ export default function AnalyticsTracker({
           timeSpent,
         });
 
+        const blob = new Blob([payload], { type: "application/json" });
+
         // async sends post req to a web server, intended for sending analytics
-        // cals endUserSession
-        navigator.sendBeacon("/api/analytics/session/end", payload);
+        //navigator.sendBeacon("/api/analytics/session/end",payload);
+        navigator.sendBeacon("/api/analytics/session/end", blob);
         sessionStorage.removeItem("sessionId");
         sessionIdRef.current = null;
       }

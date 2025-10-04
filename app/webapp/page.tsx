@@ -11,7 +11,6 @@ import {
   FileText,
   Zap,
   Target,
-  Brain,
 } from "lucide-react";
 import { Task } from "../_types/types";
 import { ReactNode } from "react";
@@ -186,7 +185,7 @@ export default async function DashboardPage() {
           <div className="space-y-4">
             {todaysTasks.length > 0 ? (
               <>
-                <div className="w-full  rounded-full h-2.5">
+                <div className="w-full rounded-full h-2.5">
                   <div
                     className="bg-success h-2.5 rounded-full transition-all duration-300"
                     style={{
@@ -259,65 +258,6 @@ export default async function DashboardPage() {
 
         <NotificationSummary notificationStats={notificationStats} />
       </div>
-
-      {/* Performance Insights */}
-      <section className="bg-background-700 rounded-lg p-6 ">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-text-low flex items-center">
-            <Brain className="w-5 h-5 mr-2 text-purple-400" />
-            Performance Insights
-          </h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-background-600 rounded-lg p-4  ">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-text-low">
-                Time Management
-              </h3>
-              <Clock className="w-4 h-4 text-info" />
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-text-low">
-                  On-time Regular Tasks
-                </span>
-                <span className="font-medium text-success">
-                  {timeManagementStats.onTimeTasksCount}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-text-low">Avg. Delay </span>
-                <span className="font-medium text-warning">
-                  {timeManagementStats.averageDelayDays > 0
-                    ? `${timeManagementStats.averageDelayDays} days`
-                    : "None"}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-background-600 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium text-text-low">Task Health</h3>
-              <TrendingUp className="w-4 h-4 text-success" />
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-text-low">Completion Rate</span>
-                <span className="font-medium text-success">
-                  {timeManagementStats.onTimeCompletionRate}%
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-text-low">Missed Tasks</span>
-                <span className="font-medium text-error">
-                  {missedTasks.length}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* Tasks Needing Attention */}
       <section className="bg-background-700 rounded-lg p-6">

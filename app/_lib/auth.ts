@@ -435,7 +435,6 @@ export const authOptions: NextAuthOptions = {
               currentStreak: 0,
               bestStreak: 0,
               achievements: [],
-              gainedPoints: [],
               lastLoginAt: new Date(),
               youtubePreferences: {
                 enabled: true, // Enable by default for testing
@@ -541,7 +540,6 @@ export const authOptions: NextAuthOptions = {
               currentStreak: 0,
               bestStreak: 0,
               achievements: [],
-              gainedPoints: [],
               lastLoginAt: new Date(),
               youtubePreferences: {
                 enabled: true, // Enable by default for testing
@@ -638,8 +636,6 @@ export const authOptions: NextAuthOptions = {
                 lastLoginAt: Timestamp;
                 currentStreak?: number;
                 bestStreak?: number;
-                // New, may need to add to types.ts
-                gainedPoints?: number[];
               } = {
                 lastLoginAt: Timestamp.now(),
               };
@@ -661,7 +657,6 @@ export const authOptions: NextAuthOptions = {
                   // Gap in login days - restart streak at 1 for today
                   updates.currentStreak = 1;
                   updates.bestStreak = Math.max(1, userData.bestStreak || 0);
-                  updates.gainedPoints = [];
                 }
                 // If diff === 0, it's the same day - no streak changes needed
               } else {

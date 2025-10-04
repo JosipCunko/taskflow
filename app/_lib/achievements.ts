@@ -1,8 +1,7 @@
 import "server-only";
 import { generateAchievementNotification } from "./notifications-admin";
-import { Achievement, AppUser } from "../_types/types";
+import { Achievement } from "../_types/types";
 import { adminDb } from "./admin";
-import { FieldValue } from "firebase-admin/firestore";
 import {
   pointsMilestones,
   streakMilestones,
@@ -16,43 +15,32 @@ async function addAchievementToUser(
   achievement: Omit<Achievement, "userId" | "unlockedAt">
 ) {
   try {
-    const userRef = adminDb.collection("users").doc(userId);
+    // Reference to the achievements subcollection
+    const achievementRef = adminDb
+      .collection("users")
+      .doc(userId)
+      .collection("achievements")
+      .doc(achievement.id);
 
-    // Use a transaction to ensure atomic achievement addition
-    await adminDb.runTransaction(async (transaction) => {
-      const userDoc = await transaction.get(userRef);
-      if (!userDoc.exists) {
-        throw new Error("User not found");
-      }
-
-      const userData = userDoc.data() as AppUser;
-      const existingAchievements = userData.achievements || [];
-
-      // Check if achievement already exists in the transaction
-      const hasAchievement = existingAchievements.some(
-        (a: Achievement) => a.id === achievement.id
+    // Check if achievement already exists
+    const existingDoc = await achievementRef.get();
+    if (existingDoc.exists) {
+      console.log(
+        `Achievement ${achievement.id} already exists for user ${userId}`
       );
+      return; // Achievement already exists, skip
+    }
 
-      if (hasAchievement) {
-        console.log(
-          `Achievement ${achievement.id} already exists for user ${userId}`
-        );
-        return; // Achievement already exists, skip
-      }
+    const newAchievement: Achievement = {
+      ...achievement,
+      userId,
+      unlockedAt: new Date(),
+    };
 
-      const newAchievement = {
-        ...achievement,
-        userId,
-        unlockedAt: new Date(),
-      };
+    // Add achievement to subcollection
+    await achievementRef.set(newAchievement);
 
-      // Add achievement atomically
-      transaction.update(userRef, {
-        achievements: FieldValue.arrayUnion(newAchievement),
-      });
-    });
-
-    // Only generate notification after successful transaction
+    // Generate notification after successful write
     await generateAchievementNotification(
       userId,
       achievement.type,
@@ -85,7 +73,7 @@ export async function checkAndAwardAchievements(userId: string) {
     for (const milestone of pointsMilestones) {
       if (rewardPoints >= milestone) {
         const achievementId = `points_milestone_${milestone}`;
-        if (!achievements.some((a: Achievement) => a.id === achievementId)) {
+        if (!achievements.some((a) => a.id === achievementId)) {
           await addAchievementToUser(user.uid, {
             id: achievementId,
             type: "points_milestone",
@@ -98,7 +86,7 @@ export async function checkAndAwardAchievements(userId: string) {
     for (const milestone of streakMilestones) {
       if (currentStreak >= milestone) {
         const achievementId = `streak_milestone_${milestone}`;
-        if (!achievements.some((a: Achievement) => a.id === achievementId)) {
+        if (!achievements.some((a) => a.id === achievementId)) {
           await addAchievementToUser(user.uid, {
             id: achievementId,
             type: "streak_milestone",
@@ -112,7 +100,7 @@ export async function checkAndAwardAchievements(userId: string) {
       for (const milestone of taskCompletionistMilestones) {
         if (completedTasksCount >= milestone) {
           const achievementId = `task_completionist_${milestone}`;
-          if (!achievements.some((a: Achievement) => a.id === achievementId)) {
+          if (!achievements.some((a) => a.id === achievementId)) {
             await addAchievementToUser(user.uid, {
               id: achievementId,
               type: "task_completionist",

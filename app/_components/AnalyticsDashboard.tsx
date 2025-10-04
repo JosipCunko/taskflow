@@ -1,19 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
-import {
-  BarChart3,
-  Target,
-  Eye,
-  Activity,
-  Zap,
-  Award,
-  TrendingUp,
-  LineChart,
-} from "lucide-react";
+import { BarChart3, Target, Eye, Activity, Zap, Award } from "lucide-react";
 import { AnalyticsData, AppUser } from "../_types/types";
 import { getAnalyticsDataAction } from "../_lib/actions";
-import { formatDateTime, formatDuration, formatHour } from "../_utils/utils";
+import { formatDuration, formatHour, formatDate } from "../_utils/utils";
 import { format, subDays, isToday } from "date-fns";
 import { Tooltip } from "react-tooltip";
 import {
@@ -76,8 +67,10 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
 
   return (
     <div className="space-y-6">
-      <p className="text-text-low">All data is stored for 30 days.</p>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-1">
+        <p className="text-text-low col-span-4 justify-self-end">
+          Last 30 days
+        </p>
         <AnalyticsCard
           title="Total Session Duration"
           value={formatDuration(analyticsData.sessionDuration)}
@@ -147,64 +140,86 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
             ))}
         </div>
       </div>
-      <WeeklyCompletionsChart data={analyticsData.weeklyTaskCompletions} />
 
-      {/* Performance Trends */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <WeeklyPointsGrowthChart data={analyticsData.pointsGrowth} />
-      </div>
+      <WeeklyPointsGrowthChart data={analyticsData.pointsGrowth} />
       {/* Achievement Analytics */}
       <div className="bg-background-700 rounded-lg p-6 relative">
         <h3 className="text-lg font-semibold text-text-high mb-4 flex items-center">
           <Award className="w-5 h-5 mr-2 text-yellow-400" />
-          Recent Achievements{" "}
-          <span className="text-text-gray ml-2">( last 30 days )</span>
+          All Achievements
         </h3>
-        {analyticsData.recentAchievements.length > 0 ? (
+        {analyticsData.allAchievements.length > 0 ? (
           <>
-            <div className="space-y-3">
-              {analyticsData.recentAchievements
-                .slice(0, 5)
-                .map((achievement, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xl">
-                        {achievement.type === "streak_milestone"
-                          ? "🔥"
-                          : achievement.type === "points_milestone"
-                          ? "🏆"
-                          : achievement.type === "task_completionist"
-                          ? "✅"
-                          : "🎯"}
-                      </span>
-                      <span className="text-sm text-text-low capitalize">
-                        {achievement.id.replaceAll("_", " ")}
-                      </span>
-                    </div>
-                    <span className="text-xs text-text-low">
-                      {formatDateTime(achievement.unlockedAt)}
+            <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+              {analyticsData.allAchievements.map((achievement, index) => (
+                <div
+                  key={index}
+                  className="flex items-center justify-between py-2 px-3 rounded-lg bg-background-600 hover:bg-background-500 transition-colors"
+                >
+                  <div className="flex items-center space-x-3">
+                    <span className="text-2xl">
+                      {achievement.type === "streak_milestone"
+                        ? "🔥"
+                        : achievement.type === "points_milestone"
+                        ? "🏆"
+                        : achievement.type === "task_completionist"
+                        ? "✅"
+                        : "🎯"}
+                    </span>
+                    <span className="text-sm text-text-low capitalize">
+                      {achievement.id.replaceAll("_", " ")}
                     </span>
                   </div>
-                ))}
+                  <span className="text-xs text-text-low">
+                    {formatDate(achievement.unlockedAt)}
+                  </span>
+                </div>
+              ))}
             </div>
-            <div className="absolute top-2 right-2 flex items-center gap-2 ">
+            <div className="absolute top-2 right-2 flex items-center gap-2 text-sm">
               Total:
-              <span>
+              <span
+                className="flex items-center gap-1"
+                data-tooltip-id="streak-milestone-tooltip"
+                data-tooltip-content="Streak milestone"
+              >
                 🔥 {analyticsData.achievementsByType.streak_milestone || 0}
               </span>
-              <span>
+              <Tooltip
+                id="streak-milestone-tooltip"
+                className="tooltip-diff-arrow"
+                classNameArrow="tooltip-arrow"
+              />
+              <span
+                className="flex items-center gap-1"
+                data-tooltip-id="points-milestone-tooltip"
+                data-tooltip-content="Points milestone"
+              >
                 🏆 {analyticsData.achievementsByType.points_milestone || 0}
               </span>
-              <span>
+              <Tooltip
+                id="points-milestone-tooltip"
+                className="tooltip-diff-arrow"
+                classNameArrow="tooltip-arrow"
+              />
+              <span
+                className="flex items-center gap-1"
+                data-tooltip-id="task-completionist-tooltip"
+                data-tooltip-content="Task completionist"
+              >
                 ✅ {analyticsData.achievementsByType.task_completionist || 0}
               </span>
+              <Tooltip
+                id="task-completionist-tooltip"
+                className="tooltip-diff-arrow"
+                classNameArrow="tooltip-arrow"
+              />
             </div>
           </>
         ) : (
-          <p className="text-text-low text-sm">No recent achievements</p>
+          <p className="text-text-low text-sm">
+            No achievements yet. Complete tasks to unlock achievements!
+          </p>
         )}
       </div>
       {/* Quick Insights */}
@@ -231,16 +246,6 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
             value={formatDuration(analyticsData.averageCompletionTime)}
             description="From creation to completion"
             icon="⏱️"
-          />
-          <InsightCard
-            title="Weekly Growth"
-            value={`+${
-              analyticsData.weeklyTaskCompletions[
-                analyticsData.weeklyTaskCompletions.length - 1
-              ] - analyticsData.weeklyTaskCompletions[0]
-            }`}
-            description="Tasks improvement this month"
-            icon="📈"
           />
         </div>
       </div>
@@ -283,33 +288,6 @@ interface DayData {
   isToday: boolean;
 }
 
-const WeeklyCompletionsChart = ({ data }: { data: number[] }) => {
-  const maxVal = Math.max(...data, 1); // Avoid division by zero
-  return (
-    <div className="bg-background-700 rounded-lg p-6">
-      <h3 className="text-lg font-semibold text-text-high mb-4 flex items-center">
-        <TrendingUp className="w-5 h-5 mr-2 text-purple-400" />
-        Weekly Completions
-      </h3>
-      <div className="flex justify-between items-end h-32 space-x-2">
-        {data.map((value, index) => (
-          <div key={index} className="flex-1 flex flex-col items-center">
-            <div
-              className="w-full bg-purple-400/50 rounded-t-md"
-              style={{
-                height: `${(value / maxVal) * 100}%`,
-                transition: "height 0.5s ease-in-out",
-              }}
-            ></div>
-            <span className="text-xs text-text-low mt-2">Week {index + 1}</span>
-            <span className="text-sm font-bold text-text-high">{value}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
 const WeeklyPointsGrowthChart = ({ data }: { data: number[] }) => {
   // Filter out meaningless trailing zeros and empty data
   if (!data || data.length === 0) {
@@ -327,13 +305,16 @@ const WeeklyPointsGrowthChart = ({ data }: { data: number[] }) => {
   }
 
   // Remove trailing zeros to show only meaningful data
-  let meaningfulData = [...data];
-  while (meaningfulData.length > 1 && meaningfulData[meaningfulData.length - 1] === 0) {
+  const meaningfulData = [...data];
+  while (
+    meaningfulData.length > 1 &&
+    meaningfulData[meaningfulData.length - 1] === 0
+  ) {
     meaningfulData.pop();
   }
 
   // If all data is zeros, show no data message
-  if (meaningfulData.every(value => value === 0)) {
+  if (meaningfulData.every((value) => value === 0)) {
     return (
       <div className="bg-background-700 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-text-high mb-4 flex items-center">
@@ -353,11 +334,6 @@ const WeeklyPointsGrowthChart = ({ data }: { data: number[] }) => {
     points: points,
   }));
 
-  const maxPoints = Math.max(...meaningfulData);
-  const latestPoints = meaningfulData[meaningfulData.length - 1];
-  const previousPoints = meaningfulData.length > 1 ? meaningfulData[meaningfulData.length - 2] : 0;
-  const improvement = previousPoints > 0 ? ((latestPoints - previousPoints) / previousPoints) * 100 : 0;
-
   return (
     <div className="bg-background-700 rounded-lg p-6">
       <div className="flex items-center justify-between mb-6">
@@ -372,25 +348,6 @@ const WeeklyPointsGrowthChart = ({ data }: { data: number[] }) => {
             <p className="text-text-low text-sm">Points earned over time</p>
           </div>
         </div>
-
-        {latestPoints > 0 && (
-          <div className="text-right">
-            <div className="text-2xl font-bold text-text-high">
-              {latestPoints} pts
-            </div>
-            {improvement !== 0 && meaningfulData.length > 1 && (
-              <div
-                className={`text-sm flex items-center gap-1 ${
-                  improvement > 0 ? "text-success" : "text-error"
-                }`}
-              >
-                <Zap className="w-3 h-3" />
-                {improvement > 0 ? "+" : ""}
-                {improvement.toFixed(1)}%
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       <div className="h-80 relative">

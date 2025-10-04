@@ -8,77 +8,83 @@ import {
   UserNutritionGoals,
 } from "../_types/types";
 import { Timestamp, FieldValue } from "firebase-admin/firestore";
-import { unstable_cache } from "next/cache";
 import { defaultNutritionGoals } from "../_utils/utils";
 
-export const getUserById = unstable_cache(
-  async (userId: string): Promise<AppUser | null> => {
-    try {
-      const userDoc = await adminDb.collection("users").doc(userId).get();
-      if (!userDoc.exists) {
-        return null;
-      }
-      const userData = userDoc.data();
-      if (!userData) {
-        return null;
-      }
-
-      return {
-        uid: userDoc.id,
-        displayName: userData.displayName,
-        email: userData.email,
-        provider: userData.provider,
-        photoURL: userData.photoURL,
-        createdAt: (userData.createdAt as Timestamp).toDate(),
-        notifyReminders: userData.notifyReminders,
-        notifyAchievements: userData.notifyAchievements,
-        rewardPoints: userData.rewardPoints || 0,
-        achievements: (
-          (userData.achievements || []) as (Omit<Achievement, "unlockedAt"> & {
-            unlockedAt: Timestamp;
-          })[]
-        ).map((achievement) => ({
-          ...achievement,
-          unlockedAt: achievement.unlockedAt.toDate(),
-        })),
-        completedTasksCount: userData.completedTasksCount || 0,
-        currentStreak: userData.currentStreak || 0,
-        bestStreak: userData.bestStreak || 0,
-        gainedPoints: userData.gainedPoints || [],
-        nutritionGoals: userData.nutritionGoals
-          ? {
-              calories: userData.nutritionGoals.dailyCalories,
-              protein: userData.nutritionGoals.dailyProtein,
-              carbs: userData.nutritionGoals.dailyCarbs,
-              fat: userData.nutritionGoals.dailyFat,
-              updatedAt: (
-                userData.nutritionGoals.updatedAt as Timestamp
-              ).toDate(),
-            }
-          : {
-              calories: defaultNutritionGoals.calories,
-              protein: defaultNutritionGoals.protein,
-              carbs: defaultNutritionGoals.carbs,
-              fat: defaultNutritionGoals.fat,
-              updatedAt: (userData.createdAt as Timestamp).toDate(),
-            },
-        lastLoginAt: userData.lastLoginAt
-          ? (userData.lastLoginAt as Timestamp).toDate()
-          : undefined,
-        notesCount: userData.notesCount,
-        youtubePreferences: userData.youtubePreferences,
-        // Anonymous user fields
-        isAnonymous: userData.isAnonymous,
-        anonymousCreatedAt: userData.anonymousCreatedAt
-          ? (userData.anonymousCreatedAt as Timestamp).toDate()
-          : undefined,
-      };
-    } catch (error) {
-      console.error("Error fetching user by ID:", error);
+export async function getUserById(userId: string): Promise<AppUser | null> {
+  try {
+    const userDoc = await adminDb.collection("users").doc(userId).get();
+    if (!userDoc.exists) {
       return null;
     }
+    const userData = userDoc.data();
+    if (!userData) {
+      return null;
+    }
+
+    // Fetch achievements from subcollection
+    const achievementsSnapshot = await adminDb
+      .collection("users")
+      .doc(userId)
+      .collection("achievements")
+      .get();
+
+    const achievements: Achievement[] = achievementsSnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        type: data.type,
+        userId: data.userId,
+        unlockedAt: (data.unlockedAt as Timestamp).toDate(),
+      };
+    });
+
+    return {
+      uid: userDoc.id,
+      displayName: userData.displayName,
+      email: userData.email,
+      provider: userData.provider,
+      photoURL: userData.photoURL,
+      createdAt: (userData.createdAt as Timestamp).toDate(),
+      notifyReminders: userData.notifyReminders,
+      notifyAchievements: userData.notifyAchievements,
+      rewardPoints: userData.rewardPoints || 0,
+      achievements, // Now from subcollection
+      completedTasksCount: userData.completedTasksCount || 0,
+      currentStreak: userData.currentStreak || 0,
+      bestStreak: userData.bestStreak || 0,
+      nutritionGoals: userData.nutritionGoals
+        ? {
+            calories: userData.nutritionGoals.dailyCalories,
+            protein: userData.nutritionGoals.dailyProtein,
+            carbs: userData.nutritionGoals.dailyCarbs,
+            fat: userData.nutritionGoals.dailyFat,
+            updatedAt: (
+              userData.nutritionGoals.updatedAt as Timestamp
+            ).toDate(),
+          }
+        : {
+            calories: defaultNutritionGoals.calories,
+            protein: defaultNutritionGoals.protein,
+            carbs: defaultNutritionGoals.carbs,
+            fat: defaultNutritionGoals.fat,
+            updatedAt: (userData.createdAt as Timestamp).toDate(),
+          },
+      lastLoginAt: userData.lastLoginAt
+        ? (userData.lastLoginAt as Timestamp).toDate()
+        : undefined,
+      notesCount: userData.notesCount,
+      youtubePreferences: userData.youtubePreferences,
+      // Anonymous user fields
+      isAnonymous: userData.isAnonymous,
+      anonymousCreatedAt: userData.anonymousCreatedAt
+        ? (userData.anonymousCreatedAt as Timestamp).toDate()
+        : undefined,
+    };
+  } catch (error) {
+    console.error("Error fetching user by ID:", error);
+    return null;
   }
-);
+}
 
 export async function getUserPreferences(userId: string): Promise<{
   notifyReminders?: boolean;
@@ -158,7 +164,7 @@ export async function updateUserRewardPoints(
 }
 
 /**
- * Updates user 's completeTasksCount, rewardPoints and gainedPoints
+ * Updates user 's completeTasksCount, rewardPoints and lastLoginAt
  */
 export async function updateUserCompletionStats(
   userId: string,
@@ -170,24 +176,14 @@ export async function updateUserCompletionStats(
   try {
     const userDocRef = adminDb.collection("users").doc(userId);
 
-    // Use transaction to get current data and update gainedPoints
     await adminDb.runTransaction(async (transaction) => {
       const userDoc = await transaction.get(userDocRef);
       if (!userDoc.exists) throw new Error("User not found");
-
-      const userData = userDoc.data();
-      const lastLogin = userData?.lastLoginAt?.toDate() || new Date();
-      const isNewDay = new Date().getDate() !== lastLogin.getDate();
-
-      const gainedPoints: number[] = userData?.gainedPoints || [
-        0, 0, 0, 0, 0, 0, 0,
-      ];
 
       // Always increment completed tasks count regardless of points
       const updates: {
         completedTasksCount: FieldValue;
         rewardPoints?: FieldValue;
-        gainedPoints?: number[];
         lastLoginAt?: Date;
       } = {
         completedTasksCount: FieldValue.increment(1),
@@ -197,16 +193,6 @@ export async function updateUserCompletionStats(
       if (pointsDiff !== 0) {
         updates.rewardPoints = FieldValue.increment(pointsDiff);
         updates.lastLoginAt = new Date();
-
-        if (isNewDay) {
-          // Shift array to the left and add a new day
-          gainedPoints.shift();
-          gainedPoints.push(pointsDiff);
-        } else {
-          // Add points to the current day (last element)
-          gainedPoints[gainedPoints.length - 1] += pointsDiff;
-        }
-        updates.gainedPoints = gainedPoints;
       }
 
       transaction.update(userDocRef, updates);

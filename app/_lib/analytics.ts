@@ -48,7 +48,6 @@ export const setUserAnalyticsProperties = (
     rewardPoints: number;
     createdAt: Date;
     lastLoginAt?: Date;
-    gainedPoints: number[];
     achievements: Achievement[];
   },
   analyticsData?: AnalyticsData,
@@ -63,7 +62,6 @@ export const setUserAnalyticsProperties = (
     rewardPoints: userData.rewardPoints,
     createdAt: userData.createdAt,
     lastLoginAt: userData.lastLoginAt,
-    gainedPoints: userData.gainedPoints,
     achievements: userData.achievements,
     ...analyticsData,
     sessionsCount,

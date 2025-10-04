@@ -236,23 +236,6 @@ export async function completeTaskAction(
       const userDoc = await transaction.get(userRef);
       if (!userDoc.exists) throw new Error("User not found");
 
-      const userData = userDoc.data();
-      const lastLogin = userData?.lastLoginAt?.toDate() || new Date();
-      const isNewDay = new Date().getDate() !== lastLogin.getDate();
-
-      const gainedPoints: number[] = userData?.gainedPoints || [
-        0, 0, 0, 0, 0, 0, 0,
-      ];
-
-      if (isNewDay) {
-        // Shift array to the left and add a new day (0 points)
-        gainedPoints.shift();
-        gainedPoints.push(task.points);
-      } else {
-        // Add points to the current day (last element)
-        gainedPoints[gainedPoints.length - 1] += task.points;
-      }
-
       transaction.update(taskRef, {
         status: "completed",
         completedAt: new Date(),
@@ -261,8 +244,7 @@ export async function completeTaskAction(
       transaction.update(userRef, {
         completedTasksCount: FieldValue.increment(1),
         rewardPoints: FieldValue.increment(task.points),
-        gainedPoints: gainedPoints,
-        lastLoginAt: new Date(), // Update last login to today
+        lastLoginAt: new Date(),
       });
     });
 

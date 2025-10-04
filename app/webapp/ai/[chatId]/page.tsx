@@ -1,7 +1,7 @@
 import Chat from "@/app/_components/AI/Chat";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/_lib/auth";
-import { getChat } from "@/app/_lib/aiAdmin";
+import { getChat } from "@/app/_lib/ai-admin";
 import { ChatMessage } from "@/app/_types/types";
 import { notFound } from "next/navigation";
 

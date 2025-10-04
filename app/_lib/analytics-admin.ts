@@ -8,6 +8,7 @@ import {
   AnalyticsData,
   Achievement,
 } from "../_types/types";
+import { getUserById } from "./user-admin";
 
 /**
   - start session to an user in userSessions, sets pageViews to 1, activeTime to 0 and pagesVisited to [pageTitle]
@@ -142,8 +143,8 @@ export const getAnalyticsData = async (
       .orderBy("timestamp", "desc")
       .get();
 
-    const userDoc = await adminDb.collection("users").doc(userId).get();
-    const userData = userDoc.exists ? userDoc.data() : null;
+    // Fetch user data with achievements from subcollection using getUserById
+    const userData = await getUserById(userId);
 
     // Process session data
     const sessions: SessionData[] = sessionsSnapshot.docs.map((doc) => {
@@ -223,37 +224,25 @@ export const getAnalyticsData = async (
     /** Each number is the total completed tasks for a specific week.
      * Dynamic length based on available data
      */
-    const weeksWithData = taskAnalytics.length > 0 
-      ? Math.ceil(
-          Math.max(
-            ...taskAnalytics.map(task => 
-              Math.ceil((now.getTime() - task.timestamp.getTime()) / (7 * 24 * 60 * 60 * 1000))
-            ),
-            1
+    const weeksWithData =
+      taskAnalytics.length > 0
+        ? Math.ceil(
+            Math.max(
+              ...taskAnalytics.map((task) =>
+                Math.ceil(
+                  (now.getTime() - task.timestamp.getTime()) /
+                    (7 * 24 * 60 * 60 * 1000)
+                )
+              ),
+              1
+            )
           )
-        )
-      : 1;
-    
-    const weeklyTaskCompletions = Array.from({ length: Math.min(weeksWithData, 12) }, (_, i) => {
-      const weekEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
-      const weekStart = new Date(weekEnd.getTime() - 6 * 24 * 60 * 60 * 1000);
-      weekStart.setHours(0, 0, 0, 0);
-      weekEnd.setHours(23, 59, 59, 999);
-
-      return taskAnalytics.filter((task) => {
-        const taskDate = task.timestamp;
-        return (
-          task.action === "task_completed" &&
-          taskDate >= weekStart &&
-          taskDate <= weekEnd
-        );
-      }).length;
-    }).reverse();
+        : 1;
 
     /** Each number is the total points earned for a specific week.
      * Dynamic length based on available data, no fixed limit
      */
-    const weeklyPointsGrowth = Array.from({ length: Math.min(weeksWithData, 12) }, (_, i) => {
+    const weeklyPointsGrowth = Array.from({ length: weeksWithData }, (_, i) => {
       const weekEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
       const weekStart = new Date(weekEnd.getTime() - 6 * 24 * 60 * 60 * 1000);
       weekStart.setHours(0, 0, 0, 0);
@@ -328,45 +317,21 @@ export const getAnalyticsData = async (
       (completionRate * 0.6 + (consistencyScore / 100) * 0.4) * 100
     );
 
-    // Process achievement analytics from user's achievements array
-    const userAchievements = userData?.achievements || [];
-
-    // Helper function to convert achievement date to Date object
-    const getAchievementDate = (dateValue: unknown): Date => {
-      if (dateValue instanceof Date) {
-        return dateValue;
-      }
-      if (
-        dateValue &&
-        typeof dateValue === "object" &&
-        "toDate" in dateValue &&
-        typeof dateValue.toDate === "function"
-      ) {
-        return dateValue.toDate();
-      }
-      return new Date(dateValue as string);
-    };
-
-    // Get recent achievements (last 30 days)
-    const recentAchievements = userAchievements
-      .filter((achievement: Achievement) => {
-        const unlockedDate = getAchievementDate(achievement.unlockedAt);
-        return (
-          unlockedDate >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-        );
-      })
+    // Get all achievements from user data (already fetched from subcollection via getUserById)
+    const allAchievements = (userData?.achievements || [])
       .map((achievement: Achievement) => ({
         type: achievement.type,
         id: achievement.id,
-        unlockedAt: getAchievementDate(achievement.unlockedAt),
+        userId: achievement.userId,
+        unlockedAt: achievement.unlockedAt,
       }))
       .sort(
-        (a: { unlockedAt: Date }, b: { unlockedAt: Date }) =>
+        (a: Achievement, b: Achievement) =>
           b.unlockedAt.getTime() - a.unlockedAt.getTime()
       );
 
     // Calculate achievements by type
-    const achievementsByType = userAchievements.reduce(
+    const achievementsByType = allAchievements.reduce(
       (acc: Record<string, number>, achievement: Achievement) => {
         acc[achievement.type] = (acc[achievement.type] || 0) + 1;
         return acc;
@@ -481,7 +446,6 @@ export const getAnalyticsData = async (
       pageViews: totalPageViews,
       activeTime: totalActiveTime,
       dailyTaskCompletions,
-      weeklyTaskCompletions,
       averageCompletionTime: avgCompletionTime,
       mostProductiveHour,
       pointsGrowth: weeklyPointsGrowth,
@@ -493,7 +457,7 @@ export const getAnalyticsData = async (
         productivityTrend,
         consistencyTrend,
       },
-      recentAchievements,
+      allAchievements,
       achievementsByType,
     };
   } catch (error) {
