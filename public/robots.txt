@@ -1,0 +1,8 @@
+# Robots.txt for TaskFlow
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /webapp/
+
+# Sitemap
+Sitemap: https://yourdomain.com/sitemap.xml
