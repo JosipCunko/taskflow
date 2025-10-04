@@ -8,9 +8,9 @@ import { notFound } from "next/navigation";
 export default async function ChatPage({
   params,
 }: {
-  params: { chatId: string };
+  params: Promise<{ chatId: string }>;
 }) {
-  const { chatId } = params;
+  const { chatId } = await params;
   const session = await getServerSession(authOptions);
   const userId = session?.user?.id;
   const userName = session?.user?.name;

@@ -4,13 +4,15 @@ import { getTasksByUserId } from "@/app/_lib/tasks-admin";
 import { CardSpecificIcons } from "@/app/_utils/icons";
 import { Clock, Clock7, Notebook } from "lucide-react";
 import Link from "next/link";
-import { isToday } from "date-fns";
+import { isToday, isBefore, startOfDay } from "date-fns";
 import { redirect } from "next/navigation";
 import { getStartAndEndTime } from "@/app/_utils/utils";
 
 import TaskCardSmall from "@/app/_components/TaskCardSmall";
 import RepeatingTaskCard from "@/app/_components/RepeatingTaskCard";
+import TodayPlanSection from "@/app/_components/TodayPlanSection";
 import { Task } from "@/app/_types/types";
+import { autoDelayIncompleteTodayTasks } from "@/app/_lib/actions";
 
 export default async function TodayPage() {
   const session = await getServerSession(authOptions);
@@ -19,14 +21,36 @@ export default async function TodayPage() {
   }
 
   const userId = session.user.id;
+  
+  // Auto-delay incomplete tasks from previous days
+  await autoDelayIncompleteTodayTasks();
+  
   const allUserTasks = await getTasksByUserId(userId);
+  
+  // Filter out completed tasks from previous days
+  const today = startOfDay(new Date());
+  const relevantTasks = allUserTasks.filter((task) => {
+    // Keep all non-completed tasks
+    if (task.status !== "completed") return true;
+    
+    // For completed tasks, only keep if completed today
+    if (task.completedAt) {
+      return !isBefore(startOfDay(task.completedAt), today);
+    }
+    
+    return true;
+  });
 
   const todaysTasks: Task[] = [];
   const todaysRepeatingTasks: Task[] = [];
   const todayNotCompletedTasks: Task[] = [];
+  const todayPlanTasks: Task[] = [];
 
-  allUserTasks.forEach((task) => {
+  relevantTasks.forEach((task) => {
     if (isToday(task.dueDate)) {
+      // Add all today's tasks to todayPlanTasks for the new plan section
+      todayPlanTasks.push(task);
+      
       if (task.isRepeating) todaysRepeatingTasks.push(task);
       else {
         if (task.status !== "completed") todaysTasks.push(task);
@@ -66,8 +90,13 @@ export default async function TodayPage() {
     allTodaysTasks.find((t) => t.status !== "completed");
 
   return (
-    <div className="grid grid-rows-[20rem_20rem_20rem] sm:grid-rows-[30rem] grid-cols-1 sm:grid-cols-3 gap-6 p-1 sm:p-6 container mx-auto overflow-y-auto">
-      <div className="bg-background-700 p-6 rounded-lg shadow overflow-y-auto">
+    <div className="container mx-auto p-1 sm:p-6 space-y-6 overflow-y-auto">
+      {/* New Today's Plan Section */}
+      <TodayPlanSection todayTasks={todayPlanTasks} />
+      
+      {/* Existing Sections */}
+      <div className="grid grid-rows-[20rem_20rem_20rem] sm:grid-rows-[30rem] grid-cols-1 sm:grid-cols-3 gap-6">
+        <div className="bg-background-700 p-6 rounded-lg shadow overflow-y-auto">
         <h2 className="text-xl font-semibold mb-6 text-primary-500">
           Today&apos;s Schedule
         </h2>
@@ -175,6 +204,7 @@ export default async function TodayPage() {
             </Link>
           </>
         )}
+        </div>
       </div>
     </div>
   );
