@@ -914,3 +914,68 @@ export async function updateYouTubePreferencesAction(
     };
   }
 }
+
+/* Today Tasks Management */
+export async function autoDelayIncompleteTodayTasks(): Promise<ActionResult> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return { success: false, error: "User not authenticated" };
+    }
+
+    // Get all today's tasks that are not completed
+    const tasksRef = adminDb.collection("tasks");
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const incompleteTodayTasksSnapshot = await tasksRef
+      .where("userId", "==", session.user.id)
+      .where("status", "in", ["pending", "delayed"])
+      .get();
+
+    const batch = adminDb.batch();
+    let delayedCount = 0;
+
+    incompleteTodayTasksSnapshot.docs.forEach((doc) => {
+      const taskData = doc.data();
+      const taskDueDate = taskData.dueDate.toDate();
+      taskDueDate.setHours(0, 0, 0, 0);
+
+      // Only delay tasks that were due today or earlier and are not repeating
+      if (taskDueDate < today && !taskData.isRepeating) {
+        const newDueDate = new Date(tomorrow);
+        newDueDate.setHours(
+          taskData.dueDate.toDate().getHours(),
+          taskData.dueDate.toDate().getMinutes()
+        );
+
+        batch.update(doc.ref, {
+          dueDate: Timestamp.fromDate(newDueDate),
+          status: "delayed",
+          delayCount: (taskData.delayCount || 0) + 1,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        delayedCount++;
+      }
+    });
+
+    if (delayedCount > 0) {
+      await batch.commit();
+      revalidatePath("/webapp/today");
+      revalidatePath("/webapp/tasks");
+    }
+
+    return {
+      success: true,
+      message: `${delayedCount} task(s) delayed to tomorrow`,
+    };
+  } catch (error) {
+    console.error("Error auto-delaying tasks:", error);
+    return {
+      success: false,
+      error: "Failed to auto-delay tasks",
+    };
+  }
+}
