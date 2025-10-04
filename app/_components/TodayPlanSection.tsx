@@ -11,7 +11,9 @@ interface TodayPlanSectionProps {
   todayTasks: Task[];
 }
 
-export default function TodayPlanSection({ todayTasks }: TodayPlanSectionProps) {
+export default function TodayPlanSection({
+  todayTasks,
+}: TodayPlanSectionProps) {
   const [modalOpenName, setModalOpenName] = useState<string>("");
   const openModal = (name: string) => setModalOpenName(name);
   const closeModal = () => setModalOpenName("");
@@ -164,11 +166,6 @@ export default function TodayPlanSection({ todayTasks }: TodayPlanSectionProps) 
                               </span>
                             )}
                           </div>
-                          {task.location && (
-                            <p className="text-xs text-text-gray mt-1 truncate">
-                              📍 {task.location}
-                            </p>
-                          )}
                         </div>
                       );
                     })}

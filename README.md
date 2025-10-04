@@ -1,6 +1,31 @@
-# TaskFlow - Smart Task Management System
+# TaskFlow - All-in-One Productivity & Life Management System
 
-TaskFlow is a modern, feature-rich task management application designed to help users achieve their goals through disciplined task organization and tracking. Built with cutting-edge technologies, it offers a seamless experience for managing daily, weekly, and monthly tasks, as well as a dedicated space for personal notes.
+TaskFlow is a comprehensive, modern productivity platform that goes beyond simple task management. It's your personal command center for life optimization, combining intelligent task organization, fitness tracking, nutrition monitoring, AI assistance, and gamified progress tracking—all wrapped in a beautiful, offline-capable Progressive Web App.
+
+Whether you're planning your day, tracking your workouts, monitoring your nutrition, or getting AI-powered productivity insights, TaskFlow brings everything together in one seamless, distraction-free experience. Built with cutting-edge technologies and designed for both desktop and mobile, it adapts to your workflow and keeps you productive even without an internet connection.
+
+## ✨ What Makes TaskFlow Special
+
+- **🌐 Offline-First**: Full offline functionality with PWA support—work anywhere, anytime, even without internet
+- **🤖 AI-Powered**: Integrated AI assistant with multi-model support (GPT, Claude, Gemini) for intelligent productivity insights
+- **🏋️ Holistic Approach**: Not just tasks—track workouts, nutrition, and habits all in one beautiful interface
+- **📊 Gamification**: Earn points, maintain streaks, unlock achievements, and rate your task experiences
+- **⚡ Lightning Fast**: Optimistic UI updates, instant feedback, and smooth animations for delightful UX
+- **🎨 Beautiful Design**: Modern dark theme with polished animations and attention to detail
+- **📱 True PWA**: Install on any device, get push notifications, and enjoy native app experience
+- **🔐 Privacy First**: Your data is yours—secure Firebase backend with granular security rules
+
+## 🚀 Core Capabilities at a Glance
+
+| Feature           | Description                                                                |
+| ----------------- | -------------------------------------------------------------------------- |
+| **Smart Tasks**   | Advanced scheduling, repeating tasks, priorities, tags, and risk detection |
+| **Today View**    | Visual 24-hour timeline with time-blocking and drag-and-drop scheduling    |
+| **Gym Tracking**  | Workout logging, templates, exercise library, and progress visualization   |
+| **Nutrition**     | USDA food database, macro tracking, meal logging, and daily goals          |
+| **AI Assistant**  | Multi-model AI with function calling and contextual help                   |
+| **Analytics**     | Streaks, achievements, completion rates, and performance insights          |
+| **Notifications** | Smart notification system with priority levels and inbox management        |
 
 ## 🌟 Key Features
 
@@ -56,39 +81,37 @@ TaskFlow is a modern, feature-rich task management application designed to help 
 ### 5. Health & Nutrition Tracker
 
 - **Calorie & Macro Tracking**: Comprehensive nutrition tracking integrated directly into your productivity workflow.
-- **USDA Food Database Integration**: Search from over 300,000 foods using the official USDA FoodData Central API.
 - **Daily Nutrition Dashboard**:
   - Visual progress bars showing calories, protein, carbs, and fat intake vs. goals.
-  - Color-coded progress indicators (blue < 80%, yellow 80-100%, green 100%+).
-  - Real-time calculations and updates.
 - **Meal Logging**:
   - Log foods for breakfast, lunch, dinner, or snacks.
   - Flexible serving sizes with custom units.
   - Automatic nutrient calculation based on serving size.
 - **Goal Setting**: Set personalized daily targets for calories and macronutrients.
 - **Daily History**: View and manage your complete meal log for any date.
-- **Seamless Integration**: Part of your holistic life management dashboard alongside task tracking.
 
 ### 6. Advanced Gym Tracking Module
 
 - **Comprehensive Workout Logging**:
+
   - **Workout Sessions**: Create and track detailed workout sessions with duration, exercises, sets, reps, and weights.
   - **Exercise Library**: Access to extensive exercise database with categories and muscle group targeting.
   - **Real-time Workout Timer**: Built-in workout duration tracking and rest timers between sets.
   - **Session Notes**: Add personal notes and observations to each workout session.
 
 - **Workout Templates**:
+
   - **Template Creation**: Save frequently used workout routines as reusable templates.
   - **Quick Start**: Launch workouts instantly from saved templates with pre-loaded exercises.
   - **Template Management**: Organize and categorize workout templates by type (Push, Pull, Legs, etc.).
 
 - **Progress Visualization & Analytics**:
+
   - **Interactive Charts**: Visualize progress over time with line graphs showing weight, volume, and strength trends.
-  - **Multiple Metrics**: Track max weight, total volume, and estimated one-rep max (1RM) for each exercise.
   - **Exercise-Specific Analysis**: Detailed progress tracking for individual exercises with historical data.
-  - **Personal Records**: Automatic tracking of personal bests with estimated 1RM calculations using the Brzycki formula.
 
 - **Progressive Overload Intelligence**:
+
   - **Smart Suggestions**: AI-powered recommendations based on previous performance data.
   - **Last Performance Hints**: See your previous workout stats for each exercise to guide progressive overload.
   - **Strength Progression**: Automatic suggestions for weight and rep increases based on historical data.
@@ -98,168 +121,143 @@ TaskFlow is a modern, feature-rich task management application designed to help 
   - **Workout Statistics**: Track weekly workout count, total sessions, and average duration.
   - **Recent Activity**: Quick access to recent workouts and performance summaries.
 
-### 7. AI Assistant Integration
+### 7. AI Assistant & Automation
 
-- **Intelligent Chatbot**: Built-in AI assistant powered by advanced language models for contextual help and guidance.
+- **Intelligent Chatbot**: Built-in AI assistant powered by advanced language models (OpenAI, Claude, Gemini) for contextual help and guidance.
+- **Multi-Model Support**: Choose from multiple AI providers with an intuitive model dropdown for different use cases.
 - **App Navigation**: Get help navigating TaskFlow features and finding specific functionality.
 - **Productivity Insights**: Receive personalized recommendations for task management and goal achievement.
 - **Contextual Support**: AI understands your current app context to provide relevant assistance.
 - **Chat History**: Persistent conversation history for ongoing productivity coaching.
+- **Function Calling**: AI can interact with your tasks, retrieve data, and perform actions on your behalf.
+- **YouTube Summarizer**: Automatically processes your YouTube watch history and generates daily summaries or insights (opt-in feature).
 
-### 8. Notes Feature
+### 8. Notes
 
 - **Personal Notes**: A dedicated space to create, view, edit, and delete personal notes.
 - **Simple & Effective**: Each note has a title and content, with automatic tracking of the last update time.
-- **Centralized Management**: Easily manage all notes from the clean `/notes` interface.
 
-### 9. User Profile & Settings
+### 10. Tutorial & Onboarding
+
+- **Interactive Tutorial**: First-time user tutorial with step-by-step guidance through key features.
+- **Contextual Tooltips**: Helpful hints and tips throughout the app for feature discovery.
+- **Skip & Resume**: Users can skip tutorials or resume them later from settings.
+
+### 11. User Profile & Settings
 
 - **Personalized Experience**: Customize notification preferences for reminders and achievements.
-- **Profile Overview**: View key stats like total completed tasks, reward points, and current streak directly on your profile.
-- **Authentication Management**: Securely manage your account connected via Email/Password or Google.
+- **Authentication Management**: Securely manage your account connected via Email/Password, Google, or GitHub.
+- **Activity Log**: Comprehensive audit trail of all task interactions and system events.
+- **Achievement Showcase**: Display unlocked achievements and progress toward new milestones.
 
-### 10. User Experience
+### 12. Progressive Web App (PWA) & Offline Support
 
-- **Modern UI**: A clean, dark-themed interface designed for focus and clarity.
-- **Responsive Design**: Fully functional and accessible across desktop and mobile devices.
-- **Intuitive Navigation**: A logical and easy-to-use interface with quick access to all features.
-- **Performant & Smooth**:
+- **Install as Native App**: Add TaskFlow to your home screen on any device (iOS, Android, desktop) for app-like experience.
+- **Offline Functionality**: Full offline support with service workers—access your tasks even without internet.
+- **Offline Mode Detection**: Automatic detection of network status with dedicated offline page and graceful degradation.
+- **Background Sync**: Smart synchronization when connection is restored.
+- **App Shortcuts**: Quick access shortcuts in the PWA for common actions (Add Task, Today's Tasks, Gym, Health).
+- **Push Notifications**: Receive native push notifications for task reminders and achievements (when installed as PWA).
+- **Installable**: Beautiful install prompt with app icon and description for easy installation.
+
+### 13. Today's View & Daily Planning
+
+- **Visual Time Grid**: Interactive 24-hour timeline view showing your scheduled tasks with visual time blocks.
+- **Scheduled vs Whole-Day Tasks**: Separate views for time-specific tasks and general daily tasks.
+- **Quick Task Creation**: Add tasks directly to today's schedule with one click.
+- **Time Block Visualization**: See your day at a glance with color-coded time blocks for each task.
+- **Priority Indicators**: Visual priority badges on scheduled tasks.
+
+### 14. User Experience & Design
+
+- **Modern Dark UI**: A clean, dark-themed interface designed for focus and clarity with carefully crafted color palette.
+- **Fully Responsive**: Pixel-perfect experience across desktop, tablet, and mobile devices with adaptive layouts.
+- **Intuitive Navigation**: Animated sidebar with logical organization and quick access to all features.
+- **Smooth Animations**: Polished micro-interactions powered by Framer Motion for delightful user experience.
+- **Performant & Fast**:
   - **Optimistic UI Updates**: Instant feedback on actions like task creation or completion.
   - **Seamless Loading**: Utilizes React Suspense for smooth loading transitions without jarring layout shifts.
   - **Fast Navigation**: Built on the Next.js App Router for near-instant page loads.
+  - **Efficient Caching**: Smart client-side caching for improved performance.
+- **Accessibility**: Built with accessibility in mind—keyboard navigation, ARIA labels, and screen reader support.
+- **Visual Feedback**: Toast notifications, loading states, and error handling for clear communication.
+- **Customizable Themes**: Personal color preferences for tasks and visual organization.
 
 ## 🛠️ Technology Stack
 
 ### Frontend
 
-- **Next.js 15+**: React framework with App Router for optimal performance.
-- **React 19+**: Latest version for modern UI development.
-- **TypeScript**: Type-safe development.
-- **Tailwind CSS**: Utility-first CSS framework for responsive design.
-- **Framer Motion**: Smooth animations and transitions.
-- **Lucide React**: Modern icon library.
-- **React Hot Toast**: Toast notifications.
-- **React Tooltip**: Enhanced tooltip functionality.
-- **Recharts**: Interactive charts for gym progress visualization.
+- **Next.js 15+**: React framework with App Router for optimal performance and server-side rendering.
+- **React 19+**: Latest version for modern UI development with concurrent features.
+- **TypeScript**: Type-safe development with full type coverage.
+- **Tailwind CSS**: Utility-first CSS framework for responsive design with custom theme.
+- **Framer Motion**: Smooth animations, transitions, and micro-interactions.
+- **Lucide React**: Modern, customizable icon library with 1000+ icons.
+- **React Hot Toast**: Beautiful toast notifications with custom styling.
+- **React Tooltip**: Enhanced tooltip functionality for better UX.
+- **Recharts**: Interactive, responsive charts for gym progress and analytics visualization.
+- **Service Workers**: Offline support, background sync, and push notifications.
 
 ### Backend & Authentication
 
-- **Firebase**: Backend-as-a-Service
-  - Firestore: NoSQL database for tasks, notes, health data, and workout tracking.
-  - Authentication: Handles user creation and sign-in for Email/Password and Google (via ID token).
-- **NextAuth.js**: Authentication framework integrating multiple providers:
-  - Credentials (for Firebase ID tokens from Google Sign-In & Email/Password).
-  - GitHub OAuth.
-- **Firebase Admin**: Server-side Firebase operations.
+- **Firebase**: Comprehensive Backend-as-a-Service platform
+  - **Firestore**: NoSQL real-time database for tasks, notes, health data, workouts, and AI chat history.
+  - **Firebase Authentication**: Secure user authentication with Email/Password and Google sign-in.
+  - **Firebase Cloud Messaging (FCM)**: Push notification delivery for web and mobile.
+  - **Firebase Admin SDK**: Server-side operations with elevated privileges.
+  - **Custom Tokens**: Bridge between NextAuth and Firebase for seamless authentication.
+- **NextAuth.js v5**: Modern authentication framework integrating multiple providers:
+  - **Credentials Provider**: Firebase custom tokens for Google Sign-In & Email/Password.
+  - **GitHub OAuth**: Third-party authentication integration.
+  - **Session Management**: Secure, encrypted JWT sessions.
+- **Server Actions**: Next.js server-side functions for secure data operations.
 
-### Development Tools
+### APIs & External Services
 
-- **ESLint**: Code quality and style enforcement.
-- **TypeScript**: Static type checking.
-- **Turbopack**: Fast development server (if used, often default with newer Next.js).
+- **YouTube Data API**: Optional integration for watch history analysis and summarization.
+- **openrouter**: AI models.
+
+### Development Tools & Infrastructure
+
+- **ESLint**: Code quality and style enforcement with custom rules.
+- **TypeScript**: Static type checking with strict mode.
+- **Git**: Version control with GitHub integration.
+- **Environment Variables**: Secure configuration management for API keys and secrets.
+- **Service Worker API**: Native browser API for offline functionality.
 
 ## 📱 Application Structure
 
-### Routes
+### Main Routes
 
-- **Dashboard**: Overview of tasks and performance analytics.
-- **Tasks**: Comprehensive task management interface.
-- **Calendar**: Calendar view of tasks.
-- **Completed**: View of completed tasks.
-- **Notes**: Dedicated section for managing personal notes.
-- **Health**: Calorie and macro tracking with food search and goal setting.
-- **Gym**: Comprehensive workout tracking and progress monitoring.
-- **AI Assistant**: Intelligent chatbot for app navigation and productivity guidance.
-- **Inbox**: Real-time notification management center.
-- **Profile**: User settings and preferences.
-- **Login**: Secure authentication page with multiple sign-in options.
-
-### Key Components
-
-#### Core UI Elements
-
-- **Task Cards**: Visual representation of tasks with all relevant information, actions, and status indicators.
-- **Repeating Task Cards**: Specialized cards for managing recurring tasks with completion tracking.
-- **Dashboard Cards**: Quick overview widgets showing task statistics and progress metrics.
-
-#### Navigation & Layout
-
-- **Animated Sidebar**: Collapsible navigation with smooth animations and route indicators.
-- **Top Sidebar**: Header with search, notifications, user profile, and quick actions.
-- **Command Palette (Search)**: Universal search interface for tasks and navigation (Ctrl+K).
-
-#### Task Management Interface
-
-- **Add Task Modal**: Comprehensive task creation with tabbed interface (Task/Customization).
-- **Task Customization**: Color picker, icon selector, and visual customization options.
-- **Repetition Rules**: Advanced modal for configuring repeating task patterns.
-- **Tag Input**: Dynamic tag creation and management with autocomplete.
-- **Duration Calculator**: Time estimation and tracking component.
-- **Location Input**: Geographic tagging for tasks.
-- **Emoji Experience**: Task completion rating system with emotional feedback.
-
-#### Notification System
-
-- **Notification Bell**: Real-time notification counter with priority indicators and animations.
-- **Notification Cards**: Rich notification display with actions, timestamps, and priority badges.
-- **Inbox Content**: Full notification management with filtering, search, and bulk actions.
-- **Notification Summary**: Dashboard widget showing notification stats and quick access.
-
-#### Reusable Components
-
-- **Button**: Versatile button component with multiple variants (primary, secondary, danger, tag).
-- **Input**: Styled input fields with consistent theming.
-- **Checkbox**: Custom styled checkbox with accessibility features.
-- **Switch**: Toggle switch component built with Radix UI.
-- **Date Input**: Calendar picker with date selection and validation.
-
-#### Animations & Visual Effects
-
-- **Animated Background**: Complex background with floating icons, grids, and geometric shapes.
-- **Decrypted Text**: Text animation with scrambling/reveal effects.
-- **Glitch Text**: CSS-based glitch animation for dramatic text effects.
-- **Animated Numbers**: Smooth number transitions and counters.
-- **Grid and Dots Background**: Subtle background patterns for visual depth.
-- **Loading Animations**: Multiple loader variants (Book, Graph, Polyline).
-
-#### Analytics & Insights
-
-- **Analytics Dashboard**: Comprehensive performance tracking with charts and metrics.
-- **Profile Tabs**: User profile interface with settings, activity logs, and statistics.
-- **User Info Card**: Profile summary with achievements and progress indicators.
-- **Streak Bar**: Visual streak tracking and milestone celebrations.
-
-  #### Utility Components
-
-  - **Modal**: Comprehensive modal system with context-based management and compound component pattern.
-  - **Dropdown**: Advanced context menus for task actions with form submissions and status handling.
-  - **Color Picker**: Visual color selection interface with customizable palettes and real-time preview.
-  - **Icon Picker**: Dynamic icon selection from extensive Lucide React library with grid layout.
-
-  #### Search & Navigation
-
-  - **Search Component**: Universal search interface with task filtering, keyboard navigation, and quick actions.
-  - **Command Palette**: Keyboard-driven navigation system (Ctrl+K) for power users.
-  - **Sidebar Navigation**: Organized navigation with section grouping and active state indicators.
-
-  #### Gym Tracking Interface
-
-  - **Gym Dashboard**: Comprehensive workout overview with statistics, weekly calendar, recent workouts, and template management.
-  - **Workout Session**: Live workout tracking interface with exercise logging, set/rep recording, rest timers, and progressive overload hints.
-  - **Progress Visualization**: Interactive charts and analytics showing exercise progress, personal records, and strength trends over time.
-  - **Create Template Modal**: Template creation interface for saving and organizing workout routines.
-  - **Exercise Library**: Searchable database of exercises with categories, muscle groups, and detailed information.
-
-  #### AI Integration
-
-  - **JotForm Agent**: Embedded AI assistant providing contextual help, task automation suggestions, and app navigation guidance.
+- **`/`**: Landing page
+- **`/webapp`** (Dashboard): Overview of tasks, analytics, and performance metrics with visual charts.
+- **`/webapp/today`**: Today's view with interactive time grid and daily task planning.
+- **`/webapp/tasks`**: Comprehensive task management interface with filtering and bulk actions.
+- **`/webapp/calendar`**: Beautiful calendar view of tasks with month/week navigation.
+- **`/webapp/completed`**: Archive of completed tasks with experience ratings and statistics.
+- **`/webapp/notes`**: Personal notes management with create, edit, and delete functionality.
+- **`/webapp/health`**: Nutrition tracking with USDA food database, calorie counting, and macro goals.
+- **`/webapp/gym`**: Workout logging, exercise library, templates, and progress visualization.
+- **`/webapp/ai`**: AI assistant chat interface with multi-model support and function calling.
+- **`/webapp/inbox`**: Notification center with filtering, priority indicators, and read/unread management.
+- **`/webapp/profile`**: User profile, achievements, and account settings.
+- **`/login`**: Authentication page with Email/Password, Google, and GitHub sign-in options.
+- **`/offline`**: Dedicated offline mode page shown when internet connection is lost.
 
 ## 🔒 Security Features
 
 - **Secure Authentication**: Support for Google Sign-in, Email/Password, and GitHub OAuth, managed by NextAuth.js and Firebase.
-- **Protected API routes / Server Actions**: Ensuring only authenticated users can access/modify their data.
-- **Environment variable management**: For sensitive keys and configurations.
-- **Secure session handling**: Managed by NextAuth.js.
+- **Custom Firebase Tokens**: Secure bridge between NextAuth sessions and Firebase authentication.
+- **Protected API Routes**: All API endpoints require authentication and validate user permissions.
+- **Server Actions Security**: Server-side operations protected by NextAuth session validation.
+- **Firestore Security Rules**: Granular security rules ensuring users can only access their own data.
+- **Row-Level Security**: Each document includes userId validation at the database level.
+- **Environment Variable Management**: Sensitive keys and configurations secured via environment variables.
+- **Secure Session Handling**: Encrypted JWT sessions managed by NextAuth.js with httpOnly cookies.
+- **XSS Protection**: Input sanitization and output encoding to prevent cross-site scripting.
+- **CSRF Protection**: Built-in CSRF token validation for all state-changing operations.
+- **Rate Limiting**: Protection against API abuse and brute force attacks.
+- **Admin Operations**: Separate admin SDK operations with elevated privileges for system tasks.
 
 ## 🚀 Getting Started
 
@@ -279,29 +277,34 @@ TaskFlow is a modern, feature-rich task management application designed to help 
       ```bash
       cp .env.example .env.local
       ```
-    - Fill in your Firebase project configuration details.
-    - Fill in your NextAuth secret and URL.
-    - If using GitHub OAuth, add `GITHUB_ID` and `GITHUB_SECRET` from your GitHub OAuth App settings. The callback URL will be `http://localhost:3000/api/auth/callback/github` for local development.
-    - For the Health feature, add your `USDA_API_KEY` from the [USDA FoodData Central API](https://fdc.nal.usda.gov/api-guide.html). The API is free but requires registration.
+    - **Required Variables**:
+      - Firebase project configuration (API key, project ID, etc.)
+      - `NEXTAUTH_SECRET` and `NEXTAUTH_URL` for authentication
+      - Firebase Admin SDK credentials path
+    - **Optional Variables**:
+      - `GITHUB_ID` and `GITHUB_SECRET` for GitHub OAuth (callback URL: `http://localhost:3000/api/auth/callback/github`)
+      - `USDA_API_KEY` from [USDA FoodData Central API](https://fdc.nal.usda.gov/api-guide.html) for nutrition tracking (free with registration)
+      - `OPENAI_API_KEY` for OpenAI GPT models in AI assistant
+      - `ANTHROPIC_API_KEY` for Claude models support
+      - `GOOGLE_GENERATIVE_AI_API_KEY` for Gemini models support
+      - `YOUTUBE_API_KEY` for YouTube summarizer feature (optional)
 
 4.  **Run the development server**:
+
     ```bash
     npm run dev
     # or yarn dev
     ```
+
     Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### Notification Types & Rules
+5.  **Access the application**:
+    - Navigate to `/login` to create an account or sign in
+    - After authentication, you'll be redirected to the dashboard at `/webapp`
+    - The app works offline after your first visit—try disconnecting from the internet!
+    - Install as PWA by clicking the install prompt or using your browser's "Install App" option
 
-| Type                     | Trigger                | Priority    | Expiration |
-| ------------------------ | ---------------------- | ----------- | ---------- |
-| **Task Overdue**         | Past due date          | HIGH/URGENT | 7 days     |
-| **Task Due Soon**        | Due within 24 hours    | HIGH/MEDIUM | 7 days     |
-| **Achievement Unlocked** | New milestones reached | LOW         | 30 days    |
-| **Weekly Summary**       | -                      | LOW         | 7 days     |
-| **System message**       | -                      | LOW         | 7 days     |
-
-### Some Typescript types
+## Some Typescript types
 
 #### Task Schema
 
@@ -360,74 +363,7 @@ interface AppUser {
 }
 ```
 
-#### Notification Schema
-
-```typescript
-interface Notification {
-  id: string;
-  userId: string;
-  type: NotificationType;
-  priority: NotificationPriority;
-  title: string;
-  message: string;
-  actionText?: string;
-  actionUrl?: string;
-  taskId?: string; // Related task ID if applicable
-  isRead: boolean;
-  isArchived: boolean;
-  createdAt: Date;
-  readAt?: Date;
-  data?: Record<string, unknown>; // Additional data for the notification
-  expiresAt?: Date;
-}
-```
-
-#### Gym Tracking Schemas
-
-```typescript
-interface WorkoutSession {
-  id: string;
-  userId: string;
-  name?: string;
-  duration?: number;
-  notes?: string;
-  loggedExercises: LoggedExercise[];
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface LoggedExercise {
-  id: string;
-  exerciseName: string;
-  order?: number;
-  volume: WorkoutSet[];
-}
-
-interface WorkoutSet {
-  weight: number;
-  reps: number;
-  rest?: number;
-}
-
-interface WorkoutTemplate {
-  id: string;
-  userId: string;
-  name: string;
-  exercises: string[]; // Exercise names
-  createdAt: Date;
-}
-
-interface Exercise {
-  id: string;
-  name: string;
-  category: string;
-  muscleGroups: string[];
-  equipment?: string;
-  instructions?: string[];
-}
-```
-
-### DEV ONLY: Firebase Authentication & Firestore Security Rules
+## Firebase Authentication & Firestore Security Rules
 
 #### Understanding the Authentication Issue
 
@@ -478,3 +414,66 @@ When your server-side code tries to use the standard Firebase SDK (the one initi
 #### The Solution Implemented (Bridging the Gap)
 
 **The Master Key (admin-sdk):** The Firebase Admin SDK is initialized with your service account credentials. This is the equivalent of a master key that can open any vault, bypassing the normal security rules. It's designed specifically for trusted server environments. This is why I created all the `-admin.ts` files—to ensure that any time our server needs to access the vault, it uses its master key.
+
+## 🌐 Browser Support & Compatibility
+
+TaskFlow is built with modern web standards and supports all major browsers:
+
+| Browser              | Version | PWA Support | Offline Mode | Notes                           |
+| -------------------- | ------- | ----------- | ------------ | ------------------------------- |
+| **Chrome**           | 90+     | ✅ Full     | ✅ Full      | Recommended for best experience |
+| **Edge**             | 90+     | ✅ Full     | ✅ Full      | Chromium-based, full support    |
+| **Firefox**          | 88+     | ⚠️ Partial  | ✅ Full      | PWA install may vary by OS      |
+| **Safari**           | 14+     | ⚠️ Limited  | ✅ Full      | iOS: Add to Home Screen         |
+| **Opera**            | 76+     | ✅ Full     | ✅ Full      | Chromium-based                  |
+| **Samsung Internet** | 14+     | ✅ Full     | ✅ Full      | Android devices                 |
+
+**Requirements:**
+
+- JavaScript enabled
+- LocalStorage and IndexedDB support
+- Service Worker support for offline functionality
+- Modern CSS Grid and Flexbox support
+
+**Mobile Support:**
+
+- iOS 14+ (Safari, Chrome)
+- Android 8+ (Chrome, Firefox, Samsung Internet)
+- Responsive design adapts to all screen sizes
+- Touch-optimized interface
+
+## 🎯 Use Cases
+
+TaskFlow is perfect for:
+
+- **Productivity Enthusiasts**: Power users who want an all-in-one solution for life management
+- **Fitness & Health Conscious**: Track workouts and nutrition alongside daily tasks
+- **Remote Workers**: Manage work tasks, habits, and personal goals in one place
+- **Students**: Organize assignments, study schedules, and personal projects
+- **Freelancers**: Track projects, deadlines, and maintain work-life balance
+- **Digital Nomads**: Offline-first design perfect for unreliable internet connections
+- **Habit Builders**: Gamification and streaks help build lasting positive habits
+- **Data-Driven Individuals**: Comprehensive analytics and insights into your productivity
+
+## 🤝 Contributing
+
+This is currently a personal project, but contributions, issues, and feature requests are welcome! Feel free to:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📞 Contact & Support
+
+For questions, feedback, or support:
+
+- **Issues**: Open an issue on GitHub
+- **Email**: ultrabrzitranzijent@gmail.com
+
+---
+
+**Built with ❤️ by Josip Čunko**
+
+_Making productivity beautiful, one task at a time._

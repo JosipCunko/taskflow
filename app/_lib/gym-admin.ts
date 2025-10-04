@@ -26,6 +26,8 @@ export async function getWorkouts(userId: string): Promise<WorkoutSession[]> {
         duration: data.duration,
         notes: data.notes,
         loggedExercises: data.loggedExercises || [],
+        liked: data.liked,
+        disliked: data.disliked,
         createdAt: data.createdAt.toDate(),
         updatedAt: data.updatedAt.toDate(),
       };
@@ -59,6 +61,8 @@ export async function getWorkout(
       duration: data.duration,
       notes: data.notes,
       loggedExercises: data.loggedExercises || [],
+      liked: data.liked,
+      disliked: data.disliked,
       createdAt: data.createdAt.toDate(),
       updatedAt: data.updatedAt.toDate(),
     };

@@ -9,20 +9,14 @@ import {
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-import {
-  colorsColorPicker,
-  errorToast,
-  handleToast,
-} from "../_utils/utils";
+import { colorsColorPicker, errorToast, handleToast } from "../_utils/utils";
 import { TASK_ICONS, CardSpecificIcons } from "../_utils/icons";
 import Button from "./reusable/Button";
 import AnimatedPlaceholderInput from "./reusable/AnimatedPlaceholderInput";
-import { ModalContext } from "./Modal";
 import { createTaskAction } from "../_lib/actions";
 import { TaskAnalytics } from "../_types/types";
 import TaskCustomization from "./TaskCustomization";
 import { InputGroup } from "./reusable/InputGroup";
-import Location from "./Location";
 import { trackTaskEvent } from "../_lib/analytics";
 import Input from "./reusable/Input";
 import type { ForwardRefExoticComponent, RefAttributes } from "react";
@@ -53,7 +47,6 @@ const initialState = {
   duration: [0, 0],
   selectedColor: colorsColorPicker[0],
   selectedIcon: TASK_ICONS[0].icon,
-  location: "",
   wholeDay: true,
   title: "",
   description: "",
@@ -71,25 +64,15 @@ const reducer = (state: typeof initialState, action: Action) => {
   return { ...state, [action.type]: action.payload };
 };
 
-export default function AddTodayTask({ onCloseModal = undefined }: AddTodayTaskProps) {
+export default function AddTodayTask({
+  onCloseModal = undefined,
+}: AddTodayTaskProps) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [isPending, startTransition] = useTransition();
 
   const [activeTab, setActiveTab] = useState<"Task" | "Customization">("Task");
   const tabs = ["Task", "Customization"];
   const [isTitleFocused, setIsTitleFocused] = useState(false);
-
-  const [locationModalOpenName, setLocationModalOpenName] = useState<string>("");
-  const openLocationModal = (name: string) => setLocationModalOpenName(name);
-  const closeLocationModal = () => setLocationModalOpenName("");
-  const locationModalContextValue = useMemo(
-    () => ({
-      openName: locationModalOpenName,
-      open: openLocationModal,
-      close: closeLocationModal,
-    }),
-    [locationModalOpenName]
-  );
 
   const isStartTimeSpecified = useMemo(
     () => state.startTime[0] !== 0 || state.startTime[1] !== 0,
@@ -173,7 +156,7 @@ export default function AddTodayTask({ onCloseModal = undefined }: AddTodayTaskP
 
   const handleSubmit = async (formData: FormData) => {
     if (isPending) return;
-    
+
     startTransition(async () => {
       try {
         const title = formData.get("title") as string;
@@ -183,10 +166,9 @@ export default function AddTodayTask({ onCloseModal = undefined }: AddTodayTaskP
           throw new Error("Missing some required fields.");
         }
 
-        // Set dueDate to today
         const today = new Date();
         today.setHours(endHour, endMinute, 0, 0);
-        
+
         const durationObject = {
           hours: state.duration[0],
           minutes: state.duration[1],
@@ -293,25 +275,6 @@ export default function AddTodayTask({ onCloseModal = undefined }: AddTodayTaskP
                 }}
                 required
               />
-
-              <ModalContext.Provider value={locationModalContextValue}>
-                <Button
-                  variant="noStyle"
-                  type="button"
-                  className="flex gap-3 text-text-gray items-center w-full px-3 py-2 bg-background-600 rounded-md focus:outline-none "
-                  onClick={() => openLocationModal("location-modal")}
-                >
-                  <CardSpecificIcons.Location
-                    className="min-w-4 min-h-4"
-                    size={16}
-                  />
-                  <span className="text-left">
-                    {state.location || "Add location"}
-                  </span>
-                </Button>
-              </ModalContext.Provider>
-
-              <input type="hidden" name="location" value={state.location} />
             </InputGroup>
 
             {/* Button tags*/}
@@ -421,9 +384,7 @@ export default function AddTodayTask({ onCloseModal = undefined }: AddTodayTaskP
                         const newMin = parseInt(e.target.value, 10);
                         handleEndTimeChange([
                           state.endTime[0],
-                          isNaN(newMin)
-                            ? 0
-                            : Math.max(0, Math.min(59, newMin)),
+                          isNaN(newMin) ? 0 : Math.max(0, Math.min(59, newMin)),
                         ]);
                       }}
                       className="text-text-gray border-none text-center w-12 py-3 cursor-pointer focus-within:ring-0 focus-within:ring-transparent"
@@ -444,7 +405,9 @@ export default function AddTodayTask({ onCloseModal = undefined }: AddTodayTaskP
                       onChange={(e: ChangeEvent<HTMLInputElement>) => {
                         const newHour = parseInt(e.target.value, 10);
                         handleDurationChange([
-                          isNaN(newHour) ? 0 : Math.max(0, Math.min(23, newHour)),
+                          isNaN(newHour)
+                            ? 0
+                            : Math.max(0, Math.min(23, newHour)),
                           state.duration[1],
                         ]);
                       }}
@@ -497,7 +460,7 @@ export default function AddTodayTask({ onCloseModal = undefined }: AddTodayTaskP
                   disabled={isPending}
                   className="disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isPending ? "Adding..." : "Add task"}
+                  {isPending ? "Adding..." : "Add today's task"}
                 </Button>
               </div>
             </div>
@@ -519,22 +482,6 @@ export default function AddTodayTask({ onCloseModal = undefined }: AddTodayTaskP
           </motion.div>
         )}
       </AnimatePresence>
-
-      <ModalContext.Provider value={locationModalContextValue}>
-        {locationModalOpenName === "location-modal" && (
-          <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50">
-            <div className="bg-background-700 rounded-lg p-6 max-w-md w-full">
-              <Location
-                currentLocation={state.location}
-                onLocationSelect={(location) => {
-                  dispatch({ type: "location", payload: location });
-                  closeLocationModal();
-                }}
-              />
-            </div>
-          </div>
-        )}
-      </ModalContext.Provider>
     </div>
   );
 }

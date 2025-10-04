@@ -42,3 +42,7 @@ Integrate a recipe discovery feature that allows users to search for recipes by 
   - The AI could be "primed" with information about Taskflow's features to provide accurate answers.
   - saved chats
   - streaming data
+
+**6. Offline support **
+
+**7. Filter tasks in /tasks **

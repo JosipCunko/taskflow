@@ -10,6 +10,7 @@ import YouTubeBackgroundProcessor from "../_components/YouTubeBackgroundProcesso
 import { getUserById } from "../_lib/user-admin";
 import Providers from "./providers";
 import { TutorialProvider } from "../_context/TutorialContext";
+import OfflineHandler from "../_components/auth/OfflineHandler";
 
 export const metadata: Metadata = {
   title: "TaskFlow - WebApp",
@@ -32,6 +33,7 @@ export default async function RootLayout({
   return (
     <Providers>
       <TutorialProvider>
+        <OfflineHandler />
         <AnalyticsTracker userData={userData} />
         <YouTubeBackgroundProcessor userId={userId} userData={userData} />
         <main className="grid grid-rows-1 grid-cols-1 sm:grid-cols-[16rem_1fr] overflow-hidden relative h-screen bg-background-625">

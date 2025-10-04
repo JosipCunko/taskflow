@@ -1,11 +1,11 @@
 {
-  "name": "TaskFlow - Task Management",
+  "name": "TaskFlow",
   "short_name": "TaskFlow",
-  "description": "Modern task management web application with AI-powered features, analytics, and comprehensive productivity tools",
+  "description": "Modern task management web application with AI-powered features, health and fitness tracking, analytics, and comprehensive productivity tools",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f0f1a",
-  "theme_color": "#6366f1",
+  "background_color": "#0b111f",
+  "theme_color": "#0ea5e9",
   "orientation": "portrait-primary",
   "icons": [
     {
@@ -40,6 +40,24 @@
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide"
+    },
+    {
+      "src": "/health.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/today.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/ai.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
     }
   ],
   "shortcuts": [
@@ -48,21 +66,28 @@
       "short_name": "Add Task",
       "description": "Quickly add a new task",
       "url": "/webapp/tasks",
-      "icons": [{ "src": "/addTask.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Today's Tasks",
       "short_name": "Today",
       "description": "View today's tasks",
       "url": "/webapp/today",
-      "icons": [{ "src": "/today.png", "sizes": "192x192" }]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     },
     {
-      "name": "Analytics",
-      "short_name": "Analytics",
-      "description": "View your productivity analytics",
-      "url": "/webapp/analytics",
-      "icons": [{ "src": "/analytics.png", "sizes": "192x192" }]
+      "name": "Gym",
+      "short_name": "Gym",
+      "description": "View your gym progress",
+      "url": "/webapp/gym",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Health",
+      "short_name": "Health",
+      "description": "View your health progress",
+      "url": "/webapp/health",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ],
   "related_applications": [],
