@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/_lib/auth";
 import { adminDb } from "@/app/_lib/admin";
-import { FieldValue } from "firebase-admin/firestore";
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,7 +30,7 @@ export async function POST(request: NextRequest) {
     await userDocRef.set(
       {
         fcmToken: token,
-        fcmTokenUpdatedAt: FieldValue.serverTimestamp(),
+        fcmTokenUpdatedAt: Date.now(),
         notificationsEnabled: true,
       },
       { merge: true } // Don't overwrite other user data

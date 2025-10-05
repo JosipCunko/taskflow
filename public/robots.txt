@@ -1,8 +1,9 @@
-# Robots.txt for TaskFlow
+# *
 User-agent: *
 Allow: /
-Disallow: /api/
-Disallow: /webapp/
 
-# Sitemap
-Sitemap: https://yourdomain.com/sitemap.xml
+# Host
+Host: https://taskflow-delta-two.vercel.app
+
+# Sitemaps
+Sitemap: https://taskflow-delta-two.vercel.app/sitemap.xml
