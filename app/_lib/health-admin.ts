@@ -13,7 +13,7 @@ import { isSameDay } from "date-fns";
 
 export async function getLoggedMealsForDate(
   userId: string,
-  date: Date
+  date: number
 ): Promise<LoggedMeal[]> {
   try {
     const snapshot = await adminDb
@@ -25,9 +25,7 @@ export async function getLoggedMealsForDate(
     const loggedMeals: LoggedMeal[] = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
-      const loggedAt = data.loggedAt?.toDate
-        ? data.loggedAt.toDate()
-        : new Date(data.loggedAt);
+      const loggedAt = data.loggedAt;
 
       if (isSameDay(loggedAt, date)) {
         const plainLoggedMeal = {
@@ -38,9 +36,7 @@ export async function getLoggedMealsForDate(
           producer: data.producer,
           nutrientsPer100g: data.nutrientsPer100g,
           ingredients: data.ingredients,
-          createdAt: data.createdAt?.toDate
-            ? data.createdAt.toDate()
-            : new Date(data.createdAt),
+          createdAt: data.createdAt,
           readyInMinutes: data.readyInMinutes,
           mealType: data.mealType,
           servingSize: data.servingSize,
@@ -58,8 +54,8 @@ export async function getLoggedMealsForDate(
 }
 export async function getLoggedMealsForDateRange(
   userId: string,
-  startDate: Date,
-  endDate: Date
+  startDate: number,
+  endDate: number
 ): Promise<LoggedMeal[]> {
   try {
     const snapshot = await adminDb
@@ -83,7 +79,7 @@ export async function getLoggedMealsForDateRange(
 }
 
 export const getDailyNutritionSummary = unstable_cache(
-  async (userId: string, date: Date): Promise<DailyNutritionSummary> => {
+  async (userId: string, date: number): Promise<DailyNutritionSummary> => {
     try {
       const loggedMeals = await getLoggedMealsForDate(userId, date);
 
@@ -102,7 +98,7 @@ export const getDailyNutritionSummary = unstable_cache(
       );
 
       const summary: DailyNutritionSummary = {
-        date,
+        date: date,
         totalCalories: Math.round(totals.calories),
         totalProtein: Math.round(totals.protein),
         totalCarbs: Math.round(totals.carbs),

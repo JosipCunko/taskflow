@@ -4,7 +4,6 @@ import {
   where,
   orderBy,
   getDocs,
-  Timestamp,
   DocumentData,
   QueryDocumentSnapshot,
   limit,
@@ -30,14 +29,10 @@ const fromFirestore = (
     taskId: data.taskId,
     isRead: data.isRead || false,
     isArchived: data.isArchived || false,
-    createdAt: data.createdAt
-      ? (data.createdAt as Timestamp).toDate()
-      : new Date(),
-    readAt: data.readAt ? (data.readAt as Timestamp).toDate() : undefined,
+    createdAt: data.createdAt ? data.createdAt : Date.now(),
+    readAt: data.readAt ? data.readAt : undefined,
     data: data.data || {},
-    expiresAt: data.expiresAt
-      ? (data.expiresAt as Timestamp).toDate()
-      : undefined,
+    expiresAt: data.expiresAt ? data.expiresAt : undefined,
   } as Notification;
 };
 
@@ -79,7 +74,7 @@ export const getNotificationsByUserId = async (
     );
 
     // Filter out expired notifications
-    const now = new Date();
+    const now = Date.now();
     return notifications.filter(
       (notification) =>
         !notification.expiresAt || isAfter(notification.expiresAt, now)

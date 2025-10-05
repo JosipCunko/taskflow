@@ -11,6 +11,7 @@ import Button from "@/app/_components/reusable/Button";
 import Input from "@/app/_components/reusable/Input";
 import { PlusCircle, Save, Trash2, XCircle, Edit3 } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { formatDateTime } from "@/app/_utils/utils";
 
 interface NotesClientUIProps {
   initialNotes: Note[];
@@ -61,7 +62,7 @@ export default function NotesClientUI({
           userId,
           title: "New Note",
           content: "",
-          updatedAt: new Date(),
+          updatedAt: Date.now(),
         };
         setNotes((prev) => [newServerNote, ...prev]);
         setEditingNoteId(result.newNoteId);
@@ -104,7 +105,7 @@ export default function NotesClientUI({
                   ...n,
                   title: currentTitle,
                   content: currentContent,
-                  updatedAt: new Date(),
+                  updatedAt: Date.now(),
                 } // Optimistic update
               : n
           )
@@ -234,14 +235,7 @@ export default function NotesClientUI({
                   )}
                 </p>
                 <div className="flex justify-between items-center mt-auto pt-2 text-xs text-text-gray">
-                  <span>
-                    Updated:{" "}
-                    {new Date(note.updatedAt).toLocaleDateString([], {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </span>
+                  <span>Updated: {formatDateTime(note.updatedAt)}</span>
                   <div className="flex space-x-2">
                     <Button
                       onClick={(e) => {

@@ -13,7 +13,10 @@ export async function POST(request: NextRequest) {
     const { date } = await request.json();
 
     const dateObj = new Date(date);
-    const result = await getDailyNutritionSummary(session.user.id, dateObj);
+    const result = await getDailyNutritionSummary(
+      session.user.id,
+      dateObj.getTime()
+    );
     return NextResponse.json({ data: result });
   } catch (error) {
     console.error("Error getting user nutrition goals:", error);

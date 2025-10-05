@@ -171,7 +171,7 @@ export async function POST() {
         channelId: "UC_mock_channel_1",
         description:
           "Learn the top 10 productivity tips that will transform your daily routine and help you achieve more in less time.",
-        publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
+        publishedAt: Date.now() - 2 * 60 * 60 * 1000, // 2 hours ago
         thumbnailUrl: "https://img.youtube.com/vi/dQw4w9WgXcQ/mqdefault.jpg",
       },
       {
@@ -181,7 +181,7 @@ export async function POST() {
         channelId: "UC_mock_channel_2",
         description:
           "Comprehensive overview of all the new features in Next.js 15, including Server Components improvements and new caching strategies.",
-        publishedAt: new Date(Date.now() - 4 * 60 * 60 * 1000), // 4 hours ago
+        publishedAt: Date.now() - 4 * 60 * 60 * 1000, // 4 hours ago
         thumbnailUrl: "https://img.youtube.com/vi/mock_video_2/mqdefault.jpg",
       },
       {
@@ -191,7 +191,7 @@ export async function POST() {
         channelId: "UC_mock_channel_3",
         description:
           "Start your day right with this science-backed morning routine that improves focus, energy, and overall well-being.",
-        publishedAt: new Date(Date.now() - 6 * 60 * 60 * 1000), // 6 hours ago
+        publishedAt: Date.now() - 6 * 60 * 60 * 1000, // 6 hours ago
         thumbnailUrl: "https://img.youtube.com/vi/mock_video_3/mqdefault.jpg",
       },
     ];
@@ -204,11 +204,11 @@ export async function POST() {
       userId,
       videos: videos.map((video) => ({
         ...video,
-        publishedAt: Timestamp.fromDate(video.publishedAt),
+        publishedAt: video.publishedAt,
       })),
       summary,
-      createdAt: Timestamp.fromDate(new Date()),
-      processedAt: Timestamp.fromDate(new Date()),
+      createdAt: Date.now(),
+      processedAt: Date.now(),
     };
 
     const docRef = await adminDb.collection("youtubeSummaries").add(summaryDoc);

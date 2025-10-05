@@ -86,13 +86,9 @@ export default function InboxContent({
     .sort((a, b) => {
       switch (sort) {
         case "newest":
-          return (
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-          );
+          return b.createdAt - a.createdAt;
         case "oldest":
-          return (
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-          );
+          return a.createdAt - b.createdAt;
         case "priority":
           const priorityOrder = { URGENT: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
           return priorityOrder[b.priority] - priorityOrder[a.priority];
@@ -105,7 +101,7 @@ export default function InboxContent({
     // Optimistic update first
     setNotifications((prev) =>
       prev.map((n) =>
-        n.id === notificationId ? { ...n, isRead: true, readAt: new Date() } : n
+        n.id === notificationId ? { ...n, isRead: true, readAt: Date.now() } : n
       )
     );
     updateStats();
@@ -137,7 +133,7 @@ export default function InboxContent({
 
     // Optimistic update first
     setNotifications((prev) =>
-      prev.map((n) => ({ ...n, isRead: true, readAt: new Date() }))
+      prev.map((n) => ({ ...n, isRead: true, readAt: Date.now() }))
     );
     updateStats();
 

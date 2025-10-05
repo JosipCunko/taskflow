@@ -189,7 +189,7 @@ export async function completeWorkoutSessionAction(
       duration,
       notes,
       loggedExercises,
-      updatedAt: new Date(),
+      updatedAt: Date.now(),
     });
 
     revalidatePath("/webapp/gym");
@@ -302,7 +302,7 @@ export async function createWorkoutTemplateAction(
     const templateId = await createWorkoutTemplate(userId, {
       ...templateData,
       userId,
-      createdAt: new Date(),
+      createdAt: Date.now(),
     });
 
     revalidatePath("/webapp/gym");
@@ -427,7 +427,7 @@ export async function getLastPerformanceAction(exerciseName: string): Promise<
     weight: number;
     reps: number;
     sets: number;
-    date: Date;
+    date: number;
   } | null>
 > {
   try {

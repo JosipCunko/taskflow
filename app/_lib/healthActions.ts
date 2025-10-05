@@ -57,7 +57,7 @@ export async function createSavedMeal(
       },
       ingredients,
       ...(readyInMinutes && { readyInMinutes }),
-      createdAt: new Date(),
+      createdAt: Date.now(),
     };
 
     const docRef = adminDb.collection("savedMeals").doc();
@@ -158,10 +158,10 @@ export async function createLoggedMeal(
 
     const loggedMealData: Omit<LoggedMeal, "id"> = {
       ...savedMealData,
-      createdAt: new Date(),
+      createdAt: Date.now(),
       servingSize,
       calculatedNutrients,
-      loggedAt: new Date(),
+      loggedAt: Date.now(),
       mealType,
     };
 

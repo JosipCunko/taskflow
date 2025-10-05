@@ -1,6 +1,5 @@
 import "server-only";
 import { adminDb } from "./admin";
-import admin from "firebase-admin";
 import {
   WorkoutSession,
   Exercise,
@@ -28,8 +27,8 @@ export async function getWorkouts(userId: string): Promise<WorkoutSession[]> {
         loggedExercises: data.loggedExercises || [],
         liked: data.liked,
         disliked: data.disliked,
-        createdAt: data.createdAt.toDate(),
-        updatedAt: data.updatedAt.toDate(),
+        createdAt: data.createdAt,
+        updatedAt: data.updatedAt,
       };
     });
   } catch (error) {
@@ -63,8 +62,8 @@ export async function getWorkout(
       loggedExercises: data.loggedExercises || [],
       liked: data.liked,
       disliked: data.disliked,
-      createdAt: data.createdAt.toDate(),
-      updatedAt: data.updatedAt.toDate(),
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
     };
   } catch (error) {
     console.error("Error getting workout session:", error);
@@ -78,12 +77,11 @@ export async function createWorkout(
 ): Promise<string> {
   try {
     const workoutsCol = adminDb.collection(`users/${userId}/workouts`);
-    const now = new Date();
 
     const docRef = await workoutsCol.add({
       ...workoutData,
-      createdAt: admin.firestore.Timestamp.fromDate(now),
-      updatedAt: admin.firestore.Timestamp.fromDate(now),
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
       userId,
     });
 
@@ -104,7 +102,7 @@ export async function updateWorkout(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = {
       ...updates,
-      updatedAt: admin.firestore.Timestamp.fromDate(new Date()),
+      updatedAt: Date.now(),
     };
 
     await workoutDoc.update(updateData);
@@ -183,7 +181,7 @@ export async function getWorkoutTemplates(
         userId,
         name: data.name,
         exercises: data.exercises,
-        createdAt: data.createdAt.toDate(),
+        createdAt: data.createdAt,
       };
     });
   } catch (error) {
@@ -201,7 +199,7 @@ export async function createWorkoutTemplate(
 
     const docRef = await templatesCol.add({
       ...template,
-      createdAt: admin.firestore.Timestamp.fromDate(template.createdAt),
+      createdAt: Date.now(),
     });
 
     return docRef.id;
@@ -241,7 +239,7 @@ export async function getExerciseProgress(
         const maxReps = maxWeightSet ? maxWeightSet.reps : 0;
 
         progressData.push({
-          date: workout.createdAt.toDate(),
+          date: workout.createdAt,
           maxWeight,
           maxReps,
           sets: exercise.volume.length,
@@ -267,7 +265,7 @@ export async function getPersonalRecords(
 
     querySnapshot.docs.forEach((doc) => {
       const workout = doc.data();
-      const workoutDate = workout.createdAt.toDate();
+      const workoutDate = workout.createdAt;
 
       workout.loggedExercises?.forEach((exercise: LoggedExercise) => {
         if (exercise.volume && exercise.volume.length > 0) {
@@ -321,7 +319,7 @@ export async function getLastPerformance(
           weight: firstSet.weight,
           reps: firstSet.reps,
           sets: totalSets,
-          date: workout.createdAt.toDate(),
+          date: workout.createdAt,
         };
       }
     }

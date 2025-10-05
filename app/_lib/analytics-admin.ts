@@ -20,7 +20,7 @@ export const startUserSession = async (userId: string, pageTitle: string) => {
 
     const sessionData: SessionData = {
       userId,
-      sessionStart: new Date(),
+      sessionStart: Date.now(),
       pageViews: 1,
       activeTime: 0,
       pagesVisited: [pageTitle],
@@ -60,10 +60,10 @@ export const endUserSession = async (sessionId: string, timeSpent?: number) => {
 
     const sessionRef = adminDb.collection("userSessions").doc(sessionId);
     const updates: {
-      sessionEnd: Date;
+      sessionEnd: number;
       activeTime?: FirebaseFirestore.FieldValue;
     } = {
-      sessionEnd: new Date(),
+      sessionEnd: Date.now(),
     };
 
     if (timeSpent && timeSpent > 0) {
@@ -80,23 +80,21 @@ export const trackTaskAnalytics = async (
   taskId: string,
   action: TaskEventType,
   taskData: {
-    dueDate: Date;
+    dueDate: number;
     isPriority: boolean;
     isReminder: boolean;
     risk?: boolean;
     isRepeating: boolean;
-    createdAt: Date;
-    completedAt?: Date;
+    createdAt: number;
+    completedAt?: number;
     delayCount?: number;
     points: number;
   }
 ) => {
   try {
-    const now = new Date();
+    const now = Date.now();
     const completionTime = taskData.completedAt
-      ? Math.floor(
-          (taskData.completedAt.getTime() - taskData.createdAt.getTime()) / 1000
-        )
+      ? Math.floor((taskData.completedAt - taskData.createdAt) / 1000)
       : undefined;
 
     const analyticsData: TaskAnalytics = {
@@ -111,7 +109,7 @@ export const trackTaskAnalytics = async (
       isPriority: taskData.isPriority,
       isRepeating: taskData.isRepeating,
       delayCount: taskData.delayCount,
-      hour: now.getHours(),
+      hour: new Date(now).getHours(),
       points: taskData.points,
     };
 
@@ -125,10 +123,10 @@ export const getAnalyticsData = async (
   userId: string
 ): Promise<AnalyticsData | null> => {
   try {
-    const now = new Date();
+    const now = Date.now();
     // Calculate trends by comparing current period (last 15 days) to previous period (15-30 days ago)
-    const fifteenDaysAgo = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
-    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const fifteenDaysAgo = now - 15 * 24 * 60 * 60 * 1000;
+    const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
 
     const sessionsSnapshot = await adminDb
       .collection("userSessions")
@@ -152,8 +150,8 @@ export const getAnalyticsData = async (
       return {
         id: doc.id,
         userId: data.userId,
-        sessionStart: data.sessionStart.toDate(),
-        sessionEnd: data.sessionEnd?.toDate(),
+        sessionStart: data.sessionStart,
+        sessionEnd: data.sessionEnd,
         pageViews: data.pageViews,
         activeTime: data.activeTime,
         pagesVisited: data.pagesVisited,
@@ -162,8 +160,8 @@ export const getAnalyticsData = async (
 
     const totalSessionDuration = sessions.reduce((acc, session) => {
       const start = session.sessionStart;
-      const end = session.sessionEnd || new Date();
-      return acc + Math.floor((end.getTime() - start.getTime()) / 1000);
+      const end = session.sessionEnd || Date.now();
+      return acc + Math.floor((end - start) / 1000);
     }, 0);
 
     const avgSessionDuration =
@@ -189,9 +187,9 @@ export const getAnalyticsData = async (
           userId: data.userId,
           taskId: data.taskId,
           action: data.action,
-          timestamp: data.timestamp.toDate(),
+          timestamp: data.timestamp,
           completionTime: data.completionTime,
-          dueDate: data.dueDate.toDate(),
+          dueDate: data.dueDate,
           isPriority: data.isPriority,
           isReminder: data.isReminder,
           isRepeating: data.isRepeating,
@@ -207,7 +205,7 @@ export const getAnalyticsData = async (
      * length: 14
      */
     const dailyTaskCompletions = Array.from({ length: 14 }, (_, i) => {
-      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const date = new Date(now - i * 24 * 60 * 60 * 1000);
       const dayStart = new Date(date.setHours(0, 0, 0, 0));
       const dayEnd = new Date(date.setHours(23, 59, 59, 999));
 
@@ -215,8 +213,8 @@ export const getAnalyticsData = async (
         const taskDate = task.timestamp;
         return (
           task.action === "task_completed" &&
-          taskDate >= dayStart &&
-          taskDate <= dayEnd
+          taskDate >= dayStart.getTime() &&
+          taskDate <= dayEnd.getTime()
         );
       }).length;
     }).reverse();
@@ -229,10 +227,7 @@ export const getAnalyticsData = async (
         ? Math.ceil(
             Math.max(
               ...taskAnalytics.map((task) =>
-                Math.ceil(
-                  (now.getTime() - task.timestamp.getTime()) /
-                    (7 * 24 * 60 * 60 * 1000)
-                )
+                Math.ceil((now - task.timestamp) / (7 * 24 * 60 * 60 * 1000))
               ),
               1
             )
@@ -243,7 +238,7 @@ export const getAnalyticsData = async (
      * Dynamic length based on available data, no fixed limit
      */
     const weeklyPointsGrowth = Array.from({ length: weeksWithData }, (_, i) => {
-      const weekEnd = new Date(now.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+      const weekEnd = new Date(now - i * 7 * 24 * 60 * 60 * 1000);
       const weekStart = new Date(weekEnd.getTime() - 6 * 24 * 60 * 60 * 1000);
       weekStart.setHours(0, 0, 0, 0);
       weekEnd.setHours(23, 59, 59, 999);
@@ -253,8 +248,8 @@ export const getAnalyticsData = async (
           const taskDate = task.timestamp;
           return (
             task.action === "task_completed" &&
-            taskDate >= weekStart &&
-            taskDate <= weekEnd &&
+            taskDate >= weekStart.getTime() &&
+            taskDate <= weekEnd.getTime() &&
             task.points > 0
           );
         })
@@ -299,7 +294,7 @@ export const getAnalyticsData = async (
 
     // Calculate consistency score based on session frequency
     const daysWithSessions = new Set(
-      sessions.map((session) => session.sessionStart.toDateString())
+      sessions.map((session) => new Date(session.sessionStart).toDateString())
     ).size;
     const consistencyScore = Math.round((daysWithSessions / 30) * 100);
 
@@ -325,10 +320,7 @@ export const getAnalyticsData = async (
         userId: achievement.userId,
         unlockedAt: achievement.unlockedAt,
       }))
-      .sort(
-        (a: Achievement, b: Achievement) =>
-          b.unlockedAt.getTime() - a.unlockedAt.getTime()
-      );
+      .sort((a: Achievement, b: Achievement) => b.unlockedAt - a.unlockedAt);
 
     // Calculate achievements by type
     const achievementsByType = allAchievements.reduce(
@@ -352,12 +344,8 @@ export const getAnalyticsData = async (
       currentPeriodSessions.length > 0
         ? currentPeriodSessions.reduce((acc, s) => {
             const duration = s.sessionEnd
-              ? Math.floor(
-                  (s.sessionEnd.getTime() - s.sessionStart.getTime()) / 1000
-                )
-              : Math.floor(
-                  (new Date().getTime() - s.sessionStart.getTime()) / 1000
-                );
+              ? Math.floor((s.sessionEnd - s.sessionStart) / 1000)
+              : Math.floor((Date.now() - s.sessionStart) / 1000);
             return acc + duration;
           }, 0) / currentPeriodSessions.length
         : 0;
@@ -366,12 +354,8 @@ export const getAnalyticsData = async (
       previousPeriodSessions.length > 0
         ? previousPeriodSessions.reduce((acc, s) => {
             const duration = s.sessionEnd
-              ? Math.floor(
-                  (s.sessionEnd.getTime() - s.sessionStart.getTime()) / 1000
-                )
-              : Math.floor(
-                  (new Date().getTime() - s.sessionStart.getTime()) / 1000
-                );
+              ? Math.floor((s.sessionEnd - s.sessionStart) / 1000)
+              : Math.floor((Date.now() - s.sessionStart) / 1000);
             return acc + duration;
           }, 0) / previousPeriodSessions.length
         : 0;
@@ -405,10 +389,10 @@ export const getAnalyticsData = async (
 
     // Calculate consistency trends
     const currentActiveDays = new Set(
-      currentPeriodSessions.map((s) => s.sessionStart.toDateString())
+      currentPeriodSessions.map((s) => new Date(s.sessionStart).toDateString())
     ).size;
     const previousActiveDays = new Set(
-      previousPeriodSessions.map((s) => s.sessionStart.toDateString())
+      previousPeriodSessions.map((s) => new Date(s.sessionStart).toDateString())
     ).size;
 
     const currentConsistency = (currentActiveDays / 15) * 100;

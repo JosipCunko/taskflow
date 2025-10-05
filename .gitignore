@@ -1,6 +1,11 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 /public/firebase-messaging-sw.js
 
+/pwaicons
+/pwaicons/windows11
+/pwaicons/android
+/pwaicons/ios
+
 # dependencies
 /node_modules
 /.pnp

@@ -38,7 +38,7 @@ import { authOptions } from "./auth";
 import { revalidatePath } from "next/cache";
 import { updateUser, updateUserCompletionStats } from "./user-admin";
 import { adminDb } from "./admin";
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { FieldValue } from "firebase-admin/firestore";
 import { sendCampaignNotification } from "./notifications-admin";
 import { checkAndAwardAchievements } from "./achievements";
 import { trackTaskAnalytics, getAnalyticsData } from "./analytics-admin";
@@ -82,12 +82,9 @@ export async function setUserNutritionGoalsAction(
       updatedAt: Date.now(),
     };
 
-    await adminDb
-      .collection("users")
-      .doc(session.user.id)
-      .update({
-        nutritionGoals: goals,
-      });
+    await adminDb.collection("users").doc(session.user.id).update({
+      nutritionGoals: goals,
+    });
 
     revalidatePath("/webapp/health");
 
@@ -323,8 +320,8 @@ export async function delayTaskAction(
   const dueDateObj = new Date(dueDate);
   const hours = dueDateObj.getHours();
   const minutes = dueDateObj.getMinutes();
-  
-  let newDueDateObj = new Date(newDueDate);
+
+  const newDueDateObj = new Date(newDueDate);
   if (delayOption === "tomorrow") {
     newDueDateObj.setDate(newDueDateObj.getDate() + 1);
   } else if (delayOption === "nextWeek") {
@@ -544,7 +541,10 @@ export async function completeRepeatingTaskWithInterval(
 
   const completionDateObj = new Date(completionDate);
   const taskDueDateObj = new Date(task.dueDate);
-  completionDateObj.setHours(taskDueDateObj.getHours(), taskDueDateObj.getMinutes());
+  completionDateObj.setHours(
+    taskDueDateObj.getHours(),
+    taskDueDateObj.getMinutes()
+  );
   const finalDueDate = addDays(completionDateObj, rule.interval);
   const finalDueDateTimestamp = finalDueDate.getTime();
 
@@ -580,7 +580,9 @@ export async function completeRepeatingTaskWithInterval(
 
     return {
       success: true,
-      message: `Task completed. Next due on ${formatDate(finalDueDateTimestamp)}`,
+      message: `Task completed. Next due on ${formatDate(
+        finalDueDateTimestamp
+      )}`,
     };
   } catch (err) {
     const error = err as Error;
@@ -638,7 +640,10 @@ export async function completeRepeatingTaskWithTimesPerWeek(
   }
   // Next due date for "times per week" is the next day
   const taskDueDateObj = new Date(task.dueDate);
-  nextDueDateObj.setHours(taskDueDateObj.getHours(), taskDueDateObj.getMinutes());
+  nextDueDateObj.setHours(
+    taskDueDateObj.getHours(),
+    taskDueDateObj.getMinutes()
+  );
   const nextDueDate = nextDueDateObj.getTime();
 
   const updates: Partial<Task> = {
@@ -739,7 +744,10 @@ export async function completeRepeatingTaskWithDaysOfWeek(
   // Calculate new due date but preserve original time
   const newDueDateObj = addDays(new Date(completionDate), daysUntilNext);
   const taskDueDateObj = new Date(task.dueDate);
-  newDueDateObj.setHours(taskDueDateObj.getHours(), taskDueDateObj.getMinutes());
+  newDueDateObj.setHours(
+    taskDueDateObj.getHours(),
+    taskDueDateObj.getMinutes()
+  );
   const newDueDate = newDueDateObj.getTime();
 
   const updates: Partial<Task> = {

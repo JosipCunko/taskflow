@@ -32,14 +32,8 @@ If user specifies that this task should delay automatically for the next day if 
 
 # Quota limit and Firebase Blaze plan
 
-🧠 Why it happens
-
-This “quota exceeded” error happens when:
-
 You’re querying Firestore too frequently, e.g. repeatedly calling .get() inside loops or API requests.
-
 You’re using an admin SDK without caching, so every request refetches everything.
-
 Your app is in a free Firebase tier (Spark plan), which has strict daily limits.
 
 🔧 How to fix it
@@ -85,15 +79,5 @@ const sessionsSnapshot = await adminDb
   Each existing Loading Skeleton needs a review because some's page structures have changed
   ModelDropdown is not used
   Sidebar cannot be opened in the /ai
-
-# Dates to UNIX timestamp (number):
-
-You've hit on a very subtle but important issue with data caching in Next.js! Here’s what's happening:
-
-The root cause is `unstable_cache` in `app/_lib/user-admin.ts`.
-
-1.  **First Fetch:** The first time `getUserById` runs, it correctly fetches data from Firestore and converts the `unlockedAt` Firestore `Timestamp` into a JavaScript `Date` object. Everything is correct at this point.
-2.  **Caching & Serialization:** Next.js's `unstable_cache` then takes this user object and serializes it to store it in the cache. During serialization, `Date` objects are converted into ISO date strings (e.g., `"2023-10-27T10:00:00.000Z"`).
-3.  **Subsequent Fetches (from Cache):** When `getAnalyticsData` calls `getUserById` again, `unstable_cache` serves the serialized data from its cache. It deserializes the JSON, but the `unlockedAt` field remains a **string**. It is not automatically converted back into a `Date` object.
-
-So, even though your type definition says `unlockedAt: Date`, the data you receive from the cache at runtime has `unlockedAt` as a `string`. When the `.sort()` method tries to call `.getTime()` on that string, the app crashes.
+  Icon on desktop app not working - create sizes for the icons: https://www.pwabuilder.com/imageGenerator
+  robots.txt file

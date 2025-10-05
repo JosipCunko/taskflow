@@ -1,6 +1,6 @@
 import "server-only";
 
-import { Timestamp, FieldValue, WriteBatch } from "firebase-admin/firestore";
+import { WriteBatch } from "firebase-admin/firestore";
 import { adminDb } from "./admin";
 import {
   AchievementType,
@@ -143,7 +143,7 @@ export const sendCampaignNotification = async (
           actionText: "View",
           actionUrl: campaign.actionUrl,
           data: { campaign: true },
-          expiresAt: addDays(new Date(), 7),
+          expiresAt: addDays(new Date(), 7).getTime(),
         },
         true
       );
@@ -176,10 +176,10 @@ const fromFirestore = (
     taskId: data.taskId,
     isRead: data.isRead || false,
     isArchived: data.isArchived || false,
-    createdAt: data.createdAt.toDate(),
-    readAt: data.readAt ? data.readAt.toDate() : undefined,
+    createdAt: data.createdAt,
+    readAt: data.readAt ? data.readAt : undefined,
     data: data.data || {},
-    expiresAt: data.expiresAt ? data.expiresAt.toDate() : undefined,
+    expiresAt: data.expiresAt ? data.expiresAt : undefined,
   } as Notification;
 };
 
@@ -215,7 +215,7 @@ export const getNotificationsByUserIdAdmin = async (
       (docSnapshot) => fromFirestore(docSnapshot)
     );
 
-    const now = new Date();
+    const now = Date.now();
     return notifications.filter(
       (notification) =>
         !notification.expiresAt || isAfter(notification.expiresAt, now)
@@ -237,9 +237,9 @@ export const createNotification = async (
       ...notificationData,
       isRead: false,
       isArchived: false,
-      createdAt: FieldValue.serverTimestamp(),
+      createdAt: Date.now(),
       ...(notificationData.expiresAt && {
-        expiresAt: Timestamp.fromDate(notificationData.expiresAt),
+        expiresAt: notificationData.expiresAt,
       }),
     };
 
@@ -266,7 +266,7 @@ export const markNotificationAsRead = async (
       .doc(notificationId);
     await notificationRef.update({
       isRead: true,
-      readAt: Timestamp.now(),
+      readAt: Date.now(),
     });
   } catch (error) {
     console.error("Error marking notification as read:", error);
@@ -279,7 +279,7 @@ export const markNotificationsAsRead = async (
 ): Promise<void> => {
   try {
     const batch: WriteBatch = adminDb.batch();
-    const now = Timestamp.now();
+    const now = Date.now();
 
     notificationIds.forEach((id) => {
       const notificationRef = adminDb.collection("notifications").doc(id);
@@ -340,7 +340,7 @@ export const generateOverdueTaskNotifications = async (
   if (!userPrefs?.notifyReminders) {
     return;
   }
-  const now = new Date();
+  const now = Date.now();
   const overdueTasks = tasks.filter(
     (task) =>
       task.isReminder && task.status !== "completed" && isPast(task.dueDate)
@@ -402,7 +402,7 @@ export const generateOverdueTaskNotifications = async (
       actionUrl: `/webapp/tasks`,
       taskId: task.id,
       data: { daysOverdue, isRepeating: task.isRepeating },
-      expiresAt: addDays(now, 7),
+      expiresAt: addDays(new Date(), 7).getTime(),
     });
   });
 };
@@ -421,8 +421,8 @@ export const generateDueSoonNotifications = async (
   if (!userPrefs?.notifyReminders) {
     return;
   }
-  const now = new Date();
-  const tomorrow = endOfDay(addDays(now, 1));
+  const now = Date.now();
+  const tomorrow = endOfDay(addDays(new Date(), 1));
   const dueSoonTasks = tasks.filter(
     (task) =>
       task.isReminder &&
@@ -463,7 +463,7 @@ export const generateDueSoonNotifications = async (
       actionUrl: `/webapp/tasks`,
       taskId: task.id,
       data: { isRepeating: task.isRepeating },
-      expiresAt: addDays(now, 7),
+      expiresAt: addDays(now, 7).getTime(),
     });
   });
 };
@@ -494,7 +494,8 @@ export const generateTimeWindowNotifications = async (
       !task.startTime?.minute ||
       !task.duration?.hours ||
       !task.duration?.minutes ||
-      (task.dueDate.getHours() !== 23 && task.dueDate.getMinutes() !== 59) //Default endTime
+      (new Date(task.dueDate).getHours() !== 23 &&
+        new Date(task.dueDate).getMinutes() !== 59) //Default endTime
     ) {
       return false;
     }
@@ -568,7 +569,7 @@ export const generateTimeWindowNotifications = async (
             endTime,
             durationMinutes: durationInMinutes,
           },
-          expiresAt: addDays(now, 1),
+          expiresAt: addDays(new Date(), 1).getTime(),
         });
       }
     }
@@ -633,7 +634,7 @@ export const generateAchievementNotification = async (
     actionText: "View Achievement",
     actionUrl: "/webapp/profile",
     data: { achievementId },
-    expiresAt: addDays(new Date(), 30),
+    expiresAt: addDays(new Date(), 30).getTime(),
   });
 };
 
@@ -669,7 +670,7 @@ export const generateWeeklySummaryNotification = async (
     actionText: "View Dashboard",
     actionUrl: "/webapp",
     data: weeklyStats,
-    expiresAt: addDays(new Date(), 7),
+    expiresAt: addDays(new Date(), 7).getTime(),
   });
 };
 
@@ -681,7 +682,7 @@ export const cleanupExpiredNotifications = async (
 ): Promise<void> => {
   try {
     const notificationsRef = adminDb.collection("notifications");
-    const now = Timestamp.now();
+    const now = Date.now();
 
     const expiredQuery = notificationsRef
       .where("userId", "==", userId)
@@ -743,7 +744,7 @@ export const getNotificationStats = async (
       .where("isArchived", "==", false)
       .get();
 
-    const now = new Date();
+    const now = Date.now();
     const unreadNotifications: Notification[] = [];
 
     querySnapshot.docs.forEach((doc) => {
@@ -760,12 +761,10 @@ export const getNotificationStats = async (
         taskId: data.taskId,
         isRead: data.isRead || false,
         isArchived: data.isArchived || false,
-        createdAt: (data.createdAt as Timestamp).toDate(),
-        readAt: data.readAt ? (data.readAt as Timestamp).toDate() : undefined,
+        createdAt: data.createdAt,
+        readAt: data.readAt ? data.readAt : undefined,
         data: data.data || {},
-        expiresAt: data.expiresAt
-          ? (data.expiresAt as Timestamp).toDate()
-          : undefined,
+        expiresAt: data.expiresAt ? data.expiresAt : undefined,
       } as Notification;
 
       if (!notification.expiresAt || isAfter(notification.expiresAt, now)) {

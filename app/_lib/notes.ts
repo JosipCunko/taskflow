@@ -1,7 +1,6 @@
 import "server-only";
 import { adminDb } from "@/app/_lib/admin";
 import { Note } from "@/app/_types/types";
-import { Timestamp } from "firebase-admin/firestore";
 
 export async function loadNotesByUserId(userId: string): Promise<Note[]> {
   if (!userId) {
@@ -27,7 +26,7 @@ export async function loadNotesByUserId(userId: string): Promise<Note[]> {
         userId: data.userId as string,
         title: (data.title as string) || "",
         content: (data.content as string) || "",
-        updatedAt: (data.updatedAt as Timestamp).toDate(),
+        updatedAt: data.updatedAt,
       };
     });
 

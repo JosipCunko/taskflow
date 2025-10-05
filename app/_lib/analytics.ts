@@ -27,7 +27,7 @@ export const trackAchievementUnlocked = (achievementId: string) => {
 
   logEvent(analytics, "achievement_unlocked", {
     achievementId,
-    unlockedAt: new Date(),
+    unlockedAt: Date.now(),
   });
 };
 
@@ -46,8 +46,8 @@ export const setUserAnalyticsProperties = (
     bestStreak: number;
     completedTasksCount: number;
     rewardPoints: number;
-    createdAt: Date;
-    lastLoginAt?: Date;
+    createdAt: number;
+    lastLoginAt?: number;
     achievements: Achievement[];
   },
   analyticsData?: AnalyticsData,
@@ -69,12 +69,8 @@ export const setUserAnalyticsProperties = (
 
   const processedProperties = {
     ...properties,
-    lastLoginAt: properties.lastLoginAt?.getTime
-      ? properties.lastLoginAt.getTime()
-      : properties.lastLoginAt,
-    createdAt: properties.createdAt?.getTime
-      ? properties.createdAt.getTime()
-      : properties.createdAt,
+    lastLoginAt: properties.lastLoginAt,
+    createdAt: properties.createdAt,
   };
 
   setUserProperties(analytics, processedProperties);

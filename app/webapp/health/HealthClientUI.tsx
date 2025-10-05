@@ -30,7 +30,7 @@ import LoggedMealCard from "@/app/_components/LoggedMealCard";
 
 /* State */
 const initialState = {
-  currentDate: new Date(),
+  currentDate: Date.now(),
   dailyNutritionSummary: defaultDailyNutritionSummary,
   nutritionGoals: defaultNutritionGoals,
 };

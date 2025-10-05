@@ -135,7 +135,7 @@ export default function AnalyticsTracker({
       window.removeEventListener("beforeunload", endSession);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [userData?.uid, pathname]);
+  }, [userData, pathname]);
 
   useEffect(() => {
     async function updateOnPathChange() {

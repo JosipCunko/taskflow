@@ -272,7 +272,7 @@ export interface SavedMeal {
   producer?: string;
   nutrientsPer100g: MealNutrition;
   ingredients: string[];
-  createdAt: Date;
+  createdAt: number;
   readyInMinutes?: number;
 }
 
@@ -280,7 +280,7 @@ export interface LoggedMeal extends SavedMeal {
   mealType: "breakfast" | "lunch" | "dinner" | "snack";
   servingSize: number;
   calculatedNutrients: MealNutrition;
-  loggedAt: Date;
+  loggedAt: number;
 }
 
 export interface MealNutrition {

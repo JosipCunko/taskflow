@@ -8,7 +8,7 @@ import {
   TaskToUpdateData,
 } from "@/app/_types/types";
 import { calculateTaskPoints, isTaskAtRisk } from "@/app/_utils/utils";
-import { FieldValue, Timestamp } from "firebase-admin/firestore";
+import { Timestamp } from "firebase-admin/firestore";
 import { revalidateTag } from "next/cache";
 
 // Helper function to safely convert Firestore data to UNIX timestamps
@@ -69,12 +69,15 @@ const fromFirestore = (
           ...data.repetitionRule,
           completedAt: data.repetitionRule.completedAt
             ? data.repetitionRule.completedAt.map(
-                (date: Timestamp | Date | string | number) => safeConvertToTimestamp(date)
+                (date: Timestamp | Date | string | number) =>
+                  safeConvertToTimestamp(date)
               )
             : [],
         }
       : undefined,
-    startDate: data.startDate ? safeConvertToTimestamp(data.startDate) : undefined,
+    startDate: data.startDate
+      ? safeConvertToTimestamp(data.startDate)
+      : undefined,
     points: data.points,
   } as Task;
 
@@ -235,11 +238,11 @@ export const updateTask = async (
 
     // All date fields are already UNIX timestamps (numbers) in the updates object
     // No need to convert them anymore
-    
+
     if (updates.repetitionRule) {
       updateData.repetitionRule = updates.repetitionRule;
     }
-    
+
     updates.risk = isTaskAtRisk(updates as Task);
 
     await taskRef.update(updateData);

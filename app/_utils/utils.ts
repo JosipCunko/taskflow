@@ -457,7 +457,9 @@ export const formatDate = (
   }
 };
 
-export const formatDateTime = (date: Date | string | number | undefined): string => {
+export const formatDateTime = (
+  date: Date | string | number | undefined
+): string => {
   if (!date) return "N/A";
   try {
     // Accept Date objects, ISO strings, and UNIX timestamps (numbers)
@@ -562,9 +564,7 @@ export const getNotificationTypeLabel = (type: NotificationType): string => {
 export const formatNotificationTime = (date: number | Date): string => {
   const now = Date.now();
   const dateTimestamp = typeof date === "number" ? date : date.getTime();
-  const diffInMinutes = Math.floor(
-    (now - dateTimestamp) / (1000 * 60)
-  );
+  const diffInMinutes = Math.floor((now - dateTimestamp) / (1000 * 60));
 
   if (diffInMinutes < 1) return "Just now";
   if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
@@ -943,7 +943,7 @@ export function canCompleteRepeatingTaskNow(task: Task): {
 
   const completedToday =
     task.status === "completed" ||
-    (task.completedAt && isToday(task.completedAt as Date));
+    (task.completedAt && isToday(task.completedAt));
 
   if (completedToday) {
     return { canCompleteNow: false, sameWeek, isDueToday: true };

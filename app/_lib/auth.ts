@@ -9,7 +9,6 @@ import {
   Account,
 } from "next-auth";
 import { adminAuth, adminDb } from "@/app/_lib/admin";
-import { Timestamp } from "firebase-admin/firestore";
 import { AppUser, DayOfWeek, Task } from "../_types/types";
 import { isTaskAtRisk, MONDAY_START_OF_WEEK } from "../_utils/utils";
 import {
@@ -39,11 +38,11 @@ interface FirebaseUser {
 
 type TaskUpdatePayload = {
   status?: "pending" | "completed" | "delayed";
-  dueDate?: Date;
-  startDate?: Date;
+  dueDate?: number;
+  startDate?: number;
   risk?: boolean;
   "repetitionRule.completions"?: number;
-  "repetitionRule.completedAt"?: Date[];
+  "repetitionRule.completedAt"?: number[];
   points?: number;
 };
 
@@ -83,20 +82,9 @@ export async function updateUserRepeatingTasks(userId: string) {
     if (!rule) return;
 
     const updates: TaskUpdatePayload = {};
-    const taskDueDate =
-      task.dueDate instanceof Date
-        ? task.dueDate
-        : (task.dueDate as Timestamp).toDate();
-    const taskStartDate = task.startDate
-      ? task.startDate instanceof Date
-        ? task.startDate
-        : (task.startDate as Timestamp).toDate()
-      : new Date();
-    const taskCompletedAt = task.completedAt
-      ? task.completedAt instanceof Date
-        ? task.completedAt
-        : (task.completedAt as Timestamp).toDate()
-      : undefined;
+    const taskDueDate = task.dueDate;
+    const taskStartDate = task.startDate ? task.startDate : Date.now();
+    const taskCompletedAt = task.completedAt ? task.completedAt : undefined;
     const currentWeekStart = startOfWeek(today, MONDAY_START_OF_WEEK);
 
     // Helper function to safely update field only if value has changed
@@ -127,10 +115,7 @@ export async function updateUserRepeatingTasks(userId: string) {
       currentPoints: number
     ): number => {
       // Don't apply penalty to recently created tasks (within last 24 hours)
-      const taskCreatedAt =
-        task.createdAt instanceof Date
-          ? task.createdAt
-          : (task.createdAt as Timestamp).toDate();
+      const taskCreatedAt = task.createdAt;
       const isRecentlyCreated =
         differenceInCalendarDays(today, taskCreatedAt) < 1;
 
@@ -143,12 +128,8 @@ export async function updateUserRepeatingTasks(userId: string) {
         if (isPast(dayToCheck) && !isToday(dayToCheck)) {
           if (
             !rule.completedAt?.some((completedDate) => {
-              const completedDay =
-                completedDate instanceof Date
-                  ? completedDate
-                  : (completedDate as Timestamp).toDate();
               return (
-                startOfDay(completedDay).getTime() ===
+                startOfDay(new Date(completedDate)).getTime() ===
                 startOfDay(dayToCheck).getTime()
               );
             })
@@ -197,10 +178,13 @@ export async function updateUserRepeatingTasks(userId: string) {
           while (isPast(newDueDate) && !isToday(newDueDate)) {
             newDueDate.setDate(newDueDate.getDate() + rule.interval);
           }
-          newDueDate.setHours(taskDueDate.getHours(), taskDueDate.getMinutes());
+          newDueDate.setHours(
+            new Date(taskDueDate).getHours(),
+            new Date(taskDueDate).getMinutes()
+          );
 
-          if (newDueDate.getTime() !== taskDueDate.getTime()) {
-            updates.dueDate = newDueDate;
+          if (newDueDate.getTime() !== new Date(taskDueDate).getTime()) {
+            updates.dueDate = newDueDate.getTime();
           }
         }
       }
@@ -226,19 +210,22 @@ export async function updateUserRepeatingTasks(userId: string) {
         setIfChanged("status", "pending", task.status);
         setNestedIfChanged("repetitionRule.completions", 0, rule.completions);
 
-        if (currentWeekStart.getTime() !== taskStartDate.getTime()) {
-          updates.startDate = currentWeekStart;
+        if (currentWeekStart.getTime() !== taskStartDate) {
+          updates.startDate = currentWeekStart.getTime();
         }
 
         setNestedIfChanged("repetitionRule.completedAt", [], rule.completedAt);
         setIfChanged("points", 10, task.points);
 
         const newDueDate = new Date(today);
-        newDueDate.setHours(taskDueDate.getHours(), taskDueDate.getMinutes());
+        newDueDate.setHours(
+          new Date(taskDueDate).getHours(),
+          new Date(taskDueDate).getMinutes()
+        );
 
         // Only update if the date actually changed
-        if (newDueDate.getTime() !== taskDueDate.getTime()) {
-          updates.dueDate = newDueDate;
+        if (newDueDate.getTime() !== taskDueDate) {
+          updates.dueDate = newDueDate.getTime();
         }
       }
     } else if (rule.daysOfWeek.length > 0) {
@@ -265,10 +252,13 @@ export async function updateUserRepeatingTasks(userId: string) {
         }
 
         const newDueDate = addDays(today, daysUntilNext);
-        newDueDate.setHours(taskDueDate.getHours(), taskDueDate.getMinutes());
+        newDueDate.setHours(
+          new Date(taskDueDate).getHours(),
+          new Date(taskDueDate).getMinutes()
+        );
 
-        if (newDueDate.getTime() !== taskDueDate.getTime()) {
-          updates.dueDate = newDueDate;
+        if (newDueDate.getTime() !== taskDueDate) {
+          updates.dueDate = newDueDate.getTime();
         }
       }
 
@@ -415,8 +405,8 @@ export const authOptions: NextAuthOptions = {
           // ----- FIRESTORE USER DOCUMENT MANAGEMENT -----
           const userDocRef = adminDb.collection("users").doc(firebaseUser.uid);
           const userDocSnap = await userDocRef.get();
-          let lastLoginAt: Timestamp | undefined;
-          let createdAt: Timestamp | undefined;
+          let lastLoginAt: number | undefined;
+          let createdAt: number | undefined;
 
           if (!userDocSnap.exists) {
             // ----- NEW USER CREATION -----
@@ -427,7 +417,7 @@ export const authOptions: NextAuthOptions = {
             const newUserData: Partial<AppUser> = {
               uid: firebaseUser.uid,
               provider: "firebase",
-              createdAt: new Date(),
+              createdAt: Date.now(),
               notifyReminders: true,
               notifyAchievements: true,
               rewardPoints: 0,
@@ -435,7 +425,7 @@ export const authOptions: NextAuthOptions = {
               currentStreak: 0,
               bestStreak: 0,
               achievements: [],
-              lastLoginAt: new Date(),
+              lastLoginAt: Date.now(),
               youtubePreferences: {
                 enabled: true, // Enable by default for testing
                 createTasks: true,
@@ -444,7 +434,7 @@ export const authOptions: NextAuthOptions = {
               // Mark anonymous users for potential cleanup
               ...(isAnonymous && {
                 isAnonymous: true,
-                anonymousCreatedAt: new Date(),
+                anonymousCreatedAt: Date.now(),
               }),
               ...(firebaseUser.email && { email: firebaseUser.email }),
               ...(firebaseUser.name && { displayName: firebaseUser.name }),
@@ -476,8 +466,8 @@ export const authOptions: NextAuthOptions = {
             name: firebaseUser.name,
             email: firebaseUser.email,
             image: firebaseUser.picture,
-            lastLoginAt: lastLoginAt?.toDate() || new Date(),
-            createdAt: createdAt?.toDate() || new Date(),
+            lastLoginAt: lastLoginAt || Date.now(),
+            createdAt: createdAt || Date.now(),
           };
 
           return returnedUser as NextAuthUser;
@@ -532,7 +522,7 @@ export const authOptions: NextAuthOptions = {
             const newUserData: Partial<AppUser> = {
               uid: user.id, // Store NextAuth user.id (e.g., GitHub user ID)
               provider: account.provider, //  ('github', 'google', etc.)
-              createdAt: new Date(),
+              createdAt: Date.now(),
               rewardPoints: 0,
               notifyReminders: true,
               notifyAchievements: true,
@@ -540,7 +530,7 @@ export const authOptions: NextAuthOptions = {
               currentStreak: 0,
               bestStreak: 0,
               achievements: [],
-              lastLoginAt: new Date(),
+              lastLoginAt: Date.now(),
               youtubePreferences: {
                 enabled: true, // Enable by default for testing
                 createTasks: true,
@@ -623,26 +613,23 @@ export const authOptions: NextAuthOptions = {
 
           if (userDocSnap.exists) {
             const userData = userDocSnap.data() as AppUser; // Careful
-            const lastLoginAt = userData?.lastLoginAt as Timestamp | undefined;
+            const lastLoginAt = userData?.lastLoginAt as number | undefined;
             const now = new Date();
             const today = startOfDay(now);
 
             // Check if more than 5 minutes have passed since the last recorded activity.
-            if (
-              !lastLoginAt ||
-              now.getTime() - lastLoginAt.toDate().getTime() > 5 * 60 * 1000
-            ) {
+            if (!lastLoginAt || now.getTime() - lastLoginAt > 5 * 60 * 1000) {
               const updates: {
-                lastLoginAt: Timestamp;
+                lastLoginAt: number;
                 currentStreak?: number;
                 bestStreak?: number;
               } = {
-                lastLoginAt: Timestamp.now(),
+                lastLoginAt: Date.now(),
               };
 
               // Calculate streak based on consecutive login days
               if (lastLoginAt) {
-                const lastLoginDate = startOfDay(lastLoginAt.toDate());
+                const lastLoginDate = startOfDay(new Date(lastLoginAt));
                 const diff = differenceInCalendarDays(today, lastLoginDate);
 
                 if (diff === 1) {

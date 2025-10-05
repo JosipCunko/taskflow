@@ -185,13 +185,13 @@ export default function AddTodayTask({
           state.selectedColor,
           TASK_ICONS.filter((icon) => icon.icon === state.selectedIcon)[0]
             .label,
-          today, // always today
+          today.getTime(), // always today
           taskTimeObject,
           [], // no tags for today tasks
           durationObject,
           false, // no repeating for today tasks
           undefined, // no repetition rule
-          today // start date is today
+          today.getTime() // start date is today
         );
 
         handleToast(res, () => {
@@ -201,9 +201,9 @@ export default function AddTodayTask({
               userId: createdTask.userId,
               taskId: createdTask.id,
               action: "task_created",
-              timestamp: new Date(),
+              timestamp: Date.now(),
               completionTime: undefined,
-              dueDate: new Date(createdTask.dueDate),
+              dueDate: createdTask.dueDate,
               isPriority: createdTask.isPriority,
               isReminder: createdTask.isReminder,
               isRepeating: createdTask.isRepeating || false,

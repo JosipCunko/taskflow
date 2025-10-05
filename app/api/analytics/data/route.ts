@@ -13,7 +13,7 @@ export async function GET() {
 
     const analyticsData = await getAnalyticsData(session.user.id);
 
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
     const sessionsSnapshot = await adminDb
       .collection("userSessions")
       .where("userId", "==", session.user.id)

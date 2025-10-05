@@ -240,8 +240,8 @@ export default function Dropdown({
                     {/* -mr-20 because it overflows */}
                     <DateInput
                       className="-mr-20"
-                      date={rescheduleDate}
-                      setDate={(date) => setRescheduleDate(date)}
+                      date={rescheduleDate.getTime()}
+                      setDate={(date) => setRescheduleDate(new Date(date))}
                     >
                       <div className="flex items-center gap-2 rounded-lg px-4 py-3 cursor-pointer">
                         <CardSpecificIcons.DueDate

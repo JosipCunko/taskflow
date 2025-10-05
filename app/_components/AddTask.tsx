@@ -225,7 +225,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
 
   const handleSubmit = async (formData: FormData) => {
     if (isPending) return; // Prevent double submission
-    
+
     startTransition(async () => {
       try {
         const title = formData.get("title") as string;
@@ -286,7 +286,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
           state.selectedColor,
           TASK_ICONS.filter((icon) => icon.icon === state.selectedIcon)[0]
             .label,
-          firstInstanceDueDate,
+          firstInstanceDueDate as number,
           taskTimeObject,
           state.tags,
           durationObject,

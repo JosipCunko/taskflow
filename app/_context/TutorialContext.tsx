@@ -39,7 +39,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
 
   const checkTutorialStatus = async () => {
     try {
-      if (isToday(session?.user?.createdAt as Date)) {
+      if (isToday(session?.user?.createdAt as number)) {
         customToast(
           "Info",
           "Welcome to TaskFlow! Do you want to learn how to use it?",

@@ -185,7 +185,7 @@ async function delayTaskAI(params: AIDelayTaskParams) {
 
     const result = await delayTaskAction(
       formData,
-      new Date(newDueDate),
+      new Date(newDueDate).getTime(),
       task.delayCount
     );
 
@@ -211,7 +211,7 @@ async function updateTaskAI(params: AIUpdateTaskParams) {
     description: updates.description,
     isPriority: updates.isPriority,
     isReminder: updates.isReminder,
-    dueDate: updates.dueDate,
+    dueDate: updates.dueDate!.getTime(),
     startTime: updates.startTime,
     repetitionRule: updates.repetitionRule,
     color: updates.color,
@@ -281,7 +281,7 @@ async function createTaskAI(params: AICreateTaskParams) {
       userId: session.user.id,
       title: params.title,
       description: params.description || "",
-      dueDate,
+      dueDate: dueDate.getTime(),
       isPriority: params.isPriority || false,
       isReminder: params.isReminder || false,
       icon: params.icon || "ClipboardList",

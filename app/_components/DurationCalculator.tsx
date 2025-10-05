@@ -9,7 +9,8 @@ export default function DurationCalculator({ task }: { task: Task }) {
   if (!calculatedDuration && task.startTime) {
     const startTimeInMinutes = task.startTime.hour * 60 + task.startTime.minute;
     const endTimeInMinutes =
-      task.dueDate.getHours() * 60 + task.dueDate.getMinutes();
+      new Date(task.dueDate).getHours() * 60 +
+      new Date(task.dueDate).getMinutes();
 
     // Don't show duration for these edge cases:
     // 1. If start time is 00:00 (likely default)

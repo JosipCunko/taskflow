@@ -34,7 +34,7 @@ async function addAchievementToUser(
     const newAchievement: Achievement = {
       ...achievement,
       userId,
-      unlockedAt: new Date(),
+      unlockedAt: Date.now(),
     };
 
     // Add achievement to subcollection

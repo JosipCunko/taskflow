@@ -13,7 +13,7 @@ declare module "next-auth" {
       id: string;
       /** The authentication provider used for the session (e.g., 'github', 'firebase'). */
       provider?: string;
-      createdAt: Date;
+      createdAt: number;
     } & DefaultSession["user"]; // Keep existing properties like name, email, image
   }
 
@@ -23,8 +23,8 @@ declare module "next-auth" {
   interface User extends DefaultUser {
     // id is already part of DefaultUser
     // Extended properties for initial sign-in data transfer
-    lastLoginAt: Date;
-    createdAt: Date;
+    lastLoginAt: number;
+    createdAt: number;
   }
 }
 
@@ -40,6 +40,6 @@ declare module "next-auth/jwt" {
     /** The authentication provider (e.g., 'github', 'firebase'). */
     provider?: string;
     // name, email, picture are included by default from NextAuth
-    createdAt: Date;
+    createdAt: number;
   }
 }
