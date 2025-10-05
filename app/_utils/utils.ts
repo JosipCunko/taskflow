@@ -421,13 +421,13 @@ export const getPhaseOfTheDay = () => {
 };
 
 export const formatDate = (
-  date: Date | string | undefined,
+  date: Date | string | number | undefined,
   options?: Intl.DateTimeFormatOptions,
   namedDates: boolean = true
 ): string => {
   if (!date) return "N/A";
   try {
-    // const dateObj = typeof date === "string" ? new Date(date) : date;
+    // Accept Date objects, ISO strings, and UNIX timestamps (numbers)
     const dateObj = new Date(date);
     if (isNaN(dateObj.getTime())) return "Invalid Date";
 
@@ -457,10 +457,10 @@ export const formatDate = (
   }
 };
 
-export const formatDateTime = (date: Date | string | undefined): string => {
+export const formatDateTime = (date: Date | string | number | undefined): string => {
   if (!date) return "N/A";
   try {
-    //const dateObj = typeof date === "string" ? new Date(date) : date;
+    // Accept Date objects, ISO strings, and UNIX timestamps (numbers)
     const dateObj = new Date(date);
     if (isNaN(dateObj.getTime())) return "Invalid Date";
     return dateObj.toLocaleString(undefined, {
@@ -559,10 +559,11 @@ export const getNotificationTypeLabel = (type: NotificationType): string => {
   return labelMap[type] || "Notification";
 };
 
-export const formatNotificationTime = (date: Date): string => {
-  const now = new Date();
+export const formatNotificationTime = (date: number | Date): string => {
+  const now = Date.now();
+  const dateTimestamp = typeof date === "number" ? date : date.getTime();
   const diffInMinutes = Math.floor(
-    (now.getTime() - date.getTime()) / (1000 * 60)
+    (now - dateTimestamp) / (1000 * 60)
   );
 
   if (diffInMinutes < 1) return "Just now";
@@ -574,7 +575,7 @@ export const formatNotificationTime = (date: Date): string => {
   const diffInDays = Math.floor(diffInHours / 24);
   if (diffInDays < 7) return `${diffInDays}d ago`;
 
-  return formatDate(date, { month: "short", day: "numeric" });
+  return formatDate(dateTimestamp, { month: "short", day: "numeric" });
 };
 
 export const getPriorityBadgeStyles = (priority: NotificationPriority) => {
@@ -1081,11 +1082,11 @@ export const defaultNutritionGoals: UserNutritionGoals = {
   carbs: 270,
   protein: 105,
   fat: 55,
-  updatedAt: new Date(),
+  updatedAt: Date.now(),
 };
 
 export const defaultDailyNutritionSummary: DailyNutritionSummary = {
-  date: new Date(),
+  date: Date.now(),
   totalCalories: 0,
   totalProtein: 0,
   totalCarbs: 0,

@@ -15,8 +15,8 @@ export default function DateInput({
   className,
   disableDaysBefore = true,
 }: {
-  date: Date;
-  setDate: (date: Date) => void;
+  date: number; // UNIX timestamp in milliseconds
+  setDate: (date: number) => void; // UNIX timestamp in milliseconds
   children: React.ReactNode;
   placement?: "top" | "bottom";
   className?: string;
@@ -27,7 +27,7 @@ export default function DateInput({
 
   const handleDaySelect = (selectedDate: Date | undefined) => {
     if (selectedDate) {
-      setDate(selectedDate);
+      setDate(selectedDate.getTime());
     }
   };
 
@@ -59,7 +59,7 @@ export default function DateInput({
                 captionLayout="label"
                 required
                 mode="single"
-                selected={date}
+                selected={new Date(date)}
                 onSelect={handleDaySelect}
                 disabled={disabledDays}
                 styles={{

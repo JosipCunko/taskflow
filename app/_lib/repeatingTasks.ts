@@ -6,20 +6,23 @@ export function preCreateRepeatingTask(
   interval: number | undefined,
   timesPerWeek: number | undefined,
   daysOfWeek: DayOfWeek[],
-  dueDate: Date,
-  taskStartDate: Date
+  dueDate: number, // UNIX timestamp
+  taskStartDate: number // UNIX timestamp
 ): Partial<Task> {
-  const setTimeForDueDate = (dateToModify: Date): Date => {
-    const newDate = new Date(dateToModify); // Duplicate Date constructor but nvm
-    newDate.setHours(dueDate.getHours(), dueDate.getMinutes());
-    return newDate;
+  const dueDateObj = new Date(dueDate);
+  const taskStartDateObj = new Date(taskStartDate);
+  
+  const setTimeForDueDate = (dateToModify: Date): number => {
+    const newDate = new Date(dateToModify);
+    newDate.setHours(dueDateObj.getHours(), dueDateObj.getMinutes());
+    return newDate.getTime();
   };
 
   if (interval) {
     return {
       isRepeating: true,
-      dueDate: setTimeForDueDate(taskStartDate),
-      startDate: startOfDay(taskStartDate),
+      dueDate: setTimeForDueDate(taskStartDateObj),
+      startDate: startOfDay(taskStartDateObj).getTime(),
       repetitionRule: {
         completedAt: [],
         interval,
@@ -33,9 +36,9 @@ export function preCreateRepeatingTask(
     return {
       isRepeating: true,
       dueDate: setTimeForDueDate(
-        endOfWeek(taskStartDate, MONDAY_START_OF_WEEK)
+        endOfWeek(taskStartDateObj, MONDAY_START_OF_WEEK)
       ),
-      startDate: startOfDay(startOfWeek(taskStartDate, MONDAY_START_OF_WEEK)),
+      startDate: startOfDay(startOfWeek(taskStartDateObj, MONDAY_START_OF_WEEK)).getTime(),
       repetitionRule: {
         completedAt: [],
         timesPerWeek,
@@ -46,7 +49,7 @@ export function preCreateRepeatingTask(
     };
   }
   if (daysOfWeek && daysOfWeek?.length > 0) {
-    const startDay = getDay(taskStartDate);
+    const startDay = getDay(taskStartDateObj);
     const sortedDays = daysOfWeek.sort((a, b) => a - b);
 
     let nextDueDay = sortedDays.find((day) => day >= startDay);
@@ -59,12 +62,12 @@ export function preCreateRepeatingTask(
       daysUntilNextDue = 7 - startDay + nextDueDay;
     }
 
-    const firstDueDate = addDays(taskStartDate, daysUntilNextDue);
+    const firstDueDate = addDays(taskStartDateObj, daysUntilNextDue);
 
     return {
       isRepeating: true,
       dueDate: setTimeForDueDate(firstDueDate),
-      startDate: startOfDay(taskStartDate),
+      startDate: startOfDay(taskStartDateObj).getTime(),
       repetitionRule: {
         completedAt: [],
         daysOfWeek,
