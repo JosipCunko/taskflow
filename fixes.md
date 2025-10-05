@@ -17,9 +17,6 @@ route.ts /process
 
 # PWA
 
-⚠ Unsupported metadata viewport is configured in metadata export in /.well-known/appspecific/com.chrome.devtools.json. Please move it to viewport export instead.
-Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
-
 In /public :
 manifest.json
 browserconfig
@@ -76,22 +73,18 @@ const sessionsSnapshot = await adminDb
 
 # Bugs and ideas
 
-I want PWA and a manifest file
-deployment error with ai/aiId page
-ai chats problem with UI
-analyticsAdmin 226 only from the week before
-Sidebar.tsx needs a review.
-Review TutorialOverlay because DOM is accessed manually.
-In 14day overview - add userActivityLogs for when some tasks were created.
-DonutSMP is due tomorrow and DountSmp is 4 days overdue. Inform the user that this task is repeating.
-Two notifications about Task Completionist at the same time. Our fix for that long before clearly doesnt do anything.
-Tooltip of how productivity and consistency score are calculated
-Avg. completion is 153h => WHATTT? task.completionTime might be incorrectly calculated on repeatingTasks
-Most productive hour is incorrect in my scenarious.
-Remove other tasks and post process the tasks that are in the UI in the /today
-When I delete autoDelayIncompleteTodayTasks from actions.ts, and remove its usage in /today page, I get an unusual error.
-In the /profile route, add "Contact us" that sends a mail to ultrabrzitranzijent@gmail.com
-In the readme file, Service Worker API is mentioned as a Native browser API for offline functionality.
+- Bugs
+  In 14day overview - add userActivityLogs for when some tasks were created.
+  Tooltip of how productivity and consistency score are calculated
+  Avg. completion is 153h => WHATTT? task.completionTime might be incorrectly calculated on repeatingTasks
+  Most productive hour is incorrect in my scenarious.
+  When I delete autoDelayIncompleteTodayTasks from actions.ts, and remove its usage in /today page, I get an unusual error.
+  In the readme file, Service Worker API is mentioned as a Native browser API for offline functionality.
+  Update version in package.json
+  Dont record any session while in dev mode!!! - saves reades and writes (quota)
+  Each existing Loading Skeleton needs a review because some's page structures have changed
+  ModelDropdown is not used
+  Sidebar cannot be opened in the /ai
 
 # Dates to UNIX timestamp (number):
 

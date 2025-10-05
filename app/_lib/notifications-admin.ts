@@ -346,7 +346,21 @@ export const generateOverdueTaskNotifications = async (
       task.isReminder && task.status !== "completed" && isPast(task.dueDate)
   );
 
+  const existingNotifications = await getNotificationsByUserIdAdmin(userId);
+
   overdueTasks.forEach(async (task) => {
+    // Check if there's ANY recent notification for this task (not just overdue)
+    const hasRecentNotification = existingNotifications.some(
+      (n) =>
+        n.taskId === task.id &&
+        (n.type === "TASK_OVERDUE" || n.type === "TASK_DUE_SOON") &&
+        differenceInHours(now, n.createdAt) < 24
+    );
+
+    if (hasRecentNotification) {
+      return; // Skip if any notification exists for this task recently
+    }
+
     const daysOverdue = differenceInDays(now, task.dueDate);
     const priority: NotificationPriority = task.isPriority
       ? "URGENT"
@@ -375,28 +389,21 @@ export const generateOverdueTaskNotifications = async (
       } overdue`;
     }
 
-    const existingNotifications = await getNotificationsByUserIdAdmin(userId);
-    const hasRecentNotification = existingNotifications.some(
-      (n) =>
-        n.type === "TASK_OVERDUE" &&
-        n.taskId === task.id &&
-        differenceInHours(now, n.createdAt) < 24
-    );
+    // Add repeating task indicator to the message
+    const repeatingIndicator = task.isRepeating ? " (Repeating Task)" : "";
 
-    if (!hasRecentNotification) {
-      await createNotification({
-        userId,
-        type: "TASK_OVERDUE",
-        priority,
-        title: "⏰ Task Overdue",
-        message: `"${task.title}" ${overdueMessage}`,
-        actionText: "Complete Now",
-        actionUrl: `/webapp/tasks`,
-        taskId: task.id,
-        data: { daysOverdue },
-        expiresAt: addDays(now, 7),
-      });
-    }
+    await createNotification({
+      userId,
+      type: "TASK_OVERDUE",
+      priority,
+      title: "⏰ Task Overdue",
+      message: `"${task.title}" ${overdueMessage}${repeatingIndicator}`,
+      actionText: "Complete Now",
+      actionUrl: `/webapp/tasks`,
+      taskId: task.id,
+      data: { daysOverdue, isRepeating: task.isRepeating },
+      expiresAt: addDays(now, 7),
+    });
   });
 };
 
@@ -424,31 +431,40 @@ export const generateDueSoonNotifications = async (
       isAfter(task.dueDate, now)
   );
 
+  const existingNotifications = await getNotificationsByUserIdAdmin(userId);
+
   dueSoonTasks.forEach(async (task) => {
-    const priority: NotificationPriority = task.isPriority ? "HIGH" : "MEDIUM";
-    const existingNotifications = await getNotificationsByUserIdAdmin(userId);
+    // Check if there's ANY recent notification for this task
     const hasRecentNotification = existingNotifications.some(
       (n) =>
-        n.type === "TASK_DUE_SOON" &&
         n.taskId === task.id &&
+        (n.type === "TASK_OVERDUE" || n.type === "TASK_DUE_SOON") &&
         differenceInHours(now, n.createdAt) < 12
     );
 
-    if (!hasRecentNotification) {
-      await createNotification({
-        userId,
-        type: "TASK_DUE_SOON",
-        priority,
-        title: "📅 Task Due Soon",
-        message: `"${task.title}" is due ${
-          isToday(task.dueDate) ? "today" : "tomorrow"
-        }`,
-        actionText: "View Task",
-        actionUrl: `/webapp/tasks`,
-        taskId: task.id,
-        expiresAt: addDays(now, 7),
-      });
+    if (hasRecentNotification) {
+      return; // Skip if any notification exists for this task recently
     }
+
+    const priority: NotificationPriority = task.isPriority ? "HIGH" : "MEDIUM";
+
+    // Add repeating task indicator to the message
+    const repeatingIndicator = task.isRepeating ? " (Repeating Task)" : "";
+
+    await createNotification({
+      userId,
+      type: "TASK_DUE_SOON",
+      priority,
+      title: "📅 Task Due Soon",
+      message: `"${task.title}" is due ${
+        isToday(task.dueDate) ? "today" : "tomorrow"
+      }${repeatingIndicator}`,
+      actionText: "View Task",
+      actionUrl: `/webapp/tasks`,
+      taskId: task.id,
+      data: { isRepeating: task.isRepeating },
+      expiresAt: addDays(now, 7),
+    });
   });
 };
 
@@ -575,7 +591,12 @@ export const generateAchievementNotification = async (
   }
 
   // Check if a notification for this specific achievement already exists
-  const existingNotifications = await getNotificationsByUserIdAdmin(userId);
+  // Include archived notifications in the check to prevent duplicates even if user archived it
+  const existingNotifications = await getNotificationsByUserIdAdmin(
+    userId,
+    true,
+    100
+  );
   const hasExistingNotification = existingNotifications.some(
     (notification) =>
       notification.type === "ACHIEVEMENT_UNLOCKED" &&
@@ -583,6 +604,9 @@ export const generateAchievementNotification = async (
   );
 
   if (hasExistingNotification) {
+    console.log(
+      `Achievement notification for ${achievementId} already exists for user ${userId}. Skipping.`
+    );
     return; // Prevent duplicate notifications
   }
 

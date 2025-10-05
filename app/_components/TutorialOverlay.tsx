@@ -7,12 +7,15 @@ import {
   Plus,
   Calendar,
   Utensils,
-  BookOpen,
   X,
   ChevronRight,
   ChevronLeft,
   Check,
   Home,
+  ListChecks,
+  Bot,
+  Dumbbell,
+  Hamburger,
 } from "lucide-react";
 import Button from "./reusable/Button";
 
@@ -69,7 +72,7 @@ const tutorialSteps: TutorialStep[] = [
     id: "add-task",
     title: "Creating Tasks",
     description:
-      "Click the '+' button in the top navigation to create new tasks. You can set due dates, priorities, and even make them repeating.",
+      "Click the '+ New task' button in the top navigation to create new tasks. You can set due dates, priorities, customize them and even make them repeating.",
     icon: <Plus className="w-6 h-6" />,
     route: "/webapp/tasks",
     targetSelector: '[data-tutorial="btn-add-task"]',
@@ -83,25 +86,25 @@ const tutorialSteps: TutorialStep[] = [
     },
   },
   {
-    id: "tasks-view",
-    title: "View Your Tasks",
+    id: "sidebar-view",
+    title: "Many useful features",
     description:
-      "Use the sidebar to navigate to different views of your tasks - Today's tasks, All tasks, Calendar, and Completed tasks.",
-    icon: <Calendar className="w-6 h-6" />,
+      "Use the sidebar to navigate to different views of your tasks - Today's tasks, all tasks, calendar, and completed tasks. You can also access your notes, health and fitness tracker, and inbox.",
+    icon: <ListChecks className="w-6 h-6" />,
     route: "/webapp/tasks",
-    targetSelector: '[data-tutorial="sidebar-tasks"]',
+    targetSelector: '[data-tutorial="sidebar"]',
     position: {
       top: "40%",
       left: "20%",
     },
     highlight: {
-      selector: '[data-tutorial="sidebar-tasks"]',
+      selector: '[data-tutorial="sidebar"]',
       padding: 8,
     },
   },
   {
     id: "calendar-view",
-    title: "Calendar",
+    title: "Calendar page",
     description:
       "Plan ahead in the Calendar to visualize upcoming tasks on a timeline.",
     icon: <Calendar className="w-6 h-6" />,
@@ -118,9 +121,9 @@ const tutorialSteps: TutorialStep[] = [
   },
   {
     id: "today-view",
-    title: "Today",
+    title: "Today's plan",
     description:
-      "Focus on what's important today. See and complete tasks due now.",
+      "Focus on what's important today. See and complete tasks due now. Create a daily plan with priority tasks.",
     icon: <Calendar className="w-6 h-6" />,
     route: "/webapp/today",
     targetSelector: '[data-tutorial="sidebar-today"]',
@@ -150,29 +153,13 @@ const tutorialSteps: TutorialStep[] = [
       padding: 8,
     },
   },
-  {
-    id: "gym-view",
-    title: "Gym & Fitness",
-    description:
-      "Track your workouts and monitor your fitness progress in the Gym section. You can save your workout sessions and log your daily exercises.",
-    icon: <Utensils className="w-6 h-6" />,
-    route: "/webapp/gym",
-    targetSelector: '[data-tutorial="sidebar-gym"]',
-    position: {
-      top: "60%",
-      left: "20%",
-    },
-    highlight: {
-      selector: '[data-tutorial="sidebar-gym"]',
-      padding: 8,
-    },
-  },
+
   {
     id: "save-meal",
     title: "Save Meals",
     description:
       "In the Health section, you can save meal templates with nutritional information that you can reuse later.",
-    icon: <BookOpen className="w-6 h-6" />,
+    icon: <Hamburger className="w-6 h-6" />,
     route: "/webapp/health",
     position: {
       top: "40%",
@@ -192,11 +179,28 @@ const tutorialSteps: TutorialStep[] = [
     },
   },
   {
+    id: "gym-view",
+    title: "Gym & Fitness",
+    description:
+      "Track your workouts and monitor your fitness progress in the Gym section. You can save your workout sessions and log your daily exercises.",
+    icon: <Dumbbell className="w-6 h-6" />,
+    route: "/webapp/gym",
+    targetSelector: '[data-tutorial="sidebar-gym"]',
+    position: {
+      top: "60%",
+      left: "20%",
+    },
+    highlight: {
+      selector: '[data-tutorial="sidebar-gym"]',
+      padding: 8,
+    },
+  },
+  {
     id: "ai-assistant",
     title: "AI Assistant",
     description:
-      "Use AI to summarize YouTube, plan tasks, and get insights. Chats are saved.",
-    icon: <Home className="w-6 h-6" />,
+      "Use AI to plan tasks, create schedule for your day, ask him anything and much more. Chats are saved.",
+    icon: <Bot className="w-6 h-6" />,
     route: "/webapp/ai",
     targetSelector: '[data-tutorial="sidebar-ai"]',
     position: {
@@ -248,10 +252,18 @@ export default function TutorialOverlay({
           const padding = step.highlight.padding || 4;
           (element as HTMLElement).style.position = "relative";
           (element as HTMLElement).style.zIndex = "1001";
-          (
-            element as HTMLElement
-          ).style.boxShadow = `0 0 0 ${padding}px rgba(59, 130, 246, 0.5), 0 0 0 2000px rgba(0, 0, 0, 0.5)`;
-          (element as HTMLElement).style.borderRadius = "8px";
+
+          // Special handling for sidebar to make it completely white
+          if (step.highlight.selector === '[data-tutorial="sidebar"]') {
+            (element as HTMLElement).style.boxShadow = "inset 0 0 0 8px #fff";
+            (element as HTMLElement).style.borderRadius = "0px";
+          } else {
+            // Default highlighting for other elements
+            (
+              element as HTMLElement
+            ).style.boxShadow = `0 0 0 ${padding}px #ffffff, 0 0 0 2000px rgba(0, 0, 0, 0.5)`;
+            (element as HTMLElement).style.borderRadius = "8px";
+          }
           highlightApplied = true;
           if (pollId) window.clearInterval(pollId);
         }
@@ -288,6 +300,10 @@ export default function TutorialOverlay({
           (element as HTMLElement).style.zIndex = "";
           (element as HTMLElement).style.boxShadow = "";
           (element as HTMLElement).style.borderRadius = "";
+          // Special cleanup for sidebar background color
+          if (stepCleanup.highlight.selector === '[data-tutorial="sidebar"]') {
+            (element as HTMLElement).style.backgroundColor = "";
+          }
         }
       }
       if (pollId) window.clearInterval(pollId);
@@ -395,8 +411,7 @@ export default function TutorialOverlay({
 
           {/* Keyboard shortcuts hint */}
           <div className="text-xs text-text-gray mb-6 bg-background-600 rounded-md p-2">
-            💡 Tip: Use arrow keys to navigate, Enter to continue, or Esc to
-            skip
+            💡 Tip: Use arrow keys to navigate, Enter to continue or Esc to skip
           </div>
 
           {/* Progress bar */}

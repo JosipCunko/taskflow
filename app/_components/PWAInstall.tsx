@@ -1,19 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
 import Image from "next/image";
 import Button from "./reusable/Button";
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
-}
+import { usePWA } from "../_context/PWAContext";
 
 export default function PWAInstall() {
-  const [deferredPrompt, setDeferredPrompt] =
-    useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+  const { isInstallable, promptInstall } = usePWA();
 
   useEffect(() => {
     // Register service worker
@@ -59,63 +53,39 @@ export default function PWAInstall() {
       });
     }
 
-    // Handle PWA install prompt
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+    // Check if app was already installed
+    if (window.matchMedia("(display-mode: standalone)").matches) {
+      return;
+    }
 
-      // Check if app was already installed
-      if (window.matchMedia("(display-mode: standalone)").matches) {
-        return;
-      }
-
-      // Show install prompt after a short delay
+    // Show install prompt after a short delay
+    if (isInstallable) {
       setTimeout(() => {
         setShowInstallPrompt(true);
       }, 3000);
-    };
-
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
-
-    // Check if already installed
-    if (window.matchMedia("(display-mode: standalone)").matches) {
-      console.log("App is running as PWA");
     }
-
-    return () => {
-      window.removeEventListener(
-        "beforeinstallprompt",
-        handleBeforeInstallPrompt
-      );
-    };
-  }, []);
+  }, [isInstallable]);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-
-    console.log(`User response to install prompt: ${outcome}`);
-
-    setDeferredPrompt(null);
+    promptInstall();
     setShowInstallPrompt(false);
   };
 
   const handleDismiss = () => {
     setShowInstallPrompt(false);
     // Don't show again for this session
-    sessionStorage.setItem("pwa-install-dismissed", "true");
+    //Used localStorage instead of sessionStorage because it persists across sessions
+    localStorage.setItem("pwa-install-dismissed", "true");
   };
 
   // Don't show if previously dismissed in this session
   useEffect(() => {
-    if (sessionStorage.getItem("pwa-install-dismissed")) {
+    if (localStorage.getItem("pwa-install-dismissed") === "true") {
       setShowInstallPrompt(false);
     }
   }, []);
 
-  if (!showInstallPrompt || !deferredPrompt) return null;
+  if (!showInstallPrompt || !isInstallable) return null;
 
   return (
     <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50 animate-in slide-in-from-bottom-5">
@@ -136,13 +106,6 @@ export default function PWAInstall() {
               </p>
             </div>
           </div>
-          <Button
-            variant="secondary"
-            onClick={handleDismiss}
-            aria-label="Dismiss"
-          >
-            <X className="w-5 h-5" />
-          </Button>
         </div>
         <div className="flex gap-2 mt-3">
           <Button onClick={handleInstallClick} className="flex-1">

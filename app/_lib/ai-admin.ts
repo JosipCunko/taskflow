@@ -36,23 +36,43 @@ export async function saveChatMessages(
       await chatRef.update({ messages: sanitizedMessages });
       return chatId;
     } else {
-      const title =
-        messages.length > 0 && messages[0].content.length > 30
-          ? messages[0].content.substring(0, 30) + "..."
-          : messages[0].content;
-
       const chatRef = adminDb.collection("aiChats").doc();
       await chatRef.set({
         userId,
         messages: sanitizedMessages,
         createdAt: new Date(),
-        title: title,
+        title: "New Chat",
       });
       return chatRef.id;
     }
   } catch (error) {
     console.error("Error saving chat messages:", error);
     throw new Error("Could not save chat messages.");
+  }
+}
+
+export async function renameChat(
+  userId: string,
+  chatId: string,
+  newTitle: string
+): Promise<void> {
+  try {
+    const chatRef = adminDb.collection("aiChats").doc(chatId);
+    const doc = await chatRef.get();
+
+    if (!doc.exists) {
+      throw new Error("Chat not found.");
+    }
+
+    const data = doc.data();
+    if (data?.userId !== userId) {
+      throw new Error("User not authorized to rename this chat.");
+    }
+
+    await chatRef.update({ title: newTitle });
+  } catch (error) {
+    console.error("Error renaming chat:", error);
+    throw new Error("Could not rename chat.");
   }
 }
 

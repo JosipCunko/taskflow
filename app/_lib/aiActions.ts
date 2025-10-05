@@ -7,6 +7,7 @@ import {
   getUserChats as getUserChatsAdmin,
   getChat as getChatAdmin,
   deleteChat as deleteChatAdmin,
+  renameChat as renameChatAdmin,
 } from "./ai-admin";
 import { ChatMessage, FunctionResult } from "@/app/_types/types";
 import { executeFunctions } from "./aiFunctions";
@@ -199,6 +200,20 @@ export async function getDeepseekResponse(
       error
     );
     return { error: "An unexpected error occurred." };
+  }
+}
+
+export async function renameChatAction(chatId: string, newTitle: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return { error: "User not authenticated." };
+  }
+  try {
+    await renameChatAdmin(session.user.id, chatId, newTitle);
+    return { success: true };
+  } catch (error) {
+    console.error("Error renaming chat:", error);
+    return { error: "Could not rename chat." };
   }
 }
 

@@ -37,11 +37,8 @@ Integrate a recipe discovery feature that allows users to search for recipes by 
 
 **5. In-App AI Assistant**
 
-- **Idea:** Integrate an AI-powered assistant to help users navigate Taskflow and answer their questions.
-- **Why?** An AI assistant can improve user onboarding, answer FAQs, and provide a more interactive and helpful user experience, reducing user friction.
-  - The AI could be "primed" with information about Taskflow's features to provide accurate answers.
-  - saved chats
-  - streaming data
+- saved chats
+- streaming data
 
 **6. Offline support **
 

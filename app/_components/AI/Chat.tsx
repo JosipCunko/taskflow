@@ -3,16 +3,14 @@
 import { useState, useRef, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { getDeepseekResponse } from "@/app/_lib/aiActions";
-import { Send, Bot, User, PlusCircle } from "lucide-react";
+import { Send, Bot, User } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { ChatMessage } from "@/app/_types/types";
 import ThinkingIndicator from "./ThinkingIndicator";
 import Image from "next/image";
 import Input from "../reusable/Input";
-import Button from "../reusable/Button";
 import EmptyChat from "./EmptyChat";
 import FunctionResults from "./FunctionResults";
-import ModelDropdown from "./ModelDropdown";
 
 interface ChatProps {
   initialMessages: ChatMessage[];
@@ -49,12 +47,6 @@ export default function Chat({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
-  };
-
-  const handleNewChat = () => {
-    setMessages([]);
-    setChatId(null);
-    setInput("");
   };
 
   const handleExampleClick = (query: string) => {
@@ -94,159 +86,141 @@ export default function Chat({
   };
 
   return (
-    <div
-      className={`flex flex-col h-full  ${
-        messages.length > 0 ? "justify-between" : "justify-end"
-      }`}
-    >
-      {messages.length > 0 && (
-        <div className="self-end p-4">
-          <Button onClick={handleNewChat} className="disabled:opacity-5">
-            <PlusCircle size={20} />
-            <span>New Chat</span>
-          </Button>
-        </div>
-      )}
-
+    <div className="flex flex-col h-full">
       {messages.length === 0 ? (
         <EmptyChat onExampleClick={handleExampleClick} />
       ) : (
-        <div className="flex-1 p-6 space-y-4 overflow-y-auto">
-          {messages.map((msg, index) => (
-            <div
-              key={index}
-              className={`flex flex-col gap-1.5 ${
-                msg.role === "user" ? "items-end" : "items-start"
-              }`}
-            >
-              {msg.role === "assistant" && (
-                <>
-                  <div className="flex items-center gap-2 text-primary-500">
-                    <div className="w-8 h-8 rounded-full bg-background-500 grid place-items-center">
-                      <Bot size={20} />
+        <div className="flex-1 p-4 md:p-6 overflow-y-auto">
+          <div className="max-w-4xl mx-auto space-y-6">
+            {messages.map((msg, index) => (
+              <div
+                key={index}
+                className={`flex gap-4 ${
+                  msg.role === "user" ? "flex-row-reverse" : ""
+                }`}
+              >
+                {/* Avatar */}
+                <div className="flex-shrink-0">
+                  {msg.role === "assistant" ? (
+                    <div className="w-8 h-8 rounded-full bg-primary-500/10 border border-primary-500/30 flex items-center justify-center">
+                      <Bot size={18} className="text-primary-500" />
                     </div>
-                    <span className="text-sm font-semibold">Deepseek V3.1</span>
-                  </div>
-
-                  <div className="rounded-xl p-4 max-w-xs md:max-w-md lg:max-w-lg bg-background-500 ml-10">
-                    <div
-                      className="text-sm ai-response"
-                      dangerouslySetInnerHTML={{ __html: msg.content }}
+                  ) : userImage ? (
+                    <Image
+                      src={userImage}
+                      width={32}
+                      height={32}
+                      alt={userName || "User"}
+                      className="rounded-full"
                     />
-                    {msg.functionResults && (
-                      <FunctionResults results={msg.functionResults} />
-                    )}
-                    {msg.duration && (
-                      <p className="text-xs text-primary-300 pt-1">
-                        {msg.duration}s
-                      </p>
-                    )}
-                  </div>
-                </>
-              )}
-              {msg.role === "user" && (
-                <>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-text-low">
-                      {userName}
-                    </span>
-                    {userImage ? (
-                      <Image
-                        src={userImage}
-                        width={30}
-                        height={30}
-                        alt={userName || "User"}
-                        className="rounded-full"
-                      />
-                    ) : (
-                      <User size={20} className="text-primary" />
-                    )}
-                  </div>
-
-                  <div className="rounded-lg p-3 max-w-xs md:max-w-md lg:max-w-lg bg-background-500 mr-10">
-                    <p className="text-sm">{msg.content}</p>
-                  </div>
-                </>
-              )}
-            </div>
-          ))}
-          {isPending && (
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center gap-2 text-primary-500">
-                <div className="w-8 h-8 rounded-full bg-background-500 grid place-items-center">
-                  <Bot size={20} />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-background-600 flex items-center justify-center">
+                      <User size={18} className="text-primary-400" />
+                    </div>
+                  )}
                 </div>
-                <span className="text-sm font-semibold">Deepseek V3.1</span>
+
+                {/* Message Content */}
+                <div className="flex-1 min-w-0">
+                  {msg.role === "assistant" ? (
+                    <>
+                      <div className="mb-2">
+                        <span className="text-sm font-semibold text-primary-400">
+                          Deepseek V3.1
+                        </span>
+                      </div>
+                      <div className="rounded-lg p-4 bg-background-600 border border-background-500">
+                        <div
+                          className="text-sm leading-relaxed ai-response prose prose-invert max-w-none"
+                          dangerouslySetInnerHTML={{ __html: msg.content }}
+                        />
+                        {msg.functionResults && (
+                          <div className="mt-3">
+                            <FunctionResults results={msg.functionResults} />
+                          </div>
+                        )}
+                        {msg.duration && (
+                          <p className="text-xs text-text-low mt-2">
+                            {msg.duration}s
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="mb-2 text-right">
+                        <span className="text-sm font-semibold text-text-high">
+                          {userName || "You"}
+                        </span>
+                      </div>
+                      <div className="rounded-lg p-4 bg-primary-500/10 border border-primary-500/30">
+                        <p className="text-sm leading-relaxed">{msg.content}</p>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
-              <ThinkingIndicator className="ml-10" />
-            </div>
-          )}
-          <div ref={messagesEndRef} />
+            ))}
+            {isPending && (
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-primary-500/10 border border-primary-500/30 flex items-center justify-center">
+                    <Bot size={18} className="text-primary-500" />
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="mb-2">
+                    <span className="text-sm font-semibold text-primary-400">
+                      Deepseek V3.1
+                    </span>
+                  </div>
+                  <ThinkingIndicator />
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
         </div>
       )}
 
-      <div
-        className={`p-4 ${
-          messages.length > 0 ? "border-t border-primary-800/50" : ""
-        }`}
-      >
-        <div
-          className={`relative mx-auto ${
-            messages.length === 0 ? "text-center" : ""
-          }`}
-        >
+      <div className="p-4 md:p-6 border-t border-background-600">
+        <div className="max-w-4xl mx-auto">
           {messages.length === 0 && (
-            <>
-              <div
-                className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-blue-500/20 to-transparent blur-3xl -z-10"
-                // radial gradient doesnt work
-              />
-              <div className="flex items-center justify-center gap-2">
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <div className="flex items-center gap-2 bg-background-500 rounded-full px-3 py-1">
-                    <Bot size={16} className="text-primary-500" />
-                    <span className="text-sm">Deepseek V3.1</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <div className="flex items-center gap-2 bg-background-500 rounded-full px-3 py-1 opacity-50 cursor-not-allowed">
-                    <Bot size={16} className="text-primary-500" />
-                    <span className="text-sm">GPT-4.1</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <div className="flex items-center gap-2 bg-background-500 rounded-full px-3 py-1 opacity-50 cursor-not-allowed">
-                    <Bot size={16} className="text-primary-500" />
-                    <span className="text-sm">Gemini 2.5 Pro</span>
-                  </div>
-                </div>
+            <div className="flex items-center justify-center gap-2 mb-4 flex-wrap">
+              <div className="flex items-center gap-2 bg-background-600 rounded-full px-3 py-1.5 border border-primary-500/30">
+                <Bot size={16} className="text-primary-500" />
+                <span className="text-sm font-medium">Deepseek V3.1</span>
               </div>
-            </>
+              <div className="flex items-center gap-2 bg-background-600 rounded-full px-3 py-1.5 opacity-40 cursor-not-allowed border border-background-500">
+                <Bot size={16} className="text-text-low" />
+                <span className="text-sm">GPT-4.1</span>
+              </div>
+              <div className="flex items-center gap-2 bg-background-600 rounded-full px-3 py-1.5 opacity-40 cursor-not-allowed border border-background-500">
+                <Bot size={16} className="text-text-low" />
+                <span className="text-sm">Gemini 2.5 Pro</span>
+              </div>
+            </div>
           )}
-          <div className="flex items-center gap-2">
-            <ModelDropdown className="mr-auto" />
-            <form
-              onSubmit={handleSubmit}
-              className="flex items-center gap-2 w-full"
-            >
+          <form onSubmit={handleSubmit} className="flex items-center gap-3">
+            <div className="flex-1 flex items-center gap-2 bg-background-600 border border-background-500 rounded-xl px-4 py-3 focus-within:border-primary-500/50 transition-colors">
               <Input
                 type="text"
                 name="message"
                 value={input}
                 onChange={handleInputChange}
                 placeholder="Ask me anything..."
-                className="border border-primary-800/50 w-full"
+                className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 p-0"
                 disabled={isPending}
               />
               <button
                 type="submit"
-                className="bg-primary-800/50 text-primary-500 rounded-full p-2 disabled:opacity-50 transition-all duration-200 hover:bg-primary-800/60"
+                className="bg-primary-500 text-white rounded-lg p-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:bg-primary-600 flex-shrink-0"
                 disabled={isPending || !input.trim()}
               >
-                <Send size={20} />
+                <Send size={18} />
               </button>
-            </form>
-          </div>
+            </div>
+          </form>
         </div>
       </div>
     </div>

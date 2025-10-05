@@ -54,7 +54,6 @@ export interface AppUser {
   currentStreak: number;
   bestStreak: number;
   lastLoginAt?: Date;
-  notesCount?: number; // Added field in /webapp/profile
   nutritionGoals: UserNutritionGoals;
   youtubePreferences?: {
     enabled: boolean;

@@ -7,7 +7,6 @@ import { redirect } from "next/navigation";
 import { getRecentUserActivity } from "@/app/_lib/activity";
 import { AppUser } from "@/app/_types/types";
 import { authOptions } from "@/app/_lib/auth";
-import { loadNotesByUserId } from "@/app/_lib/notes";
 import { getUserById } from "@/app/_lib/user-admin";
 
 export default async function ProfilePage() {
@@ -16,10 +15,9 @@ export default async function ProfilePage() {
     redirect("/login");
   }
   const userFromToken = session.user;
-  const [user, recentActivityLogs, notes] = await Promise.all([
+  const [user, recentActivityLogs] = await Promise.all([
     getUserById(userFromToken.id),
     getRecentUserActivity(userFromToken.id, 7),
-    loadNotesByUserId(userFromToken.id),
   ]);
   if (!user) {
     redirect("/login");
@@ -27,7 +25,6 @@ export default async function ProfilePage() {
 
   const userProfileData = {
     ...user,
-    notesCount: notes.length,
   } as AppUser;
 
   return (

@@ -8,7 +8,10 @@ import { navItems } from "../_utils/utils";
 export default function Sidebar() {
   const pathname = usePathname();
   return (
-    <aside className="w-64 h-full bg-background-700 flex flex-col ">
+    <aside
+      className="w-64 h-full bg-background-700 flex flex-col"
+      data-tutorial="sidebar"
+    >
       <div className="">
         <div className="grid place-items-center">
           <Image src="/logo.png" alt="Taskflow" width={150} height={150} />
@@ -34,6 +37,8 @@ export default function Sidebar() {
                       return "sidebar-tasks";
                     case "Health":
                       return "sidebar-health";
+                    case "Notes":
+                      return "sidebar-notes";
                     case "Today":
                       return "sidebar-today";
                     case "Calendar":

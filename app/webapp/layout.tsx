@@ -9,8 +9,8 @@ import AnalyticsTracker from "../_components/AnalyticsTracker";
 import YouTubeBackgroundProcessor from "../_components/YouTubeBackgroundProcessor";
 import { getUserById } from "../_lib/user-admin";
 import Providers from "./providers";
-import { TutorialProvider } from "../_context/TutorialContext";
 import OfflineHandler from "../_components/auth/OfflineHandler";
+import PWAInstall from "../_components/PWAInstall";
 
 export const metadata: Metadata = {
   title: "TaskFlow - WebApp",
@@ -32,18 +32,17 @@ export default async function RootLayout({
 
   return (
     <Providers>
-      <TutorialProvider>
-        <OfflineHandler />
-        <AnalyticsTracker userData={userData} />
-        <YouTubeBackgroundProcessor userId={userId} userData={userData} />
-        <main className="grid grid-rows-1 grid-cols-1 sm:grid-cols-[16rem_1fr] overflow-hidden relative h-screen bg-background-625">
-          <AnimatedSidebar />
-          <div className="overflow-hidden h-full grid grid-cols-1 grid-rows-[80px_1fr] px-2 sm:px-4 lg:px-6 relative">
-            <TopSidebar session={session} tasks={tasks} />
-            {children}
-          </div>
-        </main>
-      </TutorialProvider>
+      <PWAInstall />
+      <OfflineHandler />
+      <AnalyticsTracker userData={userData} />
+      <YouTubeBackgroundProcessor userId={userId} userData={userData} />
+      <main className="grid grid-rows-1 grid-cols-1 sm:grid-cols-[16rem_1fr] overflow-hidden relative h-screen bg-background-625">
+        <AnimatedSidebar />
+        <div className="overflow-hidden h-full grid grid-cols-1 grid-rows-[80px_1fr] px-2 sm:px-4 lg:px-6 relative">
+          <TopSidebar session={session} tasks={tasks} />
+          {children}
+        </div>
+      </main>
     </Providers>
   );
 }
