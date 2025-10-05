@@ -34,7 +34,9 @@ export async function getUserById(userId: string): Promise<AppUser | null> {
         id: doc.id,
         type: data.type,
         userId: data.userId,
-        unlockedAt: (data.unlockedAt as Timestamp).toDate(),
+        unlockedAt: typeof data.unlockedAt === 'number' 
+          ? data.unlockedAt 
+          : (data.unlockedAt as Timestamp).toDate().getTime(),
       };
     });
 
@@ -44,7 +46,9 @@ export async function getUserById(userId: string): Promise<AppUser | null> {
       email: userData.email,
       provider: userData.provider,
       photoURL: userData.photoURL,
-      createdAt: (userData.createdAt as Timestamp).toDate(),
+      createdAt: typeof userData.createdAt === 'number'
+        ? userData.createdAt
+        : (userData.createdAt as Timestamp).toDate().getTime(),
       notifyReminders: userData.notifyReminders,
       notifyAchievements: userData.notifyAchievements,
       rewardPoints: userData.rewardPoints || 0,
@@ -54,30 +58,36 @@ export async function getUserById(userId: string): Promise<AppUser | null> {
       bestStreak: userData.bestStreak || 0,
       nutritionGoals: userData.nutritionGoals
         ? {
-            calories: userData.nutritionGoals.dailyCalories,
-            protein: userData.nutritionGoals.dailyProtein,
-            carbs: userData.nutritionGoals.dailyCarbs,
-            fat: userData.nutritionGoals.dailyFat,
-            updatedAt: (
-              userData.nutritionGoals.updatedAt as Timestamp
-            ).toDate(),
+            calories: userData.nutritionGoals.dailyCalories || userData.nutritionGoals.calories,
+            protein: userData.nutritionGoals.dailyProtein || userData.nutritionGoals.protein,
+            carbs: userData.nutritionGoals.dailyCarbs || userData.nutritionGoals.carbs,
+            fat: userData.nutritionGoals.dailyFat || userData.nutritionGoals.fat,
+            updatedAt: typeof userData.nutritionGoals.updatedAt === 'number'
+              ? userData.nutritionGoals.updatedAt
+              : (userData.nutritionGoals.updatedAt as Timestamp).toDate().getTime(),
           }
         : {
             calories: defaultNutritionGoals.calories,
             protein: defaultNutritionGoals.protein,
             carbs: defaultNutritionGoals.carbs,
             fat: defaultNutritionGoals.fat,
-            updatedAt: (userData.createdAt as Timestamp).toDate(),
+            updatedAt: typeof userData.createdAt === 'number'
+              ? userData.createdAt
+              : (userData.createdAt as Timestamp).toDate().getTime(),
           },
       lastLoginAt: userData.lastLoginAt
-        ? (userData.lastLoginAt as Timestamp).toDate()
+        ? (typeof userData.lastLoginAt === 'number'
+            ? userData.lastLoginAt
+            : (userData.lastLoginAt as Timestamp).toDate().getTime())
         : undefined,
       notesCount: userData.notesCount,
       youtubePreferences: userData.youtubePreferences,
       // Anonymous user fields
       isAnonymous: userData.isAnonymous,
       anonymousCreatedAt: userData.anonymousCreatedAt
-        ? (userData.anonymousCreatedAt as Timestamp).toDate()
+        ? (typeof userData.anonymousCreatedAt === 'number'
+            ? userData.anonymousCreatedAt
+            : (userData.anonymousCreatedAt as Timestamp).toDate().getTime())
         : undefined,
     };
   } catch (error) {

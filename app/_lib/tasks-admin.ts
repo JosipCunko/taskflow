@@ -11,14 +11,17 @@ import { calculateTaskPoints, isTaskAtRisk } from "@/app/_utils/utils";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { revalidateTag } from "next/cache";
 
-// Helper function to safely convert dates from either Timestamp or ISO string
-const safeConvertToDate = (
-  dateValue: Timestamp | Date | string | undefined
-): Date => {
-  if (!dateValue) return new Date();
+// Helper function to safely convert Firestore data to UNIX timestamps
+const safeConvertToTimestamp = (
+  dateValue: Timestamp | Date | string | number | undefined
+): number => {
+  if (!dateValue) return Date.now();
 
-  // If it's already a Date object, return it
-  if (dateValue instanceof Date) return dateValue;
+  // If it's already a number (UNIX timestamp), return it
+  if (typeof dateValue === "number") return dateValue;
+
+  // If it's a Date object, convert to timestamp
+  if (dateValue instanceof Date) return dateValue.getTime();
 
   // If it's a Firestore Timestamp, convert it
   if (
@@ -27,11 +30,11 @@ const safeConvertToDate = (
     "toDate" in dateValue &&
     typeof dateValue.toDate === "function"
   ) {
-    return new Date(dateValue.toDate());
+    return dateValue.toDate().getTime();
   }
 
   // If it's an ISO string or any other format, try to parse it
-  return new Date(dateValue as string);
+  return new Date(dateValue as string).getTime();
 };
 
 const fromFirestore = (
@@ -47,30 +50,31 @@ const fromFirestore = (
     color: data.color,
     isPriority: data.isPriority,
     isReminder: data.isReminder,
-    dueDate: safeConvertToDate(data.dueDate),
+    dueDate: safeConvertToTimestamp(data.dueDate),
     startTime: data.startTime || { hour: 0, minute: 0 },
     status: data.status || "pending",
     delayCount: data.delayCount || 0,
     tags: data.tags || [],
-    createdAt: safeConvertToDate(data.createdAt),
-    updatedAt: safeConvertToDate(data.updatedAt),
+    createdAt: safeConvertToTimestamp(data.createdAt),
+    updatedAt: safeConvertToTimestamp(data.updatedAt),
     completedAt: data.completedAt
-      ? safeConvertToDate(data.completedAt)
+      ? safeConvertToTimestamp(data.completedAt)
       : undefined,
     experience: data.experience || undefined,
     duration: data.duration || { hours: 0, minutes: 0 },
+    location: data.location || undefined,
     isRepeating: data.isRepeating,
     repetitionRule: data.repetitionRule
       ? {
           ...data.repetitionRule,
           completedAt: data.repetitionRule.completedAt
             ? data.repetitionRule.completedAt.map(
-                (date: Timestamp | Date | string) => safeConvertToDate(date)
+                (date: Timestamp | Date | string | number) => safeConvertToTimestamp(date)
               )
             : [],
         }
       : undefined,
-    startDate: data.startDate ? safeConvertToDate(data.startDate) : undefined,
+    startDate: data.startDate ? safeConvertToTimestamp(data.startDate) : undefined,
     points: data.points,
   } as Task;
 
@@ -140,14 +144,14 @@ interface TaskFirestoreData {
   color: string;
   isPriority: boolean;
   isReminder: boolean;
-  dueDate: Timestamp;
-  startDate?: Timestamp;
+  dueDate: number; // UNIX timestamp
+  startDate?: number; // UNIX timestamp
   startTime: { hour: number; minute: number };
   status: "pending";
   delayCount: number;
   tags?: string[];
-  createdAt: FieldValue;
-  updatedAt: FieldValue;
+  createdAt: number; // UNIX timestamp
+  updatedAt: number; // UNIX timestamp
   experience?: "bad" | "okay" | "good" | "best";
   duration?: { hours: number; minutes: number };
   isRepeating?: boolean;
@@ -158,6 +162,7 @@ interface TaskFirestoreData {
 
 export const createTask = async (taskData: TaskToCreateData): Promise<Task> => {
   try {
+    const now = Date.now();
     const taskToCreateFirebase: TaskFirestoreData = {
       userId: taskData.userId,
       title: taskData.title,
@@ -169,9 +174,9 @@ export const createTask = async (taskData: TaskToCreateData): Promise<Task> => {
       tags: taskData.tags || [],
       status: "pending",
       delayCount: 0,
-      createdAt: FieldValue.serverTimestamp(),
-      updatedAt: FieldValue.serverTimestamp(),
-      dueDate: Timestamp.fromDate(taskData.dueDate),
+      createdAt: now,
+      updatedAt: now,
+      dueDate: taskData.dueDate,
       startTime: taskData.startTime || { hour: 0, minute: 0 },
       isRepeating: taskData.isRepeating,
       points: calculateTaskPoints({ delayCount: 0 } as Task),
@@ -191,7 +196,7 @@ export const createTask = async (taskData: TaskToCreateData): Promise<Task> => {
       taskToCreateFirebase.repetitionRule = taskData.repetitionRule;
     }
     if (taskData.startDate) {
-      taskToCreateFirebase.startDate = Timestamp.fromDate(taskData.startDate);
+      taskToCreateFirebase.startDate = taskData.startDate;
     }
 
     const docRef = await adminDb.collection("tasks").add(taskToCreateFirebase);
@@ -225,23 +230,16 @@ export const updateTask = async (
 
     const updateData: { [key: string]: unknown } = {
       ...updates,
-      updatedAt: FieldValue.serverTimestamp(),
+      updatedAt: Date.now(),
     };
 
-    if (updates.dueDate) {
-      updateData.dueDate = Timestamp.fromDate(new Date(updates.dueDate));
-    }
-    if (updates.startDate) {
-      updateData.startDate = Timestamp.fromDate(new Date(updates.startDate));
-    }
+    // All date fields are already UNIX timestamps (numbers) in the updates object
+    // No need to convert them anymore
+    
     if (updates.repetitionRule) {
       updateData.repetitionRule = updates.repetitionRule;
     }
-    if (updates.completedAt) {
-      updateData.completedAt = Timestamp.fromDate(
-        new Date(updates.completedAt)
-      );
-    }
+    
     updates.risk = isTaskAtRisk(updates as Task);
 
     await taskRef.update(updateData);

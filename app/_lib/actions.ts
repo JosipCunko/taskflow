@@ -79,17 +79,14 @@ export async function setUserNutritionGoalsAction(
       carbs: dailyCarbs,
       protein: dailyProtein,
       fat: dailyFat,
-      updatedAt: new Date(),
+      updatedAt: Date.now(),
     };
 
     await adminDb
       .collection("users")
       .doc(session.user.id)
       .update({
-        nutritionGoals: {
-          ...goals,
-          updatedAt: Timestamp.fromDate(goals.updatedAt),
-        },
+        nutritionGoals: goals,
       });
 
     revalidatePath("/webapp/health");
@@ -114,13 +111,13 @@ export async function createTaskAction(
   isReminder: boolean,
   selectedColor: string,
   icon: string,
-  dueDate: Date,
+  dueDate: number,
   startTime: { hour: number; minute: number } | undefined,
   tags: string[],
   duration: { hours: number; minutes: number },
   isRepeating: boolean,
   repetitionRule: RepetitionRule | undefined,
-  startDate?: Date
+  startDate?: number
 ): Promise<ActionResult<Task>> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -238,13 +235,13 @@ export async function completeTaskAction(
 
       transaction.update(taskRef, {
         status: "completed",
-        completedAt: new Date(),
+        completedAt: Date.now(),
       });
 
       transaction.update(userRef, {
         completedTasksCount: FieldValue.increment(1),
         rewardPoints: FieldValue.increment(task.points),
-        lastLoginAt: new Date(),
+        lastLoginAt: Date.now(),
       });
     });
 
@@ -271,7 +268,7 @@ export async function completeTaskAction(
         isPriority: task.isPriority,
         isRepeating: false,
         createdAt: task.createdAt,
-        completedAt: new Date(),
+        completedAt: Date.now(),
         delayCount: task.delayCount || 0,
         points: task.points,
       });
@@ -293,9 +290,9 @@ export async function completeTaskAction(
 
 export async function delayTaskAction(
   formData: FormData,
-  dueDate: Date,
+  dueDate: number,
   delayCount: number,
-  currentTaskDueDate?: Date
+  currentTaskDueDate?: number
 ): Promise<ActionResult> {
   const taskId = formData.get("taskId") as string;
   const session = await getServerSession(authOptions);
@@ -307,7 +304,7 @@ export async function delayTaskAction(
   if (currentTaskDueDate) {
     if (
       isSameDay(dueDate, currentTaskDueDate) ||
-      isBefore(dueDate, new Date())
+      isBefore(dueDate, Date.now())
     ) {
       return {
         success: false,
@@ -318,16 +315,23 @@ export async function delayTaskAction(
 
   const delayOption = formData.get("delayOption") as "tomorrow" | "nextWeek";
   const newDueDateString = formData.get("newDueDate") as string;
-  let newDueDate = new Date();
+  let newDueDate = Date.now();
   if (newDueDateString) {
-    newDueDate = new Date(newDueDateString);
+    newDueDate = new Date(newDueDateString).getTime();
   }
+  // Extract time components from current dueDate
+  const dueDateObj = new Date(dueDate);
+  const hours = dueDateObj.getHours();
+  const minutes = dueDateObj.getMinutes();
+  
+  let newDueDateObj = new Date(newDueDate);
   if (delayOption === "tomorrow") {
-    newDueDate.setDate(newDueDate.getDate() + 1);
+    newDueDateObj.setDate(newDueDateObj.getDate() + 1);
   } else if (delayOption === "nextWeek") {
-    newDueDate.setDate(newDueDate.getDate() + 7);
+    newDueDateObj.setDate(newDueDateObj.getDate() + 7);
   }
-  newDueDate.setHours(dueDate.getHours(), dueDate.getMinutes());
+  newDueDateObj.setHours(hours, minutes);
+  newDueDate = newDueDateObj.getTime();
 
   console.log(`ACTION: Task ${taskId} delayed to ${formatDate(newDueDate)}`);
   try {
@@ -510,7 +514,7 @@ export async function updateTaskExperienceAction(
 /* Repeating Tasks */
 export async function completeRepeatingTaskWithInterval(
   task: Task,
-  completionDate: Date = new Date()
+  completionDate: number = Date.now()
 ): Promise<ActionResult> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -538,9 +542,11 @@ export async function completeRepeatingTaskWithInterval(
     };
   }
 
-  const nextDueDate = new Date(completionDate);
-  nextDueDate.setHours(task.dueDate.getHours(), task.dueDate.getMinutes());
-  const finalDueDate = addDays(nextDueDate, rule.interval);
+  const completionDateObj = new Date(completionDate);
+  const taskDueDateObj = new Date(task.dueDate);
+  completionDateObj.setHours(taskDueDateObj.getHours(), taskDueDateObj.getMinutes());
+  const finalDueDate = addDays(completionDateObj, rule.interval);
+  const finalDueDateTimestamp = finalDueDate.getTime();
 
   const updates: Partial<Task> = {
     repetitionRule: {
@@ -549,7 +555,7 @@ export async function completeRepeatingTaskWithInterval(
       completions: 1,
     },
     status: "completed",
-    dueDate: finalDueDate,
+    dueDate: finalDueDateTimestamp,
     completedAt: completionDate,
   };
 
@@ -566,7 +572,7 @@ export async function completeRepeatingTaskWithInterval(
       isPriority: task.isPriority,
       isRepeating: true,
       createdAt: task.createdAt,
-      completedAt: new Date(),
+      completedAt: Date.now(),
       delayCount: task.delayCount || 0,
       points: task.points,
       risk: false,
@@ -574,7 +580,7 @@ export async function completeRepeatingTaskWithInterval(
 
     return {
       success: true,
-      message: `Task completed. Next due on ${formatDate(finalDueDate)}`,
+      message: `Task completed. Next due on ${formatDate(finalDueDateTimestamp)}`,
     };
   } catch (err) {
     const error = err as Error;
@@ -587,7 +593,7 @@ export async function completeRepeatingTaskWithInterval(
 
 export async function completeRepeatingTaskWithTimesPerWeek(
   task: Task,
-  completionDate: Date = new Date()
+  completionDate: number = Date.now()
 ): Promise<ActionResult> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -617,21 +623,23 @@ export async function completeRepeatingTaskWithTimesPerWeek(
   }
 
   // Next due date for "times per week" is the end of the week or next week
-  let newStartDate: Date;
-  let nextDueDate: Date = task.dueDate;
+  let newStartDate: number;
+  let nextDueDateObj: Date;
   if (rule.completions + 1 === rule.timesPerWeek) {
     const nextWeekStart = startOfWeek(
-      addWeeks(completionDate, 1),
+      addWeeks(new Date(completionDate), 1),
       MONDAY_START_OF_WEEK
     );
-    newStartDate = nextWeekStart;
-    nextDueDate = nextWeekStart;
+    newStartDate = nextWeekStart.getTime();
+    nextDueDateObj = nextWeekStart;
   } else {
-    newStartDate = task.startDate || new Date();
-    nextDueDate = addDays(completionDate, 1);
+    newStartDate = task.startDate || Date.now();
+    nextDueDateObj = addDays(new Date(completionDate), 1);
   }
   // Next due date for "times per week" is the next day
-  nextDueDate.setHours(task.dueDate.getHours(), task.dueDate.getMinutes());
+  const taskDueDateObj = new Date(task.dueDate);
+  nextDueDateObj.setHours(taskDueDateObj.getHours(), taskDueDateObj.getMinutes());
+  const nextDueDate = nextDueDateObj.getTime();
 
   const updates: Partial<Task> = {
     startDate: newStartDate,
@@ -662,7 +670,7 @@ export async function completeRepeatingTaskWithTimesPerWeek(
       isPriority: task.isPriority,
       isRepeating: true,
       createdAt: task.createdAt,
-      completedAt: new Date(),
+      completedAt: Date.now(),
       delayCount: task.delayCount || 0,
       points: task.points,
       risk: false,
@@ -688,7 +696,7 @@ export async function completeRepeatingTaskWithTimesPerWeek(
 
 export async function completeRepeatingTaskWithDaysOfWeek(
   task: Task,
-  completionDate: Date = new Date()
+  completionDate: number = Date.now()
 ): Promise<ActionResult> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -715,7 +723,7 @@ export async function completeRepeatingTaskWithDaysOfWeek(
     };
   }
   // Next due date
-  const today = getDay(completionDate) as DayOfWeek;
+  const today = getDay(new Date(completionDate)) as DayOfWeek;
   const sortedDays = [...rule.daysOfWeek].sort((a, b) => a - b);
 
   let nextDueDay = sortedDays.find((day) => day > today);
@@ -729,8 +737,10 @@ export async function completeRepeatingTaskWithDaysOfWeek(
     nextDueDay > today ? nextDueDay - today : 7 - today + nextDueDay;
 
   // Calculate new due date but preserve original time
-  const newDueDate = addDays(completionDate, daysUntilNext);
-  newDueDate.setHours(task.dueDate.getHours(), task.dueDate.getMinutes());
+  const newDueDateObj = addDays(new Date(completionDate), daysUntilNext);
+  const taskDueDateObj = new Date(task.dueDate);
+  newDueDateObj.setHours(taskDueDateObj.getHours(), taskDueDateObj.getMinutes());
+  const newDueDate = newDueDateObj.getTime();
 
   const updates: Partial<Task> = {
     repetitionRule: {
@@ -760,7 +770,7 @@ export async function completeRepeatingTaskWithDaysOfWeek(
       isPriority: task.isPriority,
       isRepeating: true,
       createdAt: task.createdAt,
-      completedAt: new Date(),
+      completedAt: Date.now(),
       delayCount: task.delayCount || 0,
       points: task.points,
       risk: false,
@@ -835,11 +845,12 @@ export async function processYouTubeSummaryAction(): Promise<ActionResult> {
     // Check if user has already processed today
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const todayTimestamp = today.getTime();
 
     const existingSummary = await adminDb
       .collection("youtubeSummaries")
       .where("userId", "==", session.user.id)
-      .where("createdAt", ">=", today)
+      .where("createdAt", ">=", todayTimestamp)
       .limit(1)
       .get();
 
@@ -927,8 +938,10 @@ export async function autoDelayIncompleteTodayTasks(): Promise<ActionResult> {
     const tasksRef = adminDb.collection("tasks");
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const todayTimestamp = today.getTime();
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowTimestamp = tomorrow.getTime();
 
     const incompleteTodayTasksSnapshot = await tasksRef
       .where("userId", "==", session.user.id)
@@ -940,22 +953,25 @@ export async function autoDelayIncompleteTodayTasks(): Promise<ActionResult> {
 
     incompleteTodayTasksSnapshot.docs.forEach((doc) => {
       const taskData = doc.data();
-      const taskDueDate = taskData.dueDate.toDate();
+      // taskData.dueDate is already a number (UNIX timestamp) in the new system
+      const taskDueDate = new Date(taskData.dueDate);
       taskDueDate.setHours(0, 0, 0, 0);
+      const taskDueDateTimestamp = taskDueDate.getTime();
 
       // Only delay tasks that were due today or earlier and are not repeating
-      if (taskDueDate < today && !taskData.isRepeating) {
-        const newDueDate = new Date(tomorrow);
+      if (taskDueDateTimestamp < todayTimestamp && !taskData.isRepeating) {
+        const originalDueDate = new Date(taskData.dueDate);
+        const newDueDate = new Date(tomorrowTimestamp);
         newDueDate.setHours(
-          taskData.dueDate.toDate().getHours(),
-          taskData.dueDate.toDate().getMinutes()
+          originalDueDate.getHours(),
+          originalDueDate.getMinutes()
         );
 
         batch.update(doc.ref, {
-          dueDate: Timestamp.fromDate(newDueDate),
+          dueDate: newDueDate.getTime(),
           status: "delayed",
           delayCount: (taskData.delayCount || 0) + 1,
-          updatedAt: FieldValue.serverTimestamp(),
+          updatedAt: Date.now(),
         });
         delayedCount++;
       }

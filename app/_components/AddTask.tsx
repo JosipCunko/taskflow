@@ -56,7 +56,7 @@ interface AddTaskProps {
 }
 
 const initialState = {
-  selectedDate: new Date(),
+  selectedDate: Date.now(),
   startTime: [0, 0],
   endTime: [23, 59],
   isRepeating: false,
@@ -69,7 +69,7 @@ const initialState = {
   selectedDaysOfWeek: [] as DayOfWeek[],
   timesPerWeek: 1,
   interval: 1,
-  startDate: new Date(),
+  startDate: Date.now(),
   location: "",
   wholeDay: true,
   title: "",
@@ -235,8 +235,9 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
           throw new Error("Missing some required fields.");
         }
 
-        const baseDueDate = new Date(state.selectedDate);
-        baseDueDate.setHours(endHour, endMinute);
+        const baseDueDateObj = new Date(state.selectedDate);
+        baseDueDateObj.setHours(endHour, endMinute);
+        const baseDueDate = baseDueDateObj.getTime();
         const durationObject = {
           hours: state.duration[0],
           minutes: state.duration[1],
@@ -246,7 +247,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
           minute: state.startTime[1],
         };
 
-        let firstInstanceDueDate: Date | undefined = baseDueDate;
+        let firstInstanceDueDate: number | undefined = baseDueDate;
         let repetitionRule: RepetitionRule | undefined;
 
         if (state.isRepeating && activeRepetitionType !== "none") {
@@ -274,7 +275,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
             baseDueDate,
             state.startDate
           );
-          firstInstanceDueDate = result.dueDate as Date;
+          firstInstanceDueDate = result.dueDate;
           repetitionRule = result.repetitionRule;
         }
 
@@ -301,9 +302,9 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
               userId: createdTask.userId,
               taskId: createdTask.id,
               action: "task_created",
-              timestamp: new Date(),
+              timestamp: Date.now(),
               completionTime: undefined,
-              dueDate: new Date(createdTask.dueDate),
+              dueDate: createdTask.dueDate,
               isPriority: createdTask.isPriority,
               isReminder: createdTask.isReminder,
               isRepeating: createdTask.isRepeating || false,
