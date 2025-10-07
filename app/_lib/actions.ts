@@ -35,8 +35,9 @@ import {
 import { getServerSession } from "next-auth";
 import { logUserActivity } from "./activity";
 import { authOptions } from "./auth";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { updateUser, updateUserCompletionStats } from "./user-admin";
+import { CacheTags } from "../_utils/serverCache";
 import { adminDb } from "./admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { sendCampaignNotification } from "./notifications-admin";
@@ -55,7 +56,11 @@ export async function updateUserAction(
 
   const result = await updateUser(userId, data);
   if (result.success) {
+    // Invalidate user cache to ensure fresh data
+    revalidateTag(CacheTags.user(userId));
+    revalidateTag(CacheTags.users());
     revalidatePath("/webapp/profile");
+    revalidatePath("/webapp");
   }
   return result;
 }
@@ -86,7 +91,11 @@ export async function setUserNutritionGoalsAction(
       nutritionGoals: goals,
     });
 
+    // Invalidate user cache to ensure fresh nutrition goals
+    revalidateTag(CacheTags.user(session.user.id));
+    revalidateTag(CacheTags.userHealth(session.user.id));
     revalidatePath("/webapp/health");
+    revalidatePath("/webapp");
 
     return {
       success: true,
@@ -274,7 +283,13 @@ export async function completeTaskAction(
     // Check for achievements after task completion
     await checkAndAwardAchievements(userId);
 
+    // Invalidate caches for fresh data
+    revalidateTag(CacheTags.tasks());
+    revalidateTag(CacheTags.userTasks(userId));
+    revalidateTag(CacheTags.task(taskId));
+    revalidateTag(CacheTags.user(userId)); // User stats changed
     revalidatePath("/webapp/tasks");
+    revalidatePath("/webapp");
     return { success: true, message: `Task marked as completed` };
   } catch (err) {
     const error = err as ActionError;
@@ -367,7 +382,12 @@ export async function delayTaskAction(
       });
     }
 
+    // Invalidate task caches
+    revalidateTag(CacheTags.tasks());
+    revalidateTag(CacheTags.userTasks(userId));
+    revalidateTag(CacheTags.task(taskId));
     revalidatePath("/webapp/tasks");
+    revalidatePath("/webapp");
     return {
       success: true,
       message: `Task delayed to ${formatDate(newDueDate)}`,
@@ -418,7 +438,13 @@ export async function deleteTaskAction(
         points: deletedTask.points,
       });
     }
+    
+    // Invalidate task caches
+    revalidateTag(CacheTags.tasks());
+    revalidateTag(CacheTags.userTasks(session.user.id));
+    revalidateTag(CacheTags.task(taskId));
     revalidatePath("/webapp/tasks");
+    revalidatePath("/webapp");
     return { success: true, message: "Task deleted" };
   } catch (err) {
     const error = err as ActionError;
@@ -439,7 +465,13 @@ export async function togglePriorityAction(
   const newIsPriority = !currentTask.isPriority;
   try {
     await updateTask(taskId, { isPriority: newIsPriority });
+    
+    // Invalidate task caches
+    revalidateTag(CacheTags.tasks());
+    revalidateTag(CacheTags.userTasks(session.user.id));
+    revalidateTag(CacheTags.task(taskId));
     revalidatePath("/webapp/tasks");
+    revalidatePath("/webapp");
     return {
       success: true,
       message: `Task priority ${newIsPriority ? "added" : "removed"}`,
@@ -467,7 +499,13 @@ export async function toggleReminderAction(
 
   try {
     await updateTask(taskId, { isReminder: newIsReminder });
+    
+    // Invalidate task caches
+    revalidateTag(CacheTags.tasks());
+    revalidateTag(CacheTags.userTasks(session.user.id));
+    revalidateTag(CacheTags.task(taskId));
     revalidatePath("/webapp/tasks");
+    revalidatePath("/webapp");
     return {
       success: true,
       message: `Task reminder ${newIsReminder ? "added" : "removed"}`,
@@ -495,7 +533,12 @@ export async function updateTaskExperienceAction(
       experience: newExperience,
     });
 
+    // Invalidate task caches
+    revalidateTag(CacheTags.tasks());
+    revalidateTag(CacheTags.userTasks(session.user.id));
+    revalidateTag(CacheTags.task(taskId));
     revalidatePath("/webapp/tasks");
+    revalidatePath("/webapp");
     return {
       success: true,
     };
@@ -577,6 +620,14 @@ export async function completeRepeatingTaskWithInterval(
       points: task.points,
       risk: false,
     });
+
+    // Invalidate caches
+    revalidateTag(CacheTags.tasks());
+    revalidateTag(CacheTags.userTasks(session.user.id));
+    revalidateTag(CacheTags.task(task.id));
+    revalidateTag(CacheTags.user(session.user.id)); // User stats changed
+    revalidatePath("/webapp/tasks");
+    revalidatePath("/webapp");
 
     return {
       success: true,
@@ -681,6 +732,14 @@ export async function completeRepeatingTaskWithTimesPerWeek(
       risk: false,
     });
 
+    // Invalidate caches
+    revalidateTag(CacheTags.tasks());
+    revalidateTag(CacheTags.userTasks(session.user.id));
+    revalidateTag(CacheTags.task(task.id));
+    revalidateTag(CacheTags.user(session.user.id)); // User stats changed
+    revalidatePath("/webapp/tasks");
+    revalidatePath("/webapp");
+
     return {
       success: true,
       message:
@@ -783,6 +842,14 @@ export async function completeRepeatingTaskWithDaysOfWeek(
       points: task.points,
       risk: false,
     });
+
+    // Invalidate caches
+    revalidateTag(CacheTags.tasks());
+    revalidateTag(CacheTags.userTasks(session.user.id));
+    revalidateTag(CacheTags.task(task.id));
+    revalidateTag(CacheTags.user(session.user.id)); // User stats changed
+    revalidatePath("/webapp/tasks");
+    revalidatePath("/webapp");
 
     return {
       success: true,
@@ -919,7 +986,10 @@ export async function updateYouTubePreferencesAction(
       },
     });
 
+    // Invalidate user cache
+    revalidateTag(CacheTags.user(session.user.id));
     revalidatePath("/webapp/profile");
+    revalidatePath("/webapp");
 
     return {
       success: true,
@@ -987,8 +1057,13 @@ export async function autoDelayIncompleteTodayTasks(): Promise<ActionResult> {
 
     if (delayedCount > 0) {
       await batch.commit();
+      
+      // Invalidate task caches after batch update
+      revalidateTag(CacheTags.tasks());
+      revalidateTag(CacheTags.userTasks(session.user.id));
       revalidatePath("/webapp/today");
       revalidatePath("/webapp/tasks");
+      revalidatePath("/webapp");
     }
 
     return {

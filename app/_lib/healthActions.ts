@@ -4,7 +4,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "./auth";
 import { adminDb } from "./admin";
 import { ActionResult, LoggedMeal, SavedMeal } from "../_types/types";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { CacheTags } from "../_utils/serverCache";
 
 export async function createSavedMeal(
   formData: FormData
@@ -67,7 +68,10 @@ export async function createSavedMeal(
     };
     await docRef.set(savedMealWithId);
 
+    // Invalidate health cache
+    revalidateTag(CacheTags.userHealth(session.user.id));
     revalidatePath("/webapp/health");
+    revalidatePath("/webapp");
 
     return {
       success: true,
@@ -91,7 +95,10 @@ export async function deleteSavedMeal(mealId: string): Promise<ActionResult> {
 
     await adminDb.collection("savedMeals").doc(mealId).delete();
 
+    // Invalidate health cache
+    revalidateTag(CacheTags.userHealth(session.user.id));
     revalidatePath("/webapp/health");
+    revalidatePath("/webapp");
 
     return {
       success: true,
@@ -172,7 +179,10 @@ export async function createLoggedMeal(
     };
     await docRef.set(loggedMealWithId);
 
+    // Invalidate health cache
+    revalidateTag(CacheTags.userHealth(session.user.id));
     revalidatePath("/webapp/health");
+    revalidatePath("/webapp");
 
     return {
       success: true,
@@ -253,7 +263,11 @@ export async function updateLoggedMeal(
       ...currentLoggedMeal,
       ...updateData,
     };
+    
+    // Invalidate health cache
+    revalidateTag(CacheTags.userHealth(session.user.id));
     revalidatePath("/webapp/health");
+    revalidatePath("/webapp");
 
     return {
       success: true,
