@@ -3,7 +3,8 @@
 import { adminDb } from "@/app/_lib/admin";
 import { Timestamp } from "firebase-admin/firestore";
 import { ActionResult } from "@/app/_types/types";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { CacheTags } from "../_utils/serverCache";
 
 export async function addNoteAction(
   userId: string,
@@ -23,7 +24,13 @@ export async function addNoteAction(
       updatedAt: Timestamp.now(),
     };
     await newNoteRef.set(newNoteData);
+    
+    // Invalidate notes cache
+    revalidateTag(CacheTags.userNotes(userId));
+    revalidateTag(CacheTags.notes());
     revalidatePath("/notes");
+    revalidatePath("/webapp");
+    
     return {
       success: true,
       message: "Note added successfully.",
@@ -61,7 +68,13 @@ export async function updateNoteAction(
       content,
       updatedAt: Timestamp.now(),
     });
+    
+    // Invalidate notes cache
+    revalidateTag(CacheTags.userNotes(userId));
+    revalidateTag(CacheTags.notes());
     revalidatePath("/notes");
+    revalidatePath("/webapp");
+    
     return { success: true, message: "Note updated successfully." };
   } catch (error) {
     console.error("Error updating note:", noteId, error);
@@ -92,7 +105,13 @@ export async function deleteNoteAction(
     }
 
     await noteRef.delete();
+    
+    // Invalidate notes cache
+    revalidateTag(CacheTags.userNotes(userId));
+    revalidateTag(CacheTags.notes());
     revalidatePath("/notes");
+    revalidatePath("/webapp");
+    
     return { success: true, message: "Note deleted successfully." };
   } catch (error) {
     console.error("Error deleting note:", noteId, error);
