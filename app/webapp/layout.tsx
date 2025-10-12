@@ -13,7 +13,7 @@ import OfflineHandler from "../_components/auth/OfflineHandler";
 import PWAInstall from "../_components/PWAInstall";
 
 export const metadata: Metadata = {
-  title: "TaskFlow - WebApp",
+  title: "TaskFlow",
   description: "Manage your tasks and boost your productivity with TaskFlow.",
 };
 

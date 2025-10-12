@@ -37,6 +37,7 @@ interface FirebaseUser {
 }
 
 type TaskUpdatePayload = {
+  completedAt?: number;
   status?: "pending" | "completed" | "delayed";
   dueDate?: number;
   startDate?: number;
@@ -158,12 +159,25 @@ export async function updateUserRepeatingTasks(userId: string) {
       setIfChanged("points", newPoints, task.points);
 
       const isCompletedToday = taskCompletedAt && isToday(taskCompletedAt);
-      if (!isCompletedToday) {
-        setIfChanged("status", "pending", task.status);
-        setNestedIfChanged("repetitionRule.completions", 0, rule.completions);
+      const taskIsPastDue = isPast(taskDueDate) && !isToday(taskDueDate);
+
+      if (!isCompletedToday || taskIsPastDue) {
+        // Reset status to pending if task is past due or not completed today
+        if (
+          taskIsPastDue ||
+          (task.status === "completed" && !isCompletedToday)
+        ) {
+          setIfChanged("status", "pending", task.status);
+          setNestedIfChanged("repetitionRule.completions", 0, rule.completions);
+
+          // Clear completedAt if we're resetting the task
+          if (task.status === "completed") {
+            updates.completedAt = undefined;
+          }
+        }
 
         const nextDueDate = startOfDay(new Date(taskDueDate));
-        if (isPast(nextDueDate) && !isToday(nextDueDate)) {
+        if (taskIsPastDue) {
           if (!isSameMonth(taskDueDate, today)) {
             setNestedIfChanged(
               "repetitionRule.completedAt",

@@ -44,6 +44,7 @@ const initialState = {
   startTime: [0, 0],
   endTime: [23, 59],
   isPriority: false,
+  autoDelay: false,
   duration: [0, 0],
   selectedColor: colorsColorPicker[0],
   selectedIcon: TASK_ICONS[0].icon,
@@ -191,7 +192,8 @@ export default function AddTodayTask({
           durationObject,
           false, // no repeating for today tasks
           undefined, // no repetition rule
-          today.getTime() // start date is today
+          today.getTime(), // start date is today
+          state.autoDelay
         );
 
         handleToast(res, () => {
@@ -202,7 +204,6 @@ export default function AddTodayTask({
               taskId: createdTask.id,
               action: "task_created",
               timestamp: Date.now(),
-              completionTime: undefined,
               dueDate: createdTask.dueDate,
               isPriority: createdTask.isPriority,
               isReminder: createdTask.isReminder,
@@ -307,6 +308,21 @@ export default function AddTodayTask({
               >
                 <CardSpecificIcons.Priority size={12} className="mr-1" />
                 Priority
+              </Button>
+
+              <Button
+                variant="tag"
+                onClick={() =>
+                  dispatch({ type: "autoDelay", payload: !state.autoDelay })
+                }
+                className={` ${
+                  state.autoDelay
+                    ? "bg-purple-100 text-purple-800"
+                    : "bg-background-500 text-text-low"
+                }`}
+              >
+                <CardSpecificIcons.DueDate size={12} className="mr-1" />
+                Auto delay
               </Button>
             </div>
 

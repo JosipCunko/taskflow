@@ -11,6 +11,7 @@ export interface Task {
   isPriority: boolean;
   isReminder: boolean;
   delayCount: number;
+  autoDelay?: boolean; // Automatically delay task to next day if missed
   tags?: string[];
   createdAt: number; // UNIX timestamp in milliseconds
   updatedAt: number; // UNIX timestamp in milliseconds
@@ -105,7 +106,6 @@ export interface AnalyticsData {
   activeTime: number;
 
   dailyTaskCompletions: number[];
-  averageCompletionTime: number;
   mostProductiveHour: number;
 
   pointsGrowth: number[];
@@ -141,14 +141,13 @@ export interface TaskAnalytics {
   taskId: string;
   action: TaskEventType;
   timestamp: number; // UNIX timestamp in milliseconds
-  completionTime?: number; // seconds from creation to completion
   dueDate: number; // UNIX timestamp in milliseconds
   isPriority: boolean;
   isReminder: boolean;
   isRepeating: boolean;
   delayCount?: number;
   risk?: boolean;
-  hour: number; // hour of day when action occurred
+  hour?: number; // hour of day when action occurred
   points: number;
 }
 export type TaskEventType =

@@ -62,6 +62,7 @@ const initialState = {
   isRepeating: false,
   isPriority: false,
   isReminder: false,
+  autoDelay: false,
   tags: [] as string[],
   duration: [0, 0],
   selectedColor: colorsColorPicker[0],
@@ -292,7 +293,8 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
           durationObject,
           state.isRepeating,
           repetitionRule,
-          state.startDate
+          state.startDate,
+          state.autoDelay
         );
 
         handleToast(res, () => {
@@ -303,7 +305,6 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
               taskId: createdTask.id,
               action: "task_created",
               timestamp: Date.now(),
-              completionTime: undefined,
               dueDate: createdTask.dueDate,
               isPriority: createdTask.isPriority,
               isReminder: createdTask.isReminder,
@@ -443,6 +444,21 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
               >
                 <CardSpecificIcons.Reminder size={12} className="mr-1" />
                 Reminders
+              </Button>
+
+              <Button
+                variant="tag"
+                onClick={() =>
+                  dispatch({ type: "autoDelay", payload: !state.autoDelay })
+                }
+                className={` ${
+                  state.autoDelay
+                    ? "bg-purple-100 text-purple-800"
+                    : "bg-background-500 text-text-low"
+                }`}
+              >
+                <CardSpecificIcons.DueDate size={12} className="mr-1" />
+                Auto delay
               </Button>
             </div>
 

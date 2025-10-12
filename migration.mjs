@@ -47,20 +47,20 @@ const convertTimestampsToNumbers = (data) => {
   return newData;
 };
 
-const migrateUsersCollection = async () => {
-  console.log('Starting migration for "users" collection...');
+const migrateCollection = async (collectionName) => {
+  console.log(`Starting migration for "${collectionName}" collection...`);
 
-  // Add safety check - confirm we're only working with users collection
+  // Add safety check
   console.log(
-    "⚠️  This script will modify ALL documents in the 'users' collection."
+    `⚠️  This script will modify ALL documents in the '${collectionName}' collection.`
   );
   console.log("⚠️  Make sure you have a backup before proceeding!");
 
-  const usersRef = db.collection("users");
-  const snapshot = await usersRef.get();
+  const collectionRef = db.collection(collectionName);
+  const snapshot = await collectionRef.get();
 
   if (snapshot.empty) {
-    console.log('No documents found in "users" collection.');
+    console.log(`No documents found in "${collectionName}" collection.`);
     return;
   }
 
@@ -104,8 +104,10 @@ const migrateUsersCollection = async () => {
     await batch.commit();
   }
 
-  console.log('✅ Migration for "users" collection completed successfully.');
+  console.log(
+    `✅ Migration for "${collectionName}" collection completed successfully.`
+  );
   console.log(`📊 Total documents processed: ${totalProcessed}`);
 };
 
-migrateUsersCollection().catch(console.error);
+migrateCollection("userActivityLogs").catch(console.error);

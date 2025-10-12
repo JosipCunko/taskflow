@@ -108,8 +108,8 @@ export const onForegroundMessage = (
     if (Notification.permission === "granted" && payload.notification) {
       new Notification(payload.notification.title || "New Notification", {
         body: payload.notification.body,
-        icon: payload.notification.icon || "/icon.png",
-        badge: "/icon.png",
+        icon: payload.notification.icon || "/icon-512.png",
+        badge: "/icon-512.png",
         tag: payload.data?.type || "taskflow-notification",
         data: payload.data,
       });

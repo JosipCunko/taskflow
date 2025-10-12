@@ -24,13 +24,12 @@ export async function addNoteAction(
       updatedAt: Timestamp.now(),
     };
     await newNoteRef.set(newNoteData);
-    
-    // Invalidate notes cache
+
     revalidateTag(CacheTags.userNotes(userId));
     revalidateTag(CacheTags.notes());
     revalidatePath("/notes");
     revalidatePath("/webapp");
-    
+
     return {
       success: true,
       message: "Note added successfully.",
@@ -68,13 +67,12 @@ export async function updateNoteAction(
       content,
       updatedAt: Timestamp.now(),
     });
-    
-    // Invalidate notes cache
+
     revalidateTag(CacheTags.userNotes(userId));
     revalidateTag(CacheTags.notes());
     revalidatePath("/notes");
     revalidatePath("/webapp");
-    
+
     return { success: true, message: "Note updated successfully." };
   } catch (error) {
     console.error("Error updating note:", noteId, error);
@@ -96,7 +94,6 @@ export async function deleteNoteAction(
 
     if (!noteDoc.exists) {
       // If the note doesn't exist, arguably it's already "deleted" from the user's perspective.
-      // Depending on strictness, could return success or specific error.
       // Returning an error for now as it indicates a potential issue with the noteId passed.
       return { success: false, error: "Note not found." };
     }
@@ -105,13 +102,12 @@ export async function deleteNoteAction(
     }
 
     await noteRef.delete();
-    
-    // Invalidate notes cache
+
     revalidateTag(CacheTags.userNotes(userId));
     revalidateTag(CacheTags.notes());
     revalidatePath("/notes");
     revalidatePath("/webapp");
-    
+
     return { success: true, message: "Note deleted successfully." };
   } catch (error) {
     console.error("Error deleting note:", noteId, error);

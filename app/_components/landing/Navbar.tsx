@@ -20,7 +20,7 @@ export default function Navbar() {
           <div className="w-8 h-8 mr-3 relative">
             <div className="absolute inset-0 bg-primary-500/20 rounded-lg group-hover:animate-none transition-colors animate-pulse"></div>
             <Image
-              src="/icon.png"
+              src="/icon-512.png"
               alt="Taskflow Logo"
               fill
               className="w-8 h-8 p-1 text-primary-300 group-hover:animate-[text-glitch_0.3s_ease-out]"

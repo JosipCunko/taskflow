@@ -460,7 +460,7 @@
   "categories": ["productivity", "business", "utilities"],
   "screenshots": [
     {
-      "src": "dashboard.png",
+      "src": "/dashboard.png",
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide"

@@ -7,7 +7,7 @@ import {
   Achievement,
   UserNutritionGoals,
 } from "../_types/types";
-import { Timestamp, FieldValue } from "firebase-admin/firestore";
+import { FieldValue } from "firebase-admin/firestore";
 import { defaultNutritionGoals } from "../_utils/utils";
 import { unstable_cache } from "next/cache";
 import { CacheTags, CacheDuration } from "../_utils/serverCache";
@@ -27,7 +27,6 @@ async function getUserByIdInternal(userId: string): Promise<AppUser | null> {
       return null;
     }
 
-    // Fetch achievements from subcollection
     const achievementsSnapshot = await adminDb
       .collection("users")
       .doc(userId)
@@ -40,10 +39,7 @@ async function getUserByIdInternal(userId: string): Promise<AppUser | null> {
         id: doc.id,
         type: data.type,
         userId: data.userId,
-        unlockedAt:
-          typeof data.unlockedAt === "number"
-            ? data.unlockedAt
-            : (data.unlockedAt as Timestamp).toDate().getTime(),
+        unlockedAt: data.unlockedAt,
       };
     });
 
@@ -53,10 +49,7 @@ async function getUserByIdInternal(userId: string): Promise<AppUser | null> {
       email: userData.email,
       provider: userData.provider,
       photoURL: userData.photoURL,
-      createdAt:
-        typeof userData.createdAt === "number"
-          ? userData.createdAt
-          : (userData.createdAt as Timestamp).toDate().getTime(),
+      createdAt: userData.createdAt,
       notifyReminders: userData.notifyReminders,
       notifyAchievements: userData.notifyAchievements,
       rewardPoints: userData.rewardPoints || 0,
@@ -77,36 +70,22 @@ async function getUserByIdInternal(userId: string): Promise<AppUser | null> {
               userData.nutritionGoals.carbs,
             fat:
               userData.nutritionGoals.dailyFat || userData.nutritionGoals.fat,
-            updatedAt:
-              typeof userData.nutritionGoals.updatedAt === "number"
-                ? userData.nutritionGoals.updatedAt
-                : (userData.nutritionGoals.updatedAt as Timestamp)
-                    .toDate()
-                    .getTime(),
+            updatedAt: userData.nutritionGoals.updatedAt,
           }
         : {
             calories: defaultNutritionGoals.calories,
             protein: defaultNutritionGoals.protein,
             carbs: defaultNutritionGoals.carbs,
             fat: defaultNutritionGoals.fat,
-            updatedAt:
-              typeof userData.createdAt === "number"
-                ? userData.createdAt
-                : (userData.createdAt as Timestamp).toDate().getTime(),
+            updatedAt: userData.createdAt,
           },
-      lastLoginAt: userData.lastLoginAt
-        ? typeof userData.lastLoginAt === "number"
-          ? userData.lastLoginAt
-          : (userData.lastLoginAt as Timestamp).toDate().getTime()
-        : undefined,
+      ...(userData.lastLoginAt && { lastLoginAt: userData.lastLoginAt }),
       youtubePreferences: userData.youtubePreferences,
       // Anonymous user fields
       isAnonymous: userData.isAnonymous,
-      anonymousCreatedAt: userData.anonymousCreatedAt
-        ? typeof userData.anonymousCreatedAt === "number"
-          ? userData.anonymousCreatedAt
-          : (userData.anonymousCreatedAt as Timestamp).toDate().getTime()
-        : undefined,
+      ...(userData.anonymousCreatedAt && {
+        anonymousCreatedAt: userData.anonymousCreatedAt,
+      }),
     };
   } catch (error) {
     console.error("Error fetching user by ID:", error);
@@ -116,12 +95,12 @@ async function getUserByIdInternal(userId: string): Promise<AppUser | null> {
 
 /**
  * Get user by ID with caching
- * 
+ *
  * Uses Next.js 15 unstable_cache for server-side caching.
  * Cache is invalidated when:
  * - User data is updated (via revalidateTag in updateUserAction)
  * - Automatically after 5 minutes as a safety net
- * 
+ *
  * @param userId - User ID to fetch
  * @returns User data or null if not found
  */
@@ -134,7 +113,7 @@ export async function getUserById(userId: string): Promise<AppUser | null> {
       revalidate: CacheDuration.USER_DATA,
     }
   );
-  
+
   return cachedGetUser(userId);
 }
 

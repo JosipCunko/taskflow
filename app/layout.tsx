@@ -10,7 +10,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TaskFlow - Task Management",
+  title: "TaskFlow",
   description:
     "Modern task management web application with AI-powered features, analytics, and comprehensive productivity tools",
   manifest: "/manifest.json",
@@ -20,11 +20,10 @@ export const metadata: Metadata = {
     title: "TaskFlow",
   },
   icons: {
-    icon: [
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    icon: [{ url: "/icon-512.png", sizes: "512x512", type: "image/png" }],
+    apple: [
+      { url: "./pwaicons/ios/192.png", sizes: "192x192", type: "image/png" },
     ],
-    apple: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
   },
 };
 

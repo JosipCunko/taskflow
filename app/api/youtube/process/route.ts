@@ -9,8 +9,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const baseUrl = process.env.NEXTAUTH_URL;
+
     // Generate YouTube summary
-    const summarizeResponse = await fetch(`/api/youtube/summarize`, {
+    const summarizeResponse = await fetch(`${baseUrl}/api/youtube/summarize`, {
       method: "POST",
       headers: {
         Cookie: request.headers.get("cookie") || "",
@@ -30,16 +32,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Create tasks and notifications
-    const createTasksResponse = await fetch(`/api/youtube/create-tasks`, {
-      method: "POST",
-      headers: {
-        Cookie: request.headers.get("cookie") || "",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        summaryId: summaryResult.summaryId,
-      }),
-    });
+    const createTasksResponse = await fetch(
+      `${baseUrl}/api/youtube/create-tasks`,
+      {
+        method: "POST",
+        headers: {
+          Cookie: request.headers.get("cookie") || "",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          summaryId: summaryResult.summaryId,
+        }),
+      }
+    );
 
     if (!createTasksResponse.ok) {
       const error = await createTasksResponse.json();

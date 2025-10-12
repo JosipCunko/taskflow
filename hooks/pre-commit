@@ -1,0 +1,40 @@
+#!/bin/sh
+#
+# TaskFlow Pre-commit Hook
+# Automatically updates package.json version based on commit message
+#
+# To install this hook:
+# 1. Copy this file to .git/hooks/pre-commit
+# 2. Make it executable: chmod +x .git/hooks/pre-commit
+#
+# Or run: npm run install-hooks
+
+# Get the commit message from the commit-msg file if it exists
+# Note: In pre-commit, we don't have access to the commit message yet
+# So this hook is more useful as a post-commit hook
+
+echo "🔍 TaskFlow pre-commit hook running..."
+
+# Check if package.json exists
+if [ ! -f "package.json" ]; then
+    echo "⚠️  package.json not found, skipping version update"
+    exit 0
+fi
+
+# Check if update-version.js exists
+if [ ! -f "update-version.js" ]; then
+    echo "⚠️  update-version.js not found, skipping version update"
+    exit 0
+fi
+
+# Run linting
+echo "🔍 Running linter..."
+npm run lint --silent
+
+if [ $? -ne 0 ]; then
+    echo "❌ Linting failed. Please fix the issues before committing."
+    exit 1
+fi
+
+echo "✅ Pre-commit checks passed!"
+exit 0

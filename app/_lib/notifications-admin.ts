@@ -43,7 +43,7 @@ const sendPushNotification = async (
       notification: {
         title: notification.title,
         body: notification.body,
-        icon: notification.icon || "/icon.png",
+        icon: notification.icon || "/icon-512.png",
       },
       data: {
         actionUrl: data?.actionUrl || "/webapp",
@@ -53,14 +53,14 @@ const sendPushNotification = async (
       token: fcmToken,
       webpush: {
         notification: {
-          icon: notification.icon || "/icon.png",
-          badge: "/icon.png",
+          icon: notification.icon || "/icon-512.png",
+          badge: "/icon-512.png",
           requireInteraction: true,
           actions: [
             {
               action: "view",
               title: "View Task",
-              icon: "/icon.png",
+              icon: "/icon-512.png",
             },
             {
               action: "dismiss",

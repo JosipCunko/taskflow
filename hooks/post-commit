@@ -1,0 +1,40 @@
+#!/bin/sh
+#
+# TaskFlow Post-commit Hook
+# Automatically updates package.json version based on commit message
+#
+# To install this hook:
+# 1. Copy this file to .git/hooks/post-commit
+# 2. Make it executable: chmod +x .git/hooks/post-commit
+#
+# Or run: npm run install-hooks
+
+echo "🔍 TaskFlow post-commit hook running..."
+
+# Check if package.json exists
+if [ ! -f "package.json" ]; then
+    echo "⚠️  package.json not found, skipping version update"
+    exit 0
+fi
+
+# Check if update-version.js exists
+if [ ! -f "update-version.js" ]; then
+    echo "⚠️  update-version.js not found, skipping version update"
+    exit 0
+fi
+
+# Run the version update script
+echo "📦 Checking for version update..."
+node update-version.js
+
+# If package.json was updated, create an automatic commit
+if git diff --quiet package.json; then
+    echo "ℹ️  No version changes needed"
+else
+    echo "📝 package.json was updated, creating automatic commit..."
+    git add package.json
+    git commit -m "chore: update package.json version [skip-hooks]"
+    echo "✅ Version update committed!"
+fi
+
+exit 0

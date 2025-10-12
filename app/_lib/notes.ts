@@ -1,8 +1,10 @@
 import "server-only";
 import { adminDb } from "@/app/_lib/admin";
 import { Note } from "@/app/_types/types";
+import { unstable_cache } from "next/cache";
+import { CacheTags, CacheDuration } from "../_utils/serverCache";
 
-export async function loadNotesByUserId(userId: string): Promise<Note[]> {
+async function loadNotesByUserIdInternal(userId: string): Promise<Note[]> {
   if (!userId) {
     console.error("User ID is required to load notes.");
     return [];
@@ -35,4 +37,17 @@ export async function loadNotesByUserId(userId: string): Promise<Note[]> {
     console.error("Error loading notes for user:", userId, error);
     throw new Error("Failed to load notes. Please try again later.");
   }
+}
+
+export async function loadNotesByUserId(userId: string): Promise<Note[]> {
+  const cachedGetNotes = unstable_cache(
+    loadNotesByUserIdInternal,
+    [`notes-user-${userId}`],
+    {
+      tags: [CacheTags.userNotes(userId), CacheTags.notes()],
+      revalidate: CacheDuration.NOTES,
+    }
+  );
+
+  return cachedGetNotes(userId);
 }

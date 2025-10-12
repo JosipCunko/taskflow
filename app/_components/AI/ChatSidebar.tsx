@@ -243,29 +243,29 @@ export default function ChatSidebar() {
       {/* Mobile Toggle Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden fixed top-20 left-4 z-50 p-2 bg-background-700 border border-background-600 rounded-lg hover:bg-background-600 transition-colors"
+        className="md:hidden fixed top-3 left-3 z-50 p-2 bg-background-600/80 backdrop-blur-sm rounded-md text-text-high shadow-md hover:bg-background-500 transition-colors cursor-pointer"
         aria-label="Toggle chat history"
       >
-        {isOpen ? <X size={20} /> : <Menu size={20} />}
+        {isOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
       {/* Mobile Overlay */}
       {isOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-10"
+          className="md:hidden fixed inset-0 bg-black/50 z-10"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* Sidebar - Desktop */}
-      <aside className="hidden lg:flex lg:w-72 h-full">
+      <aside className="hidden md:flex md:w-72 h-full">
         <SidebarContent />
       </aside>
 
       {/* Sidebar - Mobile */}
       <aside
         className={`
-          lg:hidden fixed top-0 left-0 bottom-0 w-72 z-40
+          md:hidden fixed top-0 left-0 bottom-0 w-72 z-40
           transform transition-transform duration-300 ease-in-out
           ${isOpen ? "translate-x-0" : "-translate-x-full"}
         `}

@@ -1,21 +1,20 @@
 // TaskFlow Service Worker
-const CACHE_NAME = 'taskflow-v1';
-const RUNTIME_CACHE = 'taskflow-runtime';
+const CACHE_NAME = "taskflow-cache-v1";
+const RUNTIME_CACHE = "taskflow-runtime";
 
 // Assets to cache on install
 const PRECACHE_URLS = [
-  '/',
-  '/webapp',
-  '/login',
-  '/offline',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/logo.png',
+  "/",
+  "/webapp",
+  "/login",
+  "/offline",
+  "/manifest.json",
+  "/icon-512.png",
+  "/logo.png",
 ];
 
 // Install event - precache essential resources
-self.addEventListener('install', (event) => {
+self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(PRECACHE_URLS);
@@ -25,7 +24,7 @@ self.addEventListener('install', (event) => {
 });
 
 // Activate event - clean up old caches
-self.addEventListener('activate', (event) => {
+self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
@@ -39,21 +38,24 @@ self.addEventListener('activate', (event) => {
 });
 
 // Fetch event - serve from cache, fallback to network
-self.addEventListener('fetch', (event) => {
+self.addEventListener("fetch", (event) => {
   // Skip non-GET requests
-  if (event.request.method !== 'GET') return;
+  if (event.request.method !== "GET") return;
 
   // Skip Chrome extensions and other non-http(s) requests
-  if (!event.request.url.startsWith('http')) return;
+  if (!event.request.url.startsWith("http")) return;
 
   // Skip API calls and auth requests - always fetch fresh
-  if (event.request.url.includes('/api/') || event.request.url.includes('/auth/')) {
+  if (
+    event.request.url.includes("/api/") ||
+    event.request.url.includes("/auth/")
+  ) {
     event.respondWith(fetch(event.request));
     return;
   }
 
   // Network-first strategy for HTML pages
-  if (event.request.mode === 'navigate') {
+  if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
@@ -71,8 +73,8 @@ self.addEventListener('fetch', (event) => {
               return cachedResponse;
             }
             // Return offline page if available
-            return caches.match('/offline').then((offlinePage) => {
-              return offlinePage || caches.match('/');
+            return caches.match("/offline").then((offlinePage) => {
+              return offlinePage || caches.match("/");
             });
           });
         })
@@ -89,7 +91,7 @@ self.addEventListener('fetch', (event) => {
 
       return fetch(event.request).then((response) => {
         // Don't cache non-successful responses
-        if (!response || response.status !== 200 || response.type === 'error') {
+        if (!response || response.status !== 200 || response.type === "error") {
           return response;
         }
 
@@ -106,30 +108,28 @@ self.addEventListener('fetch', (event) => {
 });
 
 // Handle messages from the client
-self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
     self.skipWaiting();
   }
 
-  if (event.data && event.data.type === 'CLEAR_CACHE') {
+  if (event.data && event.data.type === "CLEAR_CACHE") {
     event.waitUntil(
       caches.keys().then((cacheNames) => {
-        return Promise.all(
-          cacheNames.map((name) => caches.delete(name))
-        );
+        return Promise.all(cacheNames.map((name) => caches.delete(name)));
       })
     );
   }
 });
 
 // Handle push notifications (if needed in the future)
-self.addEventListener('push', (event) => {
+self.addEventListener("push", (event) => {
   if (event.data) {
     const data = event.data.json();
     const options = {
-      body: data.body || 'New notification from TaskFlow',
-      icon: '/icon-192.png',
-      badge: '/icon-192.png',
+      body: data.body || "New notification from TaskFlow",
+      icon: "/icon-512.png",
+      badge: "/icon-512.png",
       vibrate: [100, 50, 100],
       data: {
         dateOfArrival: Date.now(),
@@ -138,15 +138,13 @@ self.addEventListener('push', (event) => {
     };
 
     event.waitUntil(
-      self.registration.showNotification(data.title || 'TaskFlow', options)
+      self.registration.showNotification(data.title || "TaskFlow", options)
     );
   }
 });
 
 // Handle notification clicks
-self.addEventListener('notificationclick', (event) => {
+self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  event.waitUntil(
-    clients.openWindow(event.notification.data?.url || '/')
-  );
+  event.waitUntil(clients.openWindow(event.notification.data?.url || "/"));
 });

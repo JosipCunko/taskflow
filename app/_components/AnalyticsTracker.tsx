@@ -50,6 +50,11 @@ export default function AnalyticsTracker({
   useEffect(() => {
     if (!userData?.uid) return;
 
+    // Don't record sessions in development mode to save reads/writes
+    if (process.env.NODE_ENV === "development") {
+      return;
+    }
+
     const startOrLoadSession = async () => {
       const storedSessionId = sessionStorage.getItem("sessionId");
       if (storedSessionId) {

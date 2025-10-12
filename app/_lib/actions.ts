@@ -25,6 +25,7 @@ import {
   CampaignNotification,
   AnalyticsData,
   UserNutritionGoals,
+  ActivityLog,
 } from "../_types/types";
 import {
   createTask,
@@ -33,7 +34,7 @@ import {
   updateTask,
 } from "./tasks-admin";
 import { getServerSession } from "next-auth";
-import { logUserActivity } from "./activity";
+import { getUserActivityForPeriod, logUserActivity } from "./activity";
 import { authOptions } from "./auth";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { updateUser, updateUserCompletionStats } from "./user-admin";
@@ -56,7 +57,6 @@ export async function updateUserAction(
 
   const result = await updateUser(userId, data);
   if (result.success) {
-    // Invalidate user cache to ensure fresh data
     revalidateTag(CacheTags.user(userId));
     revalidateTag(CacheTags.users());
     revalidatePath("/webapp/profile");
@@ -91,7 +91,6 @@ export async function setUserNutritionGoalsAction(
       nutritionGoals: goals,
     });
 
-    // Invalidate user cache to ensure fresh nutrition goals
     revalidateTag(CacheTags.user(session.user.id));
     revalidateTag(CacheTags.userHealth(session.user.id));
     revalidatePath("/webapp/health");
@@ -123,7 +122,8 @@ export async function createTaskAction(
   duration: { hours: number; minutes: number },
   isRepeating: boolean,
   repetitionRule: RepetitionRule | undefined,
-  startDate?: number
+  startDate?: number,
+  autoDelay?: boolean
 ): Promise<ActionResult<Task>> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -143,6 +143,7 @@ export async function createTaskAction(
     color: selectedColor,
     isPriority,
     isReminder,
+    autoDelay,
     dueDate,
     startDate,
     startTime,
@@ -192,6 +193,15 @@ export async function createTaskAction(
           delayCount: createdTask.delayCount || 0,
         }
       );
+
+      revalidateTag(CacheTags.tasks());
+      revalidateTag(CacheTags.userTasks(session.user.id));
+      revalidateTag(CacheTags.task(createdTask.id));
+      revalidateTag(CacheTags.user(session.user.id));
+      revalidateTag(CacheTags.userActivity(session.user.id));
+      revalidatePath("/webapp/tasks");
+      revalidatePath("/webapp");
+
       return {
         success: true,
         message: "Task created successfully",
@@ -283,11 +293,10 @@ export async function completeTaskAction(
     // Check for achievements after task completion
     await checkAndAwardAchievements(userId);
 
-    // Invalidate caches for fresh data
     revalidateTag(CacheTags.tasks());
     revalidateTag(CacheTags.userTasks(userId));
     revalidateTag(CacheTags.task(taskId));
-    revalidateTag(CacheTags.user(userId)); // User stats changed
+    revalidateTag(CacheTags.user(userId));
     revalidatePath("/webapp/tasks");
     revalidatePath("/webapp");
     return { success: true, message: `Task marked as completed` };
@@ -382,7 +391,6 @@ export async function delayTaskAction(
       });
     }
 
-    // Invalidate task caches
     revalidateTag(CacheTags.tasks());
     revalidateTag(CacheTags.userTasks(userId));
     revalidateTag(CacheTags.task(taskId));
@@ -438,8 +446,7 @@ export async function deleteTaskAction(
         points: deletedTask.points,
       });
     }
-    
-    // Invalidate task caches
+
     revalidateTag(CacheTags.tasks());
     revalidateTag(CacheTags.userTasks(session.user.id));
     revalidateTag(CacheTags.task(taskId));
@@ -465,8 +472,7 @@ export async function togglePriorityAction(
   const newIsPriority = !currentTask.isPriority;
   try {
     await updateTask(taskId, { isPriority: newIsPriority });
-    
-    // Invalidate task caches
+
     revalidateTag(CacheTags.tasks());
     revalidateTag(CacheTags.userTasks(session.user.id));
     revalidateTag(CacheTags.task(taskId));
@@ -499,8 +505,7 @@ export async function toggleReminderAction(
 
   try {
     await updateTask(taskId, { isReminder: newIsReminder });
-    
-    // Invalidate task caches
+
     revalidateTag(CacheTags.tasks());
     revalidateTag(CacheTags.userTasks(session.user.id));
     revalidateTag(CacheTags.task(taskId));
@@ -533,7 +538,6 @@ export async function updateTaskExperienceAction(
       experience: newExperience,
     });
 
-    // Invalidate task caches
     revalidateTag(CacheTags.tasks());
     revalidateTag(CacheTags.userTasks(session.user.id));
     revalidateTag(CacheTags.task(taskId));
@@ -595,9 +599,9 @@ export async function completeRepeatingTaskWithInterval(
     repetitionRule: {
       ...rule,
       completedAt: [...rule.completedAt, completionDate],
-      completions: 1,
+      completions: 0, // Reset completions for interval-based tasks
     },
-    status: "completed",
+    status: "pending", // Reset to pending for the next occurrence
     dueDate: finalDueDateTimestamp,
     completedAt: completionDate,
   };
@@ -621,7 +625,6 @@ export async function completeRepeatingTaskWithInterval(
       risk: false,
     });
 
-    // Invalidate caches
     revalidateTag(CacheTags.tasks());
     revalidateTag(CacheTags.userTasks(session.user.id));
     revalidateTag(CacheTags.task(task.id));
@@ -732,7 +735,6 @@ export async function completeRepeatingTaskWithTimesPerWeek(
       risk: false,
     });
 
-    // Invalidate caches
     revalidateTag(CacheTags.tasks());
     revalidateTag(CacheTags.userTasks(session.user.id));
     revalidateTag(CacheTags.task(task.id));
@@ -843,7 +845,6 @@ export async function completeRepeatingTaskWithDaysOfWeek(
       risk: false,
     });
 
-    // Invalidate caches
     revalidateTag(CacheTags.tasks());
     revalidateTag(CacheTags.userTasks(session.user.id));
     revalidateTag(CacheTags.task(task.id));
@@ -907,6 +908,17 @@ export async function getAnalyticsDataAction(): Promise<AnalyticsData | null> {
   return getAnalyticsData(session.user.id);
 }
 
+export async function getUserActivityForPeriodAction(
+  startTime: number,
+  endTime: number
+): Promise<ActivityLog[]> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return [];
+  }
+  return getUserActivityForPeriod(session.user.id, startTime, endTime);
+}
+
 /* YouTube Summarizer */
 /* YouTube Summarizer */
 /* YouTube Summarizer */
@@ -937,10 +949,12 @@ export async function processYouTubeSummaryAction(): Promise<ActionResult> {
     }
 
     // Make internal API call to process YouTube summary
-    const response = await fetch(`/api/youtube/process`, {
+    const baseUrl = process.env.NEXTAUTH_URL;
+    const response = await fetch(`${baseUrl}/api/youtube/process`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Cookie: `next-auth.session-token=${session.user.id}`, // Pass session info
       },
     });
 
@@ -986,7 +1000,6 @@ export async function updateYouTubePreferencesAction(
       },
     });
 
-    // Invalidate user cache
     revalidateTag(CacheTags.user(session.user.id));
     revalidatePath("/webapp/profile");
     revalidatePath("/webapp");
@@ -1036,8 +1049,12 @@ export async function autoDelayIncompleteTodayTasks(): Promise<ActionResult> {
       taskDueDate.setHours(0, 0, 0, 0);
       const taskDueDateTimestamp = taskDueDate.getTime();
 
-      // Only delay tasks that were due today or earlier and are not repeating
-      if (taskDueDateTimestamp < todayTimestamp && !taskData.isRepeating) {
+      // Only delay tasks that were due today or earlier, are not repeating, and have autoDelay enabled
+      if (
+        taskDueDateTimestamp < todayTimestamp &&
+        !taskData.isRepeating &&
+        taskData.autoDelay === true
+      ) {
         const originalDueDate = new Date(taskData.dueDate);
         const newDueDate = new Date(tomorrowTimestamp);
         newDueDate.setHours(
@@ -1057,8 +1074,7 @@ export async function autoDelayIncompleteTodayTasks(): Promise<ActionResult> {
 
     if (delayedCount > 0) {
       await batch.commit();
-      
-      // Invalidate task caches after batch update
+
       revalidateTag(CacheTags.tasks());
       revalidateTag(CacheTags.userTasks(session.user.id));
       revalidatePath("/webapp/today");

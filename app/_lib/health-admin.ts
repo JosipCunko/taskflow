@@ -10,6 +10,7 @@ import {
 import { unstable_cache } from "next/cache";
 import { defaultDailyNutritionSummary } from "../_utils/utils";
 import { isSameDay } from "date-fns";
+import { CacheTags, CacheDuration } from "../_utils/serverCache";
 
 export async function getLoggedMealsForDate(
   userId: string,
@@ -78,45 +79,61 @@ export async function getLoggedMealsForDateRange(
   }
 }
 
-export const getDailyNutritionSummary = unstable_cache(
-  async (userId: string, date: number): Promise<DailyNutritionSummary> => {
-    try {
-      const loggedMeals = await getLoggedMealsForDate(userId, date);
+async function getDailyNutritionSummaryInternal(
+  userId: string,
+  date: number
+): Promise<DailyNutritionSummary> {
+  try {
+    const loggedMeals = await getLoggedMealsForDate(userId, date);
 
-      if (!loggedMeals) {
-        return defaultDailyNutritionSummary;
-      }
-
-      const totals = loggedMeals.reduce(
-        (acc, log) => ({
-          calories: acc.calories + log.calculatedNutrients.calories,
-          protein: acc.protein + log.calculatedNutrients.protein,
-          carbs: acc.carbs + log.calculatedNutrients.carbs,
-          fat: acc.fat + log.calculatedNutrients.fat,
-        }),
-        { calories: 0, protein: 0, carbs: 0, fat: 0 }
-      );
-
-      const summary: DailyNutritionSummary = {
-        date: date,
-        totalCalories: Math.round(totals.calories),
-        totalProtein: Math.round(totals.protein),
-        totalCarbs: Math.round(totals.carbs),
-        totalFat: Math.round(totals.fat),
-        loggedMeals,
-      };
-
-      return summary;
-    } catch (error) {
-      console.error("Error calculating daily nutrition summary:", error);
+    if (!loggedMeals) {
       return defaultDailyNutritionSummary;
     }
-  }
-);
 
-export const getSavedMeals = async (
+    const totals = loggedMeals.reduce(
+      (acc, log) => ({
+        calories: acc.calories + log.calculatedNutrients.calories,
+        protein: acc.protein + log.calculatedNutrients.protein,
+        carbs: acc.carbs + log.calculatedNutrients.carbs,
+        fat: acc.fat + log.calculatedNutrients.fat,
+      }),
+      { calories: 0, protein: 0, carbs: 0, fat: 0 }
+    );
+
+    const summary: DailyNutritionSummary = {
+      date: date,
+      totalCalories: Math.round(totals.calories),
+      totalProtein: Math.round(totals.protein),
+      totalCarbs: Math.round(totals.carbs),
+      totalFat: Math.round(totals.fat),
+      loggedMeals,
+    };
+
+    return summary;
+  } catch (error) {
+    console.error("Error calculating daily nutrition summary:", error);
+    return defaultDailyNutritionSummary;
+  }
+}
+
+export const getDailyNutritionSummary = async (
+  userId: string,
+  date: number
+): Promise<DailyNutritionSummary> => {
+  const cachedGetNutritionSummary = unstable_cache(
+    getDailyNutritionSummaryInternal,
+    [`health:user:${userId}`],
+    {
+      tags: [CacheTags.userHealth(userId)],
+      revalidate: CacheDuration.GYM_HEALTH,
+    }
+  );
+  return cachedGetNutritionSummary(userId, date);
+};
+
+async function getSavedMealsInternal(
   userId: string
-): Promise<ActionResult<SavedMeal[]>> => {
+): Promise<ActionResult<SavedMeal[]>> {
   try {
     const savedMealsQuery = adminDb
       .collection("savedMeals")
@@ -141,4 +158,19 @@ export const getSavedMeals = async (
       data: [] as SavedMeal[],
     };
   }
+}
+
+export const getSavedMeals = async (
+  userId: string
+): Promise<ActionResult<SavedMeal[]>> => {
+  const cachedGetSavedMeals = unstable_cache(
+    getSavedMealsInternal,
+    [`health:user:${userId}`],
+    {
+      tags: [CacheTags.userHealth(userId)],
+      revalidate: CacheDuration.GYM_HEALTH,
+    }
+  );
+
+  return cachedGetSavedMeals(userId);
 };

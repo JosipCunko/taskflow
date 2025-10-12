@@ -92,24 +92,21 @@ export const trackTaskAnalytics = async (
   }
 ) => {
   try {
-    const now = Date.now();
-    const completionTime = taskData.completedAt
-      ? Math.floor((taskData.completedAt - taskData.createdAt) / 1000)
-      : undefined;
-
     const analyticsData: TaskAnalytics = {
       userId,
       taskId,
       action,
-      timestamp: now,
-      ...(completionTime && { completionTime }),
+      timestamp: Date.now(),
       ...(taskData.risk && { risk: taskData.risk }),
       dueDate: taskData.dueDate,
       isReminder: taskData.isReminder,
       isPriority: taskData.isPriority,
       isRepeating: taskData.isRepeating,
       delayCount: taskData.delayCount,
-      hour: new Date(now).getHours(),
+      // Use completion time for hour calculation if available, otherwise use current time
+      hour: taskData.completedAt
+        ? new Date(taskData.completedAt).getHours()
+        : new Date().getHours(), // created, updated or delayed at the same time
       points: taskData.points,
     };
 
@@ -188,7 +185,6 @@ export const getAnalyticsData = async (
           taskId: data.taskId,
           action: data.action,
           timestamp: data.timestamp,
-          completionTime: data.completionTime,
           dueDate: data.dueDate,
           isPriority: data.isPriority,
           isReminder: data.isReminder,
@@ -255,19 +251,6 @@ export const getAnalyticsData = async (
         })
         .reduce((totalPoints, task) => totalPoints + task.points, 0);
     }).reverse();
-
-    const completedTasks = taskAnalytics.filter(
-      (task) => task.action === "task_completed" && task.completionTime
-    );
-    const avgCompletionTime =
-      completedTasks.length > 0
-        ? Math.floor(
-            completedTasks.reduce(
-              (acc, task) => acc + (task.completionTime || 0),
-              0
-            ) / completedTasks.length
-          )
-        : 0;
 
     // Calculate most productive hour (hour when most tasks are completed)
     const completedTasksWithHour = taskAnalytics.filter(
@@ -430,7 +413,6 @@ export const getAnalyticsData = async (
       pageViews: totalPageViews,
       activeTime: totalActiveTime,
       dailyTaskCompletions,
-      averageCompletionTime: avgCompletionTime,
       mostProductiveHour,
       pointsGrowth: weeklyPointsGrowth,
       pagesVisited,

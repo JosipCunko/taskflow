@@ -85,12 +85,11 @@ export async function createWorkoutAction(
       ...workoutData,
       userId,
     });
-    
-    // Invalidate gym cache
+
     revalidateTag(CacheTags.userGym(userId));
     revalidatePath("/webapp/gym");
     revalidatePath("/webapp");
-    
+
     return {
       success: true,
       message: "Workout created successfully",
@@ -114,7 +113,6 @@ export async function updateWorkoutAction(
     const userId = await getAuthenticatedUserId();
     await updateWorkout(userId, workoutId, updates);
 
-    // Invalidate gym cache
     revalidateTag(CacheTags.userGym(userId));
     revalidatePath("/webapp/gym");
     revalidatePath("/webapp");
@@ -139,12 +137,11 @@ export async function deleteWorkoutAction(
   try {
     const userId = await getAuthenticatedUserId();
     await deleteWorkout(userId, workoutId);
-    
-    // Invalidate gym cache
+
     revalidateTag(CacheTags.userGym(userId));
     revalidatePath("/webapp/gym");
     revalidatePath("/webapp");
-    
+
     return {
       success: true,
       message: "Workout deleted successfully",

@@ -9,8 +9,10 @@ import {
   ExerciseProgressPoint,
   LastPerformance,
 } from "../_types/types";
+import { unstable_cache } from "next/cache";
+import { CacheTags, CacheDuration } from "../_utils/serverCache";
 
-export async function getWorkouts(userId: string): Promise<WorkoutSession[]> {
+async function getWorkoutsInternal(userId: string): Promise<WorkoutSession[]> {
   try {
     const workoutsCol = adminDb.collection(`users/${userId}/workouts`);
     const q = workoutsCol.orderBy("createdAt", "desc");
@@ -37,7 +39,7 @@ export async function getWorkouts(userId: string): Promise<WorkoutSession[]> {
   }
 }
 
-export async function getWorkout(
+async function getWorkoutInternal(
   userId: string,
   workoutId: string
 ): Promise<WorkoutSession | null> {
@@ -69,6 +71,33 @@ export async function getWorkout(
     console.error("Error getting workout session:", error);
     return null;
   }
+}
+
+export async function getWorkouts(userId: string): Promise<WorkoutSession[]> {
+  const cachedGetWorkouts = unstable_cache(
+    getWorkoutsInternal,
+    [`workouts-${userId}`],
+    {
+      tags: [CacheTags.userGym(userId)],
+      revalidate: CacheDuration.GYM_HEALTH,
+    }
+  );
+  return cachedGetWorkouts(userId);
+}
+
+export async function getWorkout(
+  userId: string,
+  workoutId: string
+): Promise<WorkoutSession | null> {
+  const cachedGetWorkout = unstable_cache(
+    getWorkoutInternal,
+    [`workout-${userId}-${workoutId}`],
+    {
+      tags: [CacheTags.userGym(userId)],
+      revalidate: CacheDuration.GYM_HEALTH,
+    }
+  );
+  return cachedGetWorkout(userId, workoutId);
 }
 
 export async function createWorkout(

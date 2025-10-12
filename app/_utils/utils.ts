@@ -50,6 +50,7 @@ import {
 import { isFuture, isToday } from "date-fns";
 import { customToast } from "./toasts";
 import { CardSpecificIcons, FoodIcons } from "./icons";
+import { Timestamp } from "firebase-admin/firestore";
 
 /* Landing Page */
 export const stats = [
@@ -1389,3 +1390,23 @@ RESPONSE GUIDELINES:
 Current date: ${new Date().toISOString().split("T")[0]}
 
 Remember: You are not just answering questions - you are actively helping manage the user's productivity system through function calls.`;
+
+/**
+ * Helper function to safely convert Firestore data to UNIX timestamps
+ */
+export const safeConvertToTimestamp = (
+  dateValue: Timestamp | Date | string | number | undefined
+): number => {
+  if (!dateValue) return Date.now();
+  if (typeof dateValue === "number") return dateValue;
+  if (dateValue instanceof Date) return dateValue.getTime();
+  if (
+    dateValue &&
+    typeof dateValue === "object" &&
+    "toDate" in dateValue &&
+    typeof dateValue.toDate === "function"
+  ) {
+    return dateValue.toDate().getTime();
+  }
+  return new Date(dateValue as string).getTime();
+};

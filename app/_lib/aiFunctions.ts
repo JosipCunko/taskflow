@@ -284,6 +284,7 @@ async function createTaskAI(params: AICreateTaskParams) {
       dueDate: dueDate.getTime(),
       isPriority: params.isPriority || false,
       isReminder: params.isReminder || false,
+      autoDelay: false, // AI tasks don't auto-delay by default
       icon: params.icon || "ClipboardList",
       color: params.color || "var(--color-primary-500)",
       startTime: params.startTime,
@@ -312,7 +313,8 @@ async function createTaskAI(params: AICreateTaskParams) {
       taskData.duration || { hours: 0, minutes: 0 },
       taskData.isRepeating || false,
       taskData.repetitionRule,
-      taskData.startDate
+      taskData.startDate,
+      taskData.autoDelay
     );
 
     if (result.success) {

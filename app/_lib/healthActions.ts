@@ -68,7 +68,6 @@ export async function createSavedMeal(
     };
     await docRef.set(savedMealWithId);
 
-    // Invalidate health cache
     revalidateTag(CacheTags.userHealth(session.user.id));
     revalidatePath("/webapp/health");
     revalidatePath("/webapp");
@@ -95,7 +94,6 @@ export async function deleteSavedMeal(mealId: string): Promise<ActionResult> {
 
     await adminDb.collection("savedMeals").doc(mealId).delete();
 
-    // Invalidate health cache
     revalidateTag(CacheTags.userHealth(session.user.id));
     revalidatePath("/webapp/health");
     revalidatePath("/webapp");
@@ -135,7 +133,6 @@ export async function createLoggedMeal(
       };
     }
 
-    // Get the saved meal data
     const savedMealDoc = await adminDb
       .collection("savedMeals")
       .doc(savedMealId)
@@ -179,7 +176,6 @@ export async function createLoggedMeal(
     };
     await docRef.set(loggedMealWithId);
 
-    // Invalidate health cache
     revalidateTag(CacheTags.userHealth(session.user.id));
     revalidatePath("/webapp/health");
     revalidatePath("/webapp");
@@ -263,8 +259,7 @@ export async function updateLoggedMeal(
       ...currentLoggedMeal,
       ...updateData,
     };
-    
-    // Invalidate health cache
+
     revalidateTag(CacheTags.userHealth(session.user.id));
     revalidatePath("/webapp/health");
     revalidatePath("/webapp");

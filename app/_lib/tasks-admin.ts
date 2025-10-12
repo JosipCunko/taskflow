@@ -7,36 +7,14 @@ import {
   TaskToCreateData,
   TaskToUpdateData,
 } from "@/app/_types/types";
-import { calculateTaskPoints, isTaskAtRisk } from "@/app/_utils/utils";
+import {
+  calculateTaskPoints,
+  isTaskAtRisk,
+  safeConvertToTimestamp,
+} from "@/app/_utils/utils";
 import { Timestamp } from "firebase-admin/firestore";
 import { revalidateTag, unstable_cache } from "next/cache";
 import { CacheTags, CacheDuration } from "@/app/_utils/serverCache";
-
-// Helper function to safely convert Firestore data to UNIX timestamps
-const safeConvertToTimestamp = (
-  dateValue: Timestamp | Date | string | number | undefined
-): number => {
-  if (!dateValue) return Date.now();
-
-  // If it's already a number (UNIX timestamp), return it
-  if (typeof dateValue === "number") return dateValue;
-
-  // If it's a Date object, convert to timestamp
-  if (dateValue instanceof Date) return dateValue.getTime();
-
-  // If it's a Firestore Timestamp, convert it
-  if (
-    dateValue &&
-    typeof dateValue === "object" &&
-    "toDate" in dateValue &&
-    typeof dateValue.toDate === "function"
-  ) {
-    return dateValue.toDate().getTime();
-  }
-
-  // If it's an ISO string or any other format, try to parse it
-  return new Date(dateValue as string).getTime();
-};
 
 const fromFirestore = (
   snapshot: admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData>
@@ -90,9 +68,6 @@ const fromFirestore = (
   return taskWithRisk;
 };
 
-/**
- * Internal function to get task by ID from Firestore (uncached)
- */
 async function getTaskByTaskIdInternal(taskId: string): Promise<Task | null> {
   if (!taskId) {
     console.warn("getTaskByTaskId called without a taskId.");
@@ -115,12 +90,6 @@ async function getTaskByTaskIdInternal(taskId: string): Promise<Task | null> {
   }
 }
 
-/**
- * Get task by ID with caching
- * 
- * Uses Next.js 15 unstable_cache for server-side caching.
- * Cache is invalidated when task is updated/deleted via revalidateTag
- */
 export const getTaskByTaskId = async (taskId: string): Promise<Task | null> => {
   const cachedGetTask = unstable_cache(
     getTaskByTaskIdInternal,
@@ -130,13 +99,10 @@ export const getTaskByTaskId = async (taskId: string): Promise<Task | null> => {
       revalidate: CacheDuration.TASKS,
     }
   );
-  
+
   return cachedGetTask(taskId);
 };
 
-/**
- * Internal function to get tasks by user ID from Firestore (uncached)
- */
 async function getTasksByUserIdInternal(
   userId: string | undefined
 ): Promise<Task[]> {
@@ -166,15 +132,8 @@ async function getTasksByUserIdInternal(
 }
 
 /**
- * Get tasks by user ID with caching
- * 
- * Uses Next.js 15 unstable_cache for server-side caching.
  * Cache is invalidated when:
- * - Any task is created/updated/deleted (via revalidateTag("tasks"))
- * - User-specific tasks are invalidated when needed
- * 
- * No time-based revalidation - only tag-based invalidation to ensure
- * data is always fresh when tasks change.
+ *  any task is created/updated/deleted (via revalidateTag("tasks"))
  */
 export const getTasksByUserId = async (
   userId: string | undefined
@@ -192,7 +151,7 @@ export const getTasksByUserId = async (
       revalidate: CacheDuration.TASKS,
     }
   );
-  
+
   return cachedGetTasks(userId);
 };
 
@@ -204,20 +163,21 @@ interface TaskFirestoreData {
   color: string;
   isPriority: boolean;
   isReminder: boolean;
-  dueDate: number; // UNIX timestamp
-  startDate?: number; // UNIX timestamp
+  dueDate: number;
+  startDate?: number;
   startTime: { hour: number; minute: number };
   status: "pending";
   delayCount: number;
   tags?: string[];
-  createdAt: number; // UNIX timestamp
-  updatedAt: number; // UNIX timestamp
+  createdAt: number;
+  updatedAt: number;
   experience?: "bad" | "okay" | "good" | "best";
   duration?: { hours: number; minutes: number };
   isRepeating?: boolean;
   repetitionRule?: RepetitionRule;
   points: number;
   location?: string;
+  autoDelay?: boolean;
 }
 
 export const createTask = async (taskData: TaskToCreateData): Promise<Task> => {
@@ -241,6 +201,7 @@ export const createTask = async (taskData: TaskToCreateData): Promise<Task> => {
       isRepeating: taskData.isRepeating,
       points: calculateTaskPoints({ delayCount: 0 } as Task),
       location: taskData.location,
+      autoDelay: taskData.autoDelay,
     };
 
     if (
