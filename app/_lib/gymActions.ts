@@ -1,8 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "./auth";
+import { CacheTags } from "../_utils/serverCache";
 import {
   createWorkout,
   createWorkoutTemplate,
@@ -84,7 +85,12 @@ export async function createWorkoutAction(
       ...workoutData,
       userId,
     });
+    
+    // Invalidate gym cache
+    revalidateTag(CacheTags.userGym(userId));
     revalidatePath("/webapp/gym");
+    revalidatePath("/webapp");
+    
     return {
       success: true,
       message: "Workout created successfully",
@@ -108,7 +114,10 @@ export async function updateWorkoutAction(
     const userId = await getAuthenticatedUserId();
     await updateWorkout(userId, workoutId, updates);
 
+    // Invalidate gym cache
+    revalidateTag(CacheTags.userGym(userId));
     revalidatePath("/webapp/gym");
+    revalidatePath("/webapp");
 
     return {
       success: true,
@@ -130,7 +139,12 @@ export async function deleteWorkoutAction(
   try {
     const userId = await getAuthenticatedUserId();
     await deleteWorkout(userId, workoutId);
+    
+    // Invalidate gym cache
+    revalidateTag(CacheTags.userGym(userId));
     revalidatePath("/webapp/gym");
+    revalidatePath("/webapp");
+    
     return {
       success: true,
       message: "Workout deleted successfully",

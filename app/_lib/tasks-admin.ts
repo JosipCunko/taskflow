@@ -9,7 +9,8 @@ import {
 } from "@/app/_types/types";
 import { calculateTaskPoints, isTaskAtRisk } from "@/app/_utils/utils";
 import { Timestamp } from "firebase-admin/firestore";
-import { revalidateTag } from "next/cache";
+import { revalidateTag, unstable_cache } from "next/cache";
+import { CacheTags, CacheDuration } from "@/app/_utils/serverCache";
 
 // Helper function to safely convert Firestore data to UNIX timestamps
 const safeConvertToTimestamp = (
@@ -89,7 +90,10 @@ const fromFirestore = (
   return taskWithRisk;
 };
 
-export const getTaskByTaskId = async (taskId: string): Promise<Task | null> => {
+/**
+ * Internal function to get task by ID from Firestore (uncached)
+ */
+async function getTaskByTaskIdInternal(taskId: string): Promise<Task | null> {
   if (!taskId) {
     console.warn("getTaskByTaskId called without a taskId.");
     return null;
@@ -109,11 +113,33 @@ export const getTaskByTaskId = async (taskId: string): Promise<Task | null> => {
     console.error("Error fetching tasks by task ID:", error);
     throw error;
   }
+}
+
+/**
+ * Get task by ID with caching
+ * 
+ * Uses Next.js 15 unstable_cache for server-side caching.
+ * Cache is invalidated when task is updated/deleted via revalidateTag
+ */
+export const getTaskByTaskId = async (taskId: string): Promise<Task | null> => {
+  const cachedGetTask = unstable_cache(
+    getTaskByTaskIdInternal,
+    [`task-${taskId}`],
+    {
+      tags: [CacheTags.task(taskId), CacheTags.tasks()],
+      revalidate: CacheDuration.TASKS,
+    }
+  );
+  
+  return cachedGetTask(taskId);
 };
 
-export const getTasksByUserId = async (
+/**
+ * Internal function to get tasks by user ID from Firestore (uncached)
+ */
+async function getTasksByUserIdInternal(
   userId: string | undefined
-): Promise<Task[]> => {
+): Promise<Task[]> {
   if (!userId) {
     console.warn("getTasksByUserId called without a userId.");
     return [];
@@ -137,6 +163,37 @@ export const getTasksByUserId = async (
     console.error("Error fetching tasks by user ID:", error);
     throw error;
   }
+}
+
+/**
+ * Get tasks by user ID with caching
+ * 
+ * Uses Next.js 15 unstable_cache for server-side caching.
+ * Cache is invalidated when:
+ * - Any task is created/updated/deleted (via revalidateTag("tasks"))
+ * - User-specific tasks are invalidated when needed
+ * 
+ * No time-based revalidation - only tag-based invalidation to ensure
+ * data is always fresh when tasks change.
+ */
+export const getTasksByUserId = async (
+  userId: string | undefined
+): Promise<Task[]> => {
+  if (!userId) {
+    console.warn("getTasksByUserId called without a userId.");
+    return [];
+  }
+
+  const cachedGetTasks = unstable_cache(
+    getTasksByUserIdInternal,
+    [`tasks-user-${userId}`],
+    {
+      tags: [CacheTags.userTasks(userId), CacheTags.tasks()],
+      revalidate: CacheDuration.TASKS,
+    }
+  );
+  
+  return cachedGetTasks(userId);
 };
 
 interface TaskFirestoreData {

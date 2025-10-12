@@ -9,8 +9,14 @@ import {
 } from "../_types/types";
 import { Timestamp, FieldValue } from "firebase-admin/firestore";
 import { defaultNutritionGoals } from "../_utils/utils";
+import { unstable_cache } from "next/cache";
+import { CacheTags, CacheDuration } from "../_utils/serverCache";
 
-export async function getUserById(userId: string): Promise<AppUser | null> {
+/**
+ * Internal function to fetch user by ID from Firestore
+ * This is the uncached version
+ */
+async function getUserByIdInternal(userId: string): Promise<AppUser | null> {
   try {
     const userDoc = await adminDb.collection("users").doc(userId).get();
     if (!userDoc.exists) {
@@ -106,6 +112,30 @@ export async function getUserById(userId: string): Promise<AppUser | null> {
     console.error("Error fetching user by ID:", error);
     return null;
   }
+}
+
+/**
+ * Get user by ID with caching
+ * 
+ * Uses Next.js 15 unstable_cache for server-side caching.
+ * Cache is invalidated when:
+ * - User data is updated (via revalidateTag in updateUserAction)
+ * - Automatically after 5 minutes as a safety net
+ * 
+ * @param userId - User ID to fetch
+ * @returns User data or null if not found
+ */
+export async function getUserById(userId: string): Promise<AppUser | null> {
+  const cachedGetUser = unstable_cache(
+    getUserByIdInternal,
+    [`user-${userId}`],
+    {
+      tags: [CacheTags.user(userId), CacheTags.users()],
+      revalidate: CacheDuration.USER_DATA,
+    }
+  );
+  
+  return cachedGetUser(userId);
 }
 
 export async function getUserPreferences(userId: string): Promise<{
