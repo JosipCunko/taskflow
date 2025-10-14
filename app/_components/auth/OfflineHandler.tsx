@@ -9,11 +9,12 @@ export default function OfflineHandler() {
   const pathname = usePathname();
   const isOnline = useOnlineStatus();
 
-  useEffect(() => {
-    if (!isOnline && pathname !== "/offline") {
-      router.push("/offline");
-    }
-  }, [isOnline, pathname, router]);
+  // COMMENTED OUT: Offline redirect disabled to enable Service Worker offline support
+  // useEffect(() => {
+  //   if (!isOnline && pathname !== "/offline") {
+  //     router.push("/offline");
+  //   }
+  // }, [isOnline, pathname, router]);
 
   return null;
 }

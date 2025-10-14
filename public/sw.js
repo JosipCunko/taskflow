@@ -1,11 +1,20 @@
-// TaskFlow Service Worker
-const CACHE_NAME = "taskflow-cache-v1";
-const RUNTIME_CACHE = "taskflow-runtime";
+// TaskFlow Service Worker - Enhanced Offline Support
+const CACHE_NAME = "taskflow-cache-v2";
+const RUNTIME_CACHE = "taskflow-runtime-v2";
+const STATIC_CACHE = "taskflow-static-v2";
 
-// Assets to cache on install
+// Assets to cache on install - Main app pages and essential resources
 const PRECACHE_URLS = [
   "/",
   "/webapp",
+  "/webapp/tasks",
+  "/webapp/today",
+  "/webapp/notes",
+  "/webapp/profile",
+  "/webapp/calendar",
+  "/webapp/completed",
+  "/webapp/gym",
+  "/webapp/health",
   "/login",
   "/offline",
   "/manifest.json",
@@ -29,7 +38,12 @@ self.addEventListener("activate", (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
-          .filter((name) => name !== CACHE_NAME && name !== RUNTIME_CACHE)
+          .filter(
+            (name) =>
+              name !== CACHE_NAME &&
+              name !== RUNTIME_CACHE &&
+              name !== STATIC_CACHE
+          )
           .map((name) => caches.delete(name))
       );
     })
@@ -45,12 +59,29 @@ self.addEventListener("fetch", (event) => {
   // Skip Chrome extensions and other non-http(s) requests
   if (!event.request.url.startsWith("http")) return;
 
-  // Skip API calls and auth requests - always fetch fresh
+  // Skip API calls and auth requests - network-first with offline fallback
   if (
     event.request.url.includes("/api/") ||
     event.request.url.includes("/auth/")
   ) {
-    event.respondWith(fetch(event.request));
+    event.respondWith(
+      fetch(event.request).catch(() => {
+        // Return a meaningful offline response for API calls
+        return new Response(
+          JSON.stringify({
+            error: "offline",
+            message: "You are currently offline",
+          }),
+          {
+            status: 503,
+            statusText: "Service Unavailable",
+            headers: new Headers({
+              "Content-Type": "application/json",
+            }),
+          }
+        );
+      })
+    );
     return;
   }
 
@@ -82,27 +113,52 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Cache-first strategy for static assets
+  // Cache-first strategy for static assets (CSS, JS, images, fonts)
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
         return cachedResponse;
       }
 
-      return fetch(event.request).then((response) => {
-        // Don't cache non-successful responses
-        if (!response || response.status !== 200 || response.type === "error") {
+      return fetch(event.request)
+        .then((response) => {
+          // Don't cache non-successful responses
+          if (
+            !response ||
+            response.status !== 200 ||
+            response.type === "error"
+          ) {
+            return response;
+          }
+
+          // Cache static assets (JS, CSS, images, fonts)
+          const url = new URL(event.request.url);
+          const isStatic =
+            url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|woff2?|ttf|eot)$/) ||
+            url.pathname.startsWith("/_next/static/");
+
+          if (isStatic) {
+            const responseClone = response.clone();
+            caches.open(STATIC_CACHE).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
+          } else {
+            // Cache other requests in runtime cache
+            const responseClone = response.clone();
+            caches.open(RUNTIME_CACHE).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
+          }
+
           return response;
-        }
-
-        // Cache static assets
-        const responseClone = response.clone();
-        caches.open(RUNTIME_CACHE).then((cache) => {
-          cache.put(event.request, responseClone);
+        })
+        .catch(() => {
+          // If both network and cache fail, return offline page for navigation requests
+          if (event.request.mode === "navigate") {
+            return caches.match("/offline");
+          }
+          return null;
         });
-
-        return response;
-      });
     })
   );
 });

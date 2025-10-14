@@ -11,6 +11,7 @@ import { getUserById } from "../_lib/user-admin";
 import Providers from "./providers";
 import OfflineHandler from "../_components/auth/OfflineHandler";
 import PWAInstall from "../_components/PWAInstall";
+import OfflineIndicator from "../_components/OfflineIndicator";
 
 export const metadata: Metadata = {
   title: "TaskFlow",
@@ -34,6 +35,7 @@ export default async function RootLayout({
     <Providers>
       <PWAInstall />
       <OfflineHandler />
+      <OfflineIndicator />
       <AnalyticsTracker userData={userData} />
       <YouTubeBackgroundProcessor userId={userId} userData={userData} />
       <main className="grid grid-rows-1 grid-cols-1 sm:grid-cols-[16rem_1fr] overflow-hidden relative h-screen bg-background-625">
