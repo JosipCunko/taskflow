@@ -13,14 +13,14 @@ export interface Task {
   delayCount: number;
   autoDelay?: boolean; // Automatically delay task to next day if missed
   tags?: string[];
-  createdAt: number; // UNIX timestamp in milliseconds
-  updatedAt: number; // UNIX timestamp in milliseconds
+  createdAt: number;
+  updatedAt: number;
   experience?: "bad" | "okay" | "good" | "best";
   location?: string;
-  dueDate: number; // UNIX timestamp in milliseconds
-  startDate?: number; // UNIX timestamp in milliseconds
+  dueDate: number;
+  startDate?: number;
   startTime?: { hour: number; minute: number };
-  completedAt?: number; // UNIX timestamp in milliseconds
+  completedAt?: number;
   /**Delayed is pending but rescheduled */
   status: "pending" | "completed" | "delayed";
   isRepeating?: boolean;
@@ -45,7 +45,7 @@ export interface AppUser {
   displayName: string;
   email: string;
   photoURL: string;
-  createdAt: number; // UNIX timestamp in milliseconds
+  createdAt: number;
   provider: string;
   notifyReminders: boolean;
   notifyAchievements: boolean;
@@ -54,7 +54,7 @@ export interface AppUser {
   completedTasksCount: number;
   currentStreak: number;
   bestStreak: number;
-  lastLoginAt?: number; // UNIX timestamp in milliseconds
+  lastLoginAt?: number;
   nutritionGoals: UserNutritionGoals;
   youtubePreferences?: {
     enabled: boolean;
@@ -63,14 +63,14 @@ export interface AppUser {
   };
   // Anonymous user fields
   isAnonymous?: boolean;
-  anonymousCreatedAt?: number; // UNIX timestamp in milliseconds
+  anonymousCreatedAt?: number;
 }
 export interface UserNutritionGoals {
   calories: number;
   protein: number;
   carbs: number;
   fat: number;
-  updatedAt: number; // UNIX timestamp in milliseconds
+  updatedAt: number;
 }
 
 export interface Notification {
@@ -85,10 +85,10 @@ export interface Notification {
   taskId?: string; // Related task ID if applicable
   isRead: boolean;
   isArchived: boolean;
-  createdAt: number; // UNIX timestamp in milliseconds
-  readAt?: number; // UNIX timestamp in milliseconds
+  createdAt: number;
+  readAt?: number;
   data?: Record<string, unknown>; // Additional data for the notification
-  expiresAt?: number; // UNIX timestamp in milliseconds
+  expiresAt?: number;
 }
 
 // Stored as a subcollection under users/{userId}/achievements/{achievementId}
@@ -97,7 +97,7 @@ export interface Achievement {
   //id: string; // `task_completionist_${milestone}`
   id: string;
   userId: string;
-  unlockedAt: number; // UNIX timestamp in milliseconds
+  unlockedAt: number;
 }
 
 export interface AnalyticsData {
@@ -127,9 +127,9 @@ export interface AnalyticsData {
 
 export interface SessionData {
   userId: string;
-  sessionStart: number; // UNIX timestamp in milliseconds
+  sessionStart: number;
   // This calculates the entire timespan from the moment the app is opened to the moment it's closed. This includes any time the app was left idle or was running in a background tab.
-  sessionEnd?: number; // UNIX timestamp in milliseconds
+  sessionEnd?: number;
   pageViews: number;
   // User is actively engaged with the app. It excludes the idle time.
   activeTime: number;
@@ -140,8 +140,8 @@ export interface TaskAnalytics {
   userId: string;
   taskId: string;
   action: TaskEventType;
-  timestamp: number; // UNIX timestamp in milliseconds
-  dueDate: number; // UNIX timestamp in milliseconds
+  timestamp: number;
+  dueDate: number;
   isPriority: boolean;
   isReminder: boolean;
   isRepeating: boolean;
@@ -189,7 +189,7 @@ export type EmojiOption = {
 export interface ActivityLog {
   id: string;
   userId: string;
-  timestamp: number; // UNIX timestamp in milliseconds
+  timestamp: number;
   type:
     | "TASK_COMPLETED"
     | "TASK_CREATED"
@@ -208,7 +208,7 @@ export interface Note {
   userId: string;
   title: string;
   content: string;
-  updatedAt: number; // UNIX timestamp in milliseconds
+  updatedAt: number;
 }
 
 export type AchievementType =
@@ -302,7 +302,7 @@ export interface MealNutrition {
 }
 
 export interface DailyNutritionSummary {
-  date: number; // UNIX timestamp in milliseconds
+  date: number;
   totalCalories: number;
   totalProtein: number;
   totalCarbs: number;
@@ -331,8 +331,8 @@ export interface WorkoutSession {
   loggedExercises: LoggedExercise[];
   liked?: boolean;
   disliked?: boolean;
-  createdAt: number; // UNIX timestamp in milliseconds
-  updatedAt: number; // UNIX timestamp in milliseconds
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface Exercise {
@@ -349,18 +349,18 @@ export interface WorkoutTemplate {
   userId: string;
   name: string;
   exercises: string[]; // Exercise names
-  createdAt: number; // UNIX timestamp in milliseconds
+  createdAt: number;
 }
 
 export interface PersonalRecord {
   exercise: string;
   weight: number;
   reps: number;
-  date: number; // UNIX timestamp in milliseconds
+  date: number;
 }
 
 export interface ExerciseProgressPoint {
-  date: number; // UNIX timestamp in milliseconds
+  date: number;
   maxWeight: number;
   maxReps: number;
   sets: number;
@@ -370,11 +370,11 @@ export interface ExerciseProgress {
   exerciseName: string;
   maxWeight: number;
   totalVolume: number;
-  lastPerformed: number; // UNIX timestamp in milliseconds
+  lastPerformed: number;
   personalRecord: {
     weight: number;
     reps: number;
-    date: number; // UNIX timestamp in milliseconds
+    date: number;
   };
 }
 
@@ -382,7 +382,7 @@ export interface LastPerformance {
   weight: number;
   reps: number;
   sets: number;
-  date: number; // UNIX timestamp in milliseconds
+  date: number;
 }
 
 export interface YouTubeVideo {
@@ -391,7 +391,7 @@ export interface YouTubeVideo {
   channelTitle: string;
   channelId: string;
   description: string;
-  publishedAt: number; // UNIX timestamp in milliseconds
+  publishedAt: number;
   thumbnailUrl: string;
   duration?: string;
   viewCount?: string;
@@ -402,8 +402,8 @@ export interface YouTubeSummary {
   userId: string;
   videos: YouTubeVideo[];
   summary: string;
-  createdAt: number; // UNIX timestamp in milliseconds
-  processedAt: number; // UNIX timestamp in milliseconds
+  createdAt: number;
+  processedAt: number;
 }
 
 export interface FunctionResult {

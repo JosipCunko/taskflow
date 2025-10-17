@@ -1,6 +1,6 @@
 {
   "name": "taskflow",
-  "version": "14.3.0",
+  "version": "15.0.0",
   "private": true,
   "scripts": {
     "dev": "cross-env NODE_ENV=development next dev",
@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@radix-ui/react-switch": "^1.2.5",
+    "@vercel/analytics": "^1.5.0",
+    "@vercel/speed-insights": "^1.2.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "firebase": "^11.7.3",

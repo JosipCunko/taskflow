@@ -33,6 +33,7 @@ review sw.js and browserconfig in /public
   screnshoted image with repeating taskcard
   openrouter key not working on mobile and sometimes on pc
   available today when created now - so cannot complete it
+  maybe middleware
 
 # Landing page
 

@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import AuthProvider from "./_components/auth/AuthProvider";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 
 const plexMono = IBM_Plex_Mono({
   variable: "--font-plex-mono",
@@ -45,6 +47,8 @@ export default function RootLayout({
       <body
         className={`${plexMono.variable} font-mono antialiased dark bg-background-700 h-screen text-text-high transition-colors duration-200`}
       >
+        <SpeedInsights />
+        <Analytics />
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

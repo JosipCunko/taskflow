@@ -22,7 +22,7 @@ Whether you're planning your day, tracking your workouts, monitoring your nutrit
 | **Smart Tasks**      | Advanced scheduling, repeating tasks, priorities, tags, and risk detection |
 | **Today View**       | Visual 24-hour timeline with time-blocking and drag-and-drop scheduling    |
 | **Fitness Tracking** | Workout logging, templates, exercise library, and progress visualization   |
-| **Nutrition**        | USDA food database, macro tracking, meal logging, and daily goals          |
+| **Nutrition**        | macro tracking, meal logging, and daily goals                              |
 | **AI Assistant**     | Multi-model AI with function calling and contextual help                   |
 | **Analytics**        | Streaks, achievements, completion rates, and performance insights          |
 | **Notifications**    | Smart notification system with priority levels and inbox management        |
@@ -236,7 +236,7 @@ Whether you're planning your day, tracking your workouts, monitoring your nutrit
 - **`/webapp/calendar`**: Beautiful calendar view of tasks with month/week navigation.
 - **`/webapp/completed`**: Archive of completed tasks with experience ratings and statistics.
 - **`/webapp/notes`**: Personal notes management with create, edit, and delete functionality.
-- **`/webapp/health`**: Nutrition tracking with USDA food database, calorie counting, and macro goals.
+- **`/webapp/health`**: Nutrition tracking with calorie counting, and macro goals.
 - **`/webapp/fitness`**: Workout logging, exercise library, templates, and progress visualization.
 - **`/webapp/ai`**: AI assistant chat interface with multi-model support and function calling.
 - **`/webapp/inbox`**: Notification center with filtering, priority indicators, and read/unread management.
@@ -283,10 +283,8 @@ Whether you're planning your day, tracking your workouts, monitoring your nutrit
       - Firebase Admin SDK credentials path
     - **Optional Variables**:
       - `GITHUB_ID` and `GITHUB_SECRET` for GitHub OAuth (callback URL: `http://localhost:3000/api/auth/callback/github`)
-      - `USDA_API_KEY` from [USDA FoodData Central API](https://fdc.nal.usda.gov/api-guide.html) for nutrition tracking (free with registration)
       - `OPENAI_API_KEY` for OpenAI GPT models in AI assistant
-      - `ANTHROPIC_API_KEY` for Claude models support
-      - `GOOGLE_GENERATIVE_AI_API_KEY` for Gemini models support
+      - `OPENROUTER_API_KEY` you'll need several of them
       - `YOUTUBE_API_KEY` for YouTube summarizer feature (optional)
 
 4.  **Run the development server**:
@@ -297,12 +295,6 @@ Whether you're planning your day, tracking your workouts, monitoring your nutrit
     ```
 
     Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-5.  **Access the application**:
-    - Navigate to `/login` to create an account or sign in
-    - After authentication, you'll be redirected to the dashboard at `/webapp`
-    - The app works offline after your first visit—try disconnecting from the internet!
-    - Install as PWA by clicking the install prompt or using your browser's "Install App" option
 
 ## Some Typescript types
 
@@ -319,15 +311,16 @@ interface Task {
   isPriority: boolean;
   isReminder: boolean;
   delayCount: number;
+  autoDelay?: boolean; // Automatically delay task to next day if missed
   tags?: string[];
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: number;
+  updatedAt: number;
   experience?: "bad" | "okay" | "good" | "best";
   location?: string;
-  dueDate: Date; // Stored as Timestamp in Firestore, converted to Date in app
-  startDate?: Date;
+  dueDate: number;
+  startDate?: number;
   startTime?: { hour: number; minute: number };
-  completedAt?: Date;
+  completedAt?: number;
   /**Delayed is pending but rescheduled */
   status: "pending" | "completed" | "delayed";
   isRepeating?: boolean;
@@ -341,15 +334,13 @@ interface Task {
 }
 ```
 
-#### User Schema
-
 ```typescript
 interface AppUser {
   uid: string;
   displayName: string;
   email: string;
   photoURL: string;
-  createdAt: Date;
+  createdAt: number;
   provider: string;
   notifyReminders: boolean;
   notifyAchievements: boolean;
@@ -358,8 +349,16 @@ interface AppUser {
   completedTasksCount: number;
   currentStreak: number;
   bestStreak: number;
-  lastLoginAt?: Date;
-  notesCount?: number;
+  lastLoginAt?: number;
+  nutritionGoals: UserNutritionGoals;
+  youtubePreferences?: {
+    enabled: boolean;
+    createTasks: boolean;
+    createNotifications: boolean;
+  };
+  // Anonymous user fields
+  isAnonymous?: boolean;
+  anonymousCreatedAt?: number;
 }
 ```
 
@@ -475,5 +474,3 @@ For questions, feedback, or support:
 ---
 
 **Built with ❤️ by Josip Čunko**
-
-_Making productivity beautiful, one task at a time._
