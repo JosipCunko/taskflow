@@ -5,15 +5,27 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Bot, ChevronDown, Timer } from "lucide-react";
 import Button from "../reusable/Button";
 
-const models = [
-  { name: "Deepseek V3.1", enabled: true },
-  { name: "GPT-4.1", enabled: false, soon: true },
-  { name: "Gemini 2.5 Pro", enabled: false, soon: true },
+export interface AIModel {
+  name: string;
+  id: string;
+  enabled: boolean;
+  soon?: boolean;
+}
+
+export const models: AIModel[] = [
+  { name: "Deepseek V3.1", id: "deepseek/deepseek-chat-v3.1:free", enabled: true },
+  { name: "GPT-5", id: "openai/gpt-5", enabled: true },
+  { name: "Gemini 2.5 Pro", id: "google/gemini-2.5-pro", enabled: true },
 ];
 
-export default function ModelDropdown({ className }: { className?: string }) {
+interface ModelDropdownProps {
+  className?: string;
+  selectedModel: AIModel;
+  onModelChange: (model: AIModel) => void;
+}
+
+export default function ModelDropdown({ className, selectedModel, onModelChange }: ModelDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState(models[0]);
 
   return (
     <div className="relative">
@@ -56,7 +68,7 @@ export default function ModelDropdown({ className }: { className?: string }) {
                   }`}
                   onClick={() => {
                     if (model.enabled) {
-                      setSelectedModel(model);
+                      onModelChange(model);
                       setIsOpen(false);
                     }
                   }}

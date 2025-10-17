@@ -15,9 +15,11 @@ export default function EmptyChat({ onExampleClick }: EmptyChatProps) {
   ];
 
   return (
-    <div className="flex flex-col items-center justify-center h-full">
-      <h1 className="text-4xl font-bold mb-8">What can I help with?</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-2xl">
+    <div className="flex flex-col items-center justify-center h-full px-3 sm:px-4 md:px-6 pt-16 md:pt-0">
+      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-6 sm:mb-8 text-center">
+        What can I help with?
+      </h1>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full max-w-2xl">
         {exampleQueries.map((query) => (
           <Button
             variant="secondary"
@@ -25,7 +27,7 @@ export default function EmptyChat({ onExampleClick }: EmptyChatProps) {
             onClick={() => onExampleClick(query)}
             className="text-left"
           >
-            <p className="text-sm">{query}</p>
+            <p className="text-xs sm:text-sm">{query}</p>
           </Button>
         ))}
       </div>
