@@ -39,11 +39,5 @@ Integrate a recipe discovery feature that allows users to search for recipes by 
 
 - saved chats
 - streaming data
-
-**6. Offline support **
-
-**7. Filter tasks in /tasks **
-
-# Auto delay feature
-
-If user specifies that this task should delay automatically for the next day if it was missed, then the function is called to do that. Right now, we dont have that property in Task from types.ts and we cant select it in AddTask.tsx or AddTodayTask.tsx
+- stop generating
+- give AI more control of taskflow features

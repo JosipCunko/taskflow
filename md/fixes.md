@@ -26,7 +26,7 @@ review sw.js and browserconfig in /public
   nextauth url in env file is still localhost
 
 - Check
-  repeating tasks updates
+  repeating tasks updates!!!!!!!!!!
   Sidebar cannot be opened in the /ai when on mobile of course.
   penalty point reduction always set to 2
   health page ui layout in mobile
@@ -34,6 +34,7 @@ review sw.js and browserconfig in /public
   openrouter key not working on mobile and sometimes on pc
   available today when created now - so cannot complete it
   maybe middleware
+  review auto delaying task feature
 
 # Landing page
 
