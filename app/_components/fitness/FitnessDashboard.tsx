@@ -27,21 +27,21 @@ import {
   getWorkoutsAction,
   getWorkoutTemplatesAction,
   startWorkoutFromTemplateAction,
-} from "../../_lib/gymActions";
+} from "../../_lib/fitnessActions";
 import { handleToast } from "../../_utils/utils";
 import Button from "@/app/_components/reusable/Button";
-import CreateTemplateModal from "../../_components/gym/CreateTemplateModal";
+import CreateTemplateModal from "../../_components/fitness/CreateTemplateModal";
 import Loader from "../Loader";
 
-interface GymDashboardProps {
+interface FitnessDashboardProps {
   userId: string;
   initialWorkouts?: WorkoutSession[];
 }
 
-export default function GymDashboard({
+export default function FitnessDashboard({
   userId,
   initialWorkouts = [],
-}: GymDashboardProps) {
+}: FitnessDashboardProps) {
   const router = useRouter();
   const [workoutSessions, setWorkoutSessions] =
     useState<WorkoutSession[]>(initialWorkouts);
@@ -127,14 +127,14 @@ export default function GymDashboard({
     const result = await startWorkoutSessionAction(workoutName);
 
     if (result.success && result.data) {
-      router.push(`/webapp/gym/workout?id=${result.data}`);
+      router.push(`/webapp/fitness/workout?id=${result.data}`);
     } else {
       handleToast(result);
     }
   };
 
   const handleViewProgress = () => {
-    router.push("/webapp/gym/progress");
+    router.push("/webapp/fitness/progress");
   };
 
   const handleStartFromTemplate = async (templateId: string) => {
@@ -152,7 +152,7 @@ export default function GymDashboard({
     );
 
     if (result.success && result.data) {
-      router.push(`/webapp/gym/workout?id=${result.data}`);
+      router.push(`/webapp/fitness/workout?id=${result.data}`);
     } else {
       handleToast(result);
     }
@@ -290,7 +290,7 @@ export default function GymDashboard({
           <div className="space-y-3">
             {workoutSessions.slice(0, 5).map((workout) => (
               <Link
-                href={`/webapp/gym/workout?id=${workout.id}`}
+                href={`/webapp/fitness/workout?id=${workout.id}`}
                 key={workout.id}
                 className={cn(
                   "block p-4 bg-background-700 rounded-lg border border-background-500 hover:bg-background-600 transition-colors",

@@ -125,7 +125,7 @@ export const getDailyNutritionSummary = async (
     [`health:user:${userId}`],
     {
       tags: [CacheTags.userHealth(userId)],
-      revalidate: CacheDuration.GYM_HEALTH,
+      revalidate: CacheDuration.FITNESS_HEALTH,
     }
   );
   return cachedGetNutritionSummary(userId, date);
@@ -168,7 +168,7 @@ export const getSavedMeals = async (
     [`health:user:${userId}`],
     {
       tags: [CacheTags.userHealth(userId)],
-      revalidate: CacheDuration.GYM_HEALTH,
+      revalidate: CacheDuration.FITNESS_HEALTH,
     }
   );
 

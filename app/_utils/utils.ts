@@ -124,10 +124,10 @@ export const images = [
     category: "Health",
   },
   {
-    src: "/gym.png",
+    src: "/fitness.png",
     alt: "Track your workouts and monitor your fitness progress.",
-    title: "Gym progress insights",
-    category: "Gym",
+    title: "Fitness progress insights",
+    category: "Fitness",
   },
   {
     src: "/ai.png",
@@ -148,7 +148,7 @@ export const features = [
     icon: Tags,
     label: "Advanced Tagging & Customization",
     description:
-      "Organize with custom tags (e.g., morning routine, gym), a versatile color palette, priority focus tags, and a wide selection of task icons.",
+      "Organize with custom tags (e.g., morning routine, fitness), a versatile color palette, priority focus tags, and a wide selection of task icons.",
   },
   {
     icon: BellRing,
@@ -235,7 +235,7 @@ export const TASK_PLACEHOLDERS = [
   "Organize a party for the kids",
   "Learn guitar chords",
   "Plan weekend hiking trip",
-  "Pay gym membership",
+  "Pay fitness membership",
   "Clean out garage",
   "Research vacation destinations",
 ];
@@ -295,8 +295,8 @@ export const navItems: NavGroups = {
       },
     },
     {
-      label: "Gym",
-      href: "/webapp/gym",
+      label: "Fitness",
+      href: "/webapp/fitness",
       icon: Dumbbell,
       badge: {
         label: "NEW",

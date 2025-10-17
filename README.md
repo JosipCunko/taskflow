@@ -17,15 +17,15 @@ Whether you're planning your day, tracking your workouts, monitoring your nutrit
 
 ## 🚀 Core Capabilities at a Glance
 
-| Feature           | Description                                                                |
-| ----------------- | -------------------------------------------------------------------------- |
-| **Smart Tasks**   | Advanced scheduling, repeating tasks, priorities, tags, and risk detection |
-| **Today View**    | Visual 24-hour timeline with time-blocking and drag-and-drop scheduling    |
-| **Gym Tracking**  | Workout logging, templates, exercise library, and progress visualization   |
-| **Nutrition**     | USDA food database, macro tracking, meal logging, and daily goals          |
-| **AI Assistant**  | Multi-model AI with function calling and contextual help                   |
-| **Analytics**     | Streaks, achievements, completion rates, and performance insights          |
-| **Notifications** | Smart notification system with priority levels and inbox management        |
+| Feature              | Description                                                                |
+| -------------------- | -------------------------------------------------------------------------- |
+| **Smart Tasks**      | Advanced scheduling, repeating tasks, priorities, tags, and risk detection |
+| **Today View**       | Visual 24-hour timeline with time-blocking and drag-and-drop scheduling    |
+| **Fitness Tracking** | Workout logging, templates, exercise library, and progress visualization   |
+| **Nutrition**        | USDA food database, macro tracking, meal logging, and daily goals          |
+| **AI Assistant**     | Multi-model AI with function calling and contextual help                   |
+| **Analytics**        | Streaks, achievements, completion rates, and performance insights          |
+| **Notifications**    | Smart notification system with priority levels and inbox management        |
 
 ## 🌟 Key Features
 
@@ -48,7 +48,7 @@ Whether you're planning your day, tracking your workouts, monitoring your nutrit
 
 ### 2. Advanced Tagging & Customization
 
-- **Custom Tags**: Create personalized tags for tasks (e.g., morning routine, gym, personal, health, work).
+- **Custom Tags**: Create personalized tags for tasks (e.g., morning routine, fitness, personal, health, work).
 - **Color Coding**: Custom color palette for visual task organization.
 - **Icon Selection**: Choose from a wide range of task icons for better visual organization.
 
@@ -90,7 +90,7 @@ Whether you're planning your day, tracking your workouts, monitoring your nutrit
 - **Goal Setting**: Set personalized daily targets for calories and macronutrients.
 - **Daily History**: View and manage your complete meal log for any date.
 
-### 6. Advanced Gym Tracking Module
+### 6. Advanced Fitness Tracking Module
 
 - **Comprehensive Workout Logging**:
 
@@ -156,7 +156,7 @@ Whether you're planning your day, tracking your workouts, monitoring your nutrit
 - **Offline Functionality**: Full offline support with service workers—access your tasks even without internet.
 - **Offline Mode Detection**: Automatic detection of network status with dedicated offline page and graceful degradation.
 - **Background Sync**: Smart synchronization when connection is restored.
-- **App Shortcuts**: Quick access shortcuts in the PWA for common actions (Add Task, Today's Tasks, Gym, Health).
+- **App Shortcuts**: Quick access shortcuts in the PWA for common actions (Add Task, Today's Tasks, Fitness, Health).
 - **Push Notifications**: Receive native push notifications for task reminders and achievements (when installed as PWA).
 - **Installable**: Beautiful install prompt with app icon and description for easy installation.
 
@@ -195,7 +195,7 @@ Whether you're planning your day, tracking your workouts, monitoring your nutrit
 - **Lucide React**: Modern, customizable icon library with 1000+ icons.
 - **React Hot Toast**: Beautiful toast notifications with custom styling.
 - **React Tooltip**: Enhanced tooltip functionality for better UX.
-- **Recharts**: Interactive, responsive charts for gym progress and analytics visualization.
+- **Recharts**: Interactive, responsive charts for fitness progress and analytics visualization.
 - **Service Workers**: Offline support, background sync, and push notifications.
 
 ### Backend & Authentication
@@ -237,7 +237,7 @@ Whether you're planning your day, tracking your workouts, monitoring your nutrit
 - **`/webapp/completed`**: Archive of completed tasks with experience ratings and statistics.
 - **`/webapp/notes`**: Personal notes management with create, edit, and delete functionality.
 - **`/webapp/health`**: Nutrition tracking with USDA food database, calorie counting, and macro goals.
-- **`/webapp/gym`**: Workout logging, exercise library, templates, and progress visualization.
+- **`/webapp/fitness`**: Workout logging, exercise library, templates, and progress visualization.
 - **`/webapp/ai`**: AI assistant chat interface with multi-model support and function calling.
 - **`/webapp/inbox`**: Notification center with filtering, priority indicators, and read/unread management.
 - **`/webapp/profile`**: User profile, achievements, and account settings.

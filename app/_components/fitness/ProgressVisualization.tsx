@@ -15,7 +15,7 @@ import { defaultExercises } from "../../../public/exerciseLibrary";
 import {
   getExerciseProgressAction,
   getPersonalRecordsAction,
-} from "../../_lib/gymActions";
+} from "../../_lib/fitnessActions";
 import { cn } from "../../_utils/utils";
 import { ExerciseProgressPoint, PersonalRecord } from "../../_types/types";
 import Input from "@/app/_components/reusable/Input";

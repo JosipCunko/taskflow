@@ -45,7 +45,7 @@ export const CacheTags = {
   userAchievements: (userId: string) => `achievements:user:${userId}`,
   userNotifications: (userId: string) => `notifications:user:${userId}`,
   userAnalytics: (userId: string) => `analytics:user:${userId}`,
-  userGym: (userId: string) => `gym:user:${userId}`,
+  userFitness: (userId: string) => `fitness:user:${userId}`,
   userHealth: (userId: string) => `health:user:${userId}`,
   userActivity: (userId: string) => `activity:user:${userId}`,
 };
@@ -87,8 +87,8 @@ export const CacheDuration = {
   ACHIEVEMENTS: 300,
 
   /**
-   * Gym/Health data - changes moderately
+   * Fitness/Health data - changes moderately
    * 3 minutes revalidation
    */
-  GYM_HEALTH: 180,
+  FITNESS_HEALTH: 180,
 } as const;

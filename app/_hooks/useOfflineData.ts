@@ -1,11 +1,6 @@
-/**
- * Hook for managing offline data caching
- * Automatically caches data when online and serves from cache when offline
- */
-
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useOnlineStatus } from "./useOnlineStatus";
 import {
   saveToOfflineStorage,
@@ -39,49 +34,47 @@ export function useOfflineData<T>({
   const [error, setError] = useState<Error | null>(null);
   const [isFromCache, setIsFromCache] = useState(false);
   const isOnline = useOnlineStatus();
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  useEffect(() => {
+  // Memoize the fetch function to prevent unnecessary re-renders
+  const fetchData = useCallback(async () => {
     if (!enabled) {
       setLoading(false);
       return;
     }
 
-    async function fetchData() {
-      try {
-        setLoading(true);
-        setError(null);
+    // Cancel any ongoing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController();
+    const currentController = abortControllerRef.current;
 
-        if (isOnline) {
-          // Try to fetch fresh data from network
-          try {
-            const freshData = await onlineDataFetcher();
-            setData(freshData);
-            setIsFromCache(false);
+    try {
+      setLoading(true);
+      setError(null);
 
-            // Cache the fresh data
-            if (freshData) {
-              await saveToOfflineStorage(storeName, freshData);
-            }
-          } catch (fetchError) {
-            // If network fetch fails, try to use cached data
-            console.warn("Network fetch failed, trying cache:", fetchError);
-            const cachedData = cacheKey
-              ? await getFromOfflineStorage<T>(storeName, cacheKey)
-              : await getAllFromOfflineStorage<T>(
-                  storeName,
-                  indexName,
-                  indexValue
-                );
+      if (isOnline) {
+        // Try to fetch fresh data from network
+        try {
+          const freshData = await onlineDataFetcher();
 
-            if (cachedData) {
-              setData(cachedData as T);
-              setIsFromCache(true);
-            } else {
-              throw fetchError;
-            }
+          // Check if request was aborted
+          if (currentController.signal.aborted) return;
+
+          setData(freshData);
+          setIsFromCache(false);
+
+          // Cache the fresh data
+          if (freshData) {
+            await saveToOfflineStorage(storeName, freshData);
           }
-        } else {
-          // Offline - use cached data
+        } catch (fetchError) {
+          if (currentController.signal.aborted) return;
+
+          // If network fetch fails, try to use cached data
+          console.warn("Network fetch failed, trying cache:", fetchError);
           const cachedData = cacheKey
             ? await getFromOfflineStorage<T>(storeName, cacheKey)
             : await getAllFromOfflineStorage<T>(
@@ -94,22 +87,36 @@ export function useOfflineData<T>({
             setData(cachedData as T);
             setIsFromCache(true);
           } else {
-            throw new Error("No cached data available while offline");
+            throw fetchError;
           }
         }
-      } catch (err) {
-        setError(
-          err instanceof Error ? err : new Error("Failed to fetch data")
-        );
-      } finally {
+      } else {
+        // Offline - use cached data
+        const cachedData = cacheKey
+          ? await getFromOfflineStorage<T>(storeName, cacheKey)
+          : await getAllFromOfflineStorage<T>(storeName, indexName, indexValue);
+
+        if (cachedData) {
+          setData(cachedData as T);
+          setIsFromCache(true);
+        } else {
+          throw new Error("No cached data available while offline");
+        }
+      }
+    } catch (err) {
+      // Check if request was aborted
+      if (currentController.signal.aborted) return;
+
+      setError(err instanceof Error ? err : new Error("Failed to fetch data"));
+    } finally {
+      // Check if request was aborted
+      if (!currentController.signal.aborted) {
         setLoading(false);
       }
     }
-
-    fetchData();
   }, [
-    isOnline,
     enabled,
+    isOnline,
     storeName,
     cacheKey,
     indexName,
@@ -117,5 +124,15 @@ export function useOfflineData<T>({
     onlineDataFetcher,
   ]);
 
-  return { data, loading, error, isFromCache, isOnline };
+  useEffect(() => {
+    fetchData();
+    // Cleanup function to abort ongoing requests
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchData]);
+
+  return { data, loading, error, isFromCache, isOnline, refetch: fetchData };
 }

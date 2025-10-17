@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { X, Plus, Search, Trash2 } from "lucide-react";
 import { Exercise } from "../../_types/types";
 import { defaultExercises } from "../../../public/exerciseLibrary";
-import { createWorkoutTemplateAction } from "../../_lib/gymActions";
+import { createWorkoutTemplateAction } from "../../_lib/fitnessActions";
 import { handleToast } from "../../_utils/utils";
 import Button from "../reusable/Button";
 import Input from "../reusable/Input";

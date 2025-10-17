@@ -3,6 +3,7 @@
 ## 🚀 Adding Caching to a New Function
 
 ### Step 1: Create the internal (uncached) function
+
 ```typescript
 // app/_lib/your-file.ts
 async function getDataInternal(id: string) {
@@ -12,6 +13,7 @@ async function getDataInternal(id: string) {
 ```
 
 ### Step 2: Wrap with unstable_cache
+
 ```typescript
 import { unstable_cache } from "next/cache";
 import { CacheTags, CacheDuration } from "@/app/_utils/serverCache";
@@ -19,23 +21,24 @@ import { CacheTags, CacheDuration } from "@/app/_utils/serverCache";
 export async function getData(id: string) {
   const cachedGetData = unstable_cache(
     getDataInternal,
-    [`data-${id}`],              // Unique cache key
+    [`data-${id}`], // Unique cache key
     {
       tags: [CacheTags.data(id)], // Tags for invalidation
       revalidate: CacheDuration.YOUR_DURATION,
     }
   );
-  
+
   return cachedGetData(id);
 }
 ```
 
 ### Step 3: Add invalidation to mutations
+
 ```typescript
 // In your action file
 export async function updateDataAction(id: string, updates: any) {
   // ... update database
-  
+
   // Invalidate cache
   revalidateTag(CacheTags.data(id));
   revalidatePath("/your-route");
@@ -46,49 +49,50 @@ export async function updateDataAction(id: string, updates: any) {
 
 ```typescript
 // User
-CacheTags.user(userId)              // Single user
-CacheTags.users()                   // All users
+CacheTags.user(userId); // Single user
+CacheTags.users(); // All users
 
 // Tasks
-CacheTags.task(taskId)              // Single task
-CacheTags.userTasks(userId)         // User's tasks
-CacheTags.tasks()                   // All tasks
+CacheTags.task(taskId); // Single task
+CacheTags.userTasks(userId); // User's tasks
+CacheTags.tasks(); // All tasks
 
 // Notes
-CacheTags.userNotes(userId)         // User's notes
-CacheTags.notes()                   // All notes
+CacheTags.userNotes(userId); // User's notes
+CacheTags.notes(); // All notes
 
 // Health
-CacheTags.userHealth(userId)        // User's health data
+CacheTags.userHealth(userId); // User's health data
 
-// Gym
-CacheTags.userGym(userId)           // User's gym data
+// Fitness
+CacheTags.userFitness(userId); // User's fitness data
 
 // Notifications
-CacheTags.userNotifications(userId) // User's notifications
+CacheTags.userNotifications(userId); // User's notifications
 
 // Analytics
-CacheTags.userAnalytics(userId)     // User's analytics
+CacheTags.userAnalytics(userId); // User's analytics
 
 // Achievements
-CacheTags.userAchievements(userId)  // User's achievements
+CacheTags.userAchievements(userId); // User's achievements
 ```
 
 ## ⏱️ Cache Duration Constants
 
 ```typescript
-CacheDuration.USER_DATA      // 300 sec (5 min)
-CacheDuration.TASKS          // undefined (tag-based only)
-CacheDuration.ANALYTICS      // 600 sec (10 min)
-CacheDuration.NOTIFICATIONS  // undefined (tag-based only)
-CacheDuration.NOTES          // 300 sec (5 min)
-CacheDuration.ACHIEVEMENTS   // 300 sec (5 min)
-CacheDuration.GYM_HEALTH     // 180 sec (3 min)
+CacheDuration.USER_DATA; // 300 sec (5 min)
+CacheDuration.TASKS; // undefined (tag-based only)
+CacheDuration.ANALYTICS; // 600 sec (10 min)
+CacheDuration.NOTIFICATIONS; // undefined (tag-based only)
+CacheDuration.NOTES; // 300 sec (5 min)
+CacheDuration.ACHIEVEMENTS; // 300 sec (5 min)
+CacheDuration.FITNESS_HEALTH; // 180 sec (3 min)
 ```
 
 ## 🔄 Invalidation Patterns
 
 ### Pattern 1: Single Entity Update
+
 ```typescript
 // User updates their profile
 revalidateTag(CacheTags.user(userId));
@@ -97,6 +101,7 @@ revalidatePath("/webapp/profile");
 ```
 
 ### Pattern 2: Collection Item Update
+
 ```typescript
 // User completes a task
 revalidateTag(CacheTags.tasks());
@@ -106,16 +111,18 @@ revalidatePath("/webapp/tasks");
 ```
 
 ### Pattern 3: Multiple Related Entities
+
 ```typescript
 // Task completion affects user stats
 revalidateTag(CacheTags.tasks());
 revalidateTag(CacheTags.userTasks(userId));
 revalidateTag(CacheTags.task(taskId));
-revalidateTag(CacheTags.user(userId));  // User stats changed
+revalidateTag(CacheTags.user(userId)); // User stats changed
 revalidatePath("/webapp");
 ```
 
 ### Pattern 4: Creating New Items
+
 ```typescript
 // User creates a note
 revalidateTag(CacheTags.userNotes(userId));
@@ -124,46 +131,50 @@ revalidatePath("/webapp/notes");
 ```
 
 ### Pattern 5: Deleting Items
+
 ```typescript
 // User deletes a workout
-revalidateTag(CacheTags.userGym(userId));
-revalidatePath("/webapp/gym");
+revalidateTag(CacheTags.userFitness(userId));
+revalidatePath("/webapp/fitness");
 ```
 
 ## 🎯 When to Use Which Duration
 
 ### Use `undefined` (tag-based only) when:
+
 - ❌ Data changes frequently through user actions (tasks, notifications)
 - ❌ Stale data would confuse users
 - ✅ You have proper tag-based invalidation
 
 ### Use `300` (5 minutes) when:
+
 - ✅ Data rarely changes (user profile, notes)
 - ✅ You want a safety net for missed invalidations
 - ✅ Slight staleness is acceptable
 
 ### Use `600` (10 minutes) when:
+
 - ✅ Data is analytical/statistical
 - ✅ Real-time accuracy isn't critical
 - ✅ High read frequency justifies longer caching
 
 ### Use `180` (3 minutes) when:
-- ✅ Data changes moderately (health logs, gym sessions)
+
+- ✅ Data changes moderately (health logs, fitness sessions)
 - ✅ Some staleness is okay but not too much
 - ✅ Balance between freshness and performance
 
 ## 🧪 Testing Your Cache
 
 ### 1. Verify Cache is Working
+
 ```typescript
 // Add logging (temporary)
 export async function getData(id: string) {
-  console.log('[Cache] Fetching data for', id);
-  const cachedGetData = unstable_cache(
-    getDataInternal,
-    [`data-${id}`],
-    { tags: [CacheTags.data(id)] }
-  );
+  console.log("[Cache] Fetching data for", id);
+  const cachedGetData = unstable_cache(getDataInternal, [`data-${id}`], {
+    tags: [CacheTags.data(id)],
+  });
   return cachedGetData(id);
 }
 
@@ -172,6 +183,7 @@ export async function getData(id: string) {
 ```
 
 ### 2. Verify Invalidation Works
+
 ```typescript
 // 1. Load page (cache populated)
 // 2. Make mutation
@@ -179,13 +191,14 @@ export async function getData(id: string) {
 
 export async function updateDataAction(id: string) {
   await updateInDb(id);
-  console.log('[Cache] Invalidating data:', id);
+  console.log("[Cache] Invalidating data:", id);
   revalidateTag(CacheTags.data(id));
   // Next page load should fetch fresh data
 }
 ```
 
 ### 3. Check for Stale Data
+
 ```
 Test Pattern:
 1. Load page → Note the data
@@ -197,6 +210,7 @@ Test Pattern:
 ## ⚠️ Common Mistakes
 
 ### ❌ Mistake 1: Forgetting to invalidate
+
 ```typescript
 // WRONG
 export async function updateTask(id: string) {
@@ -206,6 +220,7 @@ export async function updateTask(id: string) {
 ```
 
 ### ❌ Mistake 2: Using wrong cache tags
+
 ```typescript
 // WRONG - invalidating user when task changed
 export async function updateTask(id: string) {
@@ -215,6 +230,7 @@ export async function updateTask(id: string) {
 ```
 
 ### ❌ Mistake 3: Not using multiple tags
+
 ```typescript
 // WRONG - too specific, won't invalidate list
 export async function updateTask(id: string) {
@@ -225,6 +241,7 @@ export async function updateTask(id: string) {
 ```
 
 ### ❌ Mistake 4: Cache key not unique enough
+
 ```typescript
 // WRONG - all users share same cache
 const cached = unstable_cache(fn, ['user'], { ... });
@@ -250,13 +267,15 @@ const cached = unstable_cache(fn, [`user-${userId}`], { ... });
 ## 🔍 Debugging Cache Issues
 
 ### Issue: Cache not invalidating
+
 ```typescript
 // Add logging to track invalidations
 revalidateTag(CacheTags.tasks());
-console.log('[Cache] Invalidated tasks cache');
+console.log("[Cache] Invalidated tasks cache");
 ```
 
 ### Issue: Cache not being used
+
 ```typescript
 // Check cache key is unique
 unstable_cache(fn, ['too-generic'], ...);  // ❌
@@ -264,10 +283,11 @@ unstable_cache(fn, [`unique-${id}`], ...); // ✅
 ```
 
 ### Issue: Stale data persists
+
 ```typescript
 // Check ALL related tags are invalidated
-revalidateTag(CacheTags.task(id));       // Single task
-revalidateTag(CacheTags.tasks());        // All tasks
+revalidateTag(CacheTags.task(id)); // Single task
+revalidateTag(CacheTags.tasks()); // All tasks
 revalidateTag(CacheTags.userTasks(uid)); // User's tasks
 ```
 

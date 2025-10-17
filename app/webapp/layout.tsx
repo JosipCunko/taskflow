@@ -9,7 +9,6 @@ import AnalyticsTracker from "../_components/AnalyticsTracker";
 import YouTubeBackgroundProcessor from "../_components/YouTubeBackgroundProcessor";
 import { getUserById } from "../_lib/user-admin";
 import Providers from "./providers";
-import OfflineHandler from "../_components/auth/OfflineHandler";
 import PWAInstall from "../_components/PWAInstall";
 import OfflineIndicator from "../_components/OfflineIndicator";
 
@@ -34,7 +33,6 @@ export default async function RootLayout({
   return (
     <Providers>
       <PWAInstall />
-      <OfflineHandler />
       <OfflineIndicator />
       <AnalyticsTracker userData={userData} />
       <YouTubeBackgroundProcessor userId={userId} userData={userData} />

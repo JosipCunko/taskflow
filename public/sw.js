@@ -1,7 +1,8 @@
 // TaskFlow Service Worker - Enhanced Offline Support
-const CACHE_NAME = "taskflow-cache-v2";
-const RUNTIME_CACHE = "taskflow-runtime-v2";
-const STATIC_CACHE = "taskflow-static-v2";
+const CACHE_VERSION = "v2";
+const CACHE_NAME = `taskflow-cache-${CACHE_VERSION}`;
+const RUNTIME_CACHE = `taskflow-runtime-${CACHE_VERSION}`;
+const STATIC_CACHE = `taskflow-static-${CACHE_VERSION}`;
 
 // Assets to cache on install - Main app pages and essential resources
 const PRECACHE_URLS = [
@@ -13,7 +14,7 @@ const PRECACHE_URLS = [
   "/webapp/profile",
   "/webapp/calendar",
   "/webapp/completed",
-  "/webapp/gym",
+  "/webapp/fitness",
   "/webapp/health",
   "/login",
   "/offline",
@@ -25,9 +26,16 @@ const PRECACHE_URLS = [
 // Install event - precache essential resources
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(PRECACHE_URLS);
-    })
+    caches
+      .open(CACHE_NAME)
+      .then((cache) => {
+        return cache.addAll(PRECACHE_URLS);
+      })
+      .catch((error) => {
+        console.error("Failed to cache resources during install:", error);
+        // Continue with installation even if some resources fail to cache
+        return Promise.resolve();
+      })
   );
   self.skipWaiting();
 });
@@ -53,9 +61,6 @@ self.addEventListener("activate", (event) => {
 
 // Fetch event - serve from cache, fallback to network
 self.addEventListener("fetch", (event) => {
-  // Skip non-GET requests
-  if (event.request.method !== "GET") return;
-
   // Skip Chrome extensions and other non-http(s) requests
   if (!event.request.url.startsWith("http")) return;
 
@@ -65,22 +70,60 @@ self.addEventListener("fetch", (event) => {
     event.request.url.includes("/auth/")
   ) {
     event.respondWith(
-      fetch(event.request).catch(() => {
-        // Return a meaningful offline response for API calls
-        return new Response(
-          JSON.stringify({
-            error: "offline",
-            message: "You are currently offline",
-          }),
-          {
-            status: 503,
-            statusText: "Service Unavailable",
-            headers: new Headers({
-              "Content-Type": "application/json",
-            }),
+      fetch(event.request)
+        .then((response) => {
+          // Clone and cache successful API responses for short-term offline access
+          if (response.ok && event.request.method === "GET") {
+            const responseClone = response.clone();
+            caches.open(RUNTIME_CACHE).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
           }
-        );
-      })
+          return response;
+        })
+        .catch(() => {
+          // Try to serve from cache first for GET requests
+          if (event.request.method === "GET") {
+            return caches.match(event.request).then((cachedResponse) => {
+              if (cachedResponse) {
+                return cachedResponse;
+              }
+              // Return meaningful offline response if no cache available
+              return new Response(
+                JSON.stringify({
+                  error: "offline",
+                  message:
+                    "You are currently offline and no cached data is available",
+                  timestamp: Date.now(),
+                }),
+                {
+                  status: 503,
+                  statusText: "Service Unavailable",
+                  headers: new Headers({
+                    "Content-Type": "application/json",
+                  }),
+                }
+              );
+            });
+          }
+
+          // For non-GET requests, return offline error
+          return new Response(
+            JSON.stringify({
+              error: "offline",
+              message:
+                "You are currently offline. This action will be synced when you're back online.",
+              timestamp: Date.now(),
+            }),
+            {
+              status: 503,
+              statusText: "Service Unavailable",
+              headers: new Headers({
+                "Content-Type": "application/json",
+              }),
+            }
+          );
+        })
     );
     return;
   }
@@ -112,6 +155,9 @@ self.addEventListener("fetch", (event) => {
     );
     return;
   }
+
+  // Skip non-GET requests for static assets
+  if (event.request.method !== "GET") return;
 
   // Cache-first strategy for static assets (CSS, JS, images, fonts)
   event.respondWith(

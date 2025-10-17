@@ -516,10 +516,10 @@
       ]
     },
     {
-      "name": "Gym",
-      "short_name": "Gym",
-      "description": "View your gym progress",
-      "url": "/webapp/gym",
+      "name": "Fitness",
+      "short_name": "Fitness",
+      "description": "View your fitness progress",
+      "url": "/webapp/fitness",
       "icons": [
         {
           "src": "pwaicons/windows11/Square44x44Logo.altform-lightunplated_targetsize-256.png",

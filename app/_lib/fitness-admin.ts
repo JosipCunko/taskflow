@@ -78,8 +78,8 @@ export async function getWorkouts(userId: string): Promise<WorkoutSession[]> {
     getWorkoutsInternal,
     [`workouts-${userId}`],
     {
-      tags: [CacheTags.userGym(userId)],
-      revalidate: CacheDuration.GYM_HEALTH,
+      tags: [CacheTags.userFitness(userId)],
+      revalidate: CacheDuration.FITNESS_HEALTH,
     }
   );
   return cachedGetWorkouts(userId);
@@ -93,8 +93,8 @@ export async function getWorkout(
     getWorkoutInternal,
     [`workout-${userId}-${workoutId}`],
     {
-      tags: [CacheTags.userGym(userId)],
-      revalidate: CacheDuration.GYM_HEALTH,
+      tags: [CacheTags.userFitness(userId)],
+      revalidate: CacheDuration.FITNESS_HEALTH,
     }
   );
   return cachedGetWorkout(userId, workoutId);

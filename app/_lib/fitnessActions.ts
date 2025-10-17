@@ -17,7 +17,7 @@ import {
   getExerciseProgress,
   getPersonalRecords,
   getLastPerformance,
-} from "./gym-admin";
+} from "./fitness-admin";
 import {
   ActionResult,
   WorkoutSession,
@@ -86,8 +86,8 @@ export async function createWorkoutAction(
       userId,
     });
 
-    revalidateTag(CacheTags.userGym(userId));
-    revalidatePath("/webapp/gym");
+    revalidateTag(CacheTags.userFitness(userId));
+    revalidatePath("/webapp/fitness");
     revalidatePath("/webapp");
 
     return {
@@ -113,8 +113,8 @@ export async function updateWorkoutAction(
     const userId = await getAuthenticatedUserId();
     await updateWorkout(userId, workoutId, updates);
 
-    revalidateTag(CacheTags.userGym(userId));
-    revalidatePath("/webapp/gym");
+    revalidateTag(CacheTags.userFitness(userId));
+    revalidatePath("/webapp/fitness");
     revalidatePath("/webapp");
 
     return {
@@ -138,8 +138,8 @@ export async function deleteWorkoutAction(
     const userId = await getAuthenticatedUserId();
     await deleteWorkout(userId, workoutId);
 
-    revalidateTag(CacheTags.userGym(userId));
-    revalidatePath("/webapp/gym");
+    revalidateTag(CacheTags.userFitness(userId));
+    revalidatePath("/webapp/fitness");
     revalidatePath("/webapp");
 
     return {
@@ -168,7 +168,7 @@ export async function startWorkoutSessionAction(
         loggedExercises: [],
       };
     const workoutId = await createWorkout(userId, workoutData);
-    revalidatePath("/webapp/gym");
+    revalidatePath("/webapp/fitness");
 
     return {
       success: true,
@@ -203,7 +203,7 @@ export async function completeWorkoutSessionAction(
       updatedAt: Date.now(),
     });
 
-    revalidatePath("/webapp/gym");
+    revalidatePath("/webapp/fitness");
 
     return {
       success: true,
@@ -229,7 +229,7 @@ export async function createTemplateAction(
       userId,
     });
 
-    revalidatePath("/webapp/gym");
+    revalidatePath("/webapp/fitness");
     return {
       success: true,
       message: "Workout template created successfully",
@@ -316,7 +316,7 @@ export async function createWorkoutTemplateAction(
       createdAt: Date.now(),
     });
 
-    revalidatePath("/webapp/gym");
+    revalidatePath("/webapp/fitness");
     return {
       success: true,
       message: "Workout template created successfully",
@@ -368,7 +368,7 @@ export async function startWorkoutFromTemplateAction(
       };
 
     const workoutId = await createWorkout(userId, workoutData);
-    revalidatePath("/webapp/gym");
+    revalidatePath("/webapp/fitness");
 
     return {
       success: true,

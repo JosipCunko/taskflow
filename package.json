@@ -1,6 +1,6 @@
 {
   "name": "taskflow",
-  "version": "1.0.0",
+  "version": "14.3.0",
   "private": true,
   "scripts": {
     "dev": "cross-env NODE_ENV=development next dev",
@@ -8,8 +8,7 @@
     "start": "cross-env NODE_ENV=production next start",
     "postbuild": "next-sitemap",
     "lint": "next lint",
-    "update-version": "node update-version.js",
-    "install-hooks": "node install-hooks.js"
+    "update-version": "node update-version.js"
   },
   "dependencies": {
     "@radix-ui/react-switch": "^1.2.5",

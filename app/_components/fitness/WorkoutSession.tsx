@@ -32,7 +32,7 @@ import {
   dislikeWorkoutAction,
   removeWorkoutRatingAction,
   deleteWorkoutAction,
-} from "../../_lib/gymActions";
+} from "../../_lib/fitnessActions";
 import { formatDate, handleToast } from "../../_utils/utils";
 import { defaultExercises } from "../../../public/exerciseLibrary";
 import Button from "@/app/_components/reusable/Button";
@@ -219,7 +219,7 @@ export default function WorkoutSession({
     );
 
     handleToast(result, () => {
-      router.push("/webapp/gym");
+      router.push("/webapp/fitness");
     });
   };
 
@@ -228,7 +228,7 @@ export default function WorkoutSession({
 
     const result = await deleteWorkoutAction(workout.id);
     handleToast(result, () => {
-      router.push("/webapp/gym");
+      router.push("/webapp/fitness");
     });
   };
 
@@ -281,7 +281,7 @@ export default function WorkoutSession({
   return (
     <Modal>
       <div className="space-y-6">
-        <Link href="/webapp/gym">
+        <Link href="/webapp/fitness">
           <Button variant="secondary">
             <ArrowLeft className="w-8 h-8 mr-3 text-primary-500 icon-glow" />
             <span className="text-glow">Back</span>

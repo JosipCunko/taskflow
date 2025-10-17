@@ -179,19 +179,19 @@ const tutorialSteps: TutorialStep[] = [
     },
   },
   {
-    id: "gym-view",
-    title: "Gym & Fitness",
+    id: "fitness-view",
+    title: "Fitness & Health",
     description:
-      "Track your workouts and monitor your fitness progress in the Gym section. You can save your workout sessions and log your daily exercises.",
+      "Track your workouts and monitor your fitness progress in the Fitness section. You can save your workout sessions and log your daily exercises.",
     icon: <Dumbbell className="w-6 h-6" />,
-    route: "/webapp/gym",
-    targetSelector: '[data-tutorial="sidebar-gym"]',
+    route: "/webapp/fitness",
+    targetSelector: '[data-tutorial="sidebar-fitness"]',
     position: {
       top: "60%",
       left: "20%",
     },
     highlight: {
-      selector: '[data-tutorial="sidebar-gym"]',
+      selector: '[data-tutorial="sidebar-fitness"]',
       padding: 8,
     },
   },

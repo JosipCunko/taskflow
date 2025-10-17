@@ -14,11 +14,9 @@ export const STORES = {
   MEALS: "meals",
   WORKOUTS: "workouts",
   ANALYTICS: "analytics",
+  PENDING_ACTIONS: "pending-actions",
 };
 
-/**
- * Initialize the IndexedDB database
- */
 export function initDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -65,13 +63,25 @@ export function initDB(): Promise<IDBDatabase> {
         });
         analyticsStore.createIndex("timestamp", "timestamp", { unique: false });
       }
+
+      if (!db.objectStoreNames.contains(STORES.PENDING_ACTIONS)) {
+        const pendingActionsStore = db.createObjectStore(
+          STORES.PENDING_ACTIONS,
+          {
+            keyPath: "id",
+          }
+        );
+        pendingActionsStore.createIndex("timestamp", "timestamp", {
+          unique: false,
+        });
+        pendingActionsStore.createIndex("storeName", "storeName", {
+          unique: false,
+        });
+      }
     };
   });
 }
 
-/**
- * Save data to IndexedDB
- */
 export async function saveToOfflineStorage<T>(
   storeName: string,
   data: T | T[]
@@ -98,9 +108,6 @@ export async function saveToOfflineStorage<T>(
   });
 }
 
-/**
- * Get data from IndexedDB by key
- */
 export async function getFromOfflineStorage<T>(
   storeName: string,
   key: string
@@ -150,9 +157,6 @@ export async function getAllFromOfflineStorage<T>(
   });
 }
 
-/**
- * Delete data from IndexedDB
- */
 export async function deleteFromOfflineStorage(
   storeName: string,
   key: string
@@ -174,9 +178,6 @@ export async function deleteFromOfflineStorage(
   });
 }
 
-/**
- * Clear all data from a store
- */
 export async function clearOfflineStorage(storeName: string): Promise<void> {
   const db = await initDB();
   const transaction = db.transaction([storeName], "readwrite");
@@ -195,9 +196,6 @@ export async function clearOfflineStorage(storeName: string): Promise<void> {
   });
 }
 
-/**
- * Check if data exists in offline storage
- */
 export async function hasOfflineData(storeName: string): Promise<boolean> {
   const db = await initDB();
   const transaction = db.transaction([storeName], "readonly");
@@ -223,24 +221,14 @@ export interface PendingAction {
   id: string;
   type: "CREATE" | "UPDATE" | "DELETE";
   storeName: string;
-  data: any;
+  data: unknown;
   timestamp: number;
 }
 
-const PENDING_ACTIONS_STORE = "pending-actions";
-
 export async function addPendingAction(action: PendingAction): Promise<void> {
   const db = await initDB();
-
-  // Create pending actions store if it doesn't exist
-  if (!db.objectStoreNames.contains(PENDING_ACTIONS_STORE)) {
-    db.close();
-    // Need to bump version to add new store
-    return;
-  }
-
-  const transaction = db.transaction([PENDING_ACTIONS_STORE], "readwrite");
-  const store = transaction.objectStore(PENDING_ACTIONS_STORE);
+  const transaction = db.transaction([STORES.PENDING_ACTIONS], "readwrite");
+  const store = transaction.objectStore(STORES.PENDING_ACTIONS);
   store.put(action);
 
   return new Promise((resolve, reject) => {
@@ -257,14 +245,8 @@ export async function addPendingAction(action: PendingAction): Promise<void> {
 
 export async function getPendingActions(): Promise<PendingAction[]> {
   const db = await initDB();
-
-  if (!db.objectStoreNames.contains(PENDING_ACTIONS_STORE)) {
-    db.close();
-    return [];
-  }
-
-  const transaction = db.transaction([PENDING_ACTIONS_STORE], "readonly");
-  const store = transaction.objectStore(PENDING_ACTIONS_STORE);
+  const transaction = db.transaction([STORES.PENDING_ACTIONS], "readonly");
+  const store = transaction.objectStore(STORES.PENDING_ACTIONS);
   const request = store.getAll();
 
   return new Promise((resolve, reject) => {
@@ -280,5 +262,5 @@ export async function getPendingActions(): Promise<PendingAction[]> {
 }
 
 export async function clearPendingActions(): Promise<void> {
-  return clearOfflineStorage(PENDING_ACTIONS_STORE);
+  return clearOfflineStorage(STORES.PENDING_ACTIONS);
 }

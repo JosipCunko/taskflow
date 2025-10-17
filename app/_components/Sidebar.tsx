@@ -43,8 +43,8 @@ export default function Sidebar() {
                       return "sidebar-today";
                     case "Calendar":
                       return "sidebar-calendar";
-                    case "Gym":
-                      return "sidebar-gym";
+                    case "Fitness":
+                      return "sidebar-fitness";
                     case "AI":
                       return "sidebar-ai";
                     default:

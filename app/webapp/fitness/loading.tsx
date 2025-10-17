@@ -1,5 +1,5 @@
 import Loader from "../../_components/Loader";
 
-export default function LoadingGym() {
+export default function LoadingFitness() {
   return <Loader label="Loading..." />;
 }

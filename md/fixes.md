@@ -26,9 +26,13 @@ review sw.js and browserconfig in /public
   nextauth url in env file is still localhost
 
 - Check
-  after commit remove all completionTime property
   repeating tasks updates
   Sidebar cannot be opened in the /ai when on mobile of course.
+  penalty point reduction always set to 2
+  health page ui layout in mobile
+  screnshoted image with repeating taskcard
+  openrouter key not working on mobile and sometimes on pc
+  available today when created now - so cannot complete it
 
 # Landing page
 

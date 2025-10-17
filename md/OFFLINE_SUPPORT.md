@@ -39,7 +39,7 @@ The following pages are cached during Service Worker installation:
 - `/webapp` (Dashboard)
 - `/webapp/tasks`, `/webapp/today`, `/webapp/notes`
 - `/webapp/profile`, `/webapp/calendar`, `/webapp/completed`
-- `/webapp/gym`, `/webapp/health`
+- `/webapp/fitness`, `/webapp/health`
 - `/login`, `/offline`
 - Essential assets (manifest, icons)
 
@@ -53,7 +53,7 @@ IndexedDB provides persistent, structured storage for application data:
 - **notes**: Personal notes indexed by `userId`
 - **user**: User profile data
 - **meals**: Nutrition logs indexed by `userId` and `date`
-- **workouts**: Gym sessions indexed by `userId`
+- **workouts**: Fitness sessions indexed by `userId`
 - **analytics**: Analytics data with timestamp index
 
 #### Key Functions:

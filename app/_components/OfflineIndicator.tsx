@@ -1,8 +1,3 @@
-/**
- * Offline Indicator Component
- * Shows a banner when the user is offline
- */
-
 "use client";
 
 import { WifiOff, Wifi } from "lucide-react";
