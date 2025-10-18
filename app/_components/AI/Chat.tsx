@@ -1,16 +1,18 @@
 "use client";
 
-import { useState, useRef, useEffect, useTransition } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getDeepseekResponse } from "@/app/_lib/aiActions";
 import { Send, Bot, User } from "lucide-react";
 import { toast } from "react-hot-toast";
-import { ChatMessage } from "@/app/_types/types";
+import { ChatMessage, FunctionResult } from "@/app/_types/types";
 import ThinkingIndicator from "./ThinkingIndicator";
 import Image from "next/image";
 import Input from "../reusable/Input";
 import EmptyChat from "./EmptyChat";
 import FunctionResults from "./FunctionResults";
+import ModelDropdown, { models, AIModel } from "./ModelDropdown";
+import { marked } from "marked";
+import DOMPurify from "dompurify";
 
 interface ChatProps {
   initialMessages: ChatMessage[];
@@ -28,9 +30,12 @@ export default function Chat({
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [chatId, setChatId] = useState<string | null>(initialChatId);
   const [input, setInput] = useState("");
-  const [isPending, startTransition] = useTransition();
+  const [isPending, setIsPending] = useState(false);
+  const [streamingContent, setStreamingContent] = useState("");
+  const [selectedModel, setSelectedModel] = useState<AIModel>(models[0]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     setMessages(initialMessages);
@@ -59,38 +64,140 @@ export default function Chat({
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || isPending) return;
 
+    const userMessage = input;
     const newMessages: ChatMessage[] = [
       ...messages,
-      { role: "user", content: input },
+      { role: "user", content: userMessage },
     ];
     setMessages(newMessages);
     setInput("");
+    setIsPending(true);
+    setStreamingContent("");
 
-    startTransition(async () => {
-      const result = await getDeepseekResponse(newMessages, chatId);
+    // Create abort controller for this request
+    abortControllerRef.current = new AbortController();
 
-      if (result.error) {
-        toast.error(result.error);
-        const updatedMessages = newMessages.slice(0, -1);
-        setMessages(updatedMessages);
-      } else if (result.response) {
-        setMessages([...newMessages, result.response as ChatMessage]);
-        if (result.chatId && !chatId) {
-          setChatId(result.chatId);
-          router.push(`/webapp/ai/${result.chatId}`);
+    try {
+      const response = await fetch("/api/ai/stream", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: newMessages,
+          chatId: chatId,
+          modelId: selectedModel.id,
+        }),
+        signal: abortControllerRef.current.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error("No response body");
+      }
+
+      let accumulatedContent = "";
+      let functionResults: FunctionResult[] | undefined;
+      let duration = 0;
+      let newChatId = chatId;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6);
+            try {
+              const parsed = JSON.parse(data);
+
+              if (parsed.type === "content") {
+                accumulatedContent += parsed.content;
+                // Convert markdown to HTML as we stream
+                const formattedContent = DOMPurify.sanitize(
+                  marked(accumulatedContent) as string
+                );
+                setStreamingContent(formattedContent);
+              } else if (parsed.type === "tool_start") {
+                // Tool execution started
+                setStreamingContent(
+                  accumulatedContent + "\n\n*Executing tools...*"
+                );
+              } else if (parsed.type === "tool_results") {
+                functionResults = parsed.results;
+              } else if (parsed.type === "done") {
+                duration = parsed.duration;
+                newChatId = parsed.chatId;
+              } else if (parsed.type === "error") {
+                throw new Error(parsed.error);
+              }
+            } catch (e) {
+              console.error("Error parsing stream data:", e);
+            }
+          }
         }
       }
-    });
+
+      // Final formatted content
+      const finalFormattedContent = DOMPurify.sanitize(
+        marked(accumulatedContent) as string
+      );
+
+      const assistantMessage: ChatMessage = {
+        role: "assistant",
+        content: finalFormattedContent,
+        duration,
+        functionResults,
+      };
+
+      setMessages([...newMessages, assistantMessage]);
+      setStreamingContent("");
+
+      if (newChatId && !chatId) {
+        setChatId(newChatId);
+        router.push(`/webapp/ai/${newChatId}`);
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error && error.name === "AbortError") {
+        console.log("Request aborted");
+      } else {
+        console.error("Stream error:", error);
+        toast.error("Failed to get AI response");
+        setMessages(newMessages.slice(0, -1));
+      }
+    } finally {
+      setIsPending(false);
+      setStreamingContent("");
+      abortControllerRef.current = null;
+    }
   };
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full w-full">
       {messages.length === 0 ? (
         <EmptyChat onExampleClick={handleExampleClick} />
       ) : (
-        <div className="flex-1 p-4 md:p-6 overflow-y-auto">
+        <div className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto pt-16 md:pt-6">
           <div className="max-w-4xl mx-auto space-y-6">
             {messages.map((msg, index) => (
               <div
@@ -126,7 +233,7 @@ export default function Chat({
                     <>
                       <div className="mb-2">
                         <span className="text-sm font-semibold text-primary-400">
-                          Deepseek V3.1
+                          {selectedModel.name}
                         </span>
                       </div>
                       <div className="rounded-lg p-4 bg-background-600 border border-background-500">
@@ -171,10 +278,19 @@ export default function Chat({
                 <div className="flex-1 min-w-0">
                   <div className="mb-2">
                     <span className="text-sm font-semibold text-primary-400">
-                      Deepseek V3.1
+                      {selectedModel.name}
                     </span>
                   </div>
-                  <ThinkingIndicator />
+                  {streamingContent ? (
+                    <div className="rounded-lg p-4 bg-background-600 border border-background-500">
+                      <div
+                        className="text-sm leading-relaxed ai-response prose prose-invert max-w-none"
+                        dangerouslySetInnerHTML={{ __html: streamingContent }}
+                      />
+                    </div>
+                  ) : (
+                    <ThinkingIndicator />
+                  )}
                 </div>
               </div>
             )}
@@ -183,33 +299,24 @@ export default function Chat({
         </div>
       )}
 
-      <div className="p-4 md:p-6 border-t border-background-600">
+      <div className="p-3 md:p-6 border-t border-background-600">
         <div className="max-w-4xl mx-auto">
-          {messages.length === 0 && (
-            <div className="flex items-center justify-center gap-2 mb-4 flex-wrap">
-              <div className="flex items-center gap-2 bg-background-600 rounded-full px-3 py-1.5 border border-primary-500/30">
-                <Bot size={16} className="text-primary-500" />
-                <span className="text-sm font-medium">Deepseek V3.1</span>
-              </div>
-              <div className="flex items-center gap-2 bg-background-600 rounded-full px-3 py-1.5 opacity-40 cursor-not-allowed border border-background-500">
-                <Bot size={16} className="text-text-low" />
-                <span className="text-sm">GPT-4.1</span>
-              </div>
-              <div className="flex items-center gap-2 bg-background-600 rounded-full px-3 py-1.5 opacity-40 cursor-not-allowed border border-background-500">
-                <Bot size={16} className="text-text-low" />
-                <span className="text-sm">Gemini 2.5 Pro</span>
-              </div>
+          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+            <div className="flex-shrink-0 order-2 sm:order-1">
+              <ModelDropdown
+                selectedModel={selectedModel}
+                onModelChange={setSelectedModel}
+                className="w-full sm:w-auto"
+              />
             </div>
-          )}
-          <form onSubmit={handleSubmit} className="flex items-center gap-3">
-            <div className="flex-1 flex items-center gap-2 bg-background-600 border border-background-500 rounded-xl px-4 py-3 focus-within:border-primary-500/50 transition-colors">
+            <div className="flex-1 flex items-center gap-2 bg-background-600 border border-background-500 rounded-xl px-3 sm:px-4 py-2 sm:py-3 focus-within:border-primary-500/50 transition-colors order-1 sm:order-2">
               <Input
                 type="text"
                 name="message"
                 value={input}
                 onChange={handleInputChange}
                 placeholder="Ask me anything..."
-                className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 p-0"
+                className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 p-0 text-sm sm:text-base"
                 disabled={isPending}
               />
               <button
