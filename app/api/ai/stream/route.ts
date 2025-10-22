@@ -6,7 +6,7 @@ import { systemPrompt, AI_FUNCTIONS } from "@/app/_utils/utils";
 import { executeFunctions } from "@/app/_lib/aiFunctions";
 import { saveChatMessages } from "@/app/_lib/ai-admin";
 
-const apiKey = process.env.OPENROUTER_DEEPSEEK_API_KEY;
+const apiKey = process.env.OPENROUTER_API_KEY;
 
 const tools = AI_FUNCTIONS.map((func) => ({
   type: "function",
@@ -109,7 +109,10 @@ export async function POST(request: NextRequest) {
                     // Send content chunks to client
                     controller.enqueue(
                       encoder.encode(
-                        `data: ${JSON.stringify({ type: "content", content: delta.content })}\n\n`
+                        `data: ${JSON.stringify({
+                          type: "content",
+                          content: delta.content,
+                        })}\n\n`
                       )
                     );
                   }
@@ -121,7 +124,10 @@ export async function POST(request: NextRequest) {
 
                       if (tc.id) {
                         // New tool call
-                        if (currentToolCall && currentToolCall.index !== index) {
+                        if (
+                          currentToolCall &&
+                          currentToolCall.index !== index
+                        ) {
                           // Save previous tool call
                           if (
                             currentToolCall.id &&
@@ -150,17 +156,19 @@ export async function POST(request: NextRequest) {
                       } else if (currentToolCall && tc.function) {
                         // Continue building current tool call
                         if (tc.function.name) {
-                          currentToolCall.function = currentToolCall.function || {
-                            name: "",
-                            arguments: "",
-                          };
+                          currentToolCall.function =
+                            currentToolCall.function || {
+                              name: "",
+                              arguments: "",
+                            };
                           currentToolCall.function.name += tc.function.name;
                         }
                         if (tc.function.arguments) {
-                          currentToolCall.function = currentToolCall.function || {
-                            name: "",
-                            arguments: "",
-                          };
+                          currentToolCall.function =
+                            currentToolCall.function || {
+                              name: "",
+                              arguments: "",
+                            };
                           currentToolCall.function.arguments +=
                             tc.function.arguments;
                         }
@@ -281,7 +289,10 @@ export async function POST(request: NextRequest) {
                           fullContent += delta.content;
                           controller.enqueue(
                             encoder.encode(
-                              `data: ${JSON.stringify({ type: "content", content: delta.content })}\n\n`
+                              `data: ${JSON.stringify({
+                                type: "content",
+                                content: delta.content,
+                              })}\n\n`
                             )
                           );
                         }
@@ -297,14 +308,19 @@ export async function POST(request: NextRequest) {
             // Send function results to client
             controller.enqueue(
               encoder.encode(
-                `data: ${JSON.stringify({ type: "tool_results", results: functionResults })}\n\n`
+                `data: ${JSON.stringify({
+                  type: "tool_results",
+                  results: functionResults,
+                })}\n\n`
               )
             );
           }
 
           // Calculate duration
           const endTime = Date.now();
-          const duration = parseFloat(((endTime - startTime) / 1000).toFixed(2));
+          const duration = parseFloat(
+            ((endTime - startTime) / 1000).toFixed(2)
+          );
 
           // Save chat
           const responseMessage: ChatMessage = {
@@ -320,7 +336,11 @@ export async function POST(request: NextRequest) {
           // Send completion
           controller.enqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ type: "done", chatId: newChatId, duration })}\n\n`
+              `data: ${JSON.stringify({
+                type: "done",
+                chatId: newChatId,
+                duration,
+              })}\n\n`
             )
           );
 
@@ -329,7 +349,10 @@ export async function POST(request: NextRequest) {
           console.error("Stream error:", error);
           controller.enqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ type: "error", error: "Stream error occurred" })}\n\n`
+              `data: ${JSON.stringify({
+                type: "error",
+                error: "Stream error occurred",
+              })}\n\n`
             )
           );
           controller.close();

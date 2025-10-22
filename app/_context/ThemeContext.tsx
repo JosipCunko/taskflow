@@ -8,7 +8,7 @@ import {
   ReactNode,
 } from "react";
 
-type Theme = "default-blue" | "dark-crt";
+export type Theme = "default-blue" | "dark-crt" | "light-blue";
 
 interface ThemeContextProps {
   theme: Theme;

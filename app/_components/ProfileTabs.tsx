@@ -21,6 +21,7 @@ import { handleToast } from "../_utils/utils";
 import { useTheme } from "../_context/ThemeContext";
 import { useTutorial } from "../_context/TutorialContext";
 import { usePWA } from "../_context/PWAContext";
+import { Theme } from "../_context/ThemeContext";
 
 export default function ProfileTabs({
   activityLogs,
@@ -298,13 +299,12 @@ export default function ProfileTabs({
                 <select
                   id="theme-select"
                   value={theme}
-                  onChange={(e) =>
-                    setTheme(e.target.value as "default-blue" | "dark-crt")
-                  }
-                  className="w-full px-3 py-2 bg-background-625 border border-background-500 rounded-lg text-text-high focus:ring-primary-500"
+                  onChange={(e) => setTheme(e.target.value as Theme)}
+                  className="w-full px-3 py-2 bg-background-625 border-background-500 rounded-lg text-text-high focus:ring-primary-500"
                 >
                   <option value="default-blue">Default Blue</option>
                   <option value="dark-crt">Dark CRT</option>
+                  <option value="light-blue">Light Blue</option>
                 </select>
               </div>
             </div>

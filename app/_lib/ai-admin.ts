@@ -1,6 +1,13 @@
 import "server-only";
 import { adminDb } from "./admin";
 import { ChatMessage } from "../_types/types";
+import { marked } from "marked";
+import DOMPurify from "dompurify";
+import { JSDOM } from "jsdom";
+
+// Setup DOMPurify for server-side use
+const window = new JSDOM("").window;
+const purify = DOMPurify(window);
 
 // Utility function to remove undefined properties from objects, not necessary with adminDb.settings({ ignoreUndefinedProperties: true });
 function sanitizeForFirestore(obj: unknown): unknown {
@@ -118,8 +125,33 @@ export async function getChat(
       return null;
     }
 
+    // Format assistant messages that contain markdown
+    const formattedMessages = (data.messages || []).map(
+      (message: ChatMessage) => {
+        if (
+          message.role === "assistant" &&
+          message.content &&
+          typeof message.content === "string"
+        ) {
+          // Check if content looks like markdown (contains markdown syntax)
+          if (
+            message.content.includes("**") ||
+            message.content.includes("```") ||
+            message.content.includes("#") ||
+            message.content.includes("*")
+          ) {
+            return {
+              ...message,
+              content: purify.sanitize(marked(message.content) as string),
+            };
+          }
+        }
+        return message;
+      }
+    );
+
     return {
-      messages: data.messages || [],
+      messages: formattedMessages,
       title: data.title || "Untitled Chat",
     };
   } catch (error) {

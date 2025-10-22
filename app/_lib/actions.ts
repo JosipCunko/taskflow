@@ -23,9 +23,7 @@ import {
   TaskToCreateData,
   AppUser,
   CampaignNotification,
-  AnalyticsData,
   UserNutritionGoals,
-  ActivityLog,
 } from "../_types/types";
 import {
   createTask,
@@ -34,7 +32,7 @@ import {
   updateTask,
 } from "./tasks-admin";
 import { getServerSession } from "next-auth";
-import { getUserActivityForPeriod, logUserActivity } from "./activity";
+import { logUserActivity } from "./activity";
 import { authOptions } from "./auth";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { updateUser, updateUserCompletionStats } from "./user-admin";
@@ -43,7 +41,7 @@ import { adminDb } from "./admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { sendCampaignNotification } from "./notifications-admin";
 import { checkAndAwardAchievements } from "./achievements";
-import { trackTaskAnalytics, getAnalyticsData } from "./analytics-admin";
+import { trackTaskAnalytics } from "./analytics-admin";
 
 /* User */
 export async function updateUserAction(
@@ -893,30 +891,6 @@ export async function sendCampaignNotificationAction(
     console.error("Error sending campaign:", error);
     return { success: false, error: "Failed to send campaign" };
   }
-}
-
-/* Analytics */
-/* Analytics */
-/* Analytics */
-// Needs to be an action performing server side because getAnalyticsData needs to be called server side, and we are doing that by an action in AnalyticsDashboard.tsx
-export async function getAnalyticsDataAction(): Promise<AnalyticsData | null> {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    throw new Error("User not authenticated");
-  }
-
-  return getAnalyticsData(session.user.id);
-}
-
-export async function getUserActivityForPeriodAction(
-  startTime: number,
-  endTime: number
-): Promise<ActivityLog[]> {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return [];
-  }
-  return getUserActivityForPeriod(session.user.id, startTime, endTime);
 }
 
 /* YouTube Summarizer */

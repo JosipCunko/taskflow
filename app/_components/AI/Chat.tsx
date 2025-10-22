@@ -166,7 +166,8 @@ export default function Chat({
 
       if (newChatId && !chatId) {
         setChatId(newChatId);
-        router.push(`/webapp/ai/${newChatId}`);
+        // Use router.replace to update URL without page refresh
+        router.replace(`/webapp/ai/${newChatId}`);
       }
     } catch (error: unknown) {
       if (error instanceof Error && error.name === "AbortError") {
@@ -301,7 +302,10 @@ export default function Chat({
 
       <div className="p-3 md:p-6 border-t border-background-600">
         <div className="max-w-4xl mx-auto">
-          <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3"
+          >
             <div className="flex-shrink-0 order-2 sm:order-1">
               <ModelDropdown
                 selectedModel={selectedModel}

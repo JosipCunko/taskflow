@@ -10,7 +10,7 @@ import {
   isNotificationSupported,
   getNotificationPermission,
 } from "@/app/_lib/fcm";
-import { customToast } from "@/app/_utils/toasts";
+import { infoToast, errorToast, successToast } from "@/app/_utils/utils";
 
 //Permission request and notification setup
 export default function NotificationSetup() {
@@ -32,8 +32,7 @@ export default function NotificationSetup() {
         console.log("Received foreground notification:", payload);
 
         if (payload.notification?.title) {
-          customToast(
-            "Info",
+          infoToast(
             `${payload.notification.title}: ${payload.notification.body}`
           );
         }
@@ -45,10 +44,7 @@ export default function NotificationSetup() {
 
   const handleRequestPermission = async () => {
     if (!isSupported) {
-      customToast(
-        "Error",
-        "Push notifications are not supported in this browser"
-      );
+      errorToast("Push notifications are not supported in this browser");
       return;
     }
 
@@ -64,27 +60,24 @@ export default function NotificationSetup() {
         await saveNotificationToken(token);
         setPermission("granted");
 
-        customToast("Success", "🔔 Push notifications enabled!");
+        successToast("🔔 Push notifications enabled!");
       } else {
         setPermission("denied");
-        customToast("Error", "Notification permission denied");
+        errorToast("Notification permission denied");
       }
     } catch (error) {
       console.error("Error requesting notification permission:", error);
 
       if (error instanceof Error) {
         if (error.message.includes("VAPID key")) {
-          customToast("Error", "Configuration error: VAPID key missing");
+          errorToast("Configuration error: VAPID key missing");
         } else if (error.message.includes("save notification token")) {
-          customToast("Error", "Failed to save notification settings");
+          errorToast("Failed to save notification settings");
         } else {
-          customToast(
-            "Error",
-            `Failed to set up notifications: ${error.message}`
-          );
+          errorToast(`Failed to set up notifications: ${error.message}`);
         }
       } else {
-        customToast("Error", "Failed to set up notifications");
+        errorToast("Failed to set up notifications");
       }
     } finally {
       setIsLoading(false);
@@ -93,8 +86,7 @@ export default function NotificationSetup() {
 
   const handleDisableNotifications = () => {
     // For now, we'll just show instructions since we can't programmatically revoke permissions
-    customToast(
-      "Info",
+    infoToast(
       "To disable notifications, go to your browser settings and block notifications for this site"
     );
   };

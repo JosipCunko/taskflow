@@ -9,7 +9,7 @@ import {
   useCallback,
 } from "react";
 import { Target, Utensils, Calendar, Plus } from "lucide-react";
-import { customToast } from "../../_utils/toasts";
+import { successToast, errorToast } from "../../_utils/utils";
 import Button from "../../_components/reusable/Button";
 import Input from "../../_components/reusable/Input";
 import Modal, { ModalContext } from "../../_components/Modal";
@@ -116,7 +116,7 @@ export default function HealthClientUI() {
         }
       } catch (error) {
         console.error("Error loading daily nutrition summary:", error);
-        customToast("Error", "Failed to load daily nutrition summary");
+        errorToast("Failed to load daily nutrition summary");
       }
     });
   }, [state.currentDate, dispatchField]);
@@ -128,7 +128,7 @@ export default function HealthClientUI() {
         const data = await res.json();
         dispatchField("nutritionGoals", data.data);
       } catch {
-        customToast("Error", "Failed to load nutrition goals");
+        errorToast("Failed to load nutrition goals");
       }
     });
   }, [dispatchField]);
@@ -150,12 +150,12 @@ export default function HealthClientUI() {
           state.nutritionGoals.carbs,
           state.nutritionGoals.fat
         );
-        customToast("Success", "Nutrition goals updated!");
+        successToast("Nutrition goals updated!");
         closeGoalsModal();
         await loadDailyNutritionSummary();
       } catch (error) {
         console.error("Error updating goals:", error);
-        customToast("Error", "Failed to update goals");
+        errorToast("Failed to update goals");
       }
     });
   };

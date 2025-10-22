@@ -24,17 +24,19 @@ review sw.js and browserconfig in /public
   Tooltip of how productivity and consistency score are calculated
   ModelDropdown is not used - will later implement gpt and gemini ai calls
   nextauth url in env file is still localhost
-
+  anonymous data deletion
 - Check
   repeating tasks updates!!!!!!!!!!
   Sidebar cannot be opened in the /ai when on mobile of course.
   penalty point reduction always set to 2
   health page ui layout in mobile
   screnshoted image with repeating taskcard
-  openrouter key not working on mobile and sometimes on pc
   available today when created now - so cannot complete it
   maybe middleware
   review auto delaying task feature
+  review light blue theme
+  Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'error')
+  at fetchChats (C:\Users\Josip\Desktop\taskflow\app_components\AI\ChatSidebar.tsx:37:18)
 
 # Landing page
 

@@ -5,7 +5,7 @@ import Input from "./reusable/Input";
 import { createSavedMeal } from "@/app/_lib/healthActions";
 import { Plus, Save, Trash2, Utensils } from "lucide-react";
 import Button from "./reusable/Button";
-import { customToast } from "../_utils/toasts";
+import { successToast, errorToast } from "../_utils/utils";
 
 export default function AddSavedMeal({
   onCloseModal,
@@ -43,10 +43,10 @@ export default function AddSavedMeal({
       if (result.success) {
         formRef.current?.reset();
         setIngredients([""]);
-        customToast("Success", "Meal saved successfully");
+        successToast("Meal saved successfully");
         onCloseModal?.();
       } else {
-        customToast("Error", result.error || "Failed to save meal");
+        errorToast(result.error || "Failed to save meal");
       }
     });
   };

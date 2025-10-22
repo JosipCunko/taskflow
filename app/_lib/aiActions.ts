@@ -15,7 +15,7 @@ import { AI_FUNCTIONS, systemPrompt } from "@/app/_utils/utils";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
 import { JSDOM } from "jsdom";
-const apiKey = process.env.OPENROUTER_DEEPSEEK_API_KEY;
+const apiKey = process.env.OPENROUTER_API_KEY;
 
 const window = new JSDOM("").window;
 const purify = DOMPurify(window);

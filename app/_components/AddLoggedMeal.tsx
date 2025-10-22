@@ -6,7 +6,7 @@ import { BookOpen, Plus, Calculator, Utensils } from "lucide-react";
 import Input from "./reusable/Input";
 import Button from "./reusable/Button";
 import { LoggedMeal } from "../_types/types";
-import { customToast } from "../_utils/toasts";
+import { errorToast, successToast } from "../_utils/utils";
 import Loader from "./Loader";
 import { clientCache } from "../_utils/clientCache";
 import { mealTypes } from "../_utils/utils";
@@ -45,7 +45,7 @@ export default function AddLoggedMeal({
       setSavedMeals,
       [] as SavedMeal[],
       setIsLoading,
-      (message) => customToast("Error", message)
+      (message) => errorToast(message)
     );
   }, []);
 
@@ -66,7 +66,7 @@ export default function AddLoggedMeal({
 
   const handleSubmit = async (formData: FormData) => {
     if (!selectedMeal) {
-      customToast("Error", "Please select a meal");
+      errorToast("Please select a meal");
       return;
     }
 
@@ -78,12 +78,12 @@ export default function AddLoggedMeal({
       const result = await createLoggedMeal(formData);
 
       if (result.success) {
-        customToast("Success", result.message || "Meal logged successfully");
+        successToast(result.message || "Meal logged successfully");
         setSelectedMeal(null);
         setServingSize(100);
         invalidateCache();
       } else {
-        customToast("Error", result.error || "Failed to log meal");
+        errorToast(result.error || "Failed to log meal");
       }
     });
   };

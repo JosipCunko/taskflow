@@ -1,22 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
-import {
-  BarChart3,
-  Target,
-  Eye,
-  Activity,
-  Zap,
-  Award,
-  Plus,
-} from "lucide-react";
+import { BarChart3, Target, Eye, Activity, Zap, Award } from "lucide-react";
 import { AnalyticsData, AppUser } from "../_types/types";
-import {
-  getAnalyticsDataAction,
-  getUserActivityForPeriodAction,
-} from "../_lib/actions";
+// Removed server action imports - using API routes instead
 import { formatDuration, formatHour, formatDate } from "../_utils/utils";
-import { subDays, isToday, startOfDay, endOfDay, format } from "date-fns";
+import { subDays, isToday, format } from "date-fns";
 import { Tooltip } from "react-tooltip";
 import {
   LineChart as RechartsLineChart,
@@ -32,38 +21,32 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(
     null
   );
-  const [taskCreationData, setTaskCreationData] = useState<
-    Record<string, number>
-  >({});
   const [isLoading, startTransition] = useTransition();
-  const today = new Date();
 
   const fetchAnalyticsData = useCallback(async () => {
     try {
       if (!user.uid) {
+        console.log("No user UID found");
         return;
       }
+
+      console.log("Starting analytics data fetch for user:", user.uid);
+
       startTransition(async () => {
-        const data = await getAnalyticsDataAction();
-        setAnalyticsData(data);
-
-        // Fetch task creation activity for the last 14 days
-        const fourteenDaysAgo = subDays(today, 14);
-        const activityLogs = await getUserActivityForPeriodAction(
-          startOfDay(fourteenDaysAgo).getTime(),
-          endOfDay(today).getTime()
-        );
-
-        // Count task creations per day
-        const creationCounts: Record<string, number> = {};
-        activityLogs
-          .filter((log) => log.type === "TASK_CREATED")
-          .forEach((log) => {
-            const dayKey = format(new Date(log.timestamp), "yyyy-MM-dd");
-            creationCounts[dayKey] = (creationCounts[dayKey] || 0) + 1;
-          });
-
-        setTaskCreationData(creationCounts);
+        try {
+          // Fetch analytics data via API route
+          console.log("Calling analytics API...");
+          const analyticsResponse = await fetch("/api/analytics");
+          if (!analyticsResponse.ok) {
+            throw new Error(
+              `Analytics API failed: ${analyticsResponse.status}`
+            );
+          }
+          const data = await analyticsResponse.json();
+          setAnalyticsData(data);
+        } catch (innerError) {
+          console.error("Error in transition:", innerError);
+        }
       });
     } catch (error) {
       console.error("Error fetching analytics data:", error);
@@ -83,19 +66,17 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
   }
 
   const days: DayData[] = [];
+  const today = new Date();
 
   for (let i = 13; i >= 0; i--) {
     const date = subDays(today, i);
-    const dayKey = formatDate(date);
     const tasksCompleted = analyticsData.dailyTaskCompletions[13 - i] || 0;
-    const tasksCreated = taskCreationData[dayKey] || 0;
 
     days.push({
       date,
       dayNumber: date.getDate(),
       dayName: format(date, "EEE"),
       tasksCompleted,
-      tasksCreated,
       isToday: isToday(date),
     });
   }
@@ -314,7 +295,6 @@ interface DayData {
   dayNumber: number;
   dayName: string;
   tasksCompleted: number;
-  tasksCreated: number;
   isToday: boolean;
 }
 
@@ -415,8 +395,7 @@ const WeeklyPointsGrowthChart = ({ data }: { data: number[] }) => {
 
 function DayBox({ day }: { day: DayData }) {
   const hasCompletedTasks = day.tasksCompleted > 0;
-  const hasCreatedTasks = day.tasksCreated > 0;
-  const hasActivity = hasCompletedTasks || hasCreatedTasks;
+  const hasActivity = hasCompletedTasks;
 
   return (
     <div
@@ -444,16 +423,10 @@ function DayBox({ day }: { day: DayData }) {
         {day.dayNumber}
       </div>
 
-      {(hasCompletedTasks || hasCreatedTasks) && (
+      {hasCompletedTasks && (
         <div className="text-xs font-medium leading-tight space-y-1">
           {hasCompletedTasks && (
             <div className="text-green-400">{day.tasksCompleted} completed</div>
-          )}
-          {hasCreatedTasks && (
-            <div className="text-blue-400 flex items-center justify-center gap-1">
-              <Plus className="w-3 h-3" />
-              {day.tasksCreated} created
-            </div>
           )}
         </div>
       )}

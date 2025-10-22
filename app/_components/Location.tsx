@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { Search, MapPin, Loader } from "lucide-react";
 import Input from "./reusable/Input";
 import Button from "./reusable/Button";
-import { customToast } from "../_utils/toasts";
+import { errorToast } from "../_utils/utils";
 import { CardSpecificIcons } from "../_utils/icons";
 
 interface LocationResult {
@@ -123,7 +123,7 @@ export default function Location({
     } catch (error) {
       if (error instanceof Error && error.name !== "AbortError") {
         console.error("Location search error:", error);
-        customToast("Error", "Failed to search locations. Please try again.");
+        errorToast("Failed to search locations. Please try again.");
       }
     } finally {
       setIsSearching(false);
@@ -156,7 +156,7 @@ export default function Location({
 
   const getCurrentPosition = () => {
     if (!navigator.geolocation) {
-      customToast("Error", "Geolocation is not supported by this browser.");
+      errorToast("Geolocation is not supported by this browser.");
       return;
     }
 
@@ -188,10 +188,7 @@ export default function Location({
           onCloseModal?.();
         } catch (error) {
           console.error("Reverse geocoding error:", error);
-          customToast(
-            "Error",
-            "Failed to get location details. Please try again."
-          );
+          errorToast("Failed to get location details. Please try again.");
         } finally {
           setIsGettingLocation(false);
         }
@@ -200,22 +197,18 @@ export default function Location({
         setIsGettingLocation(false);
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            customToast(
-              "Error",
+            errorToast(
               "Location access denied. Please enable location permissions."
             );
             break;
           case error.POSITION_UNAVAILABLE:
-            customToast("Error", "Location information is unavailable.");
+            errorToast("Location information is unavailable.");
             break;
           case error.TIMEOUT:
-            customToast("Error", "Location request timed out.");
+            errorToast("Location request timed out.");
             break;
           default:
-            customToast(
-              "Error",
-              "An unknown error occurred while getting location."
-            );
+            errorToast("An unknown error occurred while getting location.");
             break;
         }
       },

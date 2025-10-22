@@ -2,7 +2,7 @@
 
 import React, { useState, useTransition, useMemo } from "react";
 import { updateLoggedMeal, deleteLoggedMeal } from "@/app/_lib/healthActions";
-import { customToast } from "@/app/_utils/toasts";
+import { successToast, errorToast } from "@/app/_utils/utils";
 import Button from "./reusable/Button";
 import Input from "./reusable/Input";
 import { Trash2, Edit, Save, X, Utensils, AlertTriangle } from "lucide-react";
@@ -51,11 +51,11 @@ export default function LoggedMealCard({
           mealType: editableData.mealType,
         });
 
-        customToast("Success", "Meal updated successfully!");
+        successToast("Meal updated successfully!");
         onActionComplete();
       } catch (error) {
         console.error(error);
-        customToast("Error", "Failed to update meal.");
+        errorToast("Failed to update meal.");
       } finally {
         setIsEditing(false);
       }
@@ -67,11 +67,11 @@ export default function LoggedMealCard({
     startTransition(async () => {
       try {
         await deleteLoggedMeal(loggedMeal.id);
-        customToast("Success", "Meal deleted.");
+        successToast("Meal deleted.");
         onActionComplete();
       } catch (error) {
         console.error(error);
-        customToast("Error", "Failed to delete meal.");
+        errorToast("Failed to delete meal.");
       }
     });
   };

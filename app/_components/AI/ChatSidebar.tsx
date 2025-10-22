@@ -7,14 +7,15 @@ import { getChats, deleteChat, renameChatAction } from "@/app/_lib/aiActions";
 import {
   Trash2,
   MessageSquarePlus,
-  Menu,
+  Bot,
   X,
   MessageSquare,
   Edit,
 } from "lucide-react";
-import { toast } from "react-hot-toast";
+import { successToast, errorToast } from "@/app/_utils/utils";
 import Button from "../reusable/Button";
 import Input from "../reusable/Input";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ChatInfo {
   id: string;
@@ -27,15 +28,39 @@ export default function ChatSidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [newChatTitle, setNewChatTitle] = useState("");
+  const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  // Close sidebar on route change for mobile
+  useEffect(() => {
+    if (hasMounted && window.innerWidth < 768) {
+      setIsOpen(false);
+    }
+  }, [pathname, hasMounted]);
+
+  // Handle body scroll when sidebar is open on mobile
+  useEffect(() => {
+    if (hasMounted && isOpen && window.innerWidth < 768) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [isOpen, hasMounted]);
 
   useEffect(() => {
     async function fetchChats() {
       setLoading(true);
       const result = await getChats();
       if (result.error) {
-        toast.error(result.error);
+        errorToast(result.error);
       } else if (result.chats) {
         setChats(result.chats);
       }
@@ -50,11 +75,11 @@ export default function ChatSidebar() {
 
     const originalChats = chats;
     setChats(chats.filter((chat) => chat.id !== chatId));
-    toast.success("Chat deleted");
+    successToast("Chat deleted");
 
     const result = await deleteChat(chatId);
     if (result.error) {
-      toast.error(result.error);
+      errorToast(result.error);
       setChats(originalChats);
     } else {
       if (pathname.includes(chatId)) {
@@ -84,11 +109,11 @@ export default function ChatSidebar() {
     );
     setChats(optimisticChats);
     cancelEditing();
-    toast.success("Chat renamed");
+    successToast("Chat renamed");
 
     const result = await renameChatAction(editingChatId, newChatTitle);
     if (result.error) {
-      toast.error(result.error);
+      errorToast(result.error);
       setChats(originalChats);
     }
   };
@@ -102,8 +127,19 @@ export default function ChatSidebar() {
     return pathname === `/webapp/ai/${chatId}`;
   };
 
+  // Animation variants
+  const sidebarVariants = {
+    open: { x: 0 },
+    closed: { x: "100%" },
+  };
+
+  const backdropVariants = {
+    open: { opacity: 1, display: "block" },
+    closed: { opacity: 0, transitionEnd: { display: "none" } },
+  };
+
   const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-background-700 border-r border-background-600">
+    <div className="flex flex-col h-full bg-background-700 border-l border-background-600">
       <div className="p-4 border-b border-background-600">
         <Button
           onClick={handleNewChat}
@@ -240,38 +276,53 @@ export default function ChatSidebar() {
 
   return (
     <>
-      {/* Mobile Toggle Button - Lower z-index to not interfere with main sidebar */}
+      {/* Mobile Toggle Button - Right side with Bot icon */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="md:hidden fixed top-16 left-3 z-30 p-2 bg-background-600/80 backdrop-blur-sm rounded-md text-text-high shadow-md hover:bg-background-500 transition-colors cursor-pointer"
+        className="md:hidden fixed top-16 right-3 z-30 p-2 bg-background-600/80 backdrop-blur-sm rounded-md text-text-high shadow-md hover:bg-background-500 transition-colors cursor-pointer"
         aria-label="Toggle chat history"
       >
-        {isOpen ? <X size={24} /> : <Menu size={24} />}
+        {isOpen ? <X size={24} /> : <Bot size={24} />}
       </button>
 
-      {/* Mobile Overlay */}
-      {isOpen && (
-        <div
-          className="md:hidden fixed inset-0 bg-black/50 z-20"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
+      {/* Mobile Overlay with Animation */}
+      <AnimatePresence>
+        {hasMounted && isOpen && window.innerWidth < 768 && (
+          <motion.div
+            key="backdrop-mobile"
+            className="md:hidden fixed inset-0 bg-black/60 z-40"
+            initial="closed"
+            animate="open"
+            exit="closed"
+            variants={backdropVariants}
+            onClick={() => setIsOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
-      {/* Sidebar - Desktop */}
+      {/* Sidebar - Desktop (Right side) */}
       <aside className="hidden md:flex md:w-72 h-full">
         <SidebarContent />
       </aside>
 
-      {/* Sidebar - Mobile */}
-      <aside
-        className={`
-          md:hidden fixed top-0 left-0 bottom-0 w-72 z-25
-          transform transition-transform duration-300 ease-in-out
-          ${isOpen ? "translate-x-0" : "-translate-x-full"}
-        `}
+      {/* Sidebar - Mobile (Right side with animations) */}
+      <motion.aside
+        className="md:hidden fixed top-0 right-0 bottom-0 w-72 z-50 bg-background-700 shadow-xl"
+        initial="closed"
+        variants={sidebarVariants}
+        transition={{ type: "tween", duration: 0.3 }}
+        animate={
+          hasMounted
+            ? window.innerWidth < 768
+              ? isOpen
+                ? "open"
+                : "closed"
+              : "closed"
+            : "closed"
+        }
       >
         <SidebarContent />
-      </aside>
+      </motion.aside>
     </>
   );
 }

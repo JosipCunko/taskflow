@@ -4,7 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { isToday } from "date-fns";
 import TutorialOverlay from "../_components/TutorialOverlay";
-import { customToast } from "@/app/_utils/toasts";
+import { infoToast } from "@/app/_utils/utils";
 
 interface TutorialContextType {
   shouldShowTutorial: boolean;
@@ -40,11 +40,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   const checkTutorialStatus = async () => {
     try {
       if (isToday(session?.user?.createdAt as number)) {
-        customToast(
-          "Info",
-          "Welcome to TaskFlow! Do you want to learn how to use it?",
-          Infinity
-        );
+        infoToast("Welcome to TaskFlow! Do you want to learn how to use it?");
       }
     } catch (error) {
       console.error("Error checking tutorial status:", error);
