@@ -12,6 +12,7 @@ import Input from "@/app/_components/reusable/Input";
 import { PlusCircle, Save, Trash2, XCircle, Edit3, Sigma } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { formatDateTime } from "@/app/_utils/utils";
+import { Tooltip } from "react-tooltip";
 import AutoGrowTextarea from "@/app/_components/notes/AutoGrowTextarea";
 import MathSymbolsModal from "@/app/_components/notes/MathSymbolsModal";
 import KeyboardShortcutsGuide from "@/app/_components/notes/KeyboardShortcutsGuide";
@@ -280,10 +281,12 @@ export default function NotesClientUI({
                   onClick={() => setIsMathModalOpen(true)}
                   variant="secondary"
                   disabled={!editingNoteId}
-                  title="Insert mathematical symbols"
+                  data-tooltip-id="math-symbols-btn"
+                  data-tooltip-content="Insert mathematical symbols"
                 >
                   <Sigma size={18} /> Math Symbols
                 </Button>
+                <Tooltip id="math-symbols-btn" place="top" />
                 <div className="mt-2 p-2 bg-background-700 rounded border border-divider">
                   <NoteStats content={currentContent} />
                 </div>

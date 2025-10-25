@@ -1,6 +1,7 @@
 "use client";
 
 import { Clock, Type, FileText } from "lucide-react";
+import { Tooltip } from "react-tooltip";
 
 interface NoteStatsProps {
   content: string;
@@ -18,22 +19,26 @@ export default function NoteStats({ content }: NoteStatsProps) {
 
   return (
     <div className="flex flex-wrap gap-4 text-xs text-text-gray">
-      <div className="flex items-center gap-1.5" title="Characters">
+      <div className="flex items-center gap-1.5" data-tooltip-id="note-stats-chars" data-tooltip-content="Characters">
         <Type size={14} />
         <span>{charCount.toLocaleString()} chars</span>
       </div>
-      <div className="flex items-center gap-1.5" title="Words">
+      <div className="flex items-center gap-1.5" data-tooltip-id="note-stats-words" data-tooltip-content="Words">
         <FileText size={14} />
         <span>{wordCount.toLocaleString()} words</span>
       </div>
-      <div className="flex items-center gap-1.5" title="Lines">
+      <div className="flex items-center gap-1.5" data-tooltip-id="note-stats-lines" data-tooltip-content="Lines">
         <FileText size={14} />
         <span>{lineCount} lines</span>
       </div>
-      <div className="flex items-center gap-1.5" title="Estimated reading time">
+      <div className="flex items-center gap-1.5" data-tooltip-id="note-stats-reading" data-tooltip-content="Estimated reading time">
         <Clock size={14} />
         <span>{readingTime} read</span>
       </div>
+      <Tooltip id="note-stats-chars" place="top" />
+      <Tooltip id="note-stats-words" place="top" />
+      <Tooltip id="note-stats-lines" place="top" />
+      <Tooltip id="note-stats-reading" place="top" />
     </div>
   );
 }

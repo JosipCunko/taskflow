@@ -2,6 +2,7 @@
 
 import { Search, X } from "lucide-react";
 import { useState } from "react";
+import { Tooltip } from "react-tooltip";
 
 interface NotesSearchProps {
   onSearchChange: (query: string) => void;
@@ -35,14 +36,18 @@ export default function NotesSearch({ onSearchChange }: NotesSearchProps) {
           className="w-full pl-10 pr-10 py-2.5 bg-background-700 border border-divider rounded-lg shadow-sm placeholder-text-gray focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-text-low transition-all"
         />
         {searchQuery && (
-          <button
-            onClick={handleClear}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-gray hover:text-primary-400 transition-colors"
-            aria-label="Clear search"
-            title="Clear search"
-          >
-            <X size={18} />
-          </button>
+          <>
+            <button
+              onClick={handleClear}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-gray hover:text-primary-400 transition-colors"
+              aria-label="Clear search"
+              data-tooltip-id="clear-search-tooltip"
+              data-tooltip-content="Clear search"
+            >
+              <X size={18} />
+            </button>
+            <Tooltip id="clear-search-tooltip" place="top" />
+          </>
         )}
       </div>
       {searchQuery && (

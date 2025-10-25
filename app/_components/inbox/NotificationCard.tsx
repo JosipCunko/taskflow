@@ -9,6 +9,7 @@ import {
 import { getNotificationIcon } from "@/app/_utils/icons";
 import { X, ExternalLink, Archive, Clock } from "lucide-react";
 import { useState } from "react";
+import { Tooltip } from "react-tooltip";
 
 interface NotificationCardProps {
   notification: Notification;
@@ -134,22 +135,30 @@ export default function NotificationCard({
             {(onArchive || onDelete) && (
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 {onArchive && (
-                  <button
-                    onClick={handleArchive}
-                    className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                    title="Archive notification"
-                  >
-                    <Archive size={14} />
-                  </button>
+                  <>
+                    <button
+                      onClick={handleArchive}
+                      className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                      data-tooltip-id={`archive-notification-${notification.id}`}
+                      data-tooltip-content="Archive notification"
+                    >
+                      <Archive size={14} />
+                    </button>
+                    <Tooltip id={`archive-notification-${notification.id}`} place="top" />
+                  </>
                 )}
                 {onDelete && (
-                  <button
-                    onClick={handleDelete}
-                    className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                    title="Delete notification"
-                  >
-                    <X size={14} />
-                  </button>
+                  <>
+                    <button
+                      onClick={handleDelete}
+                      className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                      data-tooltip-id={`delete-notification-${notification.id}`}
+                      data-tooltip-content="Delete notification"
+                    >
+                      <X size={14} />
+                    </button>
+                    <Tooltip id={`delete-notification-${notification.id}`} place="top" />
+                  </>
                 )}
               </div>
             )}
