@@ -1019,23 +1019,6 @@ export async function updateYouTubePreferencesAction(
   }
 }
 
-/* Today Tasks Management */
-/**
- * Automatically delays incomplete tasks to tomorrow
- * 
- * IMPORTANT: This function only affects REGULAR tasks, NOT repeating tasks
- * - Regular tasks with autoDelay enabled will be automatically moved to tomorrow
- * - Repeating tasks are excluded because they have their own scheduling logic
- * - Only tasks that are past their due date will be affected
- * 
- * Conditions for auto-delay:
- * 1. Task status is "pending" or "delayed"
- * 2. Task due date is BEFORE today (past due)
- * 3. Task is NOT a repeating task (isRepeating === false)
- * 4. Task has autoDelay enabled (autoDelay === true)
- * 
- * @returns ActionResult with count of delayed tasks
- */
 export async function autoDelayIncompleteTodayTasks(): Promise<ActionResult> {
   try {
     const session = await getServerSession(authOptions);
@@ -1093,7 +1076,9 @@ export async function autoDelayIncompleteTodayTasks(): Promise<ActionResult> {
 
     if (delayedCount > 0) {
       await batch.commit();
-      console.log(`Auto-delayed ${delayedCount} regular task(s) to tomorrow for user ${session.user.id}`);
+      console.log(
+        `Auto-delayed ${delayedCount} regular task(s) to tomorrow for user ${session.user.id}`
+      );
 
       revalidateTag(CacheTags.tasks());
       revalidateTag(CacheTags.userTasks(session.user.id));
@@ -1104,7 +1089,10 @@ export async function autoDelayIncompleteTodayTasks(): Promise<ActionResult> {
 
     return {
       success: true,
-      message: delayedCount > 0 ? `${delayedCount} task(s) delayed to tomorrow` : "No tasks to delay",
+      message:
+        delayedCount > 0
+          ? `${delayedCount} task(s) delayed to tomorrow`
+          : "No tasks to delay",
     };
   } catch (error) {
     console.error("Error auto-delaying tasks:", error);

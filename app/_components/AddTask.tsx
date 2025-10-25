@@ -224,6 +224,11 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
     }
   }, [state.endTime, state.startTime]);
 
+  // Sync selectedDate (end date) with startDate when startDate changes
+  useEffect(() => {
+    dispatch({ type: "selectedDate", payload: state.startDate });
+  }, [state.startDate]);
+
   const handleSubmit = async (formData: FormData) => {
     if (isPending) return; // Prevent double submission
 

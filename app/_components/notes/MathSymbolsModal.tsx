@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { X } from "lucide-react";
 import Button from "@/app/_components/reusable/Button";
+import { useOutsideClick } from "@/app/_hooks/useOutsideClick";
 
 interface MathSymbolsModalProps {
   isOpen: boolean;
@@ -157,6 +158,8 @@ export default function MathSymbolsModal({
   onClose,
   onSymbolSelect,
 }: MathSymbolsModalProps) {
+  const modalRef = useOutsideClick(onClose);
+
   // Handle Escape key to close modal
   useEffect(() => {
     if (!isOpen) return;
@@ -182,7 +185,10 @@ export default function MathSymbolsModal({
       aria-modal="true"
       aria-labelledby="math-modal-title"
     >
-      <div className="bg-background-700 rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div
+        ref={modalRef}
+        className="bg-background-700 rounded-lg shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-divider bg-background-650">
           <div>
@@ -206,44 +212,43 @@ export default function MathSymbolsModal({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="space-y-6">
-            {MATH_SYMBOLS.map((category) => (
-              <div key={category.name} className="space-y-3">
-                <h3 className="text-lg font-semibold text-text-low border-b border-divider pb-2">
-                  {category.name}
-                </h3>
-                <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
-                  {category.symbols.map((symbol) => (
-                    <button
-                      key={symbol.value}
-                      onClick={() => onSymbolSelect(symbol.value)}
-                      className="group relative bg-background-600 hover:bg-primary-500 hover:scale-110 transition-all duration-200 rounded-lg p-3 flex items-center justify-center aspect-square"
-                      title={symbol.label}
-                    >
-                      <span className="text-2xl font-semibold text-text-low group-hover:text-white">
-                        {symbol.display}
-                      </span>
-                      <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full mt-2 px-2 py-1 bg-background-800 text-text-low text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
-                        {symbol.label}
-                      </span>
-                    </button>
-                  ))}
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="space-y-6">
+              {MATH_SYMBOLS.map((category) => (
+                <div key={category.name} className="space-y-3">
+                  <h3 className="text-base font-semibold text-text-low border-b border-divider pb-2">
+                    {category.name}
+                  </h3>
+                  <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-1.5">
+                    {category.symbols.map((symbol) => (
+                      <button
+                        key={symbol.value}
+                        onClick={() => onSymbolSelect(symbol.value)}
+                        className="group relative bg-background-600 hover:bg-primary-500 hover:scale-105 transition-all duration-150 rounded-md p-2 flex items-center justify-center aspect-square"
+                        title={symbol.label}
+                      >
+                        <span className="text-lg font-semibold text-text-low group-hover:text-white">
+                          {symbol.display}
+                        </span>
+                        <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full mt-1 px-2 py-1 bg-background-800 text-text-low text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                          {symbol.label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-divider bg-background-650">
-          <div className="flex justify-between items-center">
-            <p className="text-sm text-text-gray italic">
-              💡 Tip: Use keyboard shortcuts in your note for faster editing!
-            </p>
-            <Button onClick={onClose} variant="primary">
-              Close
-            </Button>
+          {/* Footer */}
+          <div className="p-3 border-t border-divider bg-background-650">
+            <div className="flex justify-between items-center gap-2">
+              <Button onClick={onClose} variant="primary" className="text-sm">
+                Close
+              </Button>
+            </div>
           </div>
         </div>
       </div>
