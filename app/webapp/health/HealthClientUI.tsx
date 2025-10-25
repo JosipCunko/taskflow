@@ -170,41 +170,41 @@ export default function HealthClientUI() {
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-end items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-end items-stretch sm:items-center gap-3 sm:gap-4">
         <DateInput
           date={state.currentDate}
           setDate={(date) => dispatchField("currentDate", date)}
-          className="min-w-fit"
+          className="min-w-fit w-full sm:w-auto"
           disableDaysBefore={false}
         >
-          <Button variant="secondary">
+          <Button variant="secondary" className="w-full sm:w-auto justify-center">
             <CardSpecificIcons.DueDate size={20} />
             <span>{formatDate(state.currentDate)}</span>
           </Button>
         </DateInput>
         <ModalContext.Provider value={goalsModalContextValue}>
           <Modal.Open opens="nutrition-goals">
-            <Button>
+            <Button className="w-full sm:w-auto justify-center">
               <Target className="w-4 aspect-square" />
-              Set Goals
+              <span className="sm:inline">Set Goals</span>
             </Button>
           </Modal.Open>
         </ModalContext.Provider>
 
         <ModalContext.Provider value={logMealModalContextValue}>
           <Modal.Open opens="log-meal">
-            <Button>
+            <Button className="w-full sm:w-auto justify-center">
               <Plus className="w-4 aspect-square" />
-              Log your meal
+              <span className="sm:inline">Log Meal</span>
             </Button>
           </Modal.Open>
         </ModalContext.Provider>
 
         <ModalContext.Provider value={saveMealModalContextValue}>
           <Modal.Open opens="save-meal">
-            <Button>
+            <Button className="w-full sm:w-auto justify-center">
               <Plus className="w-4 aspect-square" />
-              Save your meal
+              <span className="sm:inline">Save Meal</span>
             </Button>
           </Modal.Open>
         </ModalContext.Provider>

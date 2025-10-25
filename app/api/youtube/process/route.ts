@@ -9,7 +9,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const baseUrl = process.env.NEXTAUTH_URL;
+    // NOTE: NEXTAUTH_URL should be set to your production URL (not localhost) in production
+    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
 
     // Generate YouTube summary
     const summarizeResponse = await fetch(`${baseUrl}/api/youtube/summarize`, {

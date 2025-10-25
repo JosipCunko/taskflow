@@ -11,10 +11,15 @@ export function useOutsideClick(handler, listenCapturing = true) {
         }
       }
 
-      document.addEventListener("click", handleClick, listenCapturing);
+      // Add a small delay to prevent immediate trigger
+      const timeoutId = setTimeout(() => {
+        document.addEventListener("click", handleClick, listenCapturing);
+      }, 0);
 
-      return () =>
+      return () => {
+        clearTimeout(timeoutId);
         document.removeEventListener("click", handleClick, listenCapturing);
+      };
     },
     [handler, listenCapturing]
   );

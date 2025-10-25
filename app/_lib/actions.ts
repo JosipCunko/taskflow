@@ -949,7 +949,9 @@ export async function processYouTubeSummaryAction(): Promise<ActionResult> {
     }
 
     // Make internal API call to process YouTube summary
-    const baseUrl = process.env.NEXTAUTH_URL;
+    // NOTE: NEXTAUTH_URL should be set to your production URL (not localhost) in production
+    // For internal server-to-server calls, we use the NEXTAUTH_URL as the base
+    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
     const response = await fetch(`${baseUrl}/api/youtube/process`, {
       method: "POST",
       headers: {
@@ -1018,6 +1020,22 @@ export async function updateYouTubePreferencesAction(
 }
 
 /* Today Tasks Management */
+/**
+ * Automatically delays incomplete tasks to tomorrow
+ * 
+ * IMPORTANT: This function only affects REGULAR tasks, NOT repeating tasks
+ * - Regular tasks with autoDelay enabled will be automatically moved to tomorrow
+ * - Repeating tasks are excluded because they have their own scheduling logic
+ * - Only tasks that are past their due date will be affected
+ * 
+ * Conditions for auto-delay:
+ * 1. Task status is "pending" or "delayed"
+ * 2. Task due date is BEFORE today (past due)
+ * 3. Task is NOT a repeating task (isRepeating === false)
+ * 4. Task has autoDelay enabled (autoDelay === true)
+ * 
+ * @returns ActionResult with count of delayed tasks
+ */
 export async function autoDelayIncompleteTodayTasks(): Promise<ActionResult> {
   try {
     const session = await getServerSession(authOptions);
@@ -1025,7 +1043,7 @@ export async function autoDelayIncompleteTodayTasks(): Promise<ActionResult> {
       return { success: false, error: "User not authenticated" };
     }
 
-    // Get all today's tasks that are not completed
+    // Get all incomplete tasks for the user
     const tasksRef = adminDb.collection("tasks");
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -1044,17 +1062,18 @@ export async function autoDelayIncompleteTodayTasks(): Promise<ActionResult> {
 
     incompleteTodayTasksSnapshot.docs.forEach((doc) => {
       const taskData = doc.data();
-      // taskData.dueDate is already a number (UNIX timestamp) in the new system
       const taskDueDate = new Date(taskData.dueDate);
       taskDueDate.setHours(0, 0, 0, 0);
       const taskDueDateTimestamp = taskDueDate.getTime();
 
-      // Only delay tasks that were due today or earlier, are not repeating, and have autoDelay enabled
+      // CRITICAL: Only delay REGULAR tasks (not repeating) that are past due and have autoDelay enabled
+      // Repeating tasks have their own scheduling logic and should never be auto-delayed
       if (
-        taskDueDateTimestamp < todayTimestamp &&
-        !taskData.isRepeating &&
-        taskData.autoDelay === true
+        taskDueDateTimestamp < todayTimestamp && // Task is past due
+        !taskData.isRepeating && // NOT a repeating task
+        taskData.autoDelay === true // Has auto-delay enabled
       ) {
+        // Preserve the original time when moving to tomorrow
         const originalDueDate = new Date(taskData.dueDate);
         const newDueDate = new Date(tomorrowTimestamp);
         newDueDate.setHours(
@@ -1074,6 +1093,7 @@ export async function autoDelayIncompleteTodayTasks(): Promise<ActionResult> {
 
     if (delayedCount > 0) {
       await batch.commit();
+      console.log(`Auto-delayed ${delayedCount} regular task(s) to tomorrow for user ${session.user.id}`);
 
       revalidateTag(CacheTags.tasks());
       revalidateTag(CacheTags.userTasks(session.user.id));
@@ -1084,7 +1104,7 @@ export async function autoDelayIncompleteTodayTasks(): Promise<ActionResult> {
 
     return {
       success: true,
-      message: `${delayedCount} task(s) delayed to tomorrow`,
+      message: delayedCount > 0 ? `${delayedCount} task(s) delayed to tomorrow` : "No tasks to delay",
     };
   } catch (error) {
     console.error("Error auto-delaying tasks:", error);
