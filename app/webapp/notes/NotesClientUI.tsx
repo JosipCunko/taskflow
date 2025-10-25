@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Note } from "@/app/_types/types";
 import {
   addNoteAction,
@@ -9,23 +9,23 @@ import {
 } from "@/app/_lib/notesActions";
 import Button from "@/app/_components/reusable/Button";
 import Input from "@/app/_components/reusable/Input";
-import { PlusCircle, Save, Trash2, XCircle, Edit3 } from "lucide-react";
+import { PlusCircle, Save, Trash2, XCircle, Edit3, Sigma } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { formatDateTime } from "@/app/_utils/utils";
+import AutoGrowTextarea from "@/app/_components/notes/AutoGrowTextarea";
+import MathSymbolsModal from "@/app/_components/notes/MathSymbolsModal";
+import KeyboardShortcutsGuide from "@/app/_components/notes/KeyboardShortcutsGuide";
+import NotesWelcome from "@/app/_components/notes/NotesWelcome";
+import NoteStats from "@/app/_components/notes/NoteStats";
+import NoteExport from "@/app/_components/notes/NoteExport";
+import NotesSearch from "@/app/_components/notes/NotesSearch";
+import NoteContentPreview from "@/app/_components/notes/NoteContentPreview";
+import { useTextEditorShortcuts } from "@/app/_hooks/useTextEditorShortcuts";
 
 interface NotesClientUIProps {
   initialNotes: Note[];
   userId: string;
 }
-
-const ReusableTextarea = (
-  props: React.TextareaHTMLAttributes<HTMLTextAreaElement>
-) => (
-  <textarea
-    {...props}
-    className={`block w-full px-3 py-2 bg-background-700 border border-divider rounded-md shadow-sm placeholder-text-low focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm text-text-low disabled:opacity-70 disabled:bg-background-550 ${props.className}`}
-  />
-);
 
 export default function NotesClientUI({
   initialNotes,
@@ -37,6 +37,9 @@ export default function NotesClientUI({
   const [currentContent, setCurrentContent] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+  const [isMathModalOpen, setIsMathModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setNotes(initialNotes);
@@ -154,35 +157,105 @@ export default function NotesClientUI({
     // Optionally, revert title/content if changes were made but not saved
   };
 
+  const handleSymbolSelect = (symbol: string) => {
+    if (textareaRef.current) {
+      const textarea = textareaRef.current;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const value = textarea.value;
+
+      const newValue = value.substring(0, start) + symbol + value.substring(end);
+      setCurrentContent(newValue);
+
+      // Set cursor position after the inserted symbol
+      setTimeout(() => {
+        textarea.focus();
+        const newPosition = start + symbol.length;
+        textarea.setSelectionRange(newPosition, newPosition);
+      }, 0);
+    }
+  };
+
+  const { handleKeyDown } = useTextEditorShortcuts({
+    textareaRef,
+    onSave: editingNoteId ? () => handleSave(editingNoteId) : undefined,
+  });
+
+  const filteredNotes = notes.filter((note) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      note.title.toLowerCase().includes(query) ||
+      note.content.toLowerCase().includes(query)
+    );
+  });
+
   return (
     <div>
-      <Button
-        onClick={handleAddNewNote}
-        variant="primary"
-        className="mb-6"
-        disabled={isAdding || !canAddNewNote() || !!editingNoteId}
-      >
-        <PlusCircle size={18} className="mr-2" />{" "}
-        {isAdding ? "Adding Note..." : "Add New Note"}
-      </Button>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div className="flex flex-wrap gap-3">
+          <Button
+            onClick={handleAddNewNote}
+            variant="primary"
+            disabled={isAdding || !canAddNewNote() || !!editingNoteId}
+          >
+            <PlusCircle size={18} className="mr-2" />{" "}
+            {isAdding ? "Adding Note..." : "Add New Note"}
+          </Button>
+          <Button
+            onClick={() => setIsMathModalOpen(true)}
+            variant="secondary"
+            disabled={!editingNoteId}
+            title="Insert mathematical symbols"
+          >
+            <Sigma size={18} className="mr-2" /> Math Symbols
+          </Button>
+        </div>
+        <KeyboardShortcutsGuide />
+      </div>
       {editingNoteId && (
-        <p className="mb-4 text-sm text-text-gray italic">
-          You are currently editing a note. Save or cancel to add a new one.
-        </p>
+        <div className="mb-4 p-4 bg-gradient-to-r from-primary-500/10 to-purple-500/10 rounded-lg border border-primary-500/30 backdrop-blur-sm">
+          <div className="flex items-start gap-3">
+            <div className="text-2xl">✨</div>
+            <div className="flex-1">
+              <p className="text-sm text-text-low font-medium mb-2">
+                <span className="text-primary-400 font-bold">
+                  Advanced Editor Active
+                </span>
+              </p>
+              <p className="text-xs text-text-gray">
+                Quick tips: <kbd className="kbd">Ctrl+S</kbd> Save •{" "}
+                <kbd className="kbd">Ctrl+D</kbd> Duplicate •{" "}
+                <kbd className="kbd">Alt+↑/↓</kbd> Move line •{" "}
+                <kbd className="kbd">Ctrl+/</kbd> Comment
+              </p>
+            </div>
+          </div>
+        </div>
       )}
 
-      {notes.length === 0 && !isAdding && (
-        <p className="text-center text-text-gray py-8">
-          You don&apos;t have any notes yet. Click &quot;Add New Note&quot; to
-          get started!
-        </p>
+      {notes.length === 0 && !isAdding && <NotesWelcome />}
+
+      {notes.length > 0 && (
+        <div className="mb-6">
+          <NotesSearch onSearchChange={setSearchQuery} />
+        </div>
+      )}
+
+      {filteredNotes.length === 0 && searchQuery && (
+        <div className="text-center py-12">
+          <p className="text-text-gray text-lg mb-2">No notes found</p>
+          <p className="text-text-gray text-sm">
+            Try searching with different keywords
+          </p>
+        </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {notes.map((note) => (
+        {filteredNotes.map((note) => (
           <div
             key={note.id}
-            className="bg-background-650 p-4 rounded-lg shadow-lg flex flex-col justify-between min-h-[200px]"
+            className="bg-background-650 p-4 rounded-lg shadow-lg hover:shadow-xl hover:border-primary-500/30 border border-transparent transition-all duration-200 flex flex-col justify-between min-h-[200px]"
           >
             {editingNoteId === note.id ? (
               <div className="space-y-3 flex flex-col flex-grow">
@@ -194,14 +267,18 @@ export default function NotesClientUI({
                   placeholder="Note title"
                   className="text-lg font-semibold bg-background-600 border-background-500 focus:border-primary-400"
                 />
-                <ReusableTextarea
+                <AutoGrowTextarea
+                  ref={textareaRef}
                   value={currentContent}
                   onChange={(e) => setCurrentContent(e.target.value)}
-                  placeholder="Note content..."
-                  rows={6}
-                  className="flex-grow resize-none bg-background-600 border-background-500 focus:border-primary-400"
+                  onKeyDown={handleKeyDown}
+                  placeholder="Note content... (Use keyboard shortcuts for faster editing!)"
+                  className="flex-grow bg-background-600 border-background-500 focus:border-primary-400 font-mono"
                   disabled={isSaving}
                 />
+                <div className="mt-2 p-2 bg-background-700 rounded border border-divider">
+                  <NoteStats content={currentContent} />
+                </div>
                 <div className="flex items-center justify-end space-x-2 mt-auto pt-3">
                   <Button
                     onClick={() => handleSave(note.id)}
@@ -227,36 +304,46 @@ export default function NotesClientUI({
                     <span className="italic text-text-gray">Untitled</span>
                   )}
                 </h3>
-                <p className="text-text-low text-sm line-clamp-5 whitespace-pre-wrap flex-grow mb-2">
-                  {note.content || (
-                    <span className="italic text-text-gray">
+                <div className="flex-grow mb-2 overflow-hidden" style={{ maxHeight: "200px" }}>
+                  {note.content ? (
+                    <div className="line-clamp-5 overflow-hidden">
+                      <NoteContentPreview content={note.content} />
+                    </div>
+                  ) : (
+                    <span className="italic text-text-gray text-sm">
                       Empty note. Click pencil to edit.
                     </span>
                   )}
-                </p>
-                <div className="flex justify-between items-center mt-auto pt-2 text-xs text-text-gray">
-                  <span>Updated: {formatDateTime(note.updatedAt)}</span>
-                  <div className="flex space-x-2">
-                    <Button
-                      onClick={(e) => {
-                        e?.stopPropagation();
-                        handleEdit(note);
-                      }}
-                      variant="tag"
-                      className="text-text-gray hover:text-primary-400"
-                    >
-                      <Edit3 size={16} />
-                    </Button>
-                    <Button
-                      onClick={(e) => {
-                        e?.stopPropagation();
-                        handleDelete(note.id);
-                      }}
-                      variant="tag"
-                      className="text-text-gray hover:text-red-500"
-                    >
-                      <Trash2 size={16} />
-                    </Button>
+                </div>
+                <div className="mt-auto pt-2 space-y-2">
+                  <div className="p-2 bg-background-700 rounded border border-divider">
+                    <NoteStats content={note.content} />
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-text-gray">
+                    <span>Updated: {formatDateTime(note.updatedAt)}</span>
+                    <div className="flex space-x-1">
+                      <NoteExport title={note.title} content={note.content} />
+                      <Button
+                        onClick={(e) => {
+                          e?.stopPropagation();
+                          handleEdit(note);
+                        }}
+                        variant="tag"
+                        className="text-text-gray hover:text-primary-400 p-2"
+                      >
+                        <Edit3 size={16} />
+                      </Button>
+                      <Button
+                        onClick={(e) => {
+                          e?.stopPropagation();
+                          handleDelete(note.id);
+                        }}
+                        variant="tag"
+                        className="text-text-gray hover:text-red-500 p-2"
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -264,6 +351,24 @@ export default function NotesClientUI({
           </div>
         ))}
       </div>
+
+      <MathSymbolsModal
+        isOpen={isMathModalOpen}
+        onClose={() => setIsMathModalOpen(false)}
+        onSymbolSelect={handleSymbolSelect}
+      />
+
+      <style jsx>{`
+        .kbd {
+          padding: 2px 6px;
+          background: var(--background-600);
+          border: 1px solid var(--divider);
+          border-radius: 4px;
+          font-family: monospace;
+          font-size: 0.85em;
+          margin: 0 2px;
+        }
+      `}</style>
     </div>
   );
 }
