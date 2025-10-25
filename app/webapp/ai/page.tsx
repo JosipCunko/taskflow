@@ -13,7 +13,7 @@ export default async function AI() {
   const chatId: string | null = null;
 
   return (
-    <div className="h-full w-full overflow-hidden">
+    <div className="p-1 sm:p-6 container overflow-y-auto mx-auto">
       {/* <iframe
         id="JotFormIFrame-01982cd8d8e7774fbebc0a2dd460c49e2c67"
         title="Axon: TaskFlow Guide"

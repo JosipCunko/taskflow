@@ -7,10 +7,9 @@ import { getChats, deleteChat, renameChatAction } from "@/app/_lib/aiActions";
 import {
   Trash2,
   MessageSquarePlus,
-  Bot,
-  X,
   MessageSquare,
   Edit,
+  ListIcon,
 } from "lucide-react";
 import { successToast, errorToast } from "@/app/_utils/utils";
 import Button from "../reusable/Button";
@@ -211,7 +210,7 @@ export default function ChatSidebar() {
                     ${
                       isActiveChatRoute(chat.id)
                         ? "bg-background-600 text-primary-300"
-                        : "hover:bg-background-600/50 text-text-high"
+                        : "hover:bg-background-600/50 text-text-low"
                     }
                   `}
                 >
@@ -276,13 +275,11 @@ export default function ChatSidebar() {
 
   return (
     <>
-      {/* Mobile Toggle Button - Right side with Bot icon */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="md:hidden fixed top-16 right-3 z-30 p-2 bg-background-600/80 backdrop-blur-sm rounded-md text-text-high shadow-md hover:bg-background-500 transition-colors cursor-pointer"
-        aria-label="Toggle chat history"
+        className="flex items-center gap-2 md:hidden fixed top-20 right-0 z-30 p-2 bg-background-500 backdrop-blur-sm rounded-md text-text-low shadow-md hover:bg-background-500 transition-colors cursor-pointer"
       >
-        {isOpen ? <X size={24} /> : <Bot size={24} />}
+        <ListIcon size={24} /> Chat History
       </button>
 
       {/* Mobile Overlay with Animation */}

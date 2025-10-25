@@ -20,9 +20,7 @@ review sw.js and browserconfig in /public
 
 - Later
   When I delete autoDelayIncompleteTodayTasks from actions.ts, and remove its usage in /today page, I get an unusual error.
-  In the readme file, Service Worker API is mentioned as a Native browser API for offline functionality.
   Tooltip of how productivity and consistency score are calculated
-  ModelDropdown is not used - will later implement gpt and gemini ai calls
   nextauth url in env file is still localhost
   anonymous data deletion
 - Check
@@ -34,9 +32,6 @@ review sw.js and browserconfig in /public
   available today when created now - so cannot complete it
   maybe middleware
   review auto delaying task feature
-  review light blue theme
-  Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'error')
-  at fetchChats (C:\Users\Josip\Desktop\taskflow\app_components\AI\ChatSidebar.tsx:37:18)
 
 # Landing page
 

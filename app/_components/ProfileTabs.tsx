@@ -304,7 +304,6 @@ export default function ProfileTabs({
                 >
                   <option value="default-blue">Default Blue</option>
                   <option value="dark-crt">Dark CRT</option>
-                  <option value="light-blue">Light Blue</option>
                 </select>
               </div>
             </div>

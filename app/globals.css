@@ -107,36 +107,6 @@ background dot patter that simulate an old CRT monitor
   --color-info: #0d97d6;
 }
 
-[data-theme="light-blue"] {
-  --color-primary-200: #a0d8ff;
-  --color-primary-300: #7cc6ff;
-  --color-primary-400: #56b3ff;
-  --color-primary-500: #3399ff;
-  --color-primary-600: #2d89e6;
-  --color-primary-700: #2779cc;
-  --color-primary-800: #2169b3;
-
-  --color-divider: #e0f2fe;
-  --color-accent-400: #ffc6a6;
-  --color-accent: #ff944d;
-  --color-accent-600: #ff7a26;
-  --color-background-500: #f0f9ff;
-  --color-background-600: #e0f2fe;
-  --color-background-625: #dbeffc;
-  --color-background-650: #bae6fd;
-  --color-background-700: #f0f9ff;
-
-  --color-text-high: #1f2937;
-  --color-text-medium: #374151;
-  --color-text-low: #6b7280;
-  --color-text-blue: #3399ff;
-  --color-text-gray: #4b5563;
-  --color-success: #10b981;
-  --color-error: #ef4444;
-  --color-warning: #f59e0b;
-  --color-info: #3b82f6;
-}
-
 /* Autofill */
 /* For Chrome / Edge / Safari */
 input:-webkit-autofill,

@@ -31,8 +31,16 @@ if (typeof window !== "undefined") {
 // Register service worker for background notifications
 const registerServiceWorker =
   async (): Promise<ServiceWorkerRegistration | void> => {
-    if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
-      console.warn("Service workers not supported");
+    if (
+      process.env.NODE_ENV !== "production" ||
+      typeof window === "undefined" ||
+      !("serviceWorker" in navigator)
+    ) {
+      if (process.env.NODE_ENV !== "production") {
+        console.log("Service worker registration skipped in development.");
+      } else {
+        console.warn("Service workers not supported");
+      }
       return;
     }
 

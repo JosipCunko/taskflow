@@ -10,8 +10,8 @@ export default function PWAInstall() {
   const { isInstallable, promptInstall } = usePWA();
 
   useEffect(() => {
-    // Register service worker
-    if ("serviceWorker" in navigator) {
+    // Register service worker only in production
+    if (process.env.NODE_ENV === "production" && "serviceWorker" in navigator) {
       navigator.serviceWorker
         .register("/sw.js", { scope: "/" })
         .then((registration) => {

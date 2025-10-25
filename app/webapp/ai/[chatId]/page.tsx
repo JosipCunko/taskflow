@@ -30,7 +30,7 @@ export default async function ChatPage({
   }
 
   return (
-    <div className="h-full w-full overflow-hidden">
+    <div className="p-1 sm:p-6 container overflow-y-auto mx-auto">
       <Chat
         initialMessages={initialMessages}
         chatId={chatId}
