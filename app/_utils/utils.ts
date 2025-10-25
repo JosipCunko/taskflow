@@ -990,19 +990,21 @@ export function canCompleteRepeatingTaskNow(task: Task): {
       currentTimeInMinutes >= startTimeInMinutes &&
       currentTimeInMinutes <= endTimeInMinutes;
 
-    // Added isToday(task.dueDate) and isScheduledToday for timesPerWeek tasks
+    // Use isScheduledToday instead of isToday(task.dueDate) for consistency
+    // This ensures newly created repeating tasks are completable on their creation day
     return {
-      canCompleteNow: isInTimeWindow && isToday(task.dueDate),
+      canCompleteNow: isInTimeWindow && isScheduledToday,
       sameWeek,
-      isDueToday: isToday(task.dueDate),
+      isDueToday: isScheduledToday,
     };
   }
 
   // If no specific time window, task is available all day
+  // Use isScheduledToday for consistency with repetition rules
   return {
-    canCompleteNow: true,
+    canCompleteNow: isScheduledToday,
     sameWeek,
-    isDueToday: true,
+    isDueToday: isScheduledToday,
   };
 }
 

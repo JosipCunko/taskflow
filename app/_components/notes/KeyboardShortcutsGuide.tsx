@@ -1,27 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Keyboard, X } from "lucide-react";
 import Button from "@/app/_components/reusable/Button";
 
 export default function KeyboardShortcutsGuide() {
   const [isOpen, setIsOpen] = useState(false);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen]);
+
   const shortcuts = [
     {
       category: "Saving & Navigation",
       items: [
-        { keys: ["Ctrl/Cmd", "S"], description: "Save current note" },
-        { keys: ["Esc"], description: "Cancel editing" },
+        { keys: ["Ctrl", "S"], description: "Save current note" },
+        { keys: ["Esc"], description: "Save and stop editing" },
       ],
     },
     {
       category: "Line Operations",
       items: [
-        { keys: ["Ctrl/Cmd", "D"], description: "Duplicate current line" },
-        { keys: ["Ctrl/Cmd", "K"], description: "Delete current line" },
+        { keys: ["Ctrl", "D"], description: "Duplicate current line" },
+        { keys: ["Ctrl", "K"], description: "Delete current line" },
         {
-          keys: ["Ctrl/Cmd", "X"],
+          keys: ["Ctrl", "X"],
           description: "Cut line (when nothing selected)",
         },
         { keys: ["Alt", "↑"], description: "Move line up" },
@@ -31,7 +46,7 @@ export default function KeyboardShortcutsGuide() {
     {
       category: "Editing",
       items: [
-        { keys: ["Ctrl/Cmd", "/"], description: "Toggle line comment" },
+        { keys: ["Ctrl", "/"], description: "Toggle line comment" },
         { keys: ["Tab"], description: "Indent" },
         { keys: ["Shift", "Tab"], description: "Outdent" },
       ],
@@ -40,32 +55,41 @@ export default function KeyboardShortcutsGuide() {
 
   return (
     <>
-      <button
+      <Button
+        variant="secondary"
         onClick={() => setIsOpen(true)}
-        className="text-text-gray hover:text-primary-400 transition-colors flex items-center gap-2 text-sm"
         title="View keyboard shortcuts"
       >
         <Keyboard size={18} />
         <span className="hidden sm:inline">Shortcuts</span>
-      </button>
+      </Button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="shortcuts-modal-title"
+        >
           <div className="bg-background-700 rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-divider bg-background-650">
               <div>
-                <h2 className="text-2xl font-bold text-primary-400 flex items-center gap-2">
+                <h2
+                  id="shortcuts-modal-title"
+                  className="text-2xl font-bold text-primary-400 flex items-center gap-2"
+                >
                   <Keyboard size={24} />
                   Keyboard Shortcuts
                 </h2>
                 <p className="text-sm text-text-gray mt-1">
-                  Boost your productivity with these shortcuts
+                  Boost your productivity with these shortcut{" "}
                 </p>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
                 className="p-2 hover:bg-background-600 rounded-lg transition-colors"
+                aria-label="Close shortcuts guide"
               >
                 <X size={24} className="text-text-gray" />
               </button>
@@ -106,21 +130,11 @@ export default function KeyboardShortcutsGuide() {
                   </div>
                 ))}
               </div>
-
-              <div className="mt-6 p-4 bg-primary-500/10 border border-primary-500/30 rounded-lg">
-                <p className="text-sm text-text-low">
-                  <span className="font-semibold text-primary-400">
-                    💡 Pro Tip:
-                  </span>{" "}
-                  Use the Math Symbols button to quickly insert mathematical
-                  notation into your notes!
-                </p>
-              </div>
             </div>
 
             {/* Footer */}
             <div className="p-4 border-t border-divider bg-background-650">
-              <Button onClick={() => setIsOpen(false)} variant="primary" className="w-full">
+              <Button onClick={() => setIsOpen(false)} variant="primary">
                 Got it!
               </Button>
             </div>

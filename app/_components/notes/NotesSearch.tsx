@@ -38,6 +38,8 @@ export default function NotesSearch({ onSearchChange }: NotesSearchProps) {
           <button
             onClick={handleClear}
             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-gray hover:text-primary-400 transition-colors"
+            aria-label="Clear search"
+            title="Clear search"
           >
             <X size={18} />
           </button>

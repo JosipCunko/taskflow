@@ -593,6 +593,9 @@ export async function completeRepeatingTaskWithInterval(
   const finalDueDate = addDays(completionDateObj, rule.interval);
   const finalDueDateTimestamp = finalDueDate.getTime();
 
+  // Increase points by 2 when completed (max 10)
+  const newPoints = Math.min(10, task.points + 2);
+
   const updates: Partial<Task> = {
     repetitionRule: {
       ...rule,
@@ -602,6 +605,7 @@ export async function completeRepeatingTaskWithInterval(
     status: "pending", // Reset to pending for the next occurrence
     dueDate: finalDueDateTimestamp,
     completedAt: completionDate,
+    points: newPoints,
   };
 
   try {
@@ -698,18 +702,29 @@ export async function completeRepeatingTaskWithTimesPerWeek(
   );
   const nextDueDate = nextDueDateObj.getTime();
 
+  const newCompletions = rule.completions + 1;
+  const isWeekComplete = newCompletions === rule.timesPerWeek;
+
+  // Calculate points adjustment when week is complete
+  // If fully completed, increase points (they did all required completions)
+  let newPoints = task.points;
+  if (isWeekComplete) {
+    newPoints = Math.min(10, task.points + 2);
+  }
+
   const updates: Partial<Task> = {
     startDate: newStartDate,
     repetitionRule: {
       ...rule,
       completedAt: [...rule.completedAt, completionDate],
-      completions: rule.completions + 1,
+      completions: newCompletions,
     },
     completedAt: completionDate,
     dueDate: nextDueDate,
+    points: newPoints,
   };
 
-  if (rule.completions + 1 === rule.timesPerWeek) {
+  if (isWeekComplete) {
     updates.completedAt = completionDate;
     updates.status = "completed";
   }
@@ -809,17 +824,28 @@ export async function completeRepeatingTaskWithDaysOfWeek(
   );
   const newDueDate = newDueDateObj.getTime();
 
+  const newCompletions = rule.completions + 1;
+  const isWeekComplete = newCompletions === rule.daysOfWeek.length;
+
+  // Calculate points adjustment when week is complete
+  // If fully completed all days, increase points
+  let newPoints = task.points;
+  if (isWeekComplete) {
+    newPoints = Math.min(10, task.points + 2);
+  }
+
   const updates: Partial<Task> = {
     repetitionRule: {
       ...rule,
       completedAt: [...rule.completedAt, completionDate],
-      completions: rule.completions + 1,
+      completions: newCompletions,
     },
     completedAt: completionDate,
     dueDate: newDueDate,
+    points: newPoints,
   };
 
-  if (rule.completions === rule.daysOfWeek.length) {
+  if (isWeekComplete) {
     updates.completedAt = completionDate;
     updates.status = "completed";
   }

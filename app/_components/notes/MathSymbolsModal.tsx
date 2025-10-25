@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { X } from "lucide-react";
 import Button from "@/app/_components/reusable/Button";
 
@@ -38,11 +39,9 @@ const MATH_SYMBOLS: SymbolCategory[] = [
       { display: "xⁿ", value: "ⁿ", label: "Power n" },
       { display: "√x", value: "√", label: "Square root" },
       { display: "∛x", value: "∛", label: "Cube root" },
-      { display: "∜x", value: "∜", label: "Fourth root" },
       { display: "x⁰", value: "⁰", label: "Power 0" },
       { display: "x¹", value: "¹", label: "Power 1" },
       { display: "x⁴", value: "⁴", label: "Power 4" },
-      { display: "x⁵", value: "⁵", label: "Power 5" },
     ],
   },
   {
@@ -158,15 +157,39 @@ export default function MathSymbolsModal({
   onClose,
   onSymbolSelect,
 }: MathSymbolsModalProps) {
+  // Handle Escape key to close modal
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="math-modal-title"
+    >
       <div className="bg-background-700 rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-divider bg-background-650">
           <div>
-            <h2 className="text-2xl font-bold text-primary-400">
+            <h2
+              id="math-modal-title"
+              className="text-2xl font-bold text-primary-400"
+            >
               Mathematical Symbols
             </h2>
             <p className="text-sm text-text-gray mt-1">
@@ -176,6 +199,7 @@ export default function MathSymbolsModal({
           <button
             onClick={onClose}
             className="p-2 hover:bg-background-600 rounded-lg transition-colors"
+            aria-label="Close modal"
           >
             <X size={24} className="text-text-gray" />
           </button>

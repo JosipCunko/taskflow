@@ -1,7 +1,6 @@
 "use server";
 
 import { adminDb } from "@/app/_lib/admin";
-import { Timestamp } from "firebase-admin/firestore";
 import { ActionResult } from "@/app/_types/types";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { CacheTags } from "../_utils/serverCache";
@@ -21,7 +20,7 @@ export async function addNoteAction(
       userId,
       title: initialTitle,
       content: initialContent,
-      updatedAt: Timestamp.now(),
+      updatedAt: Date.now(),
     };
     await newNoteRef.set(newNoteData);
 
@@ -65,7 +64,7 @@ export async function updateNoteAction(
     await noteRef.update({
       title,
       content,
-      updatedAt: Timestamp.now(),
+      updatedAt: Date.now(),
     });
 
     revalidateTag(CacheTags.userNotes(userId));

@@ -75,10 +75,13 @@ export default function NotesClientUI({
       } else {
         toast.error(result.error ?? "Failed to add note.");
       }
-    } catch (e: unknown) {
-      const error = e as { message?: string };
+    } catch (error) {
       console.error("Add note client error:", error);
-      toast.error(error.message ?? "An error occurred while adding the note.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "An error occurred while adding the note."
+      );
     } finally {
       setIsAdding(false);
     }
@@ -118,10 +121,13 @@ export default function NotesClientUI({
       } else {
         toast.error(result.error ?? "Failed to update note.");
       }
-    } catch (e: unknown) {
-      const error = e as { message?: string };
+    } catch (error) {
       console.error("Save note client error:", error);
-      toast.error(error.message ?? "An error occurred while saving the note.");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "An error occurred while saving the note."
+      );
     } finally {
       setIsSaving(false);
     }
@@ -142,11 +148,12 @@ export default function NotesClientUI({
         } else {
           toast.error(result.error ?? "Failed to delete note.");
         }
-      } catch (e: unknown) {
-        const error = e as { message?: string };
+      } catch (error) {
         console.error("Delete note client error:", error);
         toast.error(
-          error.message ?? "An error occurred while deleting the note."
+          error instanceof Error
+            ? error.message
+            : "An error occurred while deleting the note."
         );
       }
     }
@@ -164,7 +171,8 @@ export default function NotesClientUI({
       const end = textarea.selectionEnd;
       const value = textarea.value;
 
-      const newValue = value.substring(0, start) + symbol + value.substring(end);
+      const newValue =
+        value.substring(0, start) + symbol + value.substring(end);
       setCurrentContent(newValue);
 
       // Set cursor position after the inserted symbol
@@ -201,14 +209,6 @@ export default function NotesClientUI({
           >
             <PlusCircle size={18} className="mr-2" />{" "}
             {isAdding ? "Adding Note..." : "Add New Note"}
-          </Button>
-          <Button
-            onClick={() => setIsMathModalOpen(true)}
-            variant="secondary"
-            disabled={!editingNoteId}
-            title="Insert mathematical symbols"
-          >
-            <Sigma size={18} className="mr-2" /> Math Symbols
           </Button>
         </div>
         <KeyboardShortcutsGuide />
@@ -272,10 +272,18 @@ export default function NotesClientUI({
                   value={currentContent}
                   onChange={(e) => setCurrentContent(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Note content... (Use keyboard shortcuts for faster editing!)"
+                  placeholder="Note content..."
                   className="flex-grow bg-background-600 border-background-500 focus:border-primary-400 font-mono"
                   disabled={isSaving}
                 />
+                <Button
+                  onClick={() => setIsMathModalOpen(true)}
+                  variant="secondary"
+                  disabled={!editingNoteId}
+                  title="Insert mathematical symbols"
+                >
+                  <Sigma size={18} /> Math Symbols
+                </Button>
                 <div className="mt-2 p-2 bg-background-700 rounded border border-divider">
                   <NoteStats content={currentContent} />
                 </div>
@@ -304,7 +312,10 @@ export default function NotesClientUI({
                     <span className="italic text-text-gray">Untitled</span>
                   )}
                 </h3>
-                <div className="flex-grow mb-2 overflow-hidden" style={{ maxHeight: "200px" }}>
+                <div
+                  className="flex-grow mb-2 overflow-hidden"
+                  style={{ maxHeight: "200px" }}
+                >
                   {note.content ? (
                     <div className="line-clamp-5 overflow-hidden">
                       <NoteContentPreview content={note.content} />

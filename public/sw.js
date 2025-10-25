@@ -3,7 +3,7 @@
 The service worker is caching the old JavaScript code. The cache version is currently "v2", but we need to bump it to force the browser to clear the old cached code
 */
 
-const CACHE_VERSION = "15.2.0";
+const CACHE_VERSION = "15.4.0";
 const CACHE_NAME = `taskflow-cache-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `taskflow-runtime-${CACHE_VERSION}`;
 const STATIC_CACHE = `taskflow-static-${CACHE_VERSION}`;

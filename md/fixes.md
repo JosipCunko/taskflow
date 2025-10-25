@@ -10,29 +10,25 @@ YoutubeBackgroundProcessor
 route.ts /create-tasks
 route.ts /process
 
-# PWA
+# Review
 
-review sw.js and browserconfig in /public
+offline support - works but still needs review
 
-# Bugs and ideas
+# Bugs and ideas to fix now
 
-- Bugs
+Add tooltips everywhere where we put title to something. Last time where we did that is in /webapp/notes
+nextauth url in env file is still localhost: // env.local NEXTAUTH_URL=http://localhost:3000 # For development - is that a problem?
+Anonymous data is not being deleted after a specified time in /login page
+/webapp/health layout needs UI changes in mobile view
+Adding framer animation to KeyboardShortuctsGuide and useOutsideClick hook
+When I delete autoDelayIncompleteTodayTasks from actions.ts, and remove its usage in /today page, I get an unusual error.
+Review auto delaying task feature
 
-- Later
-  When I delete autoDelayIncompleteTodayTasks from actions.ts, and remove its usage in /today page, I get an unusual error.
-  Tooltip of how productivity and consistency score are calculated
-  nextauth url in env file is still localhost
-  anonymous data deletion
-- Check
-  repeating tasks updates!!!!!!!!!!
-  Sidebar cannot be opened in the /ai when on mobile of course.
-  penalty point reduction always set to 2
-  health page ui layout in mobile
-  screnshoted image with repeating taskcard
-  available today when created now - so cannot complete it
-  maybe middleware
-  review auto delaying task feature
+# Later
+
+Nextjs middleware could be useful - you can just create a file
+Tooltip of how productivity and consistency score are calculated needs to be shown in the dashboard page for better UX
 
 # Landing page
 
-update photos
+update photos and check @LANDING_PAGE_PHOTOS.md for help

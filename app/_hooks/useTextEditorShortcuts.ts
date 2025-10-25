@@ -3,7 +3,7 @@
 import { useCallback } from "react";
 
 interface UseTextEditorShortcutsProps {
-  textareaRef: React.RefObject<HTMLTextAreaElement>;
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   onSave?: () => void;
 }
 
@@ -26,12 +26,18 @@ export function useTextEditorShortcuts({
         return;
       }
 
+      // Escape: Save and stop editing
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onSave?.();
+        return;
+      }
+
       // Ctrl/Cmd + D: Duplicate line
       if (ctrlKey && e.key === "d") {
         e.preventDefault();
-        const { selectionStart, selectionEnd, value } = textarea;
+        const { selectionStart, value } = textarea;
         const lines = value.split("\n");
-        let currentLineStart = 0;
         let currentLineEnd = 0;
         let currentLineIndex = 0;
 
@@ -40,7 +46,6 @@ export function useTextEditorShortcuts({
         for (let i = 0; i < lines.length; i++) {
           const lineLength = lines[i].length + 1; // +1 for \n
           if (charCount + lineLength > selectionStart) {
-            currentLineStart = charCount;
             currentLineEnd = charCount + lines[i].length;
             currentLineIndex = i;
             break;
@@ -66,9 +71,9 @@ export function useTextEditorShortcuts({
       }
 
       // Ctrl/Cmd + X (when nothing is selected): Delete line
+      const { selectionStart, selectionEnd, value } = textarea;
       if (ctrlKey && e.key === "x" && selectionStart === selectionEnd) {
         e.preventDefault();
-        const { selectionStart, value } = textarea;
         const lines = value.split("\n");
         let currentLineStart = 0;
         let currentLineIndex = 0;
@@ -157,10 +162,9 @@ export function useTextEditorShortcuts({
           textarea.dispatchEvent(new Event("input", { bubbles: true }));
 
           // Move cursor with the line
-          const newLineStart =
-            lines
-              .slice(0, currentLineIndex - 1)
-              .reduce((sum, line) => sum + line.length + 1, 0);
+          const newLineStart = lines
+            .slice(0, currentLineIndex - 1)
+            .reduce((sum, line) => sum + line.length + 1, 0);
           const offsetInLine = selectionStart - charCount;
           const newCursorPos = newLineStart + offsetInLine;
           textarea.setSelectionRange(newCursorPos, newCursorPos);
@@ -219,10 +223,16 @@ export function useTextEditorShortcuts({
         let charCount = 0;
         for (let i = 0; i < lines.length; i++) {
           const lineLength = lines[i].length + 1;
-          if (charCount <= selectionStart && selectionStart < charCount + lineLength) {
+          if (
+            charCount <= selectionStart &&
+            selectionStart < charCount + lineLength
+          ) {
             startLineIndex = i;
           }
-          if (charCount <= selectionEnd && selectionEnd <= charCount + lineLength) {
+          if (
+            charCount <= selectionEnd &&
+            selectionEnd <= charCount + lineLength
+          ) {
             endLineIndex = i;
             break;
           }
@@ -241,7 +251,8 @@ export function useTextEditorShortcuts({
           } else {
             // Add comment
             const leadingSpaces = lines[i].match(/^\s*/)?.[0] || "";
-            lines[i] = leadingSpaces + "// " + lines[i].substring(leadingSpaces.length);
+            lines[i] =
+              leadingSpaces + "// " + lines[i].substring(leadingSpaces.length);
           }
         }
 
@@ -251,7 +262,7 @@ export function useTextEditorShortcuts({
         return;
       }
     },
-    [textareaRef, onSave]
+    [onSave]
   );
 
   return { handleKeyDown };
