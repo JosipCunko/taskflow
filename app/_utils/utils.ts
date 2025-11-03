@@ -781,9 +781,7 @@ export function getTimeString(startTime: string, endTime: string): string {
  */
 export function isTaskAtRisk(task: Task): boolean {
   const currentDate = startOfDay(new Date());
-
   const rule = task.repetitionRule;
-
   if (rule?.timesPerWeek) {
     const remainingCompletions = rule.timesPerWeek - rule.completions;
     const currentDay = getDay(currentDate);
@@ -818,6 +816,100 @@ export function getStartAndEndTime(task: Task) {
   }
   return { startTime, endTime };
 }
+
+export function getRepeatingTaskInfo(task: Task) {
+  let repetitionSummary = "Repeats";
+  let completionFraction = "";
+  let progressPercentage = 0;
+  let nextInstanceInfo = "";
+  const rule = task.repetitionRule;
+  if (!rule) throw new Error("Task has no repetition rule");
+  const { startTime, endTime } = getStartAndEndTime(task);
+
+  // For display purposes, check if task is due today regardless of time window
+  const isDueToday = isToday(task.dueDate);
+  const completedToday = task.completedAt && isToday(task.completedAt);
+  const timeString = getTimeString(startTime, endTime);
+
+  // ==================== INTERVAL TASKS ====================
+  if (rule.interval) {
+    repetitionSummary = `Every ${rule.interval === 1 ? "" : rule.interval} ${
+      rule.interval === 1 ? "day" : "days"
+    }${timeString}`;
+
+    if (completedToday) {
+      nextInstanceInfo = "Completed today ✨";
+    } else if (isDueToday) {
+      nextInstanceInfo = "Today";
+    } else {
+      nextInstanceInfo = `Next: ${formatDate(task.dueDate)}`;
+    }
+  }
+  // ==================== DAYS OF WEEK TASKS ====================
+  else if (rule.daysOfWeek.length > 0) {
+    repetitionSummary = `On ${rule.daysOfWeek
+      .map(getDayName)
+      .join(", ")}${timeString}`;
+    if (rule.daysOfWeek.length >= 2) {
+      const repSumArr = repetitionSummary.split(", ");
+      const repSum1 = repSumArr.slice(0, -1);
+      const repSum2 = repSumArr.at(-1);
+      repetitionSummary = `${repSum1.join(", ")} and ${repSum2}`;
+    }
+
+    completionFraction = `${rule.completions}/${rule.daysOfWeek.length}`;
+    progressPercentage = (rule.completions / rule.daysOfWeek.length) * 100;
+
+    const isFullyCompleted = rule.completions >= rule.daysOfWeek.length;
+
+    if (completedToday && !isFullyCompleted) {
+      nextInstanceInfo = "Completed today ✨";
+    } else if (isFullyCompleted) {
+      nextInstanceInfo = "Available next week";
+    } else if (isDueToday) {
+      nextInstanceInfo = "Today";
+    } else {
+      nextInstanceInfo = `Next: ${formatDate(task.dueDate)}`;
+    }
+  }
+  // ==================== TIMES PER WEEK TASKS ====================
+  else if (rule.timesPerWeek) {
+    repetitionSummary = `${rule.timesPerWeek} time${
+      rule.timesPerWeek > 1 ? "s" : ""
+    } a week${timeString}`;
+    completionFraction = `${rule.completions}/${rule.timesPerWeek}`;
+    progressPercentage = (rule.completions / rule.timesPerWeek) * 100;
+
+    const isThisWeek = isSameWeek(new Date(), task.startDate || new Date(), {
+      weekStartsOn: 1,
+    });
+    const isFullyCompleted = rule.completions >= rule.timesPerWeek;
+
+    if (completedToday && !isFullyCompleted) {
+      nextInstanceInfo = "Completed today ✨";
+    } else if (isFullyCompleted) {
+      nextInstanceInfo = "Available next week";
+    } else if (isThisWeek) {
+      nextInstanceInfo = "Complete this week";
+    } else {
+      nextInstanceInfo = `Available ${formatDate(
+        task.startDate || task.dueDate
+      )}`;
+    }
+  }
+
+  if (task.startDate && rule.interval) {
+    repetitionSummary += ` starting ${formatDate(task.startDate)}`;
+  }
+
+  return {
+    repetitionSummary,
+    completionFraction,
+    progressPercentage,
+    nextInstanceInfo,
+  };
+}
+
 export function getCompletionAvailabilityInfo(
   task: Task,
   canComplete?: boolean
@@ -884,13 +976,38 @@ export function getCompletionAvailabilityInfo(
     }
 
     if (!isDueToday) {
-      // Fix: 5 times a week starting Tomorrow => On Dropdown.tsx it says on a complete button: Available on sunday which somehow is its dueDate
+      // For timesPerWeek tasks, check if fully completed
       if (task.repetitionRule?.timesPerWeek) {
+        const isFullyCompleted =
+          task.repetitionRule.completions >= task.repetitionRule.timesPerWeek;
+        if (isFullyCompleted) {
+          return {
+            text: "Available next week",
+            canComplete: false,
+          };
+        }
         return {
-          text: `Available ${formatDate(task.startDate)}`,
+          text: `Available ${formatDate(task.startDate || task.dueDate)}`,
           canComplete: false,
         };
       }
+
+      // For daysOfWeek tasks
+      if (
+        task.repetitionRule?.daysOfWeek &&
+        task.repetitionRule.daysOfWeek.length > 0
+      ) {
+        const isFullyCompleted =
+          task.repetitionRule.completions >=
+          task.repetitionRule.daysOfWeek.length;
+        if (isFullyCompleted) {
+          return {
+            text: "Available next week",
+            canComplete: false,
+          };
+        }
+      }
+
       return {
         text: `Available ${formatDate(task.dueDate)}`,
         canComplete: false,
@@ -933,45 +1050,50 @@ export function canCompleteRepeatingTaskNow(task: Task): {
   }
   const today = new Date();
   const rule = task.repetitionRule;
-  if (task.startDate && isFuture(task.startDate))
+
+  // If task hasn't started yet, can't complete
+  if (task.startDate && isFuture(task.startDate)) {
     return { canCompleteNow: false, isDueToday: false };
+  }
 
-  const sameWeek = isSameWeek(
-    today,
-    task.startDate || new Date(),
-    MONDAY_START_OF_WEEK
-  );
-
+  // Check if task was completed today already
   const completedToday =
     task.status === "completed" ||
-    (task.completedAt && isToday(task.completedAt));
+    (task.completedAt && isToday(task.completedAt)) ||
+    rule.completedAt?.some((d) => isToday(d));
 
   if (completedToday) {
-    return { canCompleteNow: false, sameWeek, isDueToday: true };
+    return { canCompleteNow: false, sameWeek: undefined, isDueToday: true };
   }
 
   let isScheduledToday = false;
+  let sameWeek: boolean | undefined = undefined;
 
-  if (rule.timesPerWeek) {
-    isScheduledToday = sameWeek && rule.completions < rule.timesPerWeek;
-  } else if (rule.daysOfWeek.length > 0) {
+  // ==================== INTERVAL TASKS ====================
+  if (rule.interval) {
+    // Calculate if today is a scheduled day based on interval
+    isScheduledToday = isToday(task.dueDate);
+  }
+  // ==================== TIMES PER WEEK TASKS ====================
+  else if (rule.timesPerWeek) {
+    // Check if we're in the same week as the task's startDate
+    sameWeek = isSameWeek(today, task.startDate || today, MONDAY_START_OF_WEEK);
+
+    // Can complete if in same week and haven't reached the limit
+    const isFullyCompleted = rule.completions >= rule.timesPerWeek;
+    isScheduledToday = sameWeek && !isFullyCompleted;
+  }
+  // ==================== DAYS OF WEEK TASKS ====================
+  else if (rule.daysOfWeek.length > 0) {
     const dayOfWeek = getDay(today) as DayOfWeek;
-    // Decided not to include sameWeek here because it's not relevant for daysOfWeek
     isScheduledToday = rule.daysOfWeek.includes(dayOfWeek);
-  } else if (rule.interval) {
-    const daysSinceStart = differenceInDays(
-      today,
-      task.startDate || new Date()
-    );
-    if (daysSinceStart < 0) return { canCompleteNow: false, isDueToday: false };
-    isScheduledToday = daysSinceStart % rule.interval === 0;
   }
 
   if (!isScheduledToday) {
     return { canCompleteNow: false, sameWeek, isDueToday: false };
   }
 
-  // If task has specific time window (startTime + duration), check if we're in that window
+  // Check time window if specified
   const { startTime, endTime } = getStartAndEndTime(task);
 
   if (startTime && endTime) {
@@ -982,16 +1104,13 @@ export function canCompleteRepeatingTaskNow(task: Task): {
 
     const startTimeInMinutes =
       Number(startTime.split(":")[0]) * 60 + Number(startTime.split(":")[1]);
-    //const endTimeInMinutes =
-    //  Number(endTime.split(":")[0]) * 60 + Number(endTime.split(":")[1]);
-    const endTimeInMinutes = 23 * 60 + 59; // Can complete until the end of the day, but not before the startTime
+    // Can complete until the end of the day, but not before the startTime
+    const endTimeInMinutes = 23 * 60 + 59;
 
     const isInTimeWindow =
       currentTimeInMinutes >= startTimeInMinutes &&
       currentTimeInMinutes <= endTimeInMinutes;
 
-    // Use isScheduledToday instead of isToday(task.dueDate) for consistency
-    // This ensures newly created repeating tasks are completable on their creation day
     return {
       canCompleteNow: isInTimeWindow && isScheduledToday,
       sameWeek,
@@ -1000,7 +1119,6 @@ export function canCompleteRepeatingTaskNow(task: Task): {
   }
 
   // If no specific time window, task is available all day
-  // Use isScheduledToday for consistency with repetition rules
   return {
     canCompleteNow: isScheduledToday,
     sameWeek,

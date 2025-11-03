@@ -25,11 +25,20 @@ await adminDb.collection("taskAnalytics").add(analyticsData)
 # Later
 
 task that are set as priority have bigger points reduction
-nextauth url in env file is still localhost: // env.local NEXTAUTH_URL=http://localhost:3000 # For development - is that a problem?
-Nextjs middleware could be useful - you can just create a file
-Tooltip of how productivity and consistency score are calculated needs to be shown in the dashboard page for better UX
-manual location typing
 math symbols smaller modal
+failed to get ai response
+
+# BUG_FIXES_SUMMARY
+
+- anonymous data deletion
+- autoDelayIncompleteTasks
+
+# UPDATED
+
+- repeating tasks
+- location
+- layout on mobile in every route
+- tooltips
 
 # Landing page
 

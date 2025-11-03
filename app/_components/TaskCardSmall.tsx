@@ -1,13 +1,23 @@
-import { getStatusStyles, formatDate } from "../_utils/utils";
+import {
+  getStatusStyles,
+  formatDate,
+  getRepeatingTaskInfo,
+} from "../_utils/utils";
 import { CardSpecificIcons, getTaskIconByName } from "../_utils/icons";
 import { Task } from "../_types/types";
 import DurationCalculator from "./DurationCalculator";
-import { Calendar } from "lucide-react";
-import { isPast } from "date-fns";
+import { Calendar, Repeat, CheckCircle2 } from "lucide-react";
+import { isPast, isToday } from "date-fns";
 
 export default function TaskCardSmall({ task }: { task: Task }) {
   const IconComponent = getTaskIconByName(task.icon);
   const statusInfo = getStatusStyles(task.status);
+
+  // Get repeating task information if applicable
+  const repeatingInfo =
+    task.isRepeating && task.repetitionRule ? getRepeatingTaskInfo(task) : null;
+
+  const isFullyCompletedForCurrentCycle = task.status === "completed";
 
   return (
     <li className="group relative list-none overflow-hidden cursor-default">
@@ -38,10 +48,48 @@ export default function TaskCardSmall({ task }: { task: Task }) {
           <h4 className="text-md font-bold text-text-low ">{task.title}</h4>
         </div>
 
+        {/* Due Date - Always show for both regular and repeating tasks */}
         <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs font-medium bg-background-800/60 text-text-low border border-background-500/40">
           <Calendar size={12} />
           <span>{formatDate(task.dueDate)}</span>
         </div>
+
+        {/* Repeating task info - compact version */}
+        {task.isRepeating && repeatingInfo && (
+          <div className="space-y-2">
+            {/* Short repetition label */}
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs font-medium bg-background-800/60 text-text-low border border-background-500/40">
+              <Repeat size={12} />
+              <span className="text-left text-balance">
+                {repeatingInfo.nextInstanceInfo}
+              </span>
+            </div>
+
+            {/* Progress Bar for weekly tasks */}
+            {(task.repetitionRule?.timesPerWeek ||
+              (task.repetitionRule?.daysOfWeek &&
+                task.repetitionRule?.daysOfWeek.length > 0)) &&
+              repeatingInfo.progressPercentage >= 0 && (
+                <div className="w-full bg-background-500 rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className="bg-primary-500 h-1.5 rounded-full transition-all duration-300 ease-out"
+                    style={{
+                      width: `${repeatingInfo.progressPercentage}%`,
+                      backgroundColor: task.color,
+                    }}
+                  ></div>
+                </div>
+              )}
+
+            {/* Completion fraction */}
+            {repeatingInfo.completionFraction &&
+              !isFullyCompletedForCurrentCycle && (
+                <div className="text-2xs text-text-low text-right">
+                  <span>{repeatingInfo.completionFraction} done</span>
+                </div>
+              )}
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-2 items-center">
           <div
@@ -58,18 +106,32 @@ export default function TaskCardSmall({ task }: { task: Task }) {
             )}
           </div>
 
+          {/* Repeating task tag */}
+          {task.isRepeating && (
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gradient-to-r from-purple-500/15 to-violet-500/15 text-purple-400 border border-purple-500/30 shadow-sm backdrop-blur-sm">
+              <Repeat size={13} />
+              <span>Repeating</span>
+            </div>
+          )}
+
           {task.isPriority && (
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gradient-to-r from-orange-500/15 to-amber-500/15 text-orange-400 border border-orange-500/30 shadow-sm backdrop-blur-sm">
               <CardSpecificIcons.Priority size={13} />
               <span>Priority</span>
             </div>
           )}
-          {task.isReminder && (
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gradient-to-r from-purple-500/15 to-pink-500/15 text-purple-400 border border-purple-500/30 shadow-sm backdrop-blur-sm">
-              <CardSpecificIcons.Reminder size={13} />
-              <span>Reminder set</span>
-            </div>
-          )}
+
+          {/* Completed Today indicator for repeating tasks */}
+          {task.isRepeating &&
+            !task.repetitionRule?.interval &&
+            task.completedAt &&
+            isToday(task.completedAt) && (
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/30 shadow-sm backdrop-blur-sm">
+                <CheckCircle2 size={13} />
+                <span>Completed Today ✨</span>
+              </div>
+            )}
+
           <DurationCalculator task={task} />
         </div>
 

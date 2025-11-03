@@ -93,6 +93,7 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
           icon={<Activity className="text-blue-400" size={24} />}
           subtitle={`${analyticsData.pageViews} page views`}
           trend={analyticsData.trends.sessionDurationTrend}
+          tooltip="Total time spent in the app over the last 30 days, including all page views and interactions."
         />
         <AnalyticsCard
           title="Active Time"
@@ -100,6 +101,7 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
           icon={<Zap className="text-teal-400" size={24} />}
           subtitle="Focused engagement"
           trend={null}
+          tooltip="Time spent actively interacting with the app (excluding idle time). Measured by tracking user interactions and page focus."
         />
         <AnalyticsCard
           title="Productivity Score"
@@ -107,6 +109,7 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
           icon={<Target className="text-green-400" size={24} />}
           subtitle="Based on completion patterns"
           trend={analyticsData.trends.productivityTrend}
+          tooltip="Calculated as: (Task Completion Rate × 60%) + (Consistency Score × 40%). Task completion rate is the ratio of completed tasks to created tasks over the last 30 days."
         />
         <AnalyticsCard
           title="Consistency Score"
@@ -114,6 +117,7 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
           icon={<Zap className="text-yellow-400" size={24} />}
           subtitle="Daily engagement level"
           trend={analyticsData.trends.consistencyTrend}
+          tooltip="Calculated as: (Days with app sessions ÷ 30 days) × 100%. Measures how regularly you engage with the app over the last 30 days."
         />
       </div>
       <div className="bg-background-700 rounded-lg p-6">
@@ -444,17 +448,41 @@ function AnalyticsCard({
   icon,
   subtitle,
   trend,
+  tooltip,
 }: {
   title: string;
   value: string;
   icon: React.ReactNode;
   subtitle: string;
   trend: number | null;
+  tooltip?: string;
 }) {
+  const tooltipId = `analytics-card-${title
+    .toLowerCase()
+    .replace(/\s+/g, "-")}`;
+
   return (
     <div className="bg-background-700 rounded-lg p-6 hover:bg-background-600 transition-colors duration-200">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-medium text-text-low">{title}</h3>
+        <div className="flex items-center gap-2">
+          <h3 className="font-medium text-text-low">{title}</h3>
+          {tooltip && (
+            <>
+              <span
+                data-tooltip-id={tooltipId}
+                data-tooltip-content={tooltip}
+                className="text-text-gray hover:text-text-low cursor-help"
+              >
+                ℹ️
+              </span>
+              <Tooltip
+                id={tooltipId}
+                className="tooltip-diff-arrow max-w-xs"
+                classNameArrow="tooltip-arrow"
+              />
+            </>
+          )}
+        </div>
         {icon}
       </div>
       <p className="text-2xl font-bold text-text-high">{value}</p>

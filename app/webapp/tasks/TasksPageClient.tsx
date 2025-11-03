@@ -647,7 +647,7 @@ export default function TasksPageClient({ tasks }: { tasks: Task[] }) {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredTasks.map((task, idx) =>
                   task.isRepeating ? (
-                    <RepeatingTaskCard key={task.id} notProcessedTask={task} />
+                    <RepeatingTaskCard key={task.id} task={task} />
                   ) : (
                     <TaskCard key={task.id} task={task} index={idx} />
                   )
@@ -711,7 +711,7 @@ export default function TasksPageClient({ tasks }: { tasks: Task[] }) {
               {repeatingTasks.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {repeatingTasks.map((task) => (
-                    <RepeatingTaskCard key={task.id} notProcessedTask={task} />
+                    <RepeatingTaskCard key={task.id} task={task} />
                   ))}
                 </div>
               ) : (

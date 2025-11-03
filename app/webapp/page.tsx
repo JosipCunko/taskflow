@@ -353,7 +353,7 @@ export default async function DashboardPage() {
           </div>
           <div className="space-y-3 max-h-80 overflow-y-auto scrollbar-thin scrollbar-thumb-background-500 scrollbar-track-transparent">
             {repeatingTasks.map((task: Task) => (
-              <RepeatingTaskCard key={task.id} notProcessedTask={task} />
+              <RepeatingTaskCard key={task.id} task={task} />
             ))}
           </div>
         </section>

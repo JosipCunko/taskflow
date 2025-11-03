@@ -1,6 +1,6 @@
 "use client";
 
-import { isToday, isSameWeek } from "date-fns";
+import { isToday } from "date-fns";
 import {
   Repeat,
   CalendarDays,
@@ -11,12 +11,9 @@ import {
 import type { Task, ActionResult } from "@/app/_types/types";
 import {
   errorToast,
-  formatDate,
+  getRepeatingTaskInfo,
   getStatusStyles,
   handleToast,
-  getStartAndEndTime,
-  getDayName,
-  getTimeString,
 } from "../_utils/utils";
 import { CardSpecificIcons, getTaskIconByName } from "../_utils/icons";
 import { getExperienceIcon } from "./TaskCard";
@@ -31,87 +28,31 @@ import { useOutsideClick } from "../_hooks/useOutsideClick";
 import Dropdown from "./Dropdown";
 import { Tooltip } from "react-tooltip";
 
-export default function RepeatingTaskCard({
-  notProcessedTask,
-}: {
-  notProcessedTask: Task;
-}) {
+export default function RepeatingTaskCard({ task }: { task: Task }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const outsideClickRef = useOutsideClick(() => setIsDropdownOpen(false));
-  const task = notProcessedTask;
   if (!task.repetitionRule) throw new Error("Task has no repetition rule");
 
   const IconComponent = getTaskIconByName(task.icon) || Repeat;
   const statusInfo = getStatusStyles(task.status);
-  let repetitionSummary = "Repeats";
-  let completionFraction = "";
-  let progressPercentage = 0;
-  let nextInstanceInfo = "";
-  const rule = task.repetitionRule;
-
-  const { startTime, endTime } = getStartAndEndTime(task);
-
-  // For display purposes, check if task is due today regardless of time window
-  const isDueToday = isToday(task.dueDate);
-
-  const timeString = getTimeString(startTime, endTime);
-
-  if (rule.interval) {
-    repetitionSummary = `Every ${rule.interval === 1 ? "" : rule.interval} ${
-      rule.interval === 1 ? "day" : "days"
-    }${timeString}`;
-    nextInstanceInfo = `Next: ${
-      isDueToday ? "Today" : formatDate(task.dueDate)
-    }`;
-  } else if (rule.daysOfWeek.length > 0) {
-    repetitionSummary = `On ${rule.daysOfWeek
-      .map(getDayName)
-      .join(", ")}${timeString}`;
-    if (rule.daysOfWeek.length >= 2) {
-      const repSumArr = repetitionSummary.split(", ");
-      const repSum1 = repSumArr.slice(0, -1);
-      const repSum2 = repSumArr.at(-1);
-      repetitionSummary = `${repSum1.join(", ")} and ${repSum2}`;
-    }
-
-    completionFraction = `${rule.completions}/${rule.daysOfWeek.length}`;
-    progressPercentage = (rule.completions / rule.daysOfWeek.length) * 100;
-    nextInstanceInfo = `Next: ${
-      isDueToday ? "Today" : formatDate(task.dueDate)
-    }`;
-  } else if (rule.timesPerWeek) {
-    repetitionSummary = `${rule.timesPerWeek} time${
-      rule.timesPerWeek > 1 ? "s" : ""
-    } a week${timeString}`;
-    completionFraction = `${rule.completions}/${rule.timesPerWeek}`;
-    progressPercentage = (rule.completions / rule.timesPerWeek) * 100;
-    const isThisWeek = isSameWeek(new Date(), task.dueDate, {
-      weekStartsOn: 1,
-    });
-
-    nextInstanceInfo = isThisWeek
-      ? "Complete this week"
-      : `Week from ${formatDate(task.startDate || new Date())} to ${formatDate(
-          task.dueDate
-        )}`;
-  }
-
-  if (task.startDate) {
-    repetitionSummary += ` starting ${formatDate(task.startDate)}`;
-  }
 
   const isFullyCompletedForCurrentCycle = task.status === "completed";
-
+  const {
+    repetitionSummary,
+    completionFraction,
+    progressPercentage,
+    nextInstanceInfo,
+  } = getRepeatingTaskInfo(task);
   const handleComplete = async () => {
     try {
       const result = await (async (): Promise<ActionResult> => {
-        if (rule.interval) {
+        if (task.repetitionRule!.interval) {
           return completeRepeatingTaskWithInterval(task);
         }
-        if (rule.daysOfWeek?.length) {
+        if (task.repetitionRule!.daysOfWeek?.length) {
           return completeRepeatingTaskWithDaysOfWeek(task);
         }
-        if (rule.timesPerWeek) {
+        if (task.repetitionRule!.timesPerWeek) {
           return completeRepeatingTaskWithTimesPerWeek(task);
         }
         throw new Error("Invalid repetition rule configuration");
@@ -208,8 +149,9 @@ export default function RepeatingTaskCard({
         )}
 
         {/* Progress Bar for weekly tasks */}
-        {(rule?.timesPerWeek ||
-          (rule?.daysOfWeek && rule.daysOfWeek.length > 0)) &&
+        {(task.repetitionRule!.timesPerWeek ||
+          (task.repetitionRule!.daysOfWeek &&
+            task.repetitionRule!.daysOfWeek.length > 0)) &&
           progressPercentage >= 0 && (
             <div className="w-full bg-background-500 rounded-full h-1.5 mb-2 overflow-hidden">
               <div
@@ -240,16 +182,18 @@ export default function RepeatingTaskCard({
             </span>
           )}
         </div>
-        {!rule.interval && task.completedAt && isToday(task.completedAt) && (
-          <div
-            className={
-              "flex items-center space-x-1.5 px-2.5 py-1.5 text-xs rounded-md bg-green-500/10"
-            }
-          >
-            <CheckCircle2 size={14} className="text-green-400" />
-            <span className="text-green-400">Completed Today ✨</span>
-          </div>
-        )}
+        {!task.repetitionRule.interval &&
+          task.completedAt &&
+          isToday(task.completedAt) && (
+            <div
+              className={
+                "flex items-center space-x-1.5 px-2.5 py-1.5 text-xs rounded-md bg-green-500/10"
+              }
+            >
+              <CheckCircle2 size={14} className="text-green-400" />
+              <span className="text-green-400">Completed Today ✨</span>
+            </div>
+          )}
 
         <DurationCalculator task={task} />
 

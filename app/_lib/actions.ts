@@ -606,6 +606,7 @@ export async function completeRepeatingTaskWithInterval(
     dueDate: finalDueDateTimestamp,
     completedAt: completionDate,
     points: newPoints,
+    startDate: undefined, // Clear startDate after first completion (no longer needed)
   };
 
   try {
@@ -680,33 +681,38 @@ export async function completeRepeatingTaskWithTimesPerWeek(
     };
   }
 
-  // Next due date for "times per week" is the end of the week or next week
+  const newCompletions = rule.completions + 1;
+  const isWeekComplete = newCompletions >= rule.timesPerWeek;
+
+  // Calculate next due date and startDate
   let newStartDate: number;
   let nextDueDateObj: Date;
-  if (rule.completions + 1 === rule.timesPerWeek) {
+  const taskDueDateObj = new Date(task.dueDate);
+
+  if (isWeekComplete) {
+    // Week is complete, move to next Monday
     const nextWeekStart = startOfWeek(
       addWeeks(new Date(completionDate), 1),
       MONDAY_START_OF_WEEK
     );
     newStartDate = nextWeekStart.getTime();
-    nextDueDateObj = nextWeekStart;
+    nextDueDateObj = new Date(nextWeekStart);
   } else {
-    newStartDate = task.startDate || Date.now();
+    // Not complete yet, keep startDate as current Monday, dueDate becomes next day
+    newStartDate =
+      task.startDate ||
+      startOfWeek(new Date(completionDate), MONDAY_START_OF_WEEK).getTime();
     nextDueDateObj = addDays(new Date(completionDate), 1);
   }
-  // Next due date for "times per week" is the next day
-  const taskDueDateObj = new Date(task.dueDate);
+
+  // Preserve time from original dueDate
   nextDueDateObj.setHours(
     taskDueDateObj.getHours(),
     taskDueDateObj.getMinutes()
   );
   const nextDueDate = nextDueDateObj.getTime();
 
-  const newCompletions = rule.completions + 1;
-  const isWeekComplete = newCompletions === rule.timesPerWeek;
-
-  // Calculate points adjustment when week is complete
-  // If fully completed, increase points (they did all required completions)
+  // Increase points when week is fully completed
   let newPoints = task.points;
   if (isWeekComplete) {
     newPoints = Math.min(10, task.points + 2);
@@ -722,12 +728,8 @@ export async function completeRepeatingTaskWithTimesPerWeek(
     completedAt: completionDate,
     dueDate: nextDueDate,
     points: newPoints,
+    status: isWeekComplete ? "completed" : "pending",
   };
-
-  if (isWeekComplete) {
-    updates.completedAt = completionDate;
-    updates.status = "completed";
-  }
 
   try {
     await updateTask(task.id, updates);
@@ -757,12 +759,9 @@ export async function completeRepeatingTaskWithTimesPerWeek(
 
     return {
       success: true,
-      message:
-        rule.completions === rule.timesPerWeek
-          ? "Task fully completed for this week"
-          : `Task completed (${rule.completions + 1}/${
-              rule.timesPerWeek
-            } times this week)`,
+      message: isWeekComplete
+        ? "Task fully completed for this week! 🎉"
+        : `Task completed (${newCompletions}/${rule.timesPerWeek} times this week)`,
     };
   } catch (err) {
     const error = err as Error;
@@ -801,40 +800,63 @@ export async function completeRepeatingTaskWithDaysOfWeek(
       error: "Task is not available for completion right now",
     };
   }
-  // Next due date
+
+  const newCompletions = rule.completions + 1;
+  const isWeekComplete = newCompletions >= rule.daysOfWeek.length;
+
+  // Calculate next due date
   const today = getDay(new Date(completionDate)) as DayOfWeek;
   const sortedDays = [...rule.daysOfWeek].sort((a, b) => a - b);
+  const firstDayInWeek = sortedDays[0];
 
-  let nextDueDay = sortedDays.find((day) => day > today);
+  let nextDueDateObj: Date;
+  let newStartDate: number = task.startDate || Date.now();
 
-  if (nextDueDay === undefined) {
-    // if no day found, take the first day of next week
-    nextDueDay = sortedDays[0];
+  if (isWeekComplete) {
+    // Week complete, move to first day of next week
+    const currentWeekStart = startOfWeek(
+      new Date(completionDate),
+      MONDAY_START_OF_WEEK
+    );
+    const nextWeekStart = addWeeks(currentWeekStart, 1);
+    const correctStartDate = addDays(
+      nextWeekStart,
+      firstDayInWeek === 0 ? 7 : firstDayInWeek // Sunday (0) becomes day 7
+    );
+    newStartDate = correctStartDate.getTime();
+    nextDueDateObj = new Date(correctStartDate);
+  } else {
+    // Not complete yet, find next scheduled day
+    let nextDueDay = sortedDays.find((day) => day > today);
+    let daysUntilNext: number;
+
+    if (nextDueDay !== undefined) {
+      daysUntilNext = nextDueDay - today;
+    } else {
+      // Wrap to next week, use first day
+      nextDueDay = firstDayInWeek;
+      daysUntilNext = 7 - today + (nextDueDay === 0 ? 7 : nextDueDay);
+    }
+
+    nextDueDateObj = addDays(new Date(completionDate), daysUntilNext);
   }
 
-  const daysUntilNext =
-    nextDueDay > today ? nextDueDay - today : 7 - today + nextDueDay;
-
-  // Calculate new due date but preserve original time
-  const newDueDateObj = addDays(new Date(completionDate), daysUntilNext);
+  // Preserve time from original dueDate
   const taskDueDateObj = new Date(task.dueDate);
-  newDueDateObj.setHours(
+  nextDueDateObj.setHours(
     taskDueDateObj.getHours(),
     taskDueDateObj.getMinutes()
   );
-  const newDueDate = newDueDateObj.getTime();
+  const newDueDate = nextDueDateObj.getTime();
 
-  const newCompletions = rule.completions + 1;
-  const isWeekComplete = newCompletions === rule.daysOfWeek.length;
-
-  // Calculate points adjustment when week is complete
-  // If fully completed all days, increase points
+  // Increase points when week is fully completed
   let newPoints = task.points;
   if (isWeekComplete) {
     newPoints = Math.min(10, task.points + 2);
   }
 
   const updates: Partial<Task> = {
+    startDate: newStartDate,
     repetitionRule: {
       ...rule,
       completedAt: [...rule.completedAt, completionDate],
@@ -843,12 +865,8 @@ export async function completeRepeatingTaskWithDaysOfWeek(
     completedAt: completionDate,
     dueDate: newDueDate,
     points: newPoints,
+    status: isWeekComplete ? "completed" : "pending",
   };
-
-  if (isWeekComplete) {
-    updates.completedAt = completionDate;
-    updates.status = "completed";
-  }
 
   try {
     await updateTask(task.id, updates);
@@ -878,12 +896,9 @@ export async function completeRepeatingTaskWithDaysOfWeek(
 
     return {
       success: true,
-      message:
-        rule.completions === rule.daysOfWeek.length
-          ? "Task fully completed for this week"
-          : `Task completed (${rule.completions + 1}/${
-              rule.daysOfWeek.length
-            } days this week)`,
+      message: isWeekComplete
+        ? "Task fully completed for this week! 🎉"
+        : `Task completed (${newCompletions}/${rule.daysOfWeek.length} days this week)`,
     };
   } catch (err) {
     const error = err as Error;

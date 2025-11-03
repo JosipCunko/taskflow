@@ -13,6 +13,7 @@ import { AppUser, DayOfWeek, Task } from "../_types/types";
 import { isTaskAtRisk, MONDAY_START_OF_WEEK } from "../_utils/utils";
 import {
   addDays,
+  addWeeks,
   getDay,
   isPast,
   isSameWeek,
@@ -111,9 +112,11 @@ export async function updateUserRepeatingTasks(userId: string) {
       return differenceInCalendarDays(today, task.createdAt) < 1;
     };
 
-    // Calc the next due date and reset the status and completions
+    // ==================== INTERVAL TASKS ====================
+    // Interval tasks repeat every N days
+    // startDate is used only once at creation, then set to undefined
+    // dueDate is the main driver
     if (rule.interval && rule.interval > 0) {
-      // For interval tasks: decrease points by 2 (min 2) when a day is missed
       const taskIsPastDue = isPast(taskDueDate) && !isToday(taskDueDate);
       const wasCompletedOnDueDate = rule.completedAt?.some((completedDate) => {
         return (
@@ -122,6 +125,7 @@ export async function updateUserRepeatingTasks(userId: string) {
         );
       });
 
+      // Decrease points when a day is missed
       if (taskIsPastDue && !wasCompletedOnDueDate && !isRecentlyCreated()) {
         const newPoints = Math.max(2, task.points - 2);
         setIfChanged("points", newPoints, task.points);
@@ -144,8 +148,8 @@ export async function updateUserRepeatingTasks(userId: string) {
           }
         }
 
-        const nextDueDate = startOfDay(new Date(taskDueDate));
         if (taskIsPastDue) {
+          // Reset monthly data if entering new month
           if (!isSameMonth(taskDueDate, today)) {
             setNestedIfChanged(
               "repetitionRule.completedAt",
@@ -156,7 +160,7 @@ export async function updateUserRepeatingTasks(userId: string) {
           }
 
           // Calculate new due date
-          const newDueDate = new Date(nextDueDate);
+          const newDueDate = new Date(startOfDay(new Date(taskDueDate)));
           while (isPast(newDueDate) && !isToday(newDueDate)) {
             newDueDate.setDate(newDueDate.getDate() + rule.interval);
           }
@@ -168,22 +172,35 @@ export async function updateUserRepeatingTasks(userId: string) {
           if (newDueDate.getTime() !== new Date(taskDueDate).getTime()) {
             updates.dueDate = newDueDate.getTime();
           }
+
+          // After first dueDate pass, clear startDate (no longer needed)
+          if (task.startDate !== undefined) {
+            updates.startDate = undefined;
+          }
         }
       }
-    } else if (rule.timesPerWeek) {
+    }
+    // ==================== TIMES PER WEEK TASKS ====================
+    // Tasks that repeat N times per week (e.g., 3 times per week)
+    // startDate is always Monday (start of week)
+    // dueDate is every day of the current week until fully completed
+    // When fully completed, next dueDate is Monday (next week's start)
+    else if (rule.timesPerWeek) {
       const taskWeekStart = startOfWeek(taskStartDate, MONDAY_START_OF_WEEK);
+      const isTaskFullyCompleted = rule.completions >= rule.timesPerWeek;
 
-      if (isPast(taskDueDate)) {
-        setIfChanged("status", "pending", task.status);
+      // Always ensure startDate is Monday of current week
+      if (currentWeekStart.getTime() !== taskStartDate) {
+        updates.startDate = currentWeekStart.getTime();
       }
 
-      // Only update if task week has passed (not for future weeks)
-      if (
+      // Check if task week has passed (not for future weeks)
+      const isNewWeek =
         !isSameWeek(currentWeekStart, taskWeekStart, MONDAY_START_OF_WEEK) &&
-        taskWeekStart < currentWeekStart
-      ) {
+        taskWeekStart < currentWeekStart;
+
+      if (isNewWeek) {
         // Week ended - check if they completed enough times
-        // Only adjust points if not recently created
         if (!isRecentlyCreated()) {
           const completedCount = rule.completions;
           const missedCount = rule.timesPerWeek - completedCount;
@@ -197,54 +214,124 @@ export async function updateUserRepeatingTasks(userId: string) {
           }
         }
 
+        // Reset for new week
         setIfChanged("status", "pending", task.status);
         setNestedIfChanged("repetitionRule.completions", 0, rule.completions);
-
-        if (currentWeekStart.getTime() !== taskStartDate) {
-          updates.startDate = currentWeekStart.getTime();
-        }
-
         setNestedIfChanged("repetitionRule.completedAt", [], rule.completedAt);
 
+        // New week: dueDate becomes today
         const newDueDate = new Date(today);
         newDueDate.setHours(
           new Date(taskDueDate).getHours(),
           new Date(taskDueDate).getMinutes()
         );
 
-        // Only update if the date actually changed
         if (newDueDate.getTime() !== taskDueDate) {
           updates.dueDate = newDueDate.getTime();
         }
+      } else {
+        // Same week logic
+        if (isTaskFullyCompleted) {
+          // Task fully completed this week, dueDate should be Monday of next week
+          const nextMonday = addWeeks(currentWeekStart, 1);
+          const newDueDate = new Date(nextMonday);
+          newDueDate.setHours(
+            new Date(taskDueDate).getHours(),
+            new Date(taskDueDate).getMinutes()
+          );
+
+          // update start date to monday
+          updates.startDate = nextMonday.getTime();
+          if (newDueDate.getTime() !== taskDueDate) {
+            updates.dueDate = newDueDate.getTime();
+          }
+
+          // Mark as completed
+          if (task.status !== "completed") {
+            setIfChanged("status", "completed", task.status);
+          }
+        } else {
+          // Not fully completed, dueDate should be today (every day until complete)
+          if (!isToday(taskDueDate)) {
+            const newDueDate = new Date(today);
+            newDueDate.setHours(
+              new Date(taskDueDate).getHours(),
+              new Date(taskDueDate).getMinutes()
+            );
+
+            if (newDueDate.getTime() !== taskDueDate) {
+              updates.dueDate = newDueDate.getTime();
+            }
+          }
+
+          // Ensure status is pending if not completed
+          if (task.status === "completed") {
+            setIfChanged("status", "pending", task.status);
+          }
+        }
       }
-    } else if (rule.daysOfWeek.length > 0) {
+    }
+    // ==================== DAYS OF WEEK TASKS ====================
+    // Tasks that repeat on specific days (e.g., Monday and Wednesday)
+    // startDate is always the first day in the daysOfWeek array
+    // dueDate is today if today is one of those days, otherwise next occurrence of first day
+    else if (rule.daysOfWeek.length > 0) {
+      const sortedDays = [...rule.daysOfWeek].sort((a, b) => a - b);
+      const firstDayInWeek = sortedDays[0]; // This is our startDate reference
+      const todayDay = getDay(today) as DayOfWeek;
       const taskWeekStart = startOfWeek(taskDueDate, MONDAY_START_OF_WEEK);
 
-      if (isPast(taskDueDate)) {
-        const todayDay = getDay(today) as DayOfWeek;
-        const sortedDays = [...rule.daysOfWeek].sort((a, b) => a - b);
+      // Calculate what startDate should be (first occurrence of first day in daysOfWeek)
+      const correctStartDate = startOfDay(
+        addDays(
+          startOfWeek(today, MONDAY_START_OF_WEEK),
+          firstDayInWeek === 0 ? 7 : firstDayInWeek // Sunday (0) becomes day 7
+        )
+      );
 
-        let nextDueDay = sortedDays.find((day) => day >= todayDay);
+      // Always ensure startDate is set to the first day in daysOfWeek
+      if (task.startDate !== correctStartDate.getTime()) {
+        updates.startDate = correctStartDate.getTime();
+      }
 
-        let daysUntilNext;
+      // Check if today is one of the scheduled days
+      const isTodayScheduled = rule.daysOfWeek.includes(todayDay);
+
+      // Determine next due date
+      let nextDueDate: Date;
+      if (isTodayScheduled && !isToday(taskDueDate)) {
+        // If today is scheduled but dueDate isn't today, update it to today
+        nextDueDate = new Date(today);
+      } else if (isPast(taskDueDate) && !isToday(taskDueDate)) {
+        // Task is overdue, find next scheduled day
+        let nextDueDay = sortedDays.find((day) => day > todayDay);
+        let daysUntilNext: number;
+
         if (nextDueDay !== undefined) {
           daysUntilNext = nextDueDay - todayDay;
         } else {
+          // Wrap to next week, use first day
           nextDueDay = sortedDays[0];
-          daysUntilNext = 7 - todayDay + nextDueDay;
+          daysUntilNext = 7 - todayDay + (nextDueDay === 0 ? 7 : nextDueDay);
         }
 
-        const newDueDate = addDays(today, daysUntilNext);
-        newDueDate.setHours(
-          new Date(taskDueDate).getHours(),
-          new Date(taskDueDate).getMinutes()
-        );
-
-        if (newDueDate.getTime() !== taskDueDate) {
-          updates.dueDate = newDueDate.getTime();
-        }
+        nextDueDate = addDays(today, daysUntilNext);
+      } else {
+        // Keep current due date
+        nextDueDate = new Date(taskDueDate);
       }
 
+      // Preserve time from original dueDate
+      nextDueDate.setHours(
+        new Date(taskDueDate).getHours(),
+        new Date(taskDueDate).getMinutes()
+      );
+
+      if (nextDueDate.getTime() !== taskDueDate) {
+        updates.dueDate = nextDueDate.getTime();
+      }
+
+      // Handle week transitions
       if (
         isPast(taskDueDate) &&
         !isSameWeek(currentWeekStart, taskWeekStart, MONDAY_START_OF_WEEK) &&
@@ -261,18 +348,16 @@ export async function updateUserRepeatingTasks(userId: string) {
           if (completedCount > missedCount) {
             setIfChanged("points", Math.min(10, task.points + 2), task.points);
           } else if (completedCount < requiredCount) {
-            // Only decrease if they didn't complete all required days
             setIfChanged("points", Math.max(2, task.points - 2), task.points);
           }
         }
 
+        // Reset for new week
         setIfChanged("status", "pending", task.status);
         setNestedIfChanged("repetitionRule.completions", 0, rule.completions);
         setNestedIfChanged("repetitionRule.completedAt", [], rule.completedAt);
-      } else if (
-        isPast(taskDueDate) &&
-        isSameWeek(currentWeekStart, taskWeekStart, MONDAY_START_OF_WEEK)
-      ) {
+      } else if (isPast(taskDueDate) && !isToday(taskDueDate)) {
+        // Past due but same week or need to reset status
         setIfChanged("status", "pending", task.status);
       }
     }

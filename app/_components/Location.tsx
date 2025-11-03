@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Search, MapPin, Loader } from "lucide-react";
 import Input from "./reusable/Input";
 import Button from "./reusable/Button";
@@ -74,7 +74,7 @@ export default function Location({
     return parts.length > 0 ? parts.join(", ") : display_name;
   };
 
-  const searchLocations = async (query: string) => {
+  const searchLocations = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
       return;
@@ -109,13 +109,28 @@ export default function Location({
       const data: LocationResult[] = await response.json();
       console.log("Nominatim search results:", data);
 
-      // Filter out duplicates based on formatted location string
+      // Filter out duplicates based on multiple criteria
       const uniqueResults = data.filter((result, index, array) => {
-        const currentFormatted = formatLocationString(result);
+        const currentFormatted = formatLocationString(result)
+          .toLowerCase()
+          .trim();
+        const currentDisplayName = result.display_name.toLowerCase().trim();
+
         return (
-          array.findIndex(
-            (r) => formatLocationString(r) === currentFormatted
-          ) === index
+          array.findIndex((r) => {
+            const otherFormatted = formatLocationString(r).toLowerCase().trim();
+            const otherDisplayName = r.display_name.toLowerCase().trim();
+
+            // Consider duplicates if:
+            // 1. Formatted strings are identical
+            // 2. Display names are identical
+            // 3. Same place_id (exact same location)
+            return (
+              otherFormatted === currentFormatted ||
+              otherDisplayName === currentDisplayName ||
+              r.place_id === result.place_id
+            );
+          }) === index
         );
       });
 
@@ -128,7 +143,7 @@ export default function Location({
     } finally {
       setIsSearching(false);
     }
-  };
+  }, []);
 
   // Debounced search
   useEffect(() => {
@@ -137,7 +152,7 @@ export default function Location({
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [searchQuery]);
+  }, [searchQuery, searchLocations]);
 
   // Cleanup abort controller on unmount
   useEffect(() => {
@@ -314,16 +329,71 @@ export default function Location({
                 </div>
               </button>
             ))}
+
+            {/* Custom location option when there are results */}
+            {searchQuery.trim() &&
+              !searchResults.some(
+                (result) =>
+                  formatLocationString(result).toLowerCase().trim() ===
+                  searchQuery.toLowerCase().trim()
+              ) && (
+                <button
+                  onClick={() => {
+                    onLocationSelect(searchQuery.trim());
+                    onCloseModal?.();
+                  }}
+                  className="w-full p-3 text-left bg-background-600 hover:bg-background-500 rounded-lg transition-colors border border-background-400"
+                >
+                  <div className="flex items-start gap-2">
+                    <MapPin
+                      size={16}
+                      className="text-text-gray mt-0.5 flex-shrink-0"
+                    />
+                    <div>
+                      <p className="text-white text-sm break-words font-medium">
+                        Use &quot;{searchQuery.trim()}&quot;
+                      </p>
+                      <p className="text-text-gray text-xs mt-1">
+                        Use this as a custom location
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              )}
           </div>
         </div>
       )}
 
-      {/* No Results */}
+      {/* No Results - Allow Manual Entry */}
       {searchQuery && !isSearching && searchResults.length === 0 && (
-        <div className="text-center py-8">
-          <p className="text-text-gray">
-            No locations found for &quot;{searchQuery}&quot;
-          </p>
+        <div className="space-y-4">
+          <div className="text-center py-4">
+            <p className="text-text-gray mb-3">
+              No locations found for &quot;{searchQuery}&quot;
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              onLocationSelect(searchQuery.trim());
+              onCloseModal?.();
+            }}
+            className="w-full p-3 text-left bg-background-600 hover:bg-background-500 rounded-lg transition-colors border border-background-400"
+          >
+            <div className="flex items-start gap-2">
+              <MapPin
+                size={16}
+                className="text-text-gray mt-0.5 flex-shrink-0"
+              />
+              <div>
+                <p className="text-white text-sm break-words font-medium">
+                  Use &quot;{searchQuery.trim()}&quot;
+                </p>
+                <p className="text-text-gray text-xs mt-1">
+                  Use this as a custom location
+                </p>
+              </div>
+            </div>
+          </button>
         </div>
       )}
     </div>

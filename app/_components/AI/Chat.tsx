@@ -3,7 +3,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Send, Bot, User } from "lucide-react";
-import { toast } from "react-hot-toast";
 import { ChatMessage, FunctionResult } from "@/app/_types/types";
 import ThinkingIndicator from "./ThinkingIndicator";
 import Image from "next/image";
@@ -13,6 +12,7 @@ import FunctionResults from "./FunctionResults";
 import ModelDropdown, { models, AIModel } from "./ModelDropdown";
 import { marked } from "marked";
 import DOMPurify from "dompurify";
+import { errorToast } from "@/app/_utils/utils";
 
 interface ChatProps {
   initialMessages: ChatMessage[];
@@ -174,7 +174,7 @@ export default function Chat({
         console.log("Request aborted");
       } else {
         console.error("Stream error:", error);
-        toast.error("Failed to get AI response");
+        errorToast("Failed to get AI response");
         setMessages(newMessages.slice(0, -1));
       }
     } finally {
