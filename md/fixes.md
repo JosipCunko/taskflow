@@ -43,3 +43,7 @@ failed to get ai response
 # Landing page
 
 update photos and check @LANDING_PAGE_PHOTOS.md for help
+
+# Vercel
+
+This key, which is prefixed with NEXT*PUBLIC* and includes the term KEY, might expose sensitive information to the browser. Verify it is safe to share publicly.
