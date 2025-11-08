@@ -47,3 +47,13 @@ update photos and check @LANDING_PAGE_PHOTOS.md for help
 # Vercel
 
 This key, which is prefixed with NEXT*PUBLIC* and includes the term KEY, might expose sensitive information to the browser. Verify it is safe to share publicly.
+
+Solutions:
+Option A: Change to Daily Schedule (Stay on Hobby)
+Update your vercel.json:
+{ "crons": [ { "path": "/api/admin/cleanup-anonymous", "schedule": "0 2 * * *" } ]}
+This means: Run once daily at 2:00 AM UTC
+Option B: Upgrade to Pro Plan
+40 cron jobs allowed
+Unlimited execution frequency
+Costs $20/month per user
