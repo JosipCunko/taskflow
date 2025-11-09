@@ -30,7 +30,7 @@ export default async function TodayPage() {
   });
 
   return (
-    <div className="container mx-auto p-1 sm:p-6 space-y-6 overflow-y-auto">
+    <div className="container h-screen mx-auto p-1 sm:p-6 space-y-6 overflow-y-auto">
       <TodayPlanSection todayTasks={relevantTasks} />
     </div>
   );

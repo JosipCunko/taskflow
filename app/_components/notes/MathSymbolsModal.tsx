@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import Button from "@/app/_components/reusable/Button";
 import { useOutsideClick } from "@/app/_hooks/useOutsideClick";
 
@@ -158,9 +159,10 @@ export default function MathSymbolsModal({
   onClose,
   onSymbolSelect,
 }: MathSymbolsModalProps) {
-  const modalRef = useOutsideClick(onClose);
+  const dropdownRef = useOutsideClick(onClose);
+  const [hoveredSymbol, setHoveredSymbol] = useState<string | null>(null);
 
-  // Handle Escape key to close modal
+  // Handle Escape key to close dropdown
   useEffect(() => {
     if (!isOpen) return;
 
@@ -176,82 +178,226 @@ export default function MathSymbolsModal({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="math-modal-title"
-    >
-      <div
-        ref={modalRef}
-        className="bg-background-700 rounded-lg shadow-2xl max-w-3xl w-full max-h-[80vh] overflow-hidden flex flex-col"
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-divider bg-background-650">
-          <div>
-            <h2
-              id="math-modal-title"
-              className="text-2xl font-bold text-primary-400"
-            >
-              Mathematical Symbols
-            </h2>
-            <p className="text-sm text-text-gray mt-1">
-              Click any symbol to insert it into your note
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-background-600 rounded-lg transition-colors"
-            aria-label="Close modal"
+    <AnimatePresence mode="wait">
+      {isOpen && (
+        <motion.div
+          ref={dropdownRef}
+          initial={{
+            opacity: 0,
+            scale: 0.8,
+            y: -20,
+            rotateX: -15,
+          }}
+          animate={{
+            opacity: 1,
+            scale: 1,
+            y: 0,
+            rotateX: 0,
+          }}
+          exit={{
+            opacity: 0,
+            scale: 0.9,
+            y: -10,
+            rotateX: -10,
+          }}
+          transition={{
+            type: "spring",
+            duration: 0.4,
+            bounce: 0.3,
+          }}
+          className="absolute top-0 left-0 right-0 mt-2 bg-background-700 rounded-lg shadow-2xl border border-divider overflow-hidden flex flex-col z-50"
+          style={{
+            maxHeight: "20rem",
+            maxWidth: "20rem",
+            transformStyle: "preserve-3d",
+            boxShadow:
+              "0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(var(--primary-500), 0.1)",
+          }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="math-dropdown-title"
+        >
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.3 }}
+            className="flex items-center justify-between p-2 border-b border-divider bg-background-650"
           >
-            <X size={24} className="text-text-gray" />
-          </button>
-        </div>
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2, duration: 0.3 }}
+            >
+              <h2
+                id="math-dropdown-title"
+                className="text-sm font-bold text-primary-400"
+              >
+                Mathematical Symbols
+              </h2>
+              <p className="text-xs text-text-gray mt-0.5">
+                Click any symbol to insert
+              </p>
+            </motion.div>
+            <motion.button
+              onClick={onClose}
+              className="p-1 hover:bg-background-600 rounded-lg transition-colors"
+              aria-label="Close dropdown"
+              whileHover={{ scale: 1.1, rotate: 90 }}
+              whileTap={{ scale: 0.9 }}
+              initial={{ opacity: 0, rotate: -90 }}
+              animate={{ opacity: 1, rotate: 0 }}
+              transition={{ delay: 0.3, duration: 0.3 }}
+            >
+              <X size={20} className="text-text-gray" />
+            </motion.button>
+          </motion.div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="flex-1 overflow-y-auto p-6">
-            <div className="space-y-6">
-              {MATH_SYMBOLS.map((category) => (
-                <div key={category.name} className="space-y-3">
-                  <h3 className="text-base font-semibold text-text-low border-b border-divider pb-2">
+          {/* Content */}
+          <motion.div
+            className="flex-1 overflow-y-auto overflow-x-visible p-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.3 }}
+          >
+            <div className="space-y-4 pt-8 pb-4">
+              {MATH_SYMBOLS.map((category, categoryIndex) => (
+                <motion.div
+                  key={category.name}
+                  className="space-y-2 overflow-visible"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    delay: 0.3 + categoryIndex * 0.1,
+                    duration: 0.4,
+                    type: "spring",
+                    bounce: 0.3,
+                  }}
+                >
+                  <motion.h3
+                    className="text-sm font-semibold text-text-low border-b border-divider pb-1.5"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{
+                      delay: 0.4 + categoryIndex * 0.1,
+                      duration: 0.3,
+                    }}
+                  >
                     {category.name}
-                  </h3>
-                  <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-1.5">
-                    {category.symbols.map((symbol) => (
-                      <button
+                  </motion.h3>
+                  <motion.div
+                    className="grid grid-cols-12 gap-1"
+                    initial="hidden"
+                    animate="visible"
+                    variants={{
+                      hidden: { opacity: 0 },
+                      visible: {
+                        opacity: 1,
+                        transition: {
+                          delayChildren: 0.5 + categoryIndex * 0.1,
+                          staggerChildren: 0.02,
+                        },
+                      },
+                    }}
+                  >
+                    {category.symbols.map((symbol, symbolIndex) => (
+                      <motion.button
                         key={symbol.value}
-                        onClick={() => onSymbolSelect(symbol.value)}
-                        className="group relative bg-background-600 hover:bg-primary-500 hover:scale-105 transition-all duration-150 rounded-md p-2 flex items-center justify-center aspect-square"
-                        title={symbol.label}
+                        onClick={() => {
+                          onSymbolSelect(symbol.value);
+                          onClose();
+                        }}
+                        onMouseEnter={() => setHoveredSymbol(symbol.value)}
+                        onMouseLeave={() => setHoveredSymbol(null)}
+                        className="group relative bg-background-600 rounded-md p-2 flex items-center justify-center aspect-square overflow-visible"
+                        variants={{
+                          hidden: {
+                            opacity: 0,
+                            scale: 0,
+                            rotateY: -90,
+                          },
+                          visible: {
+                            opacity: 1,
+                            scale: 1,
+                            rotateY: 0,
+                          },
+                        }}
+                        whileHover={{
+                          scale: 1.15,
+                          backgroundColor: "rgb(var(--primary-500))",
+                          rotateZ: 5,
+                          transition: { duration: 0.2 },
+                        }}
+                        whileTap={{
+                          scale: 0.95,
+                          rotateZ: -5,
+                          transition: { duration: 0.1 },
+                        }}
+                        transition={{
+                          type: "spring",
+                          bounce: 0.4,
+                          duration: 0.6,
+                        }}
                       >
-                        <span className="text-lg font-semibold text-text-low group-hover:text-white">
+                        <motion.span
+                          className="text-base font-semibold text-text-low group-hover:text-white relative z-10"
+                          initial={{ rotateY: -90 }}
+                          animate={{ rotateY: 0 }}
+                          transition={{
+                            delay:
+                              0.5 +
+                              categoryIndex * 0.1 +
+                              symbolIndex * 0.02 +
+                              0.1,
+                            duration: 0.3,
+                          }}
+                        >
                           {symbol.display}
-                        </span>
-                        <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full mt-1 px-2 py-1 bg-background-800 text-text-low text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
-                          {symbol.label}
-                        </span>
-                      </button>
+                        </motion.span>
+                        <AnimatePresence>
+                          {hoveredSymbol === symbol.value && (
+                            <motion.div
+                              className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full mt-1 px-2 py-1 bg-background-800 text-text-low text-xs rounded whitespace-nowrap pointer-events-none z-30 border border-divider"
+                              initial={{ opacity: 0, scale: 0.8, y: -10 }}
+                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.8, y: -10 }}
+                              transition={{ duration: 0.2 }}
+                              style={{
+                                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
+                              }}
+                            >
+                              {symbol.label}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </motion.button>
                     ))}
-                  </div>
-                </div>
+                  </motion.div>
+                </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
 
           {/* Footer */}
-          <div className="p-3 border-t border-divider bg-background-650">
-            <div className="flex justify-between items-center gap-2">
-              <Button onClick={onClose} variant="primary" className="text-sm">
+          <motion.div
+            className="p-2 border-t border-divider bg-background-650"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.3 }}
+          >
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button
+                onClick={onClose}
+                variant="primary"
+                className="text-xs w-full"
+              >
                 Close
               </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+            </motion.div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

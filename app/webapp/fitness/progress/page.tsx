@@ -20,7 +20,7 @@ export default async function ProgressPage() {
   const userId = session.user.id;
 
   return (
-    <div className="p-1 sm:p-6 container overflow-y-auto mx-auto">
+    <div className="h-screen p-1 sm:p-6 container overflow-y-auto mx-auto">
       <div className="mb-6 md:mb-8">
         <Link href="/webapp/fitness">
           <Button variant="secondary">

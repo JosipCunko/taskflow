@@ -15,7 +15,7 @@ route.ts /process
 offline support - works but still needs review
 vercel.json and anonymous clean up
 
-# Bugs and ideas to fix now
+# Bugs and ideas
 
 Error tracking task analytics: value for argument "data" is not a valid Firestore document. Cannot use "undefined" as a Firestore value (found in field delayCount). If you want to ignore undefined values, enable "ignoreUndefinedProperties"
 at trackTaskAnalytics (analytics-admin.ts)
@@ -25,8 +25,7 @@ await adminDb.collection("taskAnalytics").add(analyticsData)
 # Later
 
 task that are set as priority have bigger points reduction
-math symbols smaller modal
-failed to get ai response
+Repeating task are updated when clicked on Add prioirity to one task
 
 # BUG_FIXES_SUMMARY
 
@@ -35,14 +34,27 @@ failed to get ai response
 
 # UPDATED
 
-- repeating tasks
-- location
-- layout on mobile in every route
-- tooltips
+- added h-screen to every page
 
 # Landing page
 
 update photos and check @LANDING_PAGE_PHOTOS.md for help
+
+# openrouter
+
+openRouter API error: {"error":{"message":"No endpoints found that support tool use. To learn more about provider routing, visit: https://openrouter.ai/docs/provider-routing","code":404}}
+
+# push notifications
+
+Service Worker registered successfully: https://optaskflow.vercel.app/
+9610-6979c9a806cc80d9.js:1 Starting analytics data fetch for user: xCnbztrkjDb8RqWcWHIbhCq3BDP2
+9610-6979c9a806cc80d9.js:1 Calling analytics API...
+page-53b2a06c30499402.js:1 Requesting notification permission...
+hook.js:608 Service Worker registration failed: TypeError: Failed to register a ServiceWorker for scope ('https://optaskflow.vercel.app/') with script ('https://optaskflow.vercel.app/firebase-messaging-sw.js'): A bad HTTP response code (404) was received when fetching the script.
+overrideMethod @ hook.js:608Understand this error
+hook.js:608 Error getting FCM token: TypeError: Failed to register a ServiceWorker for scope ('https://optaskflow.vercel.app/') with script ('https://optaskflow.vercel.app/firebase-messaging-sw.js'): A bad HTTP response code (404) was received when fetching the script.
+overrideMethod @ hook.js:608Understand this error
+page-53b2a06c30499402.js:1 Permission granted, token received: false
 
 # Vercel
 

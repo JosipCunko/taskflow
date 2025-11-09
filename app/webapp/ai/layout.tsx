@@ -2,7 +2,7 @@ import ChatSidebar from "@/app/_components/AI/ChatSidebar";
 
 export default function AILayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen w-full overflow-hidden items-center">
+    <div className="py-1 sm:py-6 container overflow-y-auto mx-auto h-full flex justify-between">
       <div>{children}</div>
       <ChatSidebar />
     </div>

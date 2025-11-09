@@ -203,7 +203,7 @@ export default function TasksPageClient({ tasks }: { tasks: Task[] }) {
   };
 
   return (
-    <div className="container mx-auto p-1 sm:p-6 max-h-full overflow-auto">
+    <div className="container h-screen mx-auto p-1 sm:p-6 max-h-full overflow-auto">
       {/* Header with Filter Toggle */}
       <div className="mb-6 md:mb-8 flex items-center justify-between">
         <h1 className="text-3xl sm:text-4xl font-bold text-primary-400 flex items-center">

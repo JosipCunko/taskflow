@@ -1,6 +1,6 @@
 {
   "name": "taskflow",
-  "version": "15.6.0",
+  "version": "15.7.0",
   "private": true,
   "scripts": {
     "dev": "cross-env NODE_ENV=development next dev",

@@ -213,7 +213,7 @@ export default function FitnessDashboard({
       </div>
 
       <div className="bg-background-600 rounded-lg p-6 border border-background-500">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col gap-2 items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-text-high flex items-center gap-2">
             <Calendar className="w-5 h-5" />
             Weekly Overview
@@ -230,7 +230,8 @@ export default function FitnessDashboard({
               ←
             </Button>
             <span className="text-text-low font-medium">
-              {format(weekStart, "MMM d")} - {format(weekEnd, "MMM d, yyyy")}
+              {formatDate(weekStart, undefined, false)} -{" "}
+              {formatDate(weekEnd, undefined, false)}
             </span>
             <Button
               variant="secondary"

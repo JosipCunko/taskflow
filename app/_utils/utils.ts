@@ -400,7 +400,6 @@ export function getStatusStyles(status: "completed" | "delayed" | "pending") {
         colorClass: "text-red-400",
         bgColorClass: "bg-red-500/10",
       };
-    case "pending":
     default:
       return {
         icon: CardSpecificIcons.StatusPending,

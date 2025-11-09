@@ -31,7 +31,8 @@ import { Tooltip } from "react-tooltip";
 export default function RepeatingTaskCard({ task }: { task: Task }) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const outsideClickRef = useOutsideClick(() => setIsDropdownOpen(false));
-  if (!task.repetitionRule) throw new Error("Task has no repetition rule");
+  const repetitionRule = task.repetitionRule;
+  if (!repetitionRule) throw new Error("Task has no repetition rule");
 
   const IconComponent = getTaskIconByName(task.icon) || Repeat;
   const statusInfo = getStatusStyles(task.status);
@@ -46,13 +47,13 @@ export default function RepeatingTaskCard({ task }: { task: Task }) {
   const handleComplete = async () => {
     try {
       const result = await (async (): Promise<ActionResult> => {
-        if (task.repetitionRule!.interval) {
+        if (repetitionRule.interval) {
           return completeRepeatingTaskWithInterval(task);
         }
-        if (task.repetitionRule!.daysOfWeek?.length) {
+        if (repetitionRule.daysOfWeek?.length) {
           return completeRepeatingTaskWithDaysOfWeek(task);
         }
-        if (task.repetitionRule!.timesPerWeek) {
+        if (repetitionRule.timesPerWeek) {
           return completeRepeatingTaskWithTimesPerWeek(task);
         }
         throw new Error("Invalid repetition rule configuration");
@@ -182,7 +183,7 @@ export default function RepeatingTaskCard({ task }: { task: Task }) {
             </span>
           )}
         </div>
-        {!task.repetitionRule.interval &&
+        {!repetitionRule.interval &&
           task.completedAt &&
           isToday(task.completedAt) && (
             <div

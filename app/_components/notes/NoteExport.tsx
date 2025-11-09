@@ -2,7 +2,6 @@
 
 import { Download } from "lucide-react";
 import { toast } from "react-hot-toast";
-import { Tooltip } from "react-tooltip";
 
 interface NoteExportProps {
   title: string;
@@ -35,14 +34,11 @@ export default function NoteExport({ title, content }: NoteExportProps) {
     <div className="relative group">
       <button
         className="p-2 hover:bg-background-600 rounded-lg transition-colors text-text-gray hover:text-primary-400"
-        data-tooltip-id="export-note-tooltip"
-        data-tooltip-content="Export note"
         aria-label="Export note"
         aria-haspopup="menu"
       >
         <Download size={16} />
       </button>
-      <Tooltip id="export-note-tooltip" place="top" />
       <div
         className="absolute right-0 top-full mt-2 bg-background-700 border border-divider rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 min-w-[160px]"
         role="menu"

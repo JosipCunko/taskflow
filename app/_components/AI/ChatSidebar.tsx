@@ -10,6 +10,7 @@ import {
   MessageSquare,
   Edit,
   ListIcon,
+  X,
 } from "lucide-react";
 import { successToast, errorToast } from "@/app/_utils/utils";
 import Button from "../reusable/Button";
@@ -140,6 +141,16 @@ export default function ChatSidebar() {
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-background-700 border-l border-background-600">
       <div className="p-4 border-b border-background-600">
+        <div className="flex items-center justify-between mb-4 md:hidden">
+          <h2 className="text-lg font-semibold text-text-low">Chat History</h2>
+          <button
+            onClick={() => setIsOpen(false)}
+            className="p-2 hover:bg-background-600 rounded-lg transition-colors"
+            aria-label="Close sidebar"
+          >
+            <X size={20} className="text-text-gray" />
+          </button>
+        </div>
         <Button
           onClick={handleNewChat}
           className="w-full flex items-center justify-center gap-2 bg-primary-500/10 hover:bg-primary-500/20 border border-primary-500/30"

@@ -83,10 +83,7 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-1">
-        <p className="text-text-low col-span-4 justify-self-end">
-          Last 30 days
-        </p>
+      <div className="flex items-center flex-wrap gap-3">
         <AnalyticsCard
           title="Total Session Duration"
           value={formatDuration(analyticsData.sessionDuration)}
@@ -455,62 +452,57 @@ function AnalyticsCard({
   icon: React.ReactNode;
   subtitle: string;
   trend: number | null;
-  tooltip?: string;
+  tooltip: string;
 }) {
   const tooltipId = `analytics-card-${title
     .toLowerCase()
     .replace(/\s+/g, "-")}`;
 
   return (
-    <div className="bg-background-700 rounded-lg p-6 hover:bg-background-600 transition-colors duration-200">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <h3 className="font-medium text-text-low">{title}</h3>
-          {tooltip && (
+    <>
+      <div
+        className="bg-background-700 rounded-lg p-6 hover:bg-background-600 transition-colors duration-200"
+        data-tooltip-id={tooltipId}
+        data-tooltip-content={tooltip}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <h3 className="font-medium text-text-low">{title}</h3>
+          </div>
+          {icon}
+        </div>
+        <p className="text-2xl font-bold text-text-high">{value}</p>
+        <div className="flex items-center justify-between mt-2 tooltip-container">
+          <p className="text-sm text-text-low">{subtitle}</p>
+          {trend != null && trend !== 0 && (
             <>
               <span
-                data-tooltip-id={tooltipId}
-                data-tooltip-content={tooltip}
-                className="text-text-gray hover:text-text-low cursor-help"
+                data-tooltip-id="trend-tooltip"
+                data-tooltip-content="Trend is calculated by comparing current period (last 15 days) to previous period (15-30 days ago)"
+                className={`text-xs px-2 py-1 rounded-full ${
+                  trend > 0
+                    ? "bg-success/20 text-success"
+                    : "bg-error/20 text-error"
+                }`}
               >
-                ℹ️
+                {trend > 0 ? "+" : ""}
+                {trend}%
               </span>
               <Tooltip
-                id={tooltipId}
-                className="tooltip-diff-arrow max-w-xs"
+                id="trend-tooltip"
+                className="tooltip-diff-arrow"
                 classNameArrow="tooltip-arrow"
               />
             </>
           )}
         </div>
-        {icon}
       </div>
-      <p className="text-2xl font-bold text-text-high">{value}</p>
-      <div className="flex items-center justify-between mt-2 tooltip-container">
-        <p className="text-sm text-text-low">{subtitle}</p>
-        {trend != null && trend !== 0 && (
-          <>
-            <span
-              data-tooltip-id="trend-tooltip"
-              data-tooltip-content="Trend is calculated by comparing current period (last 15 days) to previous period (15-30 days ago)"
-              className={`text-xs px-2 py-1 rounded-full ${
-                trend > 0
-                  ? "bg-success/20 text-success"
-                  : "bg-error/20 text-error"
-              }`}
-            >
-              {trend > 0 ? "+" : ""}
-              {trend}%
-            </span>
-            <Tooltip
-              id="trend-tooltip"
-              className="tooltip-diff-arrow"
-              classNameArrow="tooltip-arrow"
-            />
-          </>
-        )}
-      </div>
-    </div>
+      <Tooltip
+        id={tooltipId}
+        className="tooltip-diff-arrow max-w-xs"
+        classNameArrow="tooltip-arrow"
+      />
+    </>
   );
 }
 

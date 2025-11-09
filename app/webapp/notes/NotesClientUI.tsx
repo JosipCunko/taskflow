@@ -277,16 +277,23 @@ export default function NotesClientUI({
                   className="flex-grow bg-background-600 border-background-500 focus:border-primary-400 font-mono"
                   disabled={isSaving}
                 />
-                <Button
-                  onClick={() => setIsMathModalOpen(true)}
-                  variant="secondary"
-                  disabled={!editingNoteId}
-                  data-tooltip-id="math-symbols-btn"
-                  data-tooltip-content="Insert mathematical symbols"
-                >
-                  <Sigma size={18} /> Math Symbols
-                </Button>
-                <Tooltip id="math-symbols-btn" place="top" />
+                <div className="relative bg-background-650">
+                  <Button
+                    onClick={() => setIsMathModalOpen(true)}
+                    variant="secondary"
+                    disabled={!editingNoteId}
+                    data-tooltip-id="math-symbols-btn"
+                    data-tooltip-content="Insert mathematical symbols"
+                  >
+                    <Sigma size={18} /> Math Symbols
+                  </Button>
+                  <Tooltip id="math-symbols-btn" place="top" />
+                  <MathSymbolsModal
+                    isOpen={isMathModalOpen}
+                    onClose={() => setIsMathModalOpen(false)}
+                    onSymbolSelect={handleSymbolSelect}
+                  />
+                </div>
                 <div className="mt-2 p-2 bg-background-700 rounded border border-divider">
                   <NoteStats content={currentContent} />
                 </div>
@@ -365,12 +372,6 @@ export default function NotesClientUI({
           </div>
         ))}
       </div>
-
-      <MathSymbolsModal
-        isOpen={isMathModalOpen}
-        onClose={() => setIsMathModalOpen(false)}
-        onSymbolSelect={handleSymbolSelect}
-      />
 
       <style jsx>{`
         .kbd {

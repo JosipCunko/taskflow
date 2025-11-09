@@ -13,8 +13,15 @@ export default async function AI() {
   const chatId: string | null = null;
 
   return (
-    <div className="p-1 sm:p-6 container overflow-y-auto mx-auto">
-      {/* <iframe
+    <Chat
+      initialMessages={initialMessages}
+      chatId={chatId}
+      userName={userName}
+      userImage={userImage}
+    />
+  );
+}
+/* <iframe
         id="JotFormIFrame-01982cd8d8e7774fbebc0a2dd460c49e2c67"
         title="Axon: TaskFlow Guide"
         allow="geolocation; microphone; camera; fullscreen"
@@ -28,13 +35,4 @@ export default async function AI() {
         {`window.jotformEmbedHandler("iframe
         [id='JotFormIFrame-01982cd8d8e7774fbebc0a2dd460c49e2c67']",
         "https://eu.jotform.com")`}
-      </Script> */}
-      <Chat
-        initialMessages={initialMessages}
-        chatId={chatId}
-        userName={userName}
-        userImage={userImage}
-      />
-    </div>
-  );
-}
+      </Script> */
