@@ -41,3 +41,11 @@ Integrate a recipe discovery feature that allows users to search for recipes by 
 - streaming data
 - stop generating
 - give AI more control of taskflow features
+
+**6. Point reduction**
+
+- task that are set as priority need to have bigger points reduction
+
+**7. Middleware**
+
+- read @middleware.md to get ideas and insights of how can taskflow benifit of middleware
