@@ -6,20 +6,27 @@ import CallToActionSection from "@/app/_components/landing/CallToActionSection";
 import Footer from "@/app/_components/landing/Footer";
 import Navbar from "@/app/_components/landing/Navbar";
 import ProgrammingFeatures from "./_components/landing/ProgrammingFeatures";
+import LazyMotionProvider from "./_components/animations/LazyMotionProvider";
+
+// Route segment config for static landing page
+export const dynamic = "force-static";
+export const revalidate = 3600; // Revalidate every hour
 
 export default async function LandingPage() {
   return (
-    <div className="flex flex-col min-h-screen bg-background-700 text-text-high overflow-x-hidden">
-      <Navbar />
-      <main className="flex-grow">
-        <HeroSection />
-        <ImageSection />
-        <StatsSection />
-        <Features />
-        <ProgrammingFeatures />
-        <CallToActionSection />
-      </main>
-      <Footer />
-    </div>
+    <LazyMotionProvider>
+      <div className="flex flex-col min-h-screen bg-background-700 text-text-high overflow-x-hidden">
+        <Navbar />
+        <main className="flex-grow">
+          <HeroSection />
+          <ImageSection />
+          <StatsSection />
+          <Features />
+          <ProgrammingFeatures />
+          <CallToActionSection />
+        </main>
+        <Footer />
+      </div>
+    </LazyMotionProvider>
   );
 }

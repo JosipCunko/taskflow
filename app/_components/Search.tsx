@@ -112,6 +112,7 @@ export default function Search({ onCloseModal, tasks }: SearchProps) {
         );
       } else if (e.key === "Enter" && highlightedIndex > -1) {
         e.preventDefault();
+        // dont put as any
         router.push(navItemsToSearch[highlightedIndex].link);
         if (onCloseModal) onCloseModal();
       }

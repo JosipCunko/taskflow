@@ -5,12 +5,19 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import TopSidebar from "../_components/TopSidebar";
 import AnimatedSidebar from "../_components/AnimatedSidebar";
-import AnalyticsTracker from "../_components/AnalyticsTracker";
-import YouTubeBackgroundProcessor from "../_components/YouTubeBackgroundProcessor";
+import dynamic from "next/dynamic";
 import { getUserById } from "../_lib/user-admin";
 import Providers from "./providers";
 import PWAInstall from "../_components/PWAInstall";
 import OfflineIndicator from "../_components/OfflineIndicator";
+
+// Dynamic imports for background/non-critical components
+const AnalyticsTracker = dynamic(
+  () => import("../_components/AnalyticsTracker")
+);
+const YouTubeBackgroundProcessor = dynamic(
+  () => import("../_components/YouTubeBackgroundProcessor")
+);
 
 export const metadata: Metadata = {
   title: "TaskFlow",

@@ -1,6 +1,20 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Performance: Enable TypeScript typed routes for compile-time route checking
+  experimental: {
+    //typedRoutes: true, issues in Sidebar, Search...
+    // Note: PPR requires Next.js canary version, commented out for stable release
+    // ppr: "incremental",
+  },
+
+  // Performance: Remove data attributes in production
+  compiler: {
+    reactRemoveProperties: {
+      properties: ["^data-tutorial$", "^data-testid$"],
+    },
+  },
+
   images: {
     remotePatterns: [
       {
@@ -14,7 +28,10 @@ const nextConfig: NextConfig = {
         pathname: "/**",
       },
     ],
+    // Enable modern image formats
+    formats: ["image/webp", "image/avif"],
   },
+
   // PWA Configuration
   headers: async () => [
     {
@@ -46,4 +63,9 @@ const nextConfig: NextConfig = {
   ],
 };
 
-export default nextConfig;
+// Bundle analyzer configuration (run with ANALYZE=true npm run build)
+const withBundleAnalyzer = require("@next/bundle-analyzer")({
+  enabled: process.env.ANALYZE === "true",
+});
+
+export default withBundleAnalyzer(nextConfig);

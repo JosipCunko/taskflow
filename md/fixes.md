@@ -122,3 +122,12 @@ Costs $20/month per user
 3. Verify:
    - ✅ Points increase to max 10 (for interval tasks)
    - ✅ Available points match the current task points value
+
+# Deleted next-sitemap.config.js
+
+/\*_ @type {import('next-sitemap').IConfig} _/
+module.exports = {
+siteUrl: "https://optaskflow.vercel.app",
+generateRobotsTxt: true, // (optional) automatically creates robots.txt
+exclude: ["/api/*", "/webapp/*"],
+};

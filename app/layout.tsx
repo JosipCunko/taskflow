@@ -9,13 +9,56 @@ const plexMono = IBM_Plex_Mono({
   variable: "--font-plex-mono",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
+  display: "swap", // Prevent invisible text during font loading
+  preload: true, // Preload font for faster rendering
 });
 
 export const metadata: Metadata = {
-  title: "TaskFlow",
+  title: {
+    default: "TaskFlow - Master Your Productivity",
+    template: "%s | TaskFlow",
+  },
   description:
-    "Modern task management web application with AI-powered features, analytics, and comprehensive productivity tools",
+    "Modern task management web application with AI-powered features, analytics, and comprehensive productivity tools. Organize, prioritize, and achieve your goals with ultimate discipline and control.",
+  keywords: [
+    "task management",
+    "productivity",
+    "AI assistant",
+    "goal tracking",
+    "time management",
+    "task planner",
+  ],
+  authors: [{ name: "Josip Čunko" }],
+  creator: "TaskFlow",
   manifest: "/manifest.json",
+  metadataBase: new URL("https://optaskflow.vercel.app"),
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://optaskflow.vercel.app",
+    title: "TaskFlow - Master Your Productivity",
+    description:
+      "Modern task management with AI-powered features, analytics, and comprehensive productivity tools",
+    siteName: "TaskFlow",
+    images: [
+      {
+        url: "/dashboard.png",
+        width: 1200,
+        height: 630,
+        alt: "TaskFlow Dashboard",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "TaskFlow - Master Your Productivity",
+    description:
+      "Modern task management with AI-powered features and comprehensive productivity tools",
+    images: ["/dashboard.png"],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

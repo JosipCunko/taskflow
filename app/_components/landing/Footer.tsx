@@ -1,6 +1,6 @@
 "use client";
 import { useOnlineStatus } from "@/app/_hooks/useOnlineStatus";
-import { motion } from "framer-motion";
+import { m as motion } from "framer-motion";
 
 export default function Footer() {
   const isOnline = useOnlineStatus();

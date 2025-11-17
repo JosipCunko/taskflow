@@ -9,6 +9,9 @@ import { AppUser } from "@/app/_types/types";
 import { authOptions } from "@/app/_lib/auth";
 import { getUserById } from "@/app/_lib/user-admin";
 
+// Route segment config - cache for 5 minutes
+export const revalidate = 300;
+
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions);
   if (!session || !session.user || !session.user.id) {

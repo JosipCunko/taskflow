@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Camera, Grid3x3, Code, Zap } from "lucide-react";
-import { motion } from "framer-motion";
+import { m as motion } from "framer-motion";
 import { images } from "@/app/_utils/utils";
 
 // Tech Background Pattern Component
@@ -153,6 +153,8 @@ export default function ImageSection() {
                     alt={image.alt}
                     fill
                     className="object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500"
+                    priority={index < 3} // Preload first 3 images
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                   />
 
                   {/* Overlay Gradient */}

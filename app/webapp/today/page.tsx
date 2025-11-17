@@ -6,6 +6,9 @@ import { redirect } from "next/navigation";
 import TodayPlanSection from "@/app/_components/TodayPlanSection";
 import { autoDelayIncompleteTodayTasks } from "@/app/_lib/actions";
 
+// Dynamic route - today's tasks change very frequently
+export const dynamic = "force-dynamic";
+
 export default async function TodayPage() {
   const session = await getServerSession(authOptions);
   if (!session || !session.user || !session.user.id) {

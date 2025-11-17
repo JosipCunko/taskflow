@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { m as motion } from "framer-motion";
 import GlitchText from "../animations/GlitchText";
 import DecryptedText from "../animations/DecryptedText";
 import GridAndDotsBackground from "../animations/GridAndDotsBackground";
