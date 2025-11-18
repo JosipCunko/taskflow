@@ -6,7 +6,7 @@ import {
   Messaging,
   MessagePayload,
 } from "firebase/messaging";
-import { app } from "./firebase";
+import { app, firebaseConfig } from "./firebase";
 
 /* Workflow
   Generation: User visits app → browser creates unique token
@@ -47,6 +47,14 @@ const registerServiceWorker =
     try {
       const registration = await navigator.serviceWorker.register("/sw.js");
       console.log("Service Worker registered successfully:", registration);
+
+      // Send Firebase config to service worker
+      if (registration.active) {
+        registration.active.postMessage({
+          type: "FIREBASE_CONFIG",
+          config: firebaseConfig,
+        });
+      }
 
       // Wait a bit for service worker to be ready
       await new Promise((resolve) => setTimeout(resolve, 1000));

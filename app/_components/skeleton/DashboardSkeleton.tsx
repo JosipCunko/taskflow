@@ -1,5 +1,5 @@
 import { Home } from "lucide-react";
-import { AnalyticsLoadingSkeleton } from "../AnalyticsDashboard";
+import { AnalyticsLoadingSkeleton } from "./AnalyticsLoadingSkeleton";
 
 export default function DashboardSkeleton() {
   return (

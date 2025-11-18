@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Button from "./reusable/Button";
 import { usePWA } from "../_context/PWAContext";
+import { firebaseConfig } from "../_lib/firebase";
 
 interface PWAInstallProps {
   receiveUpdateNotifications?: boolean;
@@ -25,6 +26,14 @@ export default function PWAInstall({
             "Service Worker registered successfully:",
             registration.scope
           );
+
+          // Send Firebase config to service worker
+          if (registration.active) {
+            registration.active.postMessage({
+              type: "FIREBASE_CONFIG",
+              config: firebaseConfig,
+            });
+          }
 
           // Check for updates
           registration.addEventListener("updatefound", () => {

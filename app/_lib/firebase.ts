@@ -29,4 +29,4 @@ if (typeof window !== "undefined") {
   analytics = getAnalytics(app);
 }
 
-export { app, auth, db, analytics };
+export { app, auth, db, analytics, firebaseConfig };
