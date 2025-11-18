@@ -39,15 +39,17 @@ export default async function RootLayout({
 
   return (
     <Providers>
-      <PWAInstall />
+      <PWAInstall
+        receiveUpdateNotifications={userData.receiveUpdateNotifications ?? true}
+      />
       <OfflineIndicator />
       <AnalyticsTracker userData={userData} />
       <YouTubeBackgroundProcessor userId={userId} userData={userData} />
-      <main className="grid grid-rows-1 grid-cols-1 sm:grid-cols-[16rem_1fr] overflow-hidden relative h-screen bg-background-625">
+      <main className="grid grid-rows-1 grid-cols-1 sm:grid-cols-[16rem_1fr] relative h-screen bg-background-625">
         <AnimatedSidebar />
-        <div className="overflow-hidden h-full grid grid-cols-1 grid-rows-[80px_1fr] px-2 sm:px-4 lg:px-6 relative">
+        <div className="h-full grid grid-cols-1 grid-rows-[80px_1fr] px-2 sm:px-4 lg:px-6 relative overflow-hidden">
           <TopSidebar session={session} tasks={tasks} />
-          {children}
+          <div className="overflow-y-auto overflow-x-hidden">{children}</div>
         </div>
       </main>
     </Providers>

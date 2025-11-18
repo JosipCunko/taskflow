@@ -5,7 +5,13 @@ import Image from "next/image";
 import Button from "./reusable/Button";
 import { usePWA } from "../_context/PWAContext";
 
-export default function PWAInstall() {
+interface PWAInstallProps {
+  receiveUpdateNotifications?: boolean;
+}
+
+export default function PWAInstall({
+  receiveUpdateNotifications = true,
+}: PWAInstallProps) {
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const { isInstallable, promptInstall } = usePWA();
 
@@ -29,10 +35,15 @@ export default function PWAInstall() {
                   newWorker.state === "installed" &&
                   navigator.serviceWorker.controller
                 ) {
-                  // New service worker available
-                  if (confirm("New version available! Reload to update?")) {
+                  // New service worker available - check user preference
+                  if (receiveUpdateNotifications) {
+                    if (confirm("New version available! Reload to update?")) {
+                      newWorker.postMessage({ type: "SKIP_WAITING" });
+                      window.location.reload();
+                    }
+                  } else {
+                    // Silently update without prompting user
                     newWorker.postMessage({ type: "SKIP_WAITING" });
-                    window.location.reload();
                   }
                 }
               });

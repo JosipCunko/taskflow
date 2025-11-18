@@ -45,9 +45,7 @@ const registerServiceWorker =
     }
 
     try {
-      const registration = await navigator.serviceWorker.register(
-        "/firebase-messaging-sw.js"
-      );
+      const registration = await navigator.serviceWorker.register("/sw.js");
       console.log("Service Worker registered successfully:", registration);
 
       // Wait a bit for service worker to be ready

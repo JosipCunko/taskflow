@@ -15,7 +15,7 @@ export default async function FitnessPage() {
   const userId = session.user.id;
 
   return (
-    <div className="container h-screen mx-auto p-2 sm:p-6 max-h-full overflow-auto">
+    <div className="container mx-auto p-2 sm:p-6 pb-8">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl sm:text-4xl font-bold text-primary-400 flex items-center">

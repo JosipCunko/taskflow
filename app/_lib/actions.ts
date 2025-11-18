@@ -1041,11 +1041,32 @@ export async function autoDelayIncompleteTodayTasks(): Promise<ActionResult> {
       return { success: false, error: "User not authenticated" };
     }
 
-    // Get all incomplete tasks for the user
-    const tasksRef = adminDb.collection("tasks");
+    // Performance optimization: Check if we already ran this today
+    const userRef = adminDb.collection("users").doc(session.user.id);
+    const userDoc = await userRef.get();
+    const userData = userDoc.data();
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayTimestamp = today.getTime();
+
+    // Check if we already ran the auto-delay today
+    if (userData?.lastAutoDelayCheck) {
+      const lastCheckDate = new Date(userData.lastAutoDelayCheck);
+      lastCheckDate.setHours(0, 0, 0, 0);
+      const lastCheckTimestamp = lastCheckDate.getTime();
+
+      if (lastCheckTimestamp === todayTimestamp) {
+        // Already ran today, skip execution
+        return {
+          success: true,
+          message: "Auto-delay already ran today",
+        };
+      }
+    }
+
+    // Get all incomplete tasks for the user
+    const tasksRef = adminDb.collection("tasks");
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
     const tomorrowTimestamp = tomorrow.getTime();
@@ -1101,6 +1122,10 @@ export async function autoDelayIncompleteTodayTasks(): Promise<ActionResult> {
       revalidatePath("/webapp/tasks");
       revalidatePath("/webapp");
     }
+
+    await userRef.update({
+      lastAutoDelayCheck: Date.now(),
+    });
 
     return {
       success: true,

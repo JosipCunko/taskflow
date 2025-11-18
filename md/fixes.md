@@ -24,49 +24,30 @@ I dont have the API key from youtube, so I dont know how to get it, how and from
 - vercel.json and anonymous clean up
 - added h-screen to every page
 - admin.ts newly implementation of firestore not being initialized during built time
+- AI Streaming route
+- sw.js
+- do we actually update the version of PWA: @PWAInstall ln:42
 
 # Bugs
 
-### Undefined properties in Firestore
-
-- Error tracking task analytics: value for argument "data" is not a valid Firestore document. Cannot use "undefined" as a Firestore value (found in field delayCount). If you want to ignore undefined values, enable "ignoreUndefinedProperties"
-  at trackTaskAnalytics (analytics-admin.ts)
-  at deleteTaskAction (actions.ts)
-  await adminDb.collection("taskAnalytics").add(analyticsData)
-
-- We cannot call .ignoreUndefinedProperties because the Firestore has been already set up.
-
-### Repeating task
+### Repeating task - FIXED
 
 - When I first login for the day and go to the /webapp, I can see that none of my repeating tasks are updated that needs to be updated. But when I update for example prioritize one task (Add prioirity), all of the repeating tasks that needed to be updated, got updated at the same time. To sum up, repeating tasks are updated when user performs an action on some existing repeating tasks. This may be the cause of our newly implemented caching, because the we cache almost everything (examine again our "smart" caching system), and the cache isnt evaluated in the updateUserRepeatingTasks function in @auth.ts , and when we call the server action to update task, cache gets revalidated (I think).
-  Can you check
 
-### Very very bad Caching
+### Very very bad Caching - FIXED
 
 Here is the situation: Today is Monday, my last login was on saturday, so the new week came and all of my daysOfWeek and timesPerWeek tasks need to be reseted. When I first login to the /webapp/tasks page, none of the repeating tasks are reseted. But, when I create some new task or update one, all of them get updated.
 THAT'S NOT ALL. Every time when I go back to the /tasks page, I get cached tasks that are not updated, same situation when I first login to the app. Then I refreshed the page and updated(reseted) tasks were shown.
 
 Same as on the /profile page, my reward points still says 104, even after I completed two tasks in the meantime
 
-### page layout
-
-For example in the /tasks page, I cannot click "Delete Task" on the last task because the overflow is hidden and I cant scroll more to fit the whole task, so its bottom fifth (1/5) is cropped.
-
-### Image optimization
-
-- in next.config.ts we say this:
-  // Enable modern image formats
-  formats: ["image/webp", "image/avif"],
-
-I use png files in my landing page, do I put this in this array and why?
-
 # Anonymous mode and autoDelay
 
-- anonymous data deletion:
+- anonymous data deletion still needs to be completed:
 
 1. Add `CRON_SECRET` to environment variables (generate a random secret string). How do I generate it?
-2. For Vercel deployments, the cron will run automatically
-3. For other deployments, set up an external cron service to call the endpoint with the bearer token
+2. For Vercel deployments, the cron will run automatically - what do I do about that?
+3. For other deployments, set up an external cron service to call the endpoint with the bearer token. I use only vercel, so I think this is safe to ignore
 
 - autoDelayIncompleteTasks: needs to be called only once a day, a quick performance fix, add that to the /today page where we call it (I think its the only place we call that function)
 
@@ -78,31 +59,20 @@ openRouter API error: {"error":{"message":"No endpoints found that support tool 
 
 # push notifications
 
-Service Worker registered successfully: https://optaskflow.vercel.app/
-9610-6979c9a806cc80d9.js:1 Starting analytics data fetch for user: xCnbztrkjDb8RqWcWHIbhCq3BDP2
-9610-6979c9a806cc80d9.js:1 Calling analytics API...
-page-53b2a06c30499402.js:1 Requesting notification permission...
-hook.js:608 Service Worker registration failed: TypeError: Failed to register a ServiceWorker for scope ('https://optaskflow.vercel.app/') with script ('https://optaskflow.vercel.app/firebase-messaging-sw.js'): A bad HTTP response code (404) was received when fetching the script.
-overrideMethod @ hook.js:608Understand this error
-hook.js:608 Error getting FCM token: TypeError: Failed to register a ServiceWorker for scope ('https://optaskflow.vercel.app/') with script ('https://optaskflow.vercel.app/firebase-messaging-sw.js'): A bad HTTP response code (404) was received when fetching the script.
-overrideMethod @ hook.js:608Understand this error
-page-53b2a06c30499402.js:1 Permission granted, token received: false
+Push notifs stopped working, and thats for a while.
+When I click on enable notifs in the dashboard, I get this toast message: "Notification permission denied" and this logs in my browser console:
+Requesting notification permission...
+1684-90a89c32b51c03f8.js:1 Service Worker registration failed: TypeError: Failed to register a ServiceWorker for scope ('https://optaskflow.vercel.app/') with script ('https://optaskflow.vercel.app/firebase-messaging-sw.js'): A bad HTTP response code (404) was received when fetching the script.
+1684-90a89c32b51c03f8.js:1 Error getting FCM token: TypeError: Failed to register a ServiceWorker for scope ('https://optaskflow.vercel.app/') with script ('https://optaskflow.vercel.app/firebase-messaging-sw.js'): A bad HTTP response code (404) was received when fetching the script.
+Permission granted, token received: false
 
-# Vercel
+After that, the component that is in charge of push notifs UI displays this: Notifications Blocked.
+Retry button only refreshes the page, is that really useful?
 
-- I got an warning after fixing the deployment issue that was present before (its fixed) and after adding some new enviromental variables:
+# Weird popup
 
-This key, which is prefixed with NEXT*PUBLIC* and includes the term KEY, might expose sensitive information to the browser. Verify it is safe to share publicly.
-
-Solutions:
-Option A: Change to Daily Schedule (Stay on Hobby)
-Update your vercel.json:
-{ "crons": [ { "path": "/api/admin/cleanup-anonymous", "schedule": "0 2 * * *" } ]}
-This means: Run once daily at 2:00 AM UTC
-Option B: Upgrade to Pro Plan
-40 cron jobs allowed
-Unlimited execution frequency
-Costs $20/month per user
+- says: "New version available! Reload to update?"
+  Is this coming from the PWA? Probably. It happens very often, because every weak I release a new commit, that also changes the project version in package.json
 
 # Tasks on Dashboard (/webapp)
 

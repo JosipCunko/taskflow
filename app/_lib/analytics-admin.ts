@@ -97,12 +97,14 @@ export const trackTaskAnalytics = async (
       taskId,
       action,
       timestamp: Date.now(),
-      ...(taskData.risk && { risk: taskData.risk }),
+      ...(taskData.risk !== undefined && { risk: taskData.risk }),
       dueDate: taskData.dueDate,
       isReminder: taskData.isReminder,
       isPriority: taskData.isPriority,
       isRepeating: taskData.isRepeating,
-      delayCount: taskData.delayCount,
+      ...(taskData.delayCount !== undefined && {
+        delayCount: taskData.delayCount,
+      }),
       // Use completion time for hour calculation if available, otherwise use current time
       hour: taskData.completedAt
         ? new Date(taskData.completedAt).getHours()

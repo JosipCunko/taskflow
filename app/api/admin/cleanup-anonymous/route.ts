@@ -3,16 +3,10 @@ import { cleanupExpiredAnonymousAccounts } from "@/app/_lib/anonymous-cleanup";
 
 /**
  * API endpoint to cleanup expired anonymous accounts
- * This should be called periodically (every hour) by a cron service
- * 
- * For Vercel deployments:
- * - Configured in vercel.json with cron schedule
- * - Protected by CRON_SECRET environment variable
- * 
- * For other deployments:
- * - Set up an external cron service (e.g., cron-job.org, EasyCron)
- * - Add CRON_SECRET to environment variables
- * - Call this endpoint every hour
+ * This should be called periodically (daily at 2 AM UTC) by a cron service
+ *
+ * 1. Generate a CRON_SECRET:
+ *    Option B (Node.js): node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
  */
 export async function GET(request: NextRequest) {
   try {
@@ -32,7 +26,7 @@ export async function GET(request: NextRequest) {
     const results = await cleanupExpiredAnonymousAccounts();
 
     console.log(`Cleanup completed: ${results.deletedCount} accounts deleted`);
-    
+
     return NextResponse.json({
       success: true,
       message: `Cleanup completed successfully`,

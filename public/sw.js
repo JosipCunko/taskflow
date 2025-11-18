@@ -1,9 +1,31 @@
-// TaskFlow Service Worker - Enhanced Offline Support
+// TaskFlow Service Worker - Enhanced Offline Support + Firebase Messaging
 /*
 The service worker is caching the old JavaScript code. The cache version is currently "v2", but we need to bump it to force the browser to clear the old cached code
 */
 
-const CACHE_VERSION = "16.0.1";
+// Import Firebase scripts for push notifications
+importScripts(
+  "https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"
+);
+importScripts(
+  "https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js"
+);
+
+// Initialize Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyAglE46axLC1qrhzTmLs4rp0m41k3nxjqg",
+  authDomain: "taskflow-30758.firebaseapp.com",
+  projectId: "taskflow-30758",
+  storageBucket: "taskflow-30758.firebasestorage.app",
+  messagingSenderId: "111130940219",
+  appId: "1:111130940219:web:195357be2b2c44b93b5d1e",
+  measurementId: "G-LBJSKW4CX4",
+};
+
+firebase.initializeApp(firebaseConfig);
+const messaging = firebase.messaging();
+
+const CACHE_VERSION = "16.1.0";
 const CACHE_NAME = `taskflow-cache-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `taskflow-runtime-${CACHE_VERSION}`;
 const STATIC_CACHE = `taskflow-static-${CACHE_VERSION}`;
@@ -228,29 +250,63 @@ self.addEventListener("message", (event) => {
   }
 });
 
-// Handle push notifications (if needed in the future)
-self.addEventListener("push", (event) => {
-  if (event.data) {
-    const data = event.data.json();
-    const options = {
-      body: data.body || "New notification from TaskFlow",
-      icon: "/icon-512.png",
-      badge: "/icon-512.png",
-      vibrate: [100, 50, 100],
-      data: {
-        dateOfArrival: Date.now(),
-        primaryKey: 1,
-      },
-    };
+// Handle Firebase background messages (when app is not in focus)
+messaging.onBackgroundMessage((payload) => {
+  console.log("Background Message received: ", payload);
 
-    event.waitUntil(
-      self.registration.showNotification(data.title || "TaskFlow", options)
-    );
-  }
+  const notificationTitle =
+    payload.notification?.title || "TaskFlow Notification";
+  const notificationOptions = {
+    body: payload.notification?.body || "You have a new notification",
+    icon: payload.notification?.icon || "/icon-512.png",
+    badge: "/icon-512.png",
+    tag: payload.data?.type || "taskflow-notification",
+    data: payload.data,
+    actions: [
+      {
+        action: "view",
+        title: "View Task",
+        icon: "/icon-512.png",
+      },
+      {
+        action: "dismiss",
+        title: "Dismiss",
+      },
+    ],
+    requireInteraction: true,
+    vibrate: [200, 100, 200],
+  };
+
+  return self.registration.showNotification(
+    notificationTitle,
+    notificationOptions
+  );
 });
 
 // Handle notification clicks
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  event.waitUntil(clients.openWindow(event.notification.data?.url || "/"));
+
+  if (event.action === "view") {
+    // Open the app at a specific URL if available
+    const urlToOpen = event.notification.data?.actionUrl || "/webapp";
+
+    event.waitUntil(
+      clients
+        .matchAll({ type: "window", includeUncontrolled: true })
+        .then((clientList) => {
+          // Check if app is already open
+          for (const client of clientList) {
+            if (client.url.includes(urlToOpen) && "focus" in client) {
+              return client.focus();
+            }
+          }
+          // Open new window if app not open
+          if (clients.openWindow) {
+            return clients.openWindow(urlToOpen);
+          }
+        })
+    );
+  }
+  // 'dismiss' action or default click just closes the notification
 });

@@ -49,3 +49,5 @@ Integrate a recipe discovery feature that allows users to search for recipes by 
 **7. Middleware**
 
 - read @middleware.md to get ideas and insights of how can taskflow benifit of middleware
+
+**8. Stripe**

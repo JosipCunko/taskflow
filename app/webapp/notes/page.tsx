@@ -21,7 +21,7 @@ export default async function NotesPage() {
   }
 
   return (
-    <div className="container h-screen mx-auto p-1 sm:p-6 max-h-full overflow-auto">
+    <div className="container mx-auto p-1 sm:p-6 pb-8">
       <div className="mb-6">
         <h1 className="text-3xl sm:text-4xl font-bold text-primary-400">
           My Notes

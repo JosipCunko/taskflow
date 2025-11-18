@@ -23,7 +23,7 @@ export default async function WorkoutPage({ searchParams }: WorkoutPageProps) {
   const workoutId = resolvedSearchParams.id;
 
   return (
-    <div className="container h-screen mx-auto p-2 sm:p-6 max-h-full overflow-auto">
+    <div className="container mx-auto p-2 sm:p-6 pb-8">
       <div className="max-w-4xl mx-auto">
         <Suspense fallback={<Loader />}>
           <WorkoutSession userId={userId} workoutId={workoutId} />

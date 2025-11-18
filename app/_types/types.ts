@@ -64,6 +64,8 @@ export interface AppUser {
   // Anonymous user fields
   isAnonymous?: boolean;
   anonymousCreatedAt?: number;
+  lastAutoDelayCheck?: number; // Timestamp of last auto-delay check
+  receiveUpdateNotifications?: boolean; // Whether to show PWA update prompts
 }
 export interface UserNutritionGoals {
   calories: number;

@@ -26,6 +26,8 @@ import {
 import { checkAndAwardAchievements } from "./achievements";
 import { getTasksByUserId } from "./tasks-admin";
 import { generateNotificationsForUser } from "./notifications-admin";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { CacheTags } from "../_utils/serverCache";
 
 interface FirebaseUser {
   uid: string;
@@ -391,6 +393,14 @@ export async function updateUserRepeatingTasks(userId: string) {
         ", "
       )}) done updating for user: ${userId}.`
     );
+
+    // Invalidate cache to ensure fresh data is served
+    revalidateTag(CacheTags.tasks());
+    revalidateTag(CacheTags.userTasks(userId));
+    revalidateTag(CacheTags.user(userId));
+    revalidatePath("/webapp");
+    revalidatePath("/webapp/tasks");
+    revalidatePath("/webapp/today");
   } else {
     console.log(`No repeating task updates needed for user: ${userId}.`);
   }

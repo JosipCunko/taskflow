@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import bundleAnalyzer from "@next/bundle-analyzer";
 
 const nextConfig: NextConfig = {
   // Performance: Enable TypeScript typed routes for compile-time route checking
@@ -64,10 +65,7 @@ const nextConfig: NextConfig = {
 };
 
 // Bundle analyzer configuration (run with ANALYZE=true npm run build)
-
-//If doesnt work, add allowSyntheticDefaultImports to tsconfig.json
-const bundleAnalyzer = await import("@next/bundle-analyzer");
-const withBundleAnalyzer = bundleAnalyzer.default({
+const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
 });
 

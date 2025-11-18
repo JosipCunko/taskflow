@@ -59,6 +59,29 @@ export async function POST(request: NextRequest) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("OpenRouter API error:", errorText);
+
+      // Check if the error is due to tool use not being supported
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (
+          errorJson.error?.code === 404 &&
+          errorJson.error?.message?.includes(
+            "No endpoints found that support tool use"
+          )
+        ) {
+          return new Response(
+            JSON.stringify({
+              error:
+                "This AI model doesn't support advanced features like task management. Please switch to another model.",
+              userFriendly: true,
+            }),
+            { status: 400 }
+          );
+        }
+      } catch (e) {
+        console.error("Error parsing OpenRouter API error:", e);
+      }
+
       return new Response(
         JSON.stringify({ error: `API request failed: ${response.status}` }),
         { status: response.status }

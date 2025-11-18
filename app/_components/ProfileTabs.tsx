@@ -279,6 +279,31 @@ export default function ProfileTabs({
                   }}
                   disabled={isLoading}
                 />
+                <Checkbox
+                  id="updateNotifications"
+                  name="updateNotifications"
+                  label={
+                    <div>
+                      <p className="font-medium text-text-high">
+                        App Update Notifications
+                      </p>
+                      <p className="text-sm text-text-low">
+                        Get notified when a new version of the app is available
+                      </p>
+                    </div>
+                  }
+                  checked={user.receiveUpdateNotifications ?? true}
+                  onChange={async (e) => {
+                    setIsLoading(true);
+                    const res = await updateUserAction(user.uid, {
+                      receiveUpdateNotifications: e.target.checked,
+                    });
+
+                    handleToast(res);
+                    setIsLoading(false);
+                  }}
+                  disabled={isLoading}
+                />
               </div>
             </div>
 
