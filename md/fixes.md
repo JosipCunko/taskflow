@@ -23,6 +23,7 @@ I dont have the API key from youtube, so I dont know how to get it, how and from
 - offline support - works but still needs review
 - vercel.json and anonymous clean up
 - added h-screen to every page
+- admin.ts newly implementation of firestore not being initialized during built time
 
 # Bugs
 
@@ -51,7 +52,15 @@ Same as on the /profile page, my reward points still says 104, even after I comp
 
 For example in the /tasks page, I cannot click "Delete Task" on the last task because the overflow is hidden and I cant scroll more to fit the whole task, so its bottom fifth (1/5) is cropped.
 
-# BUG_FIXES_SUMMARY
+### Image optimization
+
+- in next.config.ts we say this:
+  // Enable modern image formats
+  formats: ["image/webp", "image/avif"],
+
+I use png files in my landing page, do I put this in this array and why?
+
+# Anonymous mode and autoDelay
 
 - anonymous data deletion:
 

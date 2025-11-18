@@ -64,7 +64,10 @@ const nextConfig: NextConfig = {
 };
 
 // Bundle analyzer configuration (run with ANALYZE=true npm run build)
-const withBundleAnalyzer = require("@next/bundle-analyzer")({
+
+//If doesnt work, add allowSyntheticDefaultImports to tsconfig.json
+const bundleAnalyzer = await import("@next/bundle-analyzer");
+const withBundleAnalyzer = bundleAnalyzer.default({
   enabled: process.env.ANALYZE === "true",
 });
 

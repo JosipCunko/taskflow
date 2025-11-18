@@ -13,7 +13,7 @@ import {
   Target,
 } from "lucide-react";
 import { Task } from "../_types/types";
-import { ReactNode, Suspense } from "react";
+import { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import {
@@ -31,20 +31,13 @@ import TaskCardSmall from "../_components/TaskCardSmall";
 import RepeatingTaskCard from "../_components/RepeatingTaskCard";
 import dynamic from "next/dynamic";
 import NotificationSetup from "../_components/NotificationSetup";
+import { AnalyticsLoadingSkeleton } from "../_components/skeleton/AnalyticsLoadingSkeleton";
 
 // Dynamic import for heavy components with recharts
 const AnalyticsDashboard = dynamic(
   () => import("../_components/AnalyticsDashboard"),
   {
-    loading: () => (
-      <div className="bg-background-700 rounded-lg p-6 mb-6 animate-pulse">
-        <div className="h-8 bg-background-600 rounded w-1/3 mb-4"></div>
-        <div className="space-y-3">
-          <div className="h-48 bg-background-600 rounded"></div>
-          <div className="h-48 bg-background-600 rounded"></div>
-        </div>
-      </div>
-    ),
+    loading: () => <AnalyticsLoadingSkeleton />,
   }
 );
 
@@ -185,18 +178,7 @@ export default async function DashboardPage() {
         />
       </div>
 
-      <Suspense
-        fallback={
-          <div className="bg-background-700 rounded-lg p-6 mb-6 animate-pulse">
-            <div className="h-8 bg-background-600 rounded w-1/3 mb-4"></div>
-            <div className="space-y-3">
-              <div className="h-48 bg-background-600 rounded"></div>
-            </div>
-          </div>
-        }
-      >
-        <AnalyticsDashboard user={user} />
-      </Suspense>
+      <AnalyticsDashboard user={user} />
 
       <NotificationSetup />
 
