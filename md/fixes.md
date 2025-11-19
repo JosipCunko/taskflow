@@ -110,3 +110,12 @@ siteUrl: "https://optaskflow.vercel.app",
 generateRobotsTxt: true, // (optional) automatically creates robots.txt
 exclude: ["/api/*", "/webapp/*"],
 };
+
+# Vercel env
+
+- check CRON_SECRET and other vars
+
+# DEPLOYNET
+
+fatal: unable to access 'https://github.com/JosipCunko/taskflow.git/': The requested URL returned error: 500
+Automatic deployments from GitHub are temporarily unavailable. You can manually create a new deployment.

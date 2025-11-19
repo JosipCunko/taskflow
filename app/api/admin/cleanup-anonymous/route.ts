@@ -5,7 +5,7 @@ import { cleanupExpiredAnonymousAccounts } from "@/app/_lib/anonymous-cleanup";
  * API endpoint to cleanup expired anonymous accounts
  * This should be called periodically (daily at 2 AM UTC) by a cron service
  *
- * 1. Generate a CRON_SECRET:
+ *  Generate a CRON_SECRET:
  *    Option B (Node.js): node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
  */
 export async function GET(request: NextRequest) {

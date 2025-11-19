@@ -11,22 +11,19 @@ importScripts(
   "https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js"
 );
 
-// Firebase config will be injected by the main app
-let messaging = null;
+// Initialize Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyAglE46axLC1qrhzTmLs4rp0m41k3nxjqg",
+  authDomain: "taskflow-30758.firebaseapp.com",
+  projectId: "taskflow-30758",
+  storageBucket: "taskflow-30758.firebasestorage.app",
+  messagingSenderId: "111130940219",
+  appId: "1:111130940219:web:195357be2b2c44b93b5d1e",
+  measurementId: "G-LBJSKW4CX4",
+};
 
-// Listen for Firebase config from the main app
-self.addEventListener("message", (event) => {
-  if (event.data && event.data.type === "FIREBASE_CONFIG") {
-    try {
-      firebase.initializeApp(event.data.config);
-      messaging = firebase.messaging();
-      setupFirebaseMessaging(); // Set up messaging handlers after initialization
-      console.log("Firebase initialized in service worker");
-    } catch (error) {
-      console.error("Error initializing Firebase in service worker:", error);
-    }
-  }
-});
+firebase.initializeApp(firebaseConfig);
+const messaging = firebase.messaging();
 
 const CACHE_VERSION = "16.1.1";
 const CACHE_NAME = `taskflow-cache-${CACHE_VERSION}`;
@@ -254,42 +251,37 @@ self.addEventListener("message", (event) => {
 });
 
 // Handle Firebase background messages (when app is not in focus)
-// Note: This will be set up after Firebase is initialized
-function setupFirebaseMessaging() {
-  if (messaging) {
-    messaging.onBackgroundMessage((payload) => {
-      console.log("Background Message received: ", payload);
+messaging.onBackgroundMessage((payload) => {
+  console.log("Background Message received: ", payload);
 
-      const notificationTitle =
-        payload.notification?.title || "TaskFlow Notification";
-      const notificationOptions = {
-        body: payload.notification?.body || "You have a new notification",
-        icon: payload.notification?.icon || "/icon-512.png",
-        badge: "/icon-512.png",
-        tag: payload.data?.type || "taskflow-notification",
-        data: payload.data,
-        actions: [
-          {
-            action: "view",
-            title: "View Task",
-            icon: "/icon-512.png",
-          },
-          {
-            action: "dismiss",
-            title: "Dismiss",
-          },
-        ],
-        requireInteraction: true,
-        vibrate: [200, 100, 200],
-      };
+  const notificationTitle =
+    payload.notification?.title || "TaskFlow Notification";
+  const notificationOptions = {
+    body: payload.notification?.body || "You have a new notification",
+    icon: payload.notification?.icon || "/icon-512.png",
+    badge: "/icon-512.png",
+    tag: payload.data?.type || "taskflow-notification",
+    data: payload.data,
+    actions: [
+      {
+        action: "view",
+        title: "View Task",
+        icon: "/icon-512.png",
+      },
+      {
+        action: "dismiss",
+        title: "Dismiss",
+      },
+    ],
+    requireInteraction: true,
+    vibrate: [200, 100, 200],
+  };
 
-      return self.registration.showNotification(
-        notificationTitle,
-        notificationOptions
-      );
-    });
-  }
-}
+  return self.registration.showNotification(
+    notificationTitle,
+    notificationOptions
+  );
+});
 
 // Handle notification clicks
 self.addEventListener("notificationclick", (event) => {
