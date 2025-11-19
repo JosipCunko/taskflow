@@ -16,6 +16,8 @@ import {
 } from "../_types/types";
 import { isToday, isPast } from "date-fns";
 import { formatDate } from "../_utils/utils";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { CacheTags } from "../_utils/serverCache";
 
 // AI Function Parameter Interfaces
 interface AIShowTasksParams {
@@ -318,6 +320,17 @@ async function createTaskAI(params: AICreateTaskParams) {
     );
 
     if (result.success) {
+      const userId = session.user.id;
+      revalidateTag(CacheTags.tasks());
+      revalidateTag(CacheTags.userTasks(userId));
+      if (result.data?.id) {
+        revalidateTag(CacheTags.task(result.data.id));
+      }
+      revalidateTag(CacheTags.user(userId));
+      revalidatePath("/webapp/tasks");
+      revalidatePath("/webapp");
+      revalidatePath("/webapp/today");
+
       return {
         success: true,
         message: `Task "${

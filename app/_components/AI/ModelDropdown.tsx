@@ -13,7 +13,6 @@ export interface AIModel {
 }
 
 export const models: AIModel[] = [
-  { name: "Deepseek V3.1", id: "deepseek/deepseek-chat-v3.1:free", enabled: true },
   { name: "GPT-5", id: "openai/gpt-5", enabled: true },
   { name: "Gemini 2.5 Pro", id: "google/gemini-2.5-pro", enabled: true },
 ];
@@ -24,7 +23,11 @@ interface ModelDropdownProps {
   onModelChange: (model: AIModel) => void;
 }
 
-export default function ModelDropdown({ className, selectedModel, onModelChange }: ModelDropdownProps) {
+export default function ModelDropdown({
+  className,
+  selectedModel,
+  onModelChange,
+}: ModelDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (

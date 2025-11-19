@@ -348,7 +348,7 @@ export const generateOverdueTaskNotifications = async (
 
   const existingNotifications = await getNotificationsByUserIdAdmin(userId);
 
-  overdueTasks.forEach(async (task) => {
+  for (const task of overdueTasks) {
     // Check if there's ANY recent notification for this task (not just overdue)
     const hasRecentNotification = existingNotifications.some(
       (n) =>
@@ -358,7 +358,7 @@ export const generateOverdueTaskNotifications = async (
     );
 
     if (hasRecentNotification) {
-      return; // Skip if any notification exists for this task recently
+      continue; // Skip if any notification exists for this task recently
     }
 
     const daysOverdue = differenceInDays(now, task.dueDate);
@@ -404,7 +404,7 @@ export const generateOverdueTaskNotifications = async (
       data: { daysOverdue, isRepeating: task.isRepeating },
       expiresAt: addDays(new Date(), 7).getTime(),
     });
-  });
+  }
 };
 
 /**
@@ -433,7 +433,7 @@ export const generateDueSoonNotifications = async (
 
   const existingNotifications = await getNotificationsByUserIdAdmin(userId);
 
-  dueSoonTasks.forEach(async (task) => {
+  for (const task of dueSoonTasks) {
     // Check if there's ANY recent notification for this task
     const hasRecentNotification = existingNotifications.some(
       (n) =>
@@ -443,7 +443,7 @@ export const generateDueSoonNotifications = async (
     );
 
     if (hasRecentNotification) {
-      return; // Skip if any notification exists for this task recently
+      continue; // Skip if any notification exists for this task recently
     }
 
     const priority: NotificationPriority = task.isPriority ? "HIGH" : "MEDIUM";
@@ -465,7 +465,7 @@ export const generateDueSoonNotifications = async (
       data: { isRepeating: task.isRepeating },
       expiresAt: addDays(now, 7).getTime(),
     });
-  });
+  }
 };
 
 /**
@@ -503,7 +503,7 @@ export const generateTimeWindowNotifications = async (
     return isDueToday;
   });
 
-  timeWindowTasks.forEach(async (task) => {
+  for (const task of timeWindowTasks) {
     if (
       !task.startTime?.hour ||
       !task.startTime?.minute ||
@@ -573,7 +573,7 @@ export const generateTimeWindowNotifications = async (
         });
       }
     }
-  });
+  }
 };
 
 /**

@@ -174,7 +174,11 @@ export default function TaskCard({
           >
             <StatusIcon size={14} />
             {/*!!! CAREFUL */}
-            <span>{isPastDue ? "Missed" : statusInfo.text}</span>
+            <span>
+              {isPastDue && task.status !== "completed"
+                ? "Missed"
+                : statusInfo.text}
+            </span>
             {task.status === "delayed" && task.delayCount > 0 && (
               <span className="ml-1 font-semibold">({task.delayCount})</span>
             )}

@@ -79,6 +79,10 @@ export default function TasksPageClient({ tasks }: { tasks: Task[] }) {
     if (!hasActiveFilters) return [];
 
     return tasks.filter((task) => {
+      if (task.status === "completed" && !task.isRepeating) {
+        return false;
+      }
+
       // Due date filter
       if (filters.dueBefore !== null) {
         if (task.dueDate >= filters.dueBefore) return false;
@@ -106,7 +110,9 @@ export default function TasksPageClient({ tasks }: { tasks: Task[] }) {
 
       // Icon filter
       if (filters.icon !== null) {
-        if (task.icon !== filters.icon) return false;
+        // Case-insensitive comparison for icon ids
+        if (task.icon?.toLowerCase() !== filters.icon.toLowerCase())
+          return false;
       }
 
       // Color filter

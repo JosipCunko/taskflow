@@ -913,6 +913,14 @@ export function getCompletionAvailabilityInfo(
   task: Task,
   canComplete?: boolean
 ) {
+  if (task.status === "completed" && !task.isRepeating) {
+    return {
+      text: "Completed",
+      canComplete: false,
+      icon: CardSpecificIcons.MarkComplete,
+    };
+  }
+
   if (isPast(task.dueDate) && !task.isRepeating) {
     return {
       text: "Missed",
@@ -1481,7 +1489,46 @@ export const AI_FUNCTIONS = [
         },
         repetitionRule: {
           type: "object",
-          description: "Repetition rule for recurring tasks",
+          description:
+            "Repetition rule for recurring tasks. Tasks repeat based on days of the week.",
+          properties: {
+            daysOfWeek: {
+              type: "array",
+              items: {
+                type: "string",
+                enum: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+              },
+              description:
+                "Days of the week when the task repeats (e.g., ['Mon', 'Wed', 'Fri'])",
+            },
+            timesPerWeek: {
+              type: "number",
+              description:
+                "How many times per week the task should be completed. It can be completed at any day of the week, there are no specific days of the week.",
+              minimum: 1,
+              maximum: 7,
+            },
+            interval: {
+              type: "number",
+              description:
+                "Optional: Interval in days between repetitions (for daily repetition patterns)",
+              minimum: 1,
+            },
+            completedAt: {
+              type: "array",
+              items: { type: "number" },
+              description:
+                "UNIX timestamps of when the task was completed (managed by system, don't set)",
+              default: [],
+            },
+            completions: {
+              type: "number",
+              description:
+                "Number of times task has been completed (managed by system, don't set)",
+              default: 0,
+            },
+          },
+          required: ["daysOfWeek"],
         },
       },
       required: ["title", "dueDate"],
@@ -1505,6 +1552,17 @@ RESPONSE GUIDELINES:
 - Be encouraging and supportive in your responses
 - Offer productivity tips and suggestions when appropriate
 - If function calls fail, explain what went wrong and suggest alternatives
+- When mentioning dates in your responses, use the full date formats like "Friday, November 22"
+- Keep responses concise but informative
+- ONLY perform actions that the user explicitly requests - don't take initiative to create, update, or delete tasks unless asked
+- When showing tasks, just display them - don't automatically update or complete them
+
+REPEATING TASKS:
+- When creating repeating tasks, you MUST specify the repetitionRule with daysOfWeek array
+- Use abbreviated day names: Mon, Tue, Wed, Thu, Fri, Sat, Sun
+- Set timesPerWeek to indicate how many times the task should be completed per week
+- Example: For a gym task 4 times per week on Thu, Sat, Mon, Wed: { "daysOfWeek": ["Thu", "Sat", "Mon", "Wed"], "timesPerWeek": 4 }
+- Don't set completedAt or completions - these are managed by the system
 
 Current date: ${new Date().toISOString().split("T")[0]}
 

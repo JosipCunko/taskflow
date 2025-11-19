@@ -438,4 +438,6 @@ export interface ChatMessage {
   content: string;
   duration?: number;
   functionResults?: FunctionResult[];
+  modelId?: string; // Track which model created this message
+  modelName?: string;
 }

@@ -8,6 +8,10 @@ import {
 import InboxContent from "../../_components/inbox/InboxContent";
 import { Inbox } from "lucide-react";
 
+// Force dynamic rendering to prevent caching issues with notifications
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default async function InboxPage() {
   const session = await getServerSession(authOptions);
   if (!session || !session.user || !session.user.id) {

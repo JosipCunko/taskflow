@@ -106,6 +106,8 @@ export async function POST(request: NextRequest) {
           function?: { name?: string; arguments?: string };
           index?: number;
         } | null = null;
+        // TaskCardSmall not showing sometimes
+        let functionResults: Awaited<ReturnType<typeof executeFunctions>> = [];
 
         try {
           const reader = response.body?.getReader();
@@ -234,7 +236,7 @@ export async function POST(request: NextRequest) {
               arguments: JSON.parse(call.function.arguments),
             }));
 
-            const functionResults = await executeFunctions(functionCalls);
+            functionResults = await executeFunctions(functionCalls);
 
             // Make follow-up request with tool results
             const followUpMessages: (
@@ -345,12 +347,14 @@ export async function POST(request: NextRequest) {
             ((endTime - startTime) / 1000).toFixed(2)
           );
 
-          // Save chat
+          // Save chat with function results if any
           const responseMessage: ChatMessage = {
             role: "assistant",
             content: fullContent,
             duration,
-            functionResults: toolCalls.length > 0 ? undefined : undefined,
+            functionResults:
+              functionResults.length > 0 ? functionResults : undefined,
+            modelId: modelId,
           };
 
           const newMessages: ChatMessage[] = [...messages, responseMessage];

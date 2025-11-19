@@ -21,58 +21,36 @@ I dont have the API key from youtube, so I dont know how to get it, how and from
 # Review
 
 - offline support - works but still needs review
-- vercel.json and anonymous clean up
-- added h-screen to every page
 - admin.ts newly implementation of firestore not being initialized during built time
-- AI Streaming route
 - sw.js
 - do we actually update the version of PWA: @PWAInstall ln:42
+- how do I test the push notifs?
+- anonymous data deletion
+- autoDelayIncompleteTasks
+- better system prompt inside utils for openrouter
 
-# Bugs
+# AI Feature
 
-### Repeating task - FIXED
+its glitchy, maybe its problem with caching, it shows and then delets chats, every time I refresh the page in a hope the messages stay in the chat.
 
-- When I first login for the day and go to the /webapp, I can see that none of my repeating tasks are updated that needs to be updated. But when I update for example prioritize one task (Add prioirity), all of the repeating tasks that needed to be updated, got updated at the same time. To sum up, repeating tasks are updated when user performs an action on some existing repeating tasks. This may be the cause of our newly implemented caching, because the we cache almost everything (examine again our "smart" caching system), and the cache isnt evaluated in the updateUserRepeatingTasks function in @auth.ts , and when we call the server action to update task, cache gets revalidated (I think).
+# Task filtering
 
-### Very very bad Caching - FIXED
+- when I add any filter in Advanced Repeating Task Filter, it showed regular tasks that was completed, including all of the corresponding repeating tassk
 
-Here is the situation: Today is Monday, my last login was on saturday, so the new week came and all of my daysOfWeek and timesPerWeek tasks need to be reseted. When I first login to the /webapp/tasks page, none of the repeating tasks are reseted. But, when I create some new task or update one, all of them get updated.
-THAT'S NOT ALL. Every time when I go back to the /tasks page, I get cached tasks that are not updated, same situation when I first login to the app. Then I refreshed the page and updated(reseted) tasks were shown.
+icon filtering doesnt work. When I search for the tasks which have icon with a person, none show but it exists. It may be the problem with comparing icon names/labels
 
-Same as on the /profile page, my reward points still says 104, even after I completed two tasks in the meantime
+# Inbox
 
-# Anonymous mode and autoDelay
+- double the notification: "Potjera" is due today (Repeating Task) of MEDIUM priority. Cannot happen.
+  When I click on the notification (to read it), the Unread state doesnt change, it stays on 2, but when I click on it, it says "No unread notifications"
 
-- anonymous data deletion still needs to be completed:
+# Inbox
 
-1. Add `CRON_SECRET` to environment variables (generate a random secret string). How do I generate it?
-2. For Vercel deployments, the cron will run automatically - what do I do about that?
-3. For other deployments, set up an external cron service to call the endpoint with the bearer token. I use only vercel, so I think this is safe to ignore
+- double the notification: "Potjera" is due today (Repeating Task) of MEDIUM priority. Cannot happen.
+  When I click on the notification (to read it), the Unread state doesnt change, it stays on 2, but when I click on it, it says "No unread notifications"
 
-- autoDelayIncompleteTasks: needs to be called only once a day, a quick performance fix, add that to the /today page where we call it (I think its the only place we call that function)
-
-# openrouter
-
-openRouter API error: {"error":{"message":"No endpoints found that support tool use. To learn more about provider routing, visit: https://openrouter.ai/docs/provider-routing","code":404}}
-
-- What does this error mean?
-
-# push notifications
-
-Push notifs stopped working, and thats for a while.
-When I click on enable notifs in the dashboard, I get this toast message: "Notification permission denied" and this logs in my browser console:
-Requesting notification permission...
-1684-90a89c32b51c03f8.js:1 Service Worker registration failed: TypeError: Failed to register a ServiceWorker for scope ('https://optaskflow.vercel.app/') with script ('https://optaskflow.vercel.app/firebase-messaging-sw.js'): A bad HTTP response code (404) was received when fetching the script.
-1684-90a89c32b51c03f8.js:1 Error getting FCM token: TypeError: Failed to register a ServiceWorker for scope ('https://optaskflow.vercel.app/') with script ('https://optaskflow.vercel.app/firebase-messaging-sw.js'): A bad HTTP response code (404) was received when fetching the script.
-Permission granted, token received: false
-
-After that, the component that is in charge of push notifs UI displays this: Notifications Blocked.
-Retry button only refreshes the page, is that really useful?
-
-# Weird popup
-
-- says: "New version available! Reload to update?"
-  Is this coming from the PWA? Probably. It happens very often, because every weak I release a new commit, that also changes the project version in package.json
+- when I return to the inbox page several times, messages are still seen as not read. Same as on the tasks page. When I return to the /tasks after being on the /inbox page, my repeating tasks dont have their updated fields. May be the problem with caching not sure
+- when I return to the inbox page several times, messages are still seen as not read. Same as on the tasks page. When I return to the /tasks after being on the /inbox page, my repeating tasks dont have their updated fields. May be the problem with caching not sure
 
 # Tasks on Dashboard (/webapp)
 
@@ -102,20 +80,6 @@ Retry button only refreshes the page, is that really useful?
    - ✅ Points increase to max 10 (for interval tasks)
    - ✅ Available points match the current task points value
 
-# Deleted next-sitemap.config.js
-
-/\*_ @type {import('next-sitemap').IConfig} _/
-module.exports = {
-siteUrl: "https://optaskflow.vercel.app",
-generateRobotsTxt: true, // (optional) automatically creates robots.txt
-exclude: ["/api/*", "/webapp/*"],
-};
-
 # Vercel env
 
 - check CRON_SECRET and other vars
-
-# DEPLOYNET
-
-fatal: unable to access 'https://github.com/JosipCunko/taskflow.git/': The requested URL returned error: 500
-Automatic deployments from GitHub are temporarily unavailable. You can manually create a new deployment.

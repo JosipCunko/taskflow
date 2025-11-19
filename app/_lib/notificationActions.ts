@@ -47,13 +47,13 @@ export async function markAllAsReadAction(
     revalidatePath("/webapp/inbox");
     revalidatePath("/webapp");
 
-    return {
-      success: true,
-      message: `${notificationIds.length} notifications marked as read`,
-    };
+    return { success: true, message: "All notifications marked as read" };
   } catch (error) {
-    console.error("Error marking notifications as read:", error);
-    return { success: false, error: "Failed to mark notifications as read" };
+    console.error("Error marking all notifications as read:", error);
+    return {
+      success: false,
+      error: "Failed to mark all notifications as read",
+    };
   }
 }
 

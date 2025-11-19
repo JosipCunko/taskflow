@@ -6,7 +6,7 @@ import { Send, Bot, User } from "lucide-react";
 import { ChatMessage, FunctionResult } from "@/app/_types/types";
 import ThinkingIndicator from "./ThinkingIndicator";
 import Image from "next/image";
-import Input from "../reusable/Input";
+import Textarea from "../reusable/Textarea";
 import EmptyChat from "./EmptyChat";
 import FunctionResults from "./FunctionResults";
 import ModelDropdown, { models, AIModel } from "./ModelDropdown";
@@ -20,6 +20,12 @@ interface ChatProps {
   userName?: string | null;
   userImage?: string | null;
 }
+
+const getModelNameFromId = (modelId: string | undefined): string => {
+  if (!modelId) return "AI Assistant";
+  const model = models.find((m) => m.id === modelId);
+  return model?.name || "AI Assistant";
+};
 
 export default function Chat({
   initialMessages,
@@ -50,8 +56,21 @@ export default function Chat({
     scrollToBottom();
   }, [messages]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
+    // Auto-resize textarea
+    e.target.style.height = "auto";
+    e.target.style.height = `${e.target.scrollHeight}px`;
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      const fakeEvent = {
+        preventDefault: () => {},
+      } as React.FormEvent<HTMLFormElement>;
+      handleSubmit(fakeEvent);
+    }
   };
 
   const handleExampleClick = (query: string) => {
@@ -94,7 +113,25 @@ export default function Chat({
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Try to get error details from response
+        let errorMsg = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          if (errorData.error) {
+            errorMsg = errorData.error;
+          }
+          if (errorData.userFriendly) {
+            errorToast(errorMsg);
+            setMessages(newMessages.slice(0, -1));
+            setIsPending(false);
+            setStreamingContent("");
+            return;
+          }
+        } catch (e) {
+          // If can't parse JSON, use default error
+          console.error("Error parsing error response:", e);
+        }
+        throw new Error(errorMsg);
       }
 
       const reader = response.body?.getReader();
@@ -131,9 +168,13 @@ export default function Chat({
                 setStreamingContent(formattedContent);
               } else if (parsed.type === "tool_start") {
                 // Tool execution started
-                setStreamingContent(
-                  accumulatedContent + "\n\n*Executing tools...*"
+                const toolMessage = DOMPurify.sanitize(
+                  marked(
+                    accumulatedContent +
+                      '\n\n<div class="flex items-center gap-2 text-primary-400 my-2"><span class="inline-block animate-spin">⚙️</span> <span class="italic">Executing actions...</span></div>'
+                  ) as string
                 );
+                setStreamingContent(toolMessage);
               } else if (parsed.type === "tool_results") {
                 functionResults = parsed.results;
               } else if (parsed.type === "done") {
@@ -159,6 +200,8 @@ export default function Chat({
         content: finalFormattedContent,
         duration,
         functionResults,
+        modelId: selectedModel.id,
+        modelName: selectedModel.name,
       };
 
       setMessages([...newMessages, assistantMessage]);
@@ -234,21 +277,27 @@ export default function Chat({
                     <>
                       <div className="mb-2">
                         <span className="text-sm font-semibold text-primary-400">
-                          {selectedModel.name}
+                          {msg.modelName || getModelNameFromId(msg.modelId)}
                         </span>
                       </div>
                       <div className="rounded-lg p-4 bg-background-600 border border-background-500">
-                        <div
-                          className="text-sm leading-relaxed ai-response prose prose-invert max-w-none"
-                          dangerouslySetInnerHTML={{ __html: msg.content }}
-                        />
+                        {msg.content ? (
+                          <div
+                            className="text-sm leading-relaxed ai-response prose prose-invert max-w-none"
+                            dangerouslySetInnerHTML={{ __html: msg.content }}
+                          />
+                        ) : (
+                          <p className="text-sm text-text-low italic">
+                            No response generated
+                          </p>
+                        )}
                         {msg.functionResults && (
                           <div className="mt-3">
                             <FunctionResults results={msg.functionResults} />
                           </div>
                         )}
                         {msg.duration && (
-                          <p className="text-xs text-text-low mt-2">
+                          <p className="text-xs text-blue-400 mt-2">
                             {msg.duration}s
                           </p>
                         )}
@@ -262,7 +311,9 @@ export default function Chat({
                         </span>
                       </div>
                       <div className="rounded-lg p-4 bg-primary-500/10 border border-primary-500/30">
-                        <p className="text-sm leading-relaxed">{msg.content}</p>
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                          {msg.content}
+                        </p>
                       </div>
                     </>
                   )}
@@ -304,7 +355,7 @@ export default function Chat({
         <div className="max-w-4xl mx-auto">
           <form
             onSubmit={handleSubmit}
-            className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3"
+            className="flex flex-col items-stretch gap-2"
           >
             <div className="flex-shrink-0 order-2 sm:order-1">
               <ModelDropdown
@@ -313,19 +364,20 @@ export default function Chat({
                 className="w-full sm:w-auto"
               />
             </div>
-            <div className="flex-1 flex items-center gap-2 bg-background-600 border border-background-500 rounded-xl px-3 sm:px-4 py-2 sm:py-3 focus-within:border-primary-500/50 transition-colors order-1 sm:order-2">
-              <Input
-                type="text"
+            <div className="flex-1 flex items-end gap-2 bg-background-600 border border-background-500 rounded-xl px-3 sm:px-4 py-2 sm:py-3 focus-within:border-primary-500/50 transition-colors order-1 sm:order-2">
+              <Textarea
                 name="message"
                 value={input}
                 onChange={handleInputChange}
-                placeholder="Ask me anything..."
-                className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 p-0 text-sm sm:text-base"
+                onKeyDown={handleKeyDown}
+                placeholder="Ask me anything... (Shift+Enter for new line)"
+                rows={1}
+                className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 p-0 text-sm sm:text-base max-h-32 overflow-y-auto"
                 disabled={isPending}
               />
               <button
                 type="submit"
-                className="bg-primary-500 text-white rounded-lg p-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:bg-primary-600 flex-shrink-0"
+                className="bg-primary-500 text-white rounded-lg p-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:bg-primary-600 flex-shrink-0 mb-0.5"
                 disabled={isPending || !input.trim()}
               >
                 <Send size={18} />
