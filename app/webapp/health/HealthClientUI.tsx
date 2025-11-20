@@ -27,6 +27,7 @@ import { CardSpecificIcons } from "@/app/_utils/icons";
 import AddLoggedMeal from "@/app/_components/AddLoggedMeal";
 import AddSavedMeal from "@/app/_components/AddSavedMeal";
 import LoggedMealCard from "@/app/_components/LoggedMealCard";
+import NutritionGraphs from "../../_components/NutritionGraphs";
 
 /* State */
 const initialState = {
@@ -177,7 +178,10 @@ export default function HealthClientUI() {
           className="min-w-fit w-full sm:w-auto"
           disableDaysBefore={false}
         >
-          <Button variant="secondary" className="w-full sm:w-auto justify-center">
+          <Button
+            variant="secondary"
+            className="w-full sm:w-auto justify-center"
+          >
             <CardSpecificIcons.DueDate size={20} />
             <span>{formatDate(state.currentDate)}</span>
           </Button>
@@ -261,6 +265,8 @@ export default function HealthClientUI() {
           })}
         </div>
       </div>
+
+      <NutritionGraphs />
 
       {/* Logged Meals */}
       <div className="bg-background-600 border border-background-500 rounded-xl shadow-lg p-6">

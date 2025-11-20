@@ -6,6 +6,7 @@ import { adminDb } from "./admin";
 import { ActionResult, LoggedMeal, SavedMeal } from "../_types/types";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { CacheTags } from "../_utils/serverCache";
+import { startOfDay, subMonths } from "date-fns";
 
 export async function createSavedMeal(
   formData: FormData
@@ -299,6 +300,140 @@ export async function deleteLoggedMeal(
     return {
       success: false,
       error: "Failed to delete meal log",
+    };
+  }
+}
+
+export interface NutritionDataPoint {
+  date: number;
+  displayDate: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
+export interface HistoricalNutritionData {
+  dataPoints: NutritionDataPoint[];
+  averages: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+}
+
+export async function getHistoricalNutritionData(
+  monthsBack: number
+): Promise<ActionResult<HistoricalNutritionData>> {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return {
+        success: false,
+        error: "Not authenticated",
+      };
+    }
+
+    const endDate = Date.now();
+    const startDate = subMonths(startOfDay(endDate), monthsBack).getTime();
+
+    // Fetch all logged meals in the date range
+    const snapshot = await adminDb
+      .collection("loggedMeals")
+      .where("userId", "==", session.user.id)
+      .where("loggedAt", ">=", startDate)
+      .where("loggedAt", "<=", endDate)
+      .orderBy("loggedAt", "asc")
+      .get();
+
+    // Group meals by day
+    const dailyData = new Map<
+      string,
+      {
+        date: number;
+        calories: number;
+        protein: number;
+        carbs: number;
+        fat: number;
+      }
+    >();
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      const mealDate = startOfDay(data.loggedAt).getTime();
+      const dateKey = mealDate.toString();
+
+      if (!dailyData.has(dateKey)) {
+        dailyData.set(dateKey, {
+          date: mealDate,
+          calories: 0,
+          protein: 0,
+          carbs: 0,
+          fat: 0,
+        });
+      }
+
+      const dayData = dailyData.get(dateKey)!;
+      dayData.calories += data.calculatedNutrients.calories;
+      dayData.protein += data.calculatedNutrients.protein;
+      dayData.carbs += data.calculatedNutrients.carbs;
+      dayData.fat += data.calculatedNutrients.fat;
+    });
+
+    // Convert to array and format
+    const dataPoints: NutritionDataPoint[] = Array.from(dailyData.values())
+      .map((day) => ({
+        date: day.date,
+        displayDate: new Date(day.date).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        }),
+        calories: Math.round(day.calories),
+        protein: Math.round(day.protein * 10) / 10,
+        carbs: Math.round(day.carbs * 10) / 10,
+        fat: Math.round(day.fat * 10) / 10,
+      }))
+      .sort((a, b) => a.date - b.date);
+
+    // Calculate averages (only for days with data)
+    const averages = {
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0,
+    };
+
+    if (dataPoints.length > 0) {
+      const totals = dataPoints.reduce(
+        (acc, day) => ({
+          calories: acc.calories + day.calories,
+          protein: acc.protein + day.protein,
+          carbs: acc.carbs + day.carbs,
+          fat: acc.fat + day.fat,
+        }),
+        { calories: 0, protein: 0, carbs: 0, fat: 0 }
+      );
+
+      averages.calories = Math.round(totals.calories / dataPoints.length);
+      averages.protein =
+        Math.round((totals.protein / dataPoints.length) * 10) / 10;
+      averages.carbs = Math.round((totals.carbs / dataPoints.length) * 10) / 10;
+      averages.fat = Math.round((totals.fat / dataPoints.length) * 10) / 10;
+    }
+
+    return {
+      success: true,
+      data: {
+        dataPoints,
+        averages,
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching historical nutrition data:", error);
+    return {
+      success: false,
+      error: "Failed to fetch historical nutrition data",
     };
   }
 }

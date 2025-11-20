@@ -217,8 +217,7 @@ export const getNotificationsByUserIdAdmin = async (
 
     const now = Date.now();
     return notifications.filter(
-      (notification) =>
-        !notification.expiresAt || isAfter(notification.expiresAt, now)
+      (notification) => !notification.expiresAt || notification.expiresAt > now
     );
   } catch (error) {
     console.error("Error fetching notifications:", error);
@@ -767,7 +766,7 @@ export const getNotificationStats = async (
         expiresAt: data.expiresAt ? data.expiresAt : undefined,
       } as Notification;
 
-      if (!notification.expiresAt || isAfter(notification.expiresAt, now)) {
+      if (!notification.expiresAt || notification.expiresAt > now) {
         unreadNotifications.push(notification);
       }
     });

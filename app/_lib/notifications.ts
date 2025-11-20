@@ -10,7 +10,6 @@ import {
 } from "firebase/firestore";
 import { db } from "./firebase";
 import { Notification, NotificationStats } from "../_types/types";
-import { isAfter } from "date-fns";
 
 // Helper to convert Firestore doc to Notification object
 const fromFirestore = (
@@ -76,8 +75,7 @@ export const getNotificationsByUserId = async (
     // Filter out expired notifications
     const now = Date.now();
     return notifications.filter(
-      (notification) =>
-        !notification.expiresAt || isAfter(notification.expiresAt, now)
+      (notification) => !notification.expiresAt || notification.expiresAt > now
     );
   } catch (error) {
     console.error("Error fetching notifications:", error);

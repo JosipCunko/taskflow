@@ -21,36 +21,31 @@ I dont have the API key from youtube, so I dont know how to get it, how and from
 # Review
 
 - offline support - works but still needs review
-- admin.ts newly implementation of firestore not being initialized during built time
 - sw.js
-- do we actually update the version of PWA: @PWAInstall ln:42
 - how do I test the push notifs?
 - anonymous data deletion
 - autoDelayIncompleteTasks
-- better system prompt inside utils for openrouter
 
 # AI Feature
 
-its glitchy, maybe its problem with caching, it shows and then delets chats, every time I refresh the page in a hope the messages stay in the chat.
+When I told gemini 2.5 Pro to tell me two sentences about castor oil, it responded with this:
+". However, while it can improve the health of existing hair, there is little scientific evidence to prove it directly stimulates new growth."
 
-# Task filtering
+IT SEEMS IT CROPPED OUT CONTENT, that is way gemini respondend with nothing ("No response generated") on some requests, it crops out, slices some text, clearly it has other formatting.
 
-- when I add any filter in Advanced Repeating Task Filter, it showed regular tasks that was completed, including all of the corresponding repeating tassk
+# Repeating tasks
 
-icon filtering doesnt work. When I search for the tasks which have icon with a person, none show but it exists. It may be the problem with comparing icon names/labels
+In one task, I can see that it has these properties inside firestore:
+completedAt: 1763391253011 (This monday)
+repetitionRule.completedAt [] (empty arr)
+
+In the /tasks, I remember that I've completed it on monday. But it says 0/2 done, instead of 1/2. my only clue is that somehow we accidentally updated/reseted this task.
+
+Human flag completedAt was yesterday, its repetitionRule.completions is 0 and repetitionRule.completedAt is []
 
 # Inbox
 
-- double the notification: "Potjera" is due today (Repeating Task) of MEDIUM priority. Cannot happen.
-  When I click on the notification (to read it), the Unread state doesnt change, it stays on 2, but when I click on it, it says "No unread notifications"
-
-# Inbox
-
-- double the notification: "Potjera" is due today (Repeating Task) of MEDIUM priority. Cannot happen.
-  When I click on the notification (to read it), the Unread state doesnt change, it stays on 2, but when I click on it, it says "No unread notifications"
-
-- when I return to the inbox page several times, messages are still seen as not read. Same as on the tasks page. When I return to the /tasks after being on the /inbox page, my repeating tasks dont have their updated fields. May be the problem with caching not sure
-- when I return to the inbox page several times, messages are still seen as not read. Same as on the tasks page. When I return to the /tasks after being on the /inbox page, my repeating tasks dont have their updated fields. May be the problem with caching not sure
+unread number is often unread messages + 1
 
 # Tasks on Dashboard (/webapp)
 
@@ -79,7 +74,3 @@ icon filtering doesnt work. When I search for the tasks which have icon with a p
 3. Verify:
    - ✅ Points increase to max 10 (for interval tasks)
    - ✅ Available points match the current task points value
-
-# Vercel env
-
-- check CRON_SECRET and other vars
