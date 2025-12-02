@@ -14,10 +14,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: {
-    default: "TaskFlow - Master Your Productivity",
-    template: "%s | TaskFlow",
-  },
+  title: "Taskflow",
   description:
     "Modern task management web application with AI-powered features, analytics, and comprehensive productivity tools. Organize, prioritize, and achieve your goals with ultimate discipline and control.",
   keywords: [

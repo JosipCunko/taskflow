@@ -725,7 +725,8 @@ export async function completeRepeatingTaskWithTimesPerWeek(
       completedAt: [...rule.completedAt, completionDate],
       completions: newCompletions,
     },
-    completedAt: completionDate,
+    // Only set completedAt when the full week cycle is complete
+    completedAt: isWeekComplete ? completionDate : undefined,
     dueDate: nextDueDate,
     points: newPoints,
     status: isWeekComplete ? "completed" : "pending",
@@ -862,7 +863,8 @@ export async function completeRepeatingTaskWithDaysOfWeek(
       completedAt: [...rule.completedAt, completionDate],
       completions: newCompletions,
     },
-    completedAt: completionDate,
+    // Only set completedAt when the full week cycle is complete
+    completedAt: isWeekComplete ? completionDate : undefined,
     dueDate: newDueDate,
     points: newPoints,
     status: isWeekComplete ? "completed" : "pending",
@@ -931,106 +933,6 @@ export async function sendCampaignNotificationAction(
   } catch (error) {
     console.error("Error sending campaign:", error);
     return { success: false, error: "Failed to send campaign" };
-  }
-}
-
-/* YouTube Summarizer */
-/* YouTube Summarizer */
-/* YouTube Summarizer */
-export async function processYouTubeSummaryAction(): Promise<ActionResult> {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return { success: false, error: "User not authenticated" };
-    }
-
-    // Check if user has already processed today
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayTimestamp = today.getTime();
-
-    const existingSummary = await adminDb
-      .collection("youtubeSummaries")
-      .where("userId", "==", session.user.id)
-      .where("createdAt", ">=", todayTimestamp)
-      .limit(1)
-      .get();
-
-    if (!existingSummary.empty) {
-      return {
-        success: true,
-        message: "YouTube summary already processed today",
-      };
-    }
-
-    // Make internal API call to process YouTube summary
-    // NOTE: NEXTAUTH_URL should be set to your production URL (not localhost) in production
-    // For internal server-to-server calls, we use the NEXTAUTH_URL as the base
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-    const response = await fetch(`${baseUrl}/api/youtube/process`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Cookie: `next-auth.session-token=${session.user.id}`, // Pass session info
-      },
-    });
-
-    if (!response.ok) {
-      return {
-        success: false,
-        error: "Failed to process YouTube summary",
-      };
-    }
-    const result = await response.json();
-    if (result.success) {
-      revalidatePath("/webapp/inbox");
-      revalidatePath("/webapp/tasks");
-      revalidatePath("/webapp");
-    }
-
-    return result;
-  } catch (error) {
-    console.error("Error processing YouTube summary:", error);
-    return {
-      success: false,
-      error: "Failed to process YouTube summary",
-    };
-  }
-}
-
-export async function updateYouTubePreferencesAction(
-  enabled: boolean,
-  createTasks: boolean = true,
-  createNotifications: boolean = true
-): Promise<ActionResult> {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return { success: false, error: "User not authenticated" };
-    }
-
-    await adminDb.collection("users").doc(session.user.id).update({
-      youtubePreferences: {
-        enabled,
-        createTasks,
-        createNotifications,
-      },
-    });
-
-    revalidateTag(CacheTags.user(session.user.id));
-    revalidatePath("/webapp/profile");
-    revalidatePath("/webapp");
-
-    return {
-      success: true,
-      message: "YouTube preferences updated successfully",
-    };
-  } catch (error) {
-    console.error("Error updating YouTube preferences:", error);
-    return {
-      success: false,
-      error: "Failed to update YouTube preferences",
-    };
   }
 }
 

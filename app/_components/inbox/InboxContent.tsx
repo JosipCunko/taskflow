@@ -99,30 +99,31 @@ export default function InboxContent({
 
   const handleMarkAsRead = async (notificationId: string) => {
     // Optimistic update first
-    setNotifications((prev) =>
-      prev.map((n) =>
+    setNotifications((prev) => {
+      const updated = prev.map((n) =>
         n.id === notificationId ? { ...n, isRead: true, readAt: Date.now() } : n
-      )
-    );
-    updateStats();
+      );
+      // Update stats with the new notifications list
+      updateStats(updated);
+      return updated;
+    });
 
     startTransition(async () => {
       try {
         localStorage.setItem("notifications-updated", Date.now().toString());
         await markAsReadAction(notificationId);
-        updateStats();
       } catch (error) {
         console.error("Error marking notification as read:", error);
         // Revert optimistic update on error
-        setNotifications((prev) =>
-          prev.map((n) =>
+        setNotifications((prev) => {
+          const reverted = prev.map((n) =>
             n.id === notificationId
               ? { ...n, isRead: false, readAt: undefined }
               : n
-          )
-        );
-        updateStats();
-        // Maybe trigger notification bell update again after revert
+          );
+          updateStats(reverted);
+          return reverted;
+        });
       }
     });
   };
@@ -132,34 +133,42 @@ export default function InboxContent({
     if (unreadIds.length === 0) return;
 
     // Optimistic update first
-    setNotifications((prev) =>
-      prev.map((n) => ({ ...n, isRead: true, readAt: Date.now() }))
-    );
-    updateStats();
+    setNotifications((prev) => {
+      const updated = prev.map((n) => ({
+        ...n,
+        isRead: true,
+        readAt: Date.now(),
+      }));
+      updateStats(updated);
+      return updated;
+    });
 
     startTransition(async () => {
       try {
         localStorage.setItem("notifications-updated", Date.now().toString());
         await markAllAsReadAction(unreadIds);
-        updateStats();
       } catch (error) {
         console.error("Error marking all notifications as read:", error);
         // Revert optimistic update on error
-        setNotifications((prev) =>
-          prev.map((n) =>
+        setNotifications((prev) => {
+          const reverted = prev.map((n) =>
             unreadIds.includes(n.id)
               ? { ...n, isRead: false, readAt: undefined }
               : n
-          )
-        );
-        updateStats();
+          );
+          updateStats(reverted);
+          return reverted;
+        });
       }
     });
   };
 
   const handleArchive = async (notificationId: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
-    updateStats();
+    setNotifications((prev) => {
+      const updated = prev.filter((n) => n.id !== notificationId);
+      updateStats(updated);
+      return updated;
+    });
 
     startTransition(async () => {
       try {
@@ -176,8 +185,11 @@ export default function InboxContent({
   };
 
   const handleDelete = async (notificationId: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
-    updateStats();
+    setNotifications((prev) => {
+      const updated = prev.filter((n) => n.id !== notificationId);
+      updateStats(updated);
+      return updated;
+    });
 
     startTransition(async () => {
       try {
@@ -206,8 +218,10 @@ export default function InboxContent({
     });
   };
 
-  const updateStats = () => {
-    const unreadNotifications = notifications.filter((n) => !n.isRead);
+  const updateStats = (notificationsList?: Notification[]) => {
+    // Use provided notifications list or fall back to state
+    const currentNotifications = notificationsList || notifications;
+    const unreadNotifications = currentNotifications.filter((n) => !n.isRead);
     const newStats: NotificationStats = {
       totalUnread: unreadNotifications.length,
       unreadByPriority: {

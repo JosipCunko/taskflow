@@ -56,11 +56,6 @@ export interface AppUser {
   bestStreak: number;
   lastLoginAt?: number;
   nutritionGoals: UserNutritionGoals;
-  youtubePreferences?: {
-    enabled: boolean;
-    createTasks: boolean;
-    createNotifications: boolean;
-  };
   // Anonymous user fields
   isAnonymous?: boolean;
   anonymousCreatedAt?: number;
@@ -224,7 +219,7 @@ export type NotificationType =
   | "WEEKLY_SUMMARY"
   | "ACHIEVEMENT_UNLOCKED"
   | "SYSTEM"
-  | "YOUTUBE_SUMMARY";
+  | "POINTS_MILESTONE";
 export type NotificationPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 
 export interface ActionResult<T = null> {
@@ -385,27 +380,6 @@ export interface LastPerformance {
   reps: number;
   sets: number;
   date: number;
-}
-
-export interface YouTubeVideo {
-  id: string;
-  title: string;
-  channelTitle: string;
-  channelId: string;
-  description: string;
-  publishedAt: number;
-  thumbnailUrl: string;
-  duration?: string;
-  viewCount?: string;
-}
-
-export interface YouTubeSummary {
-  id: string;
-  userId: string;
-  videos: YouTubeVideo[];
-  summary: string;
-  createdAt: number;
-  processedAt: number;
 }
 
 export interface FunctionResult {

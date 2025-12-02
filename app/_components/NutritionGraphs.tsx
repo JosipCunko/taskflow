@@ -79,9 +79,9 @@ export default function NutritionGraphs() {
   return (
     <div className="bg-background-600 border border-background-500 rounded-xl shadow-lg p-6">
       <div className="mb-6">
-        <h2 className="text-2xl font-semibold text-text-high flex items-center gap-2 mb-2">
+        <h2 className="text-2xl font-semibold text-text-low flex items-center gap-2 mb-2">
           <TrendingUp className="w-6 h-6 text-primary-500" />
-          <span className="text-glow">Nutrition Progress</span>
+          <span>Nutrition Progress</span>
         </h2>
         <p className="text-text-low text-sm">
           Track your nutrition trends over time

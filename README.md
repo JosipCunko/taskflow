@@ -130,7 +130,6 @@ Whether you're planning your day, tracking your workouts, monitoring your nutrit
 - **Contextual Support**: AI understands your current app context to provide relevant assistance.
 - **Chat History**: Persistent conversation history for ongoing productivity coaching.
 - **Function Calling**: AI can interact with your tasks, retrieve data, and perform actions on your behalf.
-- **YouTube Summarizer**: Automatically processes your YouTube watch history and generates daily summaries or insights (opt-in feature).
 
 ### 8. Notes
 
@@ -214,7 +213,6 @@ Whether you're planning your day, tracking your workouts, monitoring your nutrit
 
 ### APIs & External Services
 
-- **YouTube Data API**: Optional integration for watch history analysis and summarization.
 - **openrouter**: AI models.
 
 ### Development Tools & Infrastructure
@@ -285,7 +283,6 @@ Whether you're planning your day, tracking your workouts, monitoring your nutrit
       - `GITHUB_ID` and `GITHUB_SECRET` for GitHub OAuth (callback URL: `http://localhost:3000/api/auth/callback/github`)
       - `OPENAI_API_KEY` for OpenAI GPT models in AI assistant
       - `OPENROUTER_API_KEY` you'll need several of them
-      - `YOUTUBE_API_KEY` for YouTube summarizer feature (optional)
 
 4.  **Run the development server**:
 
@@ -351,11 +348,6 @@ interface AppUser {
   bestStreak: number;
   lastLoginAt?: number;
   nutritionGoals: UserNutritionGoals;
-  youtubePreferences?: {
-    enabled: boolean;
-    createTasks: boolean;
-    createNotifications: boolean;
-  };
   // Anonymous user fields
   isAnonymous?: boolean;
   anonymousCreatedAt?: number;

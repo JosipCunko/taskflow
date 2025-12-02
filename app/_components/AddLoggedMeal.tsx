@@ -116,7 +116,7 @@ export default function AddLoggedMeal({
               <h3 className="text-lg font-semibold text-text-low mb-2">
                 No Saved Meals
               </h3>
-              <p className="text-text-gray">
+              <p className="text-text-gray text-pretty">
                 Save some meals first to start logging your intake
               </p>
             </div>

@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import { authOptions } from "../_lib/auth";
 import { getTasksByUserId } from "../_lib/tasks-admin";
 import { redirect } from "next/navigation";
@@ -15,14 +14,6 @@ import OfflineIndicator from "../_components/OfflineIndicator";
 const AnalyticsTracker = dynamic(
   () => import("../_components/AnalyticsTracker")
 );
-const YouTubeBackgroundProcessor = dynamic(
-  () => import("../_components/YouTubeBackgroundProcessor")
-);
-
-export const metadata: Metadata = {
-  title: "TaskFlow",
-  description: "Manage your tasks and boost your productivity with TaskFlow.",
-};
 
 export default async function RootLayout({
   children,
@@ -44,7 +35,6 @@ export default async function RootLayout({
       />
       <OfflineIndicator />
       <AnalyticsTracker userData={userData} />
-      <YouTubeBackgroundProcessor userId={userId} userData={userData} />
       <main className="grid grid-rows-1 grid-cols-1 sm:grid-cols-[16rem_1fr] relative h-screen bg-background-625">
         <AnimatedSidebar />
         <div className="h-full grid grid-cols-1 grid-rows-[80px_1fr] px-2 sm:px-4 lg:px-6 relative overflow-hidden">

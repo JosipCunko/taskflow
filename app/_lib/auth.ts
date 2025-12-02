@@ -220,6 +220,10 @@ export async function updateUserRepeatingTasks(userId: string) {
         setIfChanged("status", "pending", task.status);
         setNestedIfChanged("repetitionRule.completions", 0, rule.completions);
         setNestedIfChanged("repetitionRule.completedAt", [], rule.completedAt);
+        // Clear completedAt since we're starting a new cycle
+        if (task.completedAt !== undefined) {
+          updates.completedAt = undefined;
+        }
 
         // New week: dueDate becomes today
         const newDueDate = new Date(today);
@@ -358,6 +362,10 @@ export async function updateUserRepeatingTasks(userId: string) {
         setIfChanged("status", "pending", task.status);
         setNestedIfChanged("repetitionRule.completions", 0, rule.completions);
         setNestedIfChanged("repetitionRule.completedAt", [], rule.completedAt);
+        // Clear completedAt since we're starting a new cycle
+        if (task.completedAt !== undefined) {
+          updates.completedAt = undefined;
+        }
       } else if (isPast(taskDueDate) && !isToday(taskDueDate)) {
         // Past due but same week or need to reset status
         setIfChanged("status", "pending", task.status);
@@ -519,11 +527,6 @@ export const authOptions: NextAuthOptions = {
               bestStreak: 0,
               achievements: [],
               lastLoginAt: Date.now(),
-              youtubePreferences: {
-                enabled: true, // Enable by default for testing
-                createTasks: true,
-                createNotifications: true,
-              },
               // Mark anonymous users for potential cleanup
               ...(isAnonymous && {
                 isAnonymous: true,
@@ -624,11 +627,6 @@ export const authOptions: NextAuthOptions = {
               bestStreak: 0,
               achievements: [],
               lastLoginAt: Date.now(),
-              youtubePreferences: {
-                enabled: true, // Enable by default for testing
-                createTasks: true,
-                createNotifications: true,
-              },
               ...(user.email && { email: user.email }),
               ...(user.name && { displayName: user.name }),
               ...(user.image && { photoURL: user.image }),

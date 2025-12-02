@@ -80,7 +80,6 @@ async function getUserByIdInternal(userId: string): Promise<AppUser | null> {
             updatedAt: userData.createdAt,
           },
       ...(userData.lastLoginAt && { lastLoginAt: userData.lastLoginAt }),
-      youtubePreferences: userData.youtubePreferences,
       // Anonymous user fields
       isAnonymous: userData.isAnonymous,
       ...(userData.anonymousCreatedAt && {

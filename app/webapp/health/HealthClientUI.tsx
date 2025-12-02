@@ -216,7 +216,7 @@ export default function HealthClientUI() {
 
       {/* Daily Summary */}
       <div>
-        <h2 className="text-xl font-semibold text-text-high flex items-center gap-2 mb-4">
+        <h2 className="text-xl font-semibold text-text-low flex items-center gap-2 mb-4">
           <Calendar className="w-5 h-5" />
           Daily nutrition summary for {formatDate(state.currentDate)}
         </h2>
@@ -270,7 +270,7 @@ export default function HealthClientUI() {
 
       {/* Logged Meals */}
       <div className="bg-background-600 border border-background-500 rounded-xl shadow-lg p-6">
-        <h2 className="text-xl font-semibold text-text-high flex items-center gap-2 mb-4">
+        <h2 className="text-xl font-semibold text-text-low flex items-center gap-2 mb-4">
           <Utensils className="w-5 h-5" />
           Meals recorded on {formatDate(state.currentDate)}
         </h2>
@@ -294,27 +294,61 @@ export default function HealthClientUI() {
       <ModalContext.Provider value={goalsModalContextValue}>
         <Modal.Window name="nutrition-goals">
           <div className="modal">
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <Target />
-              Set Daily Nutrition Goals
-            </h2>
-            <div className="space-y-4">
-              {generateNutrients(
-                state.dailyNutritionSummary,
-                state.nutritionGoals
-              ).map((goal) => (
-                <div key={goal.label}>
-                  <label className="block text-sm font-medium text-text-high mb-1">
-                    {goal.label}
-                  </label>
-                  <Input
-                    type="number"
-                    name={goal.label}
-                    value={goal.goal}
-                    onChange={handleGoalInputChange}
-                  />
+            <div className="p-6">
+              <div className="flex items-center gap-3">
+                <Target className="w-4 aspect-square text-text-low" />
+                <div className="text-text-low">
+                  <h2 className="text-xl font-bold">
+                    Set Daily Nutrition Goals
+                  </h2>
                 </div>
-              ))}
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-text-low mb-1">
+                  Calories
+                </label>
+                <Input
+                  type="number"
+                  name="calories"
+                  value={state.nutritionGoals.calories}
+                  onChange={handleGoalInputChange}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-low mb-1">
+                  Protein (g)
+                </label>
+                <Input
+                  type="number"
+                  name="protein"
+                  value={state.nutritionGoals.protein}
+                  onChange={handleGoalInputChange}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-low mb-1">
+                  Carbs (g)
+                </label>
+                <Input
+                  type="number"
+                  name="carbs"
+                  value={state.nutritionGoals.carbs}
+                  onChange={handleGoalInputChange}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-text-low mb-1">
+                  Fat (g)
+                </label>
+                <Input
+                  type="number"
+                  name="fat"
+                  value={state.nutritionGoals.fat}
+                  onChange={handleGoalInputChange}
+                />
+              </div>
             </div>
             <div className="flex justify-end gap-4 mt-6">
               <Button variant="secondary" onClick={closeGoalsModal}>

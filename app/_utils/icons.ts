@@ -50,7 +50,6 @@ import {
   Gift,
   SquarePen,
   Info,
-  Play,
   TrendingUp,
   ClockAlert,
   ClockFading,
@@ -302,7 +301,6 @@ export const getNotificationIcon = (type: NotificationType) => {
     WEEKLY_SUMMARY: TrendingUp,
     POINTS_MILESTONE: Trophy,
     SYSTEM: Info,
-    YOUTUBE_SUMMARY: Play,
   };
 
   return iconMap[type] || Bell;
