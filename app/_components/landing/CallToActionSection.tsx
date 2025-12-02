@@ -14,17 +14,17 @@ export default function CallToActionSection() {
           speed={2.2}
           className="text-3xl md:text-5xl tracking-tight mb-6"
         >
-          Begin Transmission
+          Ready to Deploy?
         </GlitchText>
         <p className="text-text-low mx-auto mb-8 text-base max-w-xl  leading-relaxed text-center text-balance">
-          Secure channel open. Your journey to peak productivity is one click
-          away. Authorize and engage.
+          Your journey to peak productivity is one click away. Authorize and
+          engage.
         </p>
         <Link
           href="/login"
           className="group inline-flex items-center justify-center text-lg font-semibold text-primary-300 bg-primary-500/10 hover:bg-primary-500/20 border-2 border-primary-500/50 shadow-lg hover:shadow-primary-500/20 focus:ring-4 focus:ring-primary-500/50 rounded-lg px-10 py-4 transition-all duration-300 transform hover:scale-105"
         >
-          &gt; Authorize & Engage
+          &gt; Execute_Login
         </Link>
       </div>
     </section>
