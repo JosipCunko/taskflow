@@ -15,8 +15,6 @@ My main branch isnt protected, also in Firebase console I got an warning about o
 - anonymous data deletion
 - autoDelayIncompleteTasks
 
-# change goals in health
-
 # AI Feature
 
 When I told gemini 2.5 Pro to tell me two sentences about castor oil, it responded with this:
