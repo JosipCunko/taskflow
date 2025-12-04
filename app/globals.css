@@ -650,3 +650,76 @@ input[type="range"]:focus::-moz-range-thumb {
 .ai-response a:hover {
   color: var(--color-primary-300);
 }
+
+/* Thesys Chat Integration Styles */
+.thesys-chat-wrapper {
+  --c1-background: var(--color-background-700);
+  --c1-foreground: var(--color-text-low);
+  --c1-card: var(--color-background-600);
+  --c1-primary: var(--color-primary-500);
+  --c1-border: var(--color-divider);
+}
+
+.thesys-chat-wrapper [data-radix-scroll-area-viewport] {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-divider) transparent;
+}
+
+.thesys-chat-wrapper [data-radix-scroll-area-viewport]::-webkit-scrollbar {
+  width: 8px;
+}
+
+.thesys-chat-wrapper
+  [data-radix-scroll-area-viewport]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thesys-chat-wrapper
+  [data-radix-scroll-area-viewport]::-webkit-scrollbar-thumb {
+  background: var(--color-divider);
+  border-radius: 4px;
+}
+
+/* Override Thesys sidebar styles to match TaskFlow */
+.thesys-chat-wrapper [class*="sidebar"] {
+  background-color: var(--color-background-700) !important;
+  border-color: var(--color-divider) !important;
+}
+
+/* Thesys input styles */
+.thesys-chat-wrapper textarea,
+.thesys-chat-wrapper input {
+  background-color: var(--color-background-600) !important;
+  border-color: var(--color-background-500) !important;
+  color: var(--color-text-low) !important;
+}
+
+.thesys-chat-wrapper textarea:focus,
+.thesys-chat-wrapper input:focus {
+  border-color: var(--color-primary-500) !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(51, 153, 255, 0.2) !important;
+}
+
+/* Thesys button styles */
+.thesys-chat-wrapper button[type="submit"],
+.thesys-chat-wrapper [class*="sendButton"] {
+  background-color: var(--color-primary-500) !important;
+  color: white !important;
+}
+
+.thesys-chat-wrapper button[type="submit"]:hover,
+.thesys-chat-wrapper [class*="sendButton"]:hover {
+  background-color: var(--color-primary-600) !important;
+}
+
+/* Thesys message styles */
+.thesys-chat-wrapper [class*="userMessage"] {
+  background-color: rgba(51, 153, 255, 0.1) !important;
+  border: 1px solid rgba(51, 153, 255, 0.3) !important;
+}
+
+.thesys-chat-wrapper [class*="assistantMessage"] {
+  background-color: var(--color-background-600) !important;
+  border: 1px solid var(--color-background-500) !important;
+}

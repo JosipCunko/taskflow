@@ -1,6 +1,6 @@
 {
   "name": "taskflow",
-  "version": "16.5.1",
+  "version": "17.0.0",
   "private": true,
   "scripts": {
     "dev": "cross-env NODE_ENV=development next dev",
@@ -11,7 +11,12 @@
     "update-version": "node update-version.js"
   },
   "dependencies": {
+    "@crayonai/react-core": "^0.7.6",
+    "@crayonai/react-ui": "^0.9.5",
+    "@crayonai/stream": "^0.6.4",
+    "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-switch": "^1.2.5",
+    "@thesysai/genui-sdk": "^0.7.5",
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
     "clsx": "^2.1.1",
@@ -29,7 +34,8 @@
     "react-tooltip": "^5.28.1",
     "recharts": "^3.2.1",
     "server-only": "^0.0.1",
-    "tailwind-merge": "^3.3.1"
+    "tailwind-merge": "^3.3.1",
+    "zustand": "^5.0.9"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

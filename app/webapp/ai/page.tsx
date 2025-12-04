@@ -1,4 +1,4 @@
-import Chat from "@/app/_components/AI/Chat";
+import AIPageClient from "@/app/_components/AI/AIPageClient";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/_lib/auth";
 import { ChatMessage } from "@/app/_types/types";
@@ -13,7 +13,7 @@ export default async function AI() {
   const chatId: string | null = null;
 
   return (
-    <Chat
+    <AIPageClient
       initialMessages={initialMessages}
       chatId={chatId}
       userName={userName}

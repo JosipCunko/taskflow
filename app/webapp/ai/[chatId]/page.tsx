@@ -1,4 +1,4 @@
-import Chat from "@/app/_components/AI/Chat";
+import AIPageClient from "@/app/_components/AI/AIPageClient";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/_lib/auth";
 import { getChat } from "@/app/_lib/ai-admin";
@@ -30,7 +30,7 @@ export default async function ChatPage({
   }
 
   return (
-    <Chat
+    <AIPageClient
       initialMessages={initialMessages}
       chatId={chatId}
       userName={userName}
