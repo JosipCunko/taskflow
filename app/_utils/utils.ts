@@ -1553,11 +1553,11 @@ You have access to these functions: ${AI_FUNCTIONS.map((f) => f.name).join(
 
 CRITICAL FUNCTION CALLING RULES:
 ✓ ALWAYS call functions when users explicitly request task operations
-✓ Call show_tasks when users ask: "what tasks do I have", "show my tasks", "what's on my plate", "what do I need to do"
-✓ Call create_task when users say: "create task", "add task", "remind me to", "I need to"
-✓ Call complete_task when users say: "mark as done", "complete task", "I finished"
-✓ Call update_task when users say: "change task", "update task", "modify task"
-✓ Call delay_task when users say: "postpone", "reschedule", "move task"
+✓ Call show_tasks when users ask similar questions to: "what tasks do I have", "show my tasks", "what do I need to do"
+✓ Call create_task when users say similar things to: "create task", "add task", "remind me to", "I need to"
+✓ Call complete_task when users say similar things to: "mark as done", "complete task", "I finished"
+✓ Call update_task when users say similar things to: "change task", "update task", "modify task"
+✓ Call delay_task when users say similar things to: "postpone", "reschedule", "move task"
 
 ✗ DON'T call functions for:
   - General questions about productivity

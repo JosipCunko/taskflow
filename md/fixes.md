@@ -15,13 +15,6 @@ My main branch isnt protected, also in Firebase console I got an warning about o
 - anonymous data deletion
 - autoDelayIncompleteTasks
 
-# AI Feature
-
-When I told gemini 2.5 Pro to tell me two sentences about castor oil, it responded with this:
-". However, while it can improve the health of existing hair, there is little scientific evidence to prove it directly stimulates new growth."
-
-IT SEEMS IT CROPPED OUT CONTENT, that is way gemini respondend with nothing ("No response generated") on some requests, it crops out, slices some text, clearly it has other formatting.
-
 # Repeating tasks
 
 In one task, I can see that it has these properties inside firestore:
@@ -31,3 +24,14 @@ repetitionRule.completedAt [] (empty arr)
 In the /tasks, I remember that I've completed it on monday. But it says 0/2 done, instead of 1/2. my only clue is that somehow we accidentally updated/reseted this task.
 
 Human flag completedAt was yesterday, its repetitionRule.completions is 0 and repetitionRule.completedAt is []
+
+# Thesys
+
+## Fonts - I noticed that C1Component uses a different font then mine
+
+Inter is the default font used by C1 components. You can add it to your project by importing it in your global CSS file. The font and other styles can be customized later.
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+
+# stlying
+
+https://docs.thesys.dev/guides/styling

@@ -13,8 +13,18 @@ export interface AIModel {
 }
 
 export const models: AIModel[] = [
-  { name: "GPT-5", id: "openai/gpt-5", enabled: true },
-  { name: "Gemini 2.5 Pro", id: "google/gemini-2.5-pro", enabled: true },
+  { name: "GPT-4.1", id: "c1-exp/openai/gpt-4.1", enabled: true },
+  {
+    name: "Claude 3.5 Sonnet",
+    id: "c1-exp/anthropic/claude-3.5-sonnet",
+    enabled: true,
+  },
+  {
+    name: "Gemini 2.0 Flash",
+    id: "c1-exp/google/gemini-2.0-flash",
+    enabled: true,
+  },
+  { name: "C1 Nightly", id: "c1-nightly", enabled: true },
 ];
 
 interface ModelDropdownProps {
