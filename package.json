@@ -1,6 +1,6 @@
 {
   "name": "taskflow",
-  "version": "17.1.0",
+  "version": "17.1.1",
   "private": true,
   "scripts": {
     "dev": "cross-env NODE_ENV=development next dev",
@@ -34,8 +34,8 @@
     "react-tooltip": "^5.28.1",
     "recharts": "^3.2.1",
     "server-only": "^0.0.1",
-    "tailwind-merge": "^3.3.1",
-    "zustand": "^5.0.9"
+    "tailwind-merge": "2.5.4",
+    "zustand": "4.1.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

@@ -35,3 +35,7 @@ Inter is the default font used by C1 components. You can add it to your project 
 # stlying
 
 https://docs.thesys.dev/guides/styling
+
+# TEST.TS INSIDE /md
+
+#remove deps marked and dompurify
