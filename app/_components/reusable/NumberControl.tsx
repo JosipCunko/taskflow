@@ -38,7 +38,10 @@ export default function NumberControl({
           key={value}
           initial={{ scale: 1.1 }}
           animate={{ scale: 1 }}
-          transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
+          transition={{
+            duration: 0.2,
+            ease: [0.25, 0.46, 0.45, 0.94] as const,
+          }}
         >
           <span className="text-2xl font-bold text-text-high">{value}</span>
           {suffix && <span className="text-xs text-text-gray">{suffix}</span>}

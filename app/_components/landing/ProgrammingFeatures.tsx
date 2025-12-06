@@ -8,11 +8,6 @@ const cardVariants = {
   animate: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: {
-      delay: i * 0.15,
-      duration: 0.5,
-      ease: [0.25, 0.46, 0.45, 0.94],
-    },
   }),
 };
 
@@ -27,6 +22,11 @@ export default function ProgrammingFeatures() {
             variants={cardVariants}
             initial="initial"
             whileInView="animate"
+            transition={{
+              delay: i * 0.15,
+              duration: 0.5,
+              ease: "easeOut",
+            }}
             viewport={{ once: true }}
             className="group w-72 h-96 rounded-2xl relative overflow-hidden transition-all duration-300 border border-primary-500/20 hover:border-primary-500/40 bg-background-700 shadow-xl hover:shadow-primary-500/10"
           >

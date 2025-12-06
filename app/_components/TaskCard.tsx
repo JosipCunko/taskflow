@@ -60,15 +60,7 @@ export default function TaskCard({
 
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        delay: index * 0.05,
-        duration: 0.4,
-        ease: [0.25, 0.46, 0.45, 0.94],
-      },
-    },
+    visible: { opacity: 1, y: 0 },
   };
 
   const formattedDueDate = useMemo(() => {
@@ -83,6 +75,11 @@ export default function TaskCard({
       variants={cardVariants}
       initial="hidden"
       animate="visible"
+      transition={{
+        delay: index * 0.05,
+        duration: 0.4,
+        ease: "easeOut",
+      }}
       whileHover={{ y: -3, boxShadow: "0px 6px 20px rgba(0,0,0,0.07)" }}
       layout
       className="bg-background-secondary rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 border-l-4 relative "

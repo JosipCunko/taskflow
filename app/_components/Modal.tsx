@@ -94,7 +94,10 @@ function Window({ children, name, showButton = undefined }: WindowProps) {
             initial={{ opacity: 0, x: 50, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
             exit={{ opacity: 0, x: 50, y: 50, scale: 0.9 }}
-            transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+            transition={{
+              duration: 0.3,
+              ease: [0.25, 0.46, 0.45, 0.94] as const,
+            }}
           >
             <div>{cloneElement(children, { onCloseModal: close })}</div>
 

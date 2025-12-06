@@ -27,7 +27,7 @@ function TechBackgroundPattern() {
             transition={{
               duration: 8,
               repeat: Infinity,
-              ease: [0.42, 0, 0.58, 1],
+              ease: [0.42, 0, 0.58, 1] as const,
               delay: i * 0.2,
             }}
           />
@@ -50,7 +50,7 @@ function TechBackgroundPattern() {
             transition={{
               duration: 10,
               repeat: Infinity,
-              ease: [0.42, 0, 0.58, 1],
+              ease: [0.42, 0, 0.58, 1] as const,
               delay: i * 0.3,
             }}
           ></motion.div>
@@ -73,7 +73,7 @@ function TechBackgroundPattern() {
           transition={{
             duration: 3 + Math.random() * 2,
             repeat: Infinity,
-            ease: [0.42, 0, 0.58, 1],
+            ease: [0.42, 0, 0.58, 1] as const,
             delay: Math.random() * 3,
           }}
         ></motion.div>
@@ -205,7 +205,7 @@ export default function ImageSection() {
                 transition={{
                   duration: 4,
                   repeat: Infinity,
-                  ease: [0, 0, 1, 1],
+                  ease: [0, 0, 1, 1] as const,
                 }}
               />
             </motion.div>
