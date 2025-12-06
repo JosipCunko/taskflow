@@ -66,7 +66,7 @@ export default function TaskCard({
       transition: {
         delay: index * 0.05,
         duration: 0.4,
-        ease: "easeOut",
+        ease: [0.25, 0.46, 0.45, 0.94],
       },
     },
   };

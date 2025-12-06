@@ -98,7 +98,7 @@ export default function Dropdown({
               scale: 0.95,
               transition: { duration: 0.15 },
             }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
+            transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="absolute right-0 mt-2 w-60 bg-background-600 border border-divider shadow-xl rounded-lg p-1.5 z-[100] origin-top-right focus:outline-none "
           >
             {/* ---: Action: Complete --- */}

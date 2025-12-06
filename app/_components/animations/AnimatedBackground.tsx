@@ -69,7 +69,7 @@ function FloatingIcon({
       transition={{
         duration,
         repeat: Infinity,
-        ease: "easeInOut",
+        ease: [0.42, 0, 0.58, 1],
         delay,
       }}
     >
@@ -110,7 +110,7 @@ function GeometricOrb({
       transition={{
         duration: 25,
         repeat: Infinity,
-        ease: "easeInOut",
+        ease: [0.42, 0, 0.58, 1],
         delay,
       }}
     />
@@ -138,7 +138,7 @@ function GridLines() {
           transition={{
             duration: 15,
             repeat: Infinity,
-            ease: "easeInOut",
+            ease: [0.42, 0, 0.58, 1],
             delay: i * 0.5,
           }}
         />
@@ -161,7 +161,7 @@ function GridLines() {
           transition={{
             duration: 18,
             repeat: Infinity,
-            ease: "easeInOut",
+            ease: [0.42, 0, 0.58, 1],
             delay: i * 0.7,
           }}
         />
@@ -195,7 +195,7 @@ function ConstellationDots() {
           transition={{
             duration: 4,
             repeat: Infinity,
-            ease: "easeInOut",
+            ease: [0.42, 0, 0.58, 1],
             delay: dot.delay,
           }}
         />
@@ -211,7 +211,7 @@ function ProductivityVisualization() {
       <motion.div
         className="relative"
         animate={{ rotate: 360 }}
-        transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+        transition={{ duration: 60, repeat: Infinity, ease: [0, 0, 1, 1] }}
       >
         {/* Central hub */}
         <motion.div
@@ -250,7 +250,7 @@ function ProductivityVisualization() {
                 scale: [0.8, 1.2, 0.8],
               }}
               transition={{
-                rotate: { duration: 60, repeat: Infinity, ease: "linear" },
+                rotate: { duration: 60, repeat: Infinity, ease: [0, 0, 1, 1] },
                 scale: { duration: 4, repeat: Infinity, delay: i * 0.5 },
               }}
             >

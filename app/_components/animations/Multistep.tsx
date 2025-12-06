@@ -29,7 +29,7 @@ function Step({ step, currentStep }: { step: number; currentStep: number }) {
           duration: 0.6,
           delay: 0.2,
           type: "tween",
-          ease: "circOut",
+          ease: [0, 0.55, 0.45, 1],
         }}
         className="absolute inset-0 rounded-full bg-blue-200"
       />
@@ -83,7 +83,7 @@ function CheckIcon(props: ComponentProps<"svg">) {
         transition={{
           delay: 0.2,
           type: "tween",
-          ease: "easeOut",
+          ease: [0.25, 0.46, 0.45, 0.94],
           duration: 0.3,
         }}
         strokeLinecap="round"
