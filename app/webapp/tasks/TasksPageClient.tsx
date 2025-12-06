@@ -6,7 +6,6 @@ import {
   ChartColumn,
   Repeat,
   Clock,
-  Filter,
   X,
   Calendar as CalendarIcon,
   Zap,
@@ -15,6 +14,7 @@ import {
   Palette,
   ChevronDown,
   ChevronUp,
+  ListFilter,
 } from "lucide-react";
 import { Task } from "@/app/_types/types";
 import TaskCard from "@/app/_components/TaskCard";
@@ -222,7 +222,7 @@ export default function TasksPageClient({ tasks }: { tasks: Task[] }) {
           onClick={() => setIsFilterOpen(!isFilterOpen)}
           className="relative"
         >
-          <Filter className="w-5 h-5" />
+          <ListFilter className="w-5 h-5" />
           Filter
           {getActiveFilterCount() > 0 && (
             <span className="absolute -top-2 -right-2 bg-primary-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold">
@@ -643,7 +643,7 @@ export default function TasksPageClient({ tasks }: { tasks: Task[] }) {
         <div className="mt-8">
           <div className="mb-6">
             <h2 className="text-xl font-semibold text-text-low flex items-center mb-4">
-              <Filter className="w-5 h-5 mr-2 text-primary-500" />
+              <ListFilter className="w-5 h-5 mr-2 text-primary-500" />
               Filtered Tasks ({filteredTasks.length})
             </h2>
           </div>
@@ -661,7 +661,7 @@ export default function TasksPageClient({ tasks }: { tasks: Task[] }) {
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-12">
-                <Filter className="w-16 h-16 text-text-gray/50 mb-4" />
+                <ListFilter className="w-16 h-16 text-text-gray/50 mb-4" />
                 <p className="text-text-gray text-lg">
                   No tasks match your filters.
                 </p>
