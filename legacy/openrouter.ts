@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/_lib/auth";
 import { ChatMessage } from "@/app/_types/types";
-import { systemPrompt, AI_FUNCTIONS } from "@/app/_utils/utils";
+import { AI_FUNCTIONS } from "@/app/_utils/utils";
 import { executeFunctions } from "@/app/_lib/aiFunctions";
 import { saveChatMessages } from "@/app/_lib/ai-admin";
 
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const messagesWithSystem = [
-      { role: "system", content: systemPrompt },
+      { role: "system", content: "systemPrompt" },
       ...messages,
     ];
 
@@ -254,7 +254,7 @@ export async function POST(request: NextRequest) {
                   content: string;
                 }
             )[] = [
-              { role: "system", content: systemPrompt },
+              { role: "system", content: "systemPrompt" },
               ...messages,
               {
                 role: "assistant",

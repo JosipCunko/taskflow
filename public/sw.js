@@ -25,7 +25,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-const CACHE_VERSION = "17.1.1";
+const CACHE_VERSION = "17.2.0";
 const CACHE_NAME = `taskflow-cache-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `taskflow-runtime-${CACHE_VERSION}`;
 const STATIC_CACHE = `taskflow-static-${CACHE_VERSION}`;

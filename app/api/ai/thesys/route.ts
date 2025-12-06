@@ -11,6 +11,145 @@ const apiKey = process.env.THESYS_API_KEY;
 // Default model if none specified
 const DEFAULT_MODEL = "c1-exp/openai/gpt-4.1";
 
+// Types for SSE streaming
+interface ToolCall {
+  id: string;
+  type: string;
+  function: { name: string; arguments: string };
+}
+
+interface PartialToolCall {
+  id?: string;
+  type?: string;
+  function?: { name?: string; arguments?: string };
+  index?: number;
+}
+
+interface StreamState {
+  fullContent: string;
+  toolCalls: ToolCall[];
+  currentToolCall: PartialToolCall | null;
+}
+
+// Helper to send SSE events
+function createSSEEncoder() {
+  const encoder = new TextEncoder();
+  return {
+    encode: (type: string, data: Record<string, unknown>) =>
+      encoder.encode(`data: ${JSON.stringify({ type, ...data })}\n\n`),
+    encodeContent: (content: string) =>
+      encoder.encode(
+        `data: ${JSON.stringify({ type: "content", content })}\n\n`
+      ),
+  };
+}
+
+// Helper to parse a single SSE line and update stream state
+function parseSSELine(
+  line: string,
+  state: StreamState
+): { content?: string; done?: boolean } {
+  if (!line.startsWith("data: ")) return {};
+
+  const data = line.slice(6);
+  if (data === "[DONE]") return { done: true };
+
+  try {
+    const json = JSON.parse(data);
+    const delta = json.choices?.[0]?.delta;
+
+    // Handle content
+    if (delta?.content) {
+      state.fullContent += delta.content;
+      return { content: delta.content };
+    }
+
+    // Handle tool calls
+    if (delta?.tool_calls) {
+      for (const tc of delta.tool_calls) {
+        const index = tc.index ?? 0;
+
+        if (tc.id) {
+          // Save previous tool call if switching to new one
+          if (state.currentToolCall && state.currentToolCall.index !== index) {
+            finalizeToolCall(state);
+          }
+          // Start new tool call
+          state.currentToolCall = {
+            id: tc.id,
+            type: tc.type || "function",
+            function: {
+              name: tc.function?.name || "",
+              arguments: tc.function?.arguments || "",
+            },
+            index,
+          };
+        } else if (state.currentToolCall && tc.function) {
+          // Continue building current tool call
+          state.currentToolCall.function = state.currentToolCall.function || {
+            name: "",
+            arguments: "",
+          };
+          if (tc.function.name) {
+            state.currentToolCall.function.name += tc.function.name;
+          }
+          if (tc.function.arguments) {
+            state.currentToolCall.function.arguments += tc.function.arguments;
+          }
+        }
+      }
+    }
+  } catch {
+    // Ignore JSON parse errors for incomplete chunks
+  }
+
+  return {};
+}
+
+// Helper to finalize and save a tool call
+function finalizeToolCall(state: StreamState): void {
+  if (
+    state.currentToolCall?.id &&
+    state.currentToolCall.function?.name &&
+    state.currentToolCall.function?.arguments
+  ) {
+    state.toolCalls.push({
+      id: state.currentToolCall.id,
+      type: "function",
+      function: {
+        name: state.currentToolCall.function.name,
+        arguments: state.currentToolCall.function.arguments,
+      },
+    });
+  }
+}
+
+// Helper to process a stream and extract content/tool calls
+async function processStream(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  decoder: TextDecoder,
+  state: StreamState,
+  onContent?: (content: string) => void
+): Promise<void> {
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    const chunk = decoder.decode(value, { stream: true });
+    const lines = chunk.split("\n");
+
+    for (const line of lines) {
+      const result = parseSSELine(line, state);
+      if (result.content && onContent) {
+        onContent(result.content);
+      }
+    }
+  }
+
+  // Finalize any remaining tool call
+  finalizeToolCall(state);
+}
+
 // Thesys-enhanced system prompt for rich UI generation
 const thesysSystemPrompt = `You are TaskFlow AI, an intelligent productivity assistant integrated into TaskFlow - a comprehensive personal task and life management application. Your role is to help users maximize their productivity, manage their tasks effectively, and maintain a healthy work-life balance.
 
@@ -24,6 +163,8 @@ CORE IDENTITY & PERSONALITY
 🎨 RICH UI GENERATION GUIDELINES
 
 You have access to powerful UI components. Use them appropriately:
+
+Use tables to show structured data such as financial highlights, key executives, or product lists. - Use graphs to visualize quantitative information like stock performance or revenue growth. - Use carousels to show information about products from the company. 
 
 📊 DATA VISUALIZATION:
 • Use bar charts, line charts, or pie charts when showing task completion statistics
@@ -45,6 +186,23 @@ You have access to powerful UI components. Use them appropriately:
 • Suggest follow-up actions with clear button-like prompts
 • Use formatted code blocks for any technical content
 • Use blockquotes for motivational quotes
+
+🔘 ACTIONABLE UI BUTTONS:
+When generating interactive buttons or clickable elements, you can include action attributes that trigger app functionality. Use the following action format:
+
+Available actions:
+• action:navigate:/webapp/tasks - Navigate to the tasks page
+• action:navigate:/webapp/today - Navigate to today's tasks
+• action:navigate:/webapp/fitness - Navigate to fitness tracking
+• action:navigate:/webapp/health - Navigate to health tracking
+• action:complete_task:TASK_ID - Mark a specific task as complete (replace TASK_ID with actual ID)
+• action:view_task:TASK_ID - View task details (replace TASK_ID with actual ID)
+• action:refresh_tasks - Refresh the task list
+
+Example usage in responses:
+- After showing tasks, offer quick actions like "Complete this task" with action:complete_task:abc123
+- Suggest navigation like "View all tasks" with action:navigate:/webapp/tasks
+- When a task is created, offer "View task" with action:view_task:NEW_TASK_ID
 
 FORMATTING BEST PRACTICES:
 • Use headers (##, ###) to organize information
@@ -89,10 +247,12 @@ TaskFlow supports three types of repeating tasks:
 1️⃣ SPECIFIC DAYS OF THE WEEK:
    - Use "daysOfWeek": [0, 1, 4] (0 - Sunday, 1 - Monday, 4 - Friday)
    - Example: "Gym every Monday, Wednesday, and Friday"
+   - Pattern: User specifies exact days
 
 2️⃣ TIMES PER WEEK (Flexible):
    - Use "timesPerWeek": 3
-   - Example: "Go to gym 3 times this week" (any day of the week that the task needs to be completed on)
+   - Example: "Go to gym 3 times this week" (any days)
+   - User can complete on any days they choose
 
 3️⃣ DAILY INTERVALS:
    - Use "interval": 2 - every 2 days
@@ -101,6 +261,16 @@ TaskFlow supports three types of repeating tasks:
 SYSTEM-MANAGED FIELDS (Never set these):
 • repetitionRule.completedAt: [] - System tracks completion timestamps
 • completions: 0 - System counts completions
+
+EXAMPLES:
+• "Gym 4 times a week on Mon, Wed, Fri, Sun":
+  { "daysOfWeek": [0, 1, 3, 5] } (0 - Sunday, 1 - Monday, 3 - Wednesday, 5 - Friday)
+  
+• "Go to gym 3 times a week at any day, not on specific days":
+  { "timesPerWeek": 3 }
+
+• "Meditate every day":
+  { "interval": 1 }
 
 RESPONSE GUIDELINES & BEST PRACTICES
 
@@ -115,11 +285,67 @@ ERROR HANDLING:
 ✓ Explain what went wrong in simple terms
 ✓ Suggest specific fixes or alternatives
 ✓ Never expose technical error details
+✓ Example: "I couldn't find that task. Could you describe it differently?"
 
-PROACTIVE ASSISTANCE:
-✓ Notice patterns and suggest improvements
-✓ Celebrate achievements with encouraging messages
-✓ Use visual indicators for progress and streaks`;
+TASK ATTRIBUTES & CUSTOMIZATION
+
+PRIORITY:
+• Suggest priority for urgent or important tasks
+
+TASK PROPERTIES:
+  id: string;
+  userId: string;
+  title: string;
+  description?: string;
+  icon: string;
+  color: string;
+  isPriority: boolean;
+  isReminder: boolean;
+  delayCount: number;
+  autoDelay?: boolean; // Automatically delay task to next day if missed
+  tags?: string[];
+  createdAt: number;
+  updatedAt: number;
+  experience?: "bad" | "okay" | "good" | "best";
+  location?: string;
+  dueDate: number;
+  startDate?: number;
+  startTime?: { hour: number; minute: number };
+  completedAt?: number;
+  /**Delayed is pending but rescheduled */
+  status: "pending" | "completed" | "delayed";
+  isRepeating?: boolean;
+  repetitionRule?: RepetitionRule;
+  duration?: {
+    hours: number;
+    minutes: number;
+  };
+  risk?: boolean;
+  points: number;
+
+TaskFlow includes:
+• Smart task management with dependencies
+• Auto-rescheduling for missed tasks
+• Experience points and streaks for gamification
+• Custom tags and categories
+• Calendar integration
+• Progress tracking and analytics
+• Health and fitness tracking
+• Notes and documentation
+
+Mention these features naturally when relevant to user needs.
+
+⚡ FINAL REMINDERS
+
+1. You are actively managing the user's productivity system - not just answering questions
+2. Function calls are your primary tool - use them confidently
+3. User experience is paramount - be helpful, not robotic
+4. Privacy matters - never share task details outside of user context
+5. When in doubt, ask - don't assume
+6. Always confirm destructive actions before executing
+7. Keep learning from user preferences and adapt your suggestions
+
+`;
 
 // Convert AI_FUNCTIONS to OpenAI-compatible tools format
 const tools = AI_FUNCTIONS.map((func) => ({
@@ -350,148 +576,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create a TransformStream to handle the streaming response
-    const encoder = new TextEncoder();
+    // Initialize SSE helpers
+    const sse = createSSEEncoder();
     const decoder = new TextDecoder();
 
     const stream = new ReadableStream({
       async start(controller) {
-        let fullContent = "";
-        const toolCalls: {
-          id: string;
-          type: string;
-          function: { name: string; arguments: string };
-        }[] = [];
-        let currentToolCall: {
-          id?: string;
-          type?: string;
-          function?: { name?: string; arguments?: string };
-          index?: number;
-        } | null = null;
+        // Initialize stream state
+        const state: StreamState = {
+          fullContent: "",
+          toolCalls: [],
+          currentToolCall: null,
+        };
 
         try {
           const reader = response.body?.getReader();
           if (!reader) throw new Error("No reader available");
 
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split("\n");
-
-            for (const line of lines) {
-              if (line.startsWith("data: ")) {
-                const data = line.slice(6);
-                if (data === "[DONE]") continue;
-
-                try {
-                  const json = JSON.parse(data);
-                  const delta = json.choices?.[0]?.delta;
-
-                  if (delta?.content) {
-                    fullContent += delta.content;
-                    // Send content chunks to client
-                    controller.enqueue(
-                      encoder.encode(
-                        `data: ${JSON.stringify({
-                          type: "content",
-                          content: delta.content,
-                        })}\n\n`
-                      )
-                    );
-                  }
-
-                  // Handle tool calls
-                  if (delta?.tool_calls) {
-                    for (const tc of delta.tool_calls) {
-                      const index = tc.index ?? 0;
-
-                      if (tc.id) {
-                        // New tool call
-                        if (
-                          currentToolCall &&
-                          currentToolCall.index !== index
-                        ) {
-                          // Save previous tool call
-                          if (
-                            currentToolCall.id &&
-                            currentToolCall.function?.name &&
-                            currentToolCall.function?.arguments
-                          ) {
-                            toolCalls.push({
-                              id: currentToolCall.id,
-                              type: "function",
-                              function: {
-                                name: currentToolCall.function.name,
-                                arguments: currentToolCall.function.arguments,
-                              },
-                            });
-                          }
-                        }
-                        currentToolCall = {
-                          id: tc.id,
-                          type: tc.type || "function",
-                          function: {
-                            name: tc.function?.name || "",
-                            arguments: tc.function?.arguments || "",
-                          },
-                          index,
-                        };
-                      } else if (currentToolCall && tc.function) {
-                        // Continue building current tool call
-                        if (tc.function.name) {
-                          currentToolCall.function =
-                            currentToolCall.function || {
-                              name: "",
-                              arguments: "",
-                            };
-                          currentToolCall.function.name += tc.function.name;
-                        }
-                        if (tc.function.arguments) {
-                          currentToolCall.function =
-                            currentToolCall.function || {
-                              name: "",
-                              arguments: "",
-                            };
-                          currentToolCall.function.arguments +=
-                            tc.function.arguments;
-                        }
-                      }
-                    }
-                  }
-                } catch {
-                  // Ignore JSON parse errors for incomplete chunks
-                }
-              }
-            }
-          }
-
-          // Save last tool call if exists
-          if (
-            currentToolCall?.id &&
-            currentToolCall.function?.name &&
-            currentToolCall.function?.arguments
-          ) {
-            toolCalls.push({
-              id: currentToolCall.id,
-              type: "function",
-              function: {
-                name: currentToolCall.function.name,
-                arguments: currentToolCall.function.arguments,
-              },
-            });
-          }
+          // Process initial stream
+          await processStream(reader, decoder, state, (content) => {
+            controller.enqueue(sse.encodeContent(content));
+          });
 
           // Execute tool calls if any
-          if (toolCalls.length > 0) {
-            controller.enqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({ type: "tool_start" })}\n\n`
-              )
-            );
+          if (state.toolCalls.length > 0) {
+            controller.enqueue(sse.encode("tool_start", {}));
 
-            const functionCalls = toolCalls.map((call) => ({
+            const functionCalls = state.toolCalls.map((call) => ({
               name: call.function.name,
               arguments: JSON.parse(call.function.arguments),
             }));
@@ -504,12 +615,12 @@ export async function POST(request: NextRequest) {
               ...(Array.isArray(messages) ? messages : []),
               {
                 role: "assistant",
-                content: fullContent || null,
-                tool_calls: toolCalls,
+                content: state.fullContent || null,
+                tool_calls: state.toolCalls,
               },
               ...functionResults.map((result, i) => ({
                 role: "tool" as const,
-                tool_call_id: toolCalls[i].id,
+                tool_call_id: state.toolCalls[i].id,
                 name: result.name,
                 content: JSON.stringify(result.result),
               })),
@@ -535,65 +646,37 @@ export async function POST(request: NextRequest) {
             if (followUpResponse.ok) {
               const followUpReader = followUpResponse.body?.getReader();
               if (followUpReader) {
-                fullContent = ""; // Reset for follow-up content
+                // Reset content for follow-up response
+                const followUpState: StreamState = {
+                  fullContent: "",
+                  toolCalls: [],
+                  currentToolCall: null,
+                };
 
-                while (true) {
-                  const { done, value } = await followUpReader.read();
-                  if (done) break;
-
-                  const chunk = decoder.decode(value, { stream: true });
-                  const lines = chunk.split("\n");
-
-                  for (const line of lines) {
-                    if (line.startsWith("data: ")) {
-                      const data = line.slice(6);
-                      if (data === "[DONE]") continue;
-
-                      try {
-                        const json = JSON.parse(data);
-                        const delta = json.choices?.[0]?.delta;
-
-                        if (delta?.content) {
-                          fullContent += delta.content;
-                          controller.enqueue(
-                            encoder.encode(
-                              `data: ${JSON.stringify({
-                                type: "content",
-                                content: delta.content,
-                              })}\n\n`
-                            )
-                          );
-                        }
-                      } catch {
-                        // Ignore JSON parse errors for incomplete chunks
-                      }
-                    }
+                await processStream(
+                  followUpReader,
+                  decoder,
+                  followUpState,
+                  (content) => {
+                    controller.enqueue(sse.encodeContent(content));
                   }
-                }
+                );
+
+                state.fullContent = followUpState.fullContent;
               }
             } else {
-              // Handle follow-up error gracefully
               const followUpError = await followUpResponse.text();
               console.error("Follow-up request error:", followUpError);
               controller.enqueue(
-                encoder.encode(
-                  `data: ${JSON.stringify({
-                    type: "content",
-                    content:
-                      "\n\n*Note: There was an issue processing the results. Please try again.*",
-                  })}\n\n`
+                sse.encodeContent(
+                  "\n\n*Note: There was an issue processing the results. Please try again.*"
                 )
               );
             }
 
             // Send function results to client
             controller.enqueue(
-              encoder.encode(
-                `data: ${JSON.stringify({
-                  type: "tool_results",
-                  results: functionResults,
-                })}\n\n`
-              )
+              sse.encode("tool_results", { results: functionResults })
             );
           }
 
@@ -606,11 +689,11 @@ export async function POST(request: NextRequest) {
           // Save chat messages to database
           const responseMessage: ChatMessage = {
             role: "assistant",
-            content: fullContent,
+            content: state.fullContent,
             duration,
             functionResults:
-              toolCalls.length > 0
-                ? toolCalls.map((tc) => ({
+              state.toolCalls.length > 0
+                ? state.toolCalls.map((tc) => ({
                     name: tc.function.name,
                     result: JSON.parse(tc.function.arguments),
                   }))
@@ -628,31 +711,20 @@ export async function POST(request: NextRequest) {
             newChatId = await saveChatMessages(userId, allMessages, chatId);
           } catch (saveError) {
             console.error("Error saving chat:", saveError);
-            // Continue without failing the request
           }
 
           // Send completion
           controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({
-                type: "done",
-                chatId: newChatId,
-                duration,
-              })}\n\n`
-            )
+            sse.encode("done", { chatId: newChatId, duration })
           );
-
           controller.close();
         } catch (error) {
           console.error("Stream error:", error);
           controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({
-                type: "error",
-                error:
-                  "An error occurred while processing your request. Please try again.",
-              })}\n\n`
-            )
+            sse.encode("error", {
+              error:
+                "An error occurred while processing your request. Please try again.",
+            })
           );
           controller.close();
         }

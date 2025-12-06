@@ -10,9 +10,37 @@ import Textarea from "../reusable/Textarea";
 import EmptyChat from "./EmptyChat";
 import FunctionResults from "./FunctionResults";
 import ModelDropdown, { models, AIModel } from "./ModelDropdown";
-import { errorToast } from "@/app/_utils/utils";
+import { errorToast, successToast, taskflowTheme } from "@/app/_utils/utils";
 import { C1Component, ThemeProvider } from "@thesysai/genui-sdk";
 import "@crayonai/react-ui/styles/index.css";
+import { completeTaskAction } from "@/app/_lib/actions";
+
+// Action types supported by C1Component interactions
+type CustomActionType =
+  | "navigate"
+  | "complete_task"
+  | "view_task"
+  | "refresh_tasks"
+  | "followup";
+
+interface ParsedAction {
+  type: CustomActionType;
+  payload?: string;
+  originalMessage: string;
+}
+
+// Parse action string from llmFriendlyMessage
+// Format: "action:type:payload" or just a message for follow-up
+function parseC1Action(llmFriendlyMessage: string): ParsedAction {
+  if (llmFriendlyMessage.startsWith("action:")) {
+    const parts = llmFriendlyMessage.split(":");
+    const type = parts[1] as CustomActionType;
+    const payload = parts.slice(2).join(":"); // Rejoin in case payload contains colons
+    return { type, payload, originalMessage: llmFriendlyMessage };
+  }
+  // Default to follow-up action for non-action messages
+  return { type: "followup", originalMessage: llmFriendlyMessage };
+}
 
 interface ChatProps {
   initialMessages: ChatMessage[];
@@ -25,88 +53,6 @@ const getModelNameFromId = (modelId: string | undefined): string => {
   if (!modelId) return "AI Assistant";
   const model = models.find((m) => m.id === modelId);
   return model?.name || "AI Assistant";
-};
-
-// TaskFlow theme for C1Component - matches globals.css
-const taskflowTheme = {
-  mode: "dark" as const,
-  theme: {
-    // Backgrounds
-    backgroundFills: "#0b0f20",
-    containerFills: "#121a33",
-    sunkFills: "#192444",
-    elevatedFills: "#0e1327",
-    overlayFills: "rgba(11, 15, 32, 0.9)",
-    invertedFills: "#ffffff",
-
-    // Text colors
-    primaryText: "#c5d1e1",
-    secondaryText: "#6b7280",
-    disabledText: "#3a455b",
-    linkText: "#3399ff",
-
-    // Accent/Brand colors
-    accentPrimaryText: "#3399ff",
-    accentSecondaryText: "#56b3ff",
-    brandText: "#3399ff",
-    brandSecondaryText: "#56b3ff",
-
-    // Status colors
-    successPrimaryText: "#00c853",
-    dangerPrimaryText: "#cf6679",
-    infoPrimaryText: "#2d89e6",
-    alertPrimaryText: "#ffd600",
-
-    // Interactive elements
-    interactiveDefault: "#192444",
-    interactiveHover: "#121a33",
-    interactivePressed: "#0e1327",
-    interactiveAccent: "#3399ff",
-    interactiveAccentHover: "#2d89e6",
-    interactiveAccentPressed: "#2779cc",
-
-    // Strokes/borders
-    strokeDefault: "#16426b",
-    strokeInteractiveEl: "#192444",
-    strokeEmphasis: "#3399ff",
-    strokeAccent: "#3399ff",
-    strokeSuccess: "#00c853",
-    strokeDanger: "#cf6679",
-    strokeInfo: "#2d89e6",
-
-    // Chat specific
-    chatContainerBg: "#0b0f20",
-    chatAssistantResponseBg: "#121a33",
-    chatAssistantResponseText: "#c5d1e1",
-    chatUserResponseBg: "rgba(51, 153, 255, 0.1)",
-    chatUserResponseText: "#c5d1e1",
-
-    // Fills for various states
-    successFills: "rgba(0, 200, 83, 0.15)",
-    dangerFills: "rgba(207, 102, 121, 0.15)",
-    infoFills: "rgba(45, 137, 230, 0.15)",
-    alertFills: "rgba(255, 214, 0, 0.15)",
-
-    // Highlight
-    highlightSubtle: "rgba(51, 153, 255, 0.1)",
-    highlightStrong: "rgba(51, 153, 255, 0.25)",
-
-    // Chart colors
-    defaultChartPalette: [
-      "#3399ff",
-      "#ff944d",
-      "#00c853",
-      "#a0d8ff",
-      "#ffd600",
-      "#cf6679",
-    ],
-
-    // Rounded corners
-    roundedS: "0.5rem",
-    roundedM: "0.75rem",
-    roundedL: "1rem",
-    roundedXl: "1.5rem",
-  },
 };
 
 export default function Chat({
@@ -163,13 +109,182 @@ export default function Chat({
     handleSubmit(fakeEvent);
   };
 
+  // Send a follow-up message to the AI (used by action handlers)
+  const sendFollowUpMessage = useCallback(
+    async (message: string) => {
+      if (isPending) return;
+
+      const newMessages: ChatMessage[] = [
+        ...messages,
+        { role: "user", content: message },
+      ];
+      setMessages(newMessages);
+      setIsPending(true);
+      setStreamingContent("");
+
+      abortControllerRef.current = new AbortController();
+
+      try {
+        const response = await fetch("/api/ai/thesys", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            messages: newMessages,
+            chatId: chatId,
+            modelId: selectedModel.id,
+          }),
+          signal: abortControllerRef.current.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+
+        if (!reader) throw new Error("No response body");
+
+        let accumulatedContent = "";
+        let functionResults: FunctionResult[] | undefined;
+        let duration = 0;
+        let newChatId = chatId;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split("\n");
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const data = line.slice(6);
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.type === "content") {
+                  accumulatedContent += parsed.content;
+                  setStreamingContent(accumulatedContent);
+                } else if (parsed.type === "tool_results") {
+                  functionResults = parsed.results;
+                } else if (parsed.type === "done") {
+                  duration = parsed.duration;
+                  newChatId = parsed.chatId;
+                }
+              } catch {
+                // Ignore parse errors
+              }
+            }
+          }
+        }
+
+        const assistantMessage: ChatMessage = {
+          role: "assistant",
+          content: accumulatedContent,
+          duration,
+          functionResults,
+          modelId: selectedModel.id,
+          modelName: selectedModel.name,
+        };
+
+        setMessages([...newMessages, assistantMessage]);
+        setStreamingContent("");
+
+        if (newChatId && !chatId) {
+          setChatId(newChatId);
+          router.replace(`/webapp/ai/${newChatId}`);
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name !== "AbortError") {
+          errorToast("Failed to send follow-up message");
+          setMessages(messages); // Restore original messages
+        }
+      } finally {
+        setIsPending(false);
+        setStreamingContent("");
+        abortControllerRef.current = null;
+      }
+    },
+    [messages, chatId, selectedModel, isPending, router]
+  );
+
+  // Handle custom actions like complete_task, navigate, etc.
+  const executeCustomAction = useCallback(
+    async (action: ParsedAction): Promise<boolean> => {
+      switch (action.type) {
+        case "navigate":
+          if (action.payload) {
+            router.push(action.payload);
+            return true;
+          }
+          return false;
+
+        case "complete_task":
+          if (action.payload) {
+            try {
+              const formData = new FormData();
+              formData.append("taskId", action.payload);
+              const result = await completeTaskAction(formData);
+              if (result.success) {
+                successToast("Task completed!");
+                return true;
+              } else {
+                errorToast(result.error || "Failed to complete task");
+                return false;
+              }
+            } catch {
+              errorToast("Failed to complete task");
+              return false;
+            }
+          }
+          return false;
+
+        case "view_task":
+          if (action.payload) {
+            router.push(`/webapp/tasks/${action.payload}`);
+            return true;
+          }
+          return false;
+
+        case "refresh_tasks":
+          router.refresh();
+          return true;
+
+        default:
+          return false;
+      }
+    },
+    [router]
+  );
+
   // Handle C1Component actions (user interactions with rich UI)
   const handleC1Action = useCallback(
-    (event: { humanFriendlyMessage: string; llmFriendlyMessage: string }) => {
+    async (event: {
+      humanFriendlyMessage: string;
+      llmFriendlyMessage: string;
+    }) => {
       console.log("C1 Action:", event);
-      // Could be used to trigger follow-up messages or actions
+
+      const action = parseC1Action(event.llmFriendlyMessage);
+
+      // Try to execute custom action first
+      if (action.type !== "followup") {
+        const handled = await executeCustomAction(action);
+        if (handled) {
+          // Optionally send a follow-up message to confirm the action
+          // For navigate actions, we don't need follow-up since we're leaving the page
+          if (action.type !== "navigate" && action.type !== "view_task") {
+            // Send the human-friendly message as context for the AI
+            sendFollowUpMessage(event.humanFriendlyMessage);
+          }
+          return;
+        }
+      }
+
+      // Default behavior: send the message back to the AI as a follow-up
+      sendFollowUpMessage(event.humanFriendlyMessage);
     },
-    []
+    [executeCustomAction, sendFollowUpMessage]
   );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {

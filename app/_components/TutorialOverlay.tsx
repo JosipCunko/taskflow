@@ -15,7 +15,7 @@ import {
   ListChecks,
   Bot,
   Dumbbell,
-  Hamburger,
+  Menu,
 } from "lucide-react";
 import Button from "./reusable/Button";
 
@@ -159,7 +159,7 @@ const tutorialSteps: TutorialStep[] = [
     title: "Save Meals",
     description:
       "In the Health section, you can save meal templates with nutritional information that you can reuse later.",
-    icon: <Hamburger className="w-6 h-6" />,
+    icon: <Menu className="w-6 h-6" />,
     route: "/webapp/health",
     position: {
       top: "40%",

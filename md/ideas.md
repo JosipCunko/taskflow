@@ -34,3 +34,7 @@ Integrate a recipe discovery feature that allows users to search for recipes by 
 - read @middleware.md to get ideas and insights of how can taskflow benifit of middleware
 
 **6. Stripe**
+
+**7. Sendgrid**
+
+- password reset and welcome mail

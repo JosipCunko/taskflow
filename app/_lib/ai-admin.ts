@@ -1,13 +1,6 @@
 import "server-only";
 import { adminDb } from "./admin";
 import { ChatMessage } from "../_types/types";
-import { marked } from "marked";
-import DOMPurify from "dompurify";
-import { JSDOM } from "jsdom";
-
-// Setup DOMPurify for server-side use
-const window = new JSDOM("").window;
-const purify = DOMPurify(window);
 
 // Utility function to remove undefined properties from objects, not necessary with adminDb.settings({ ignoreUndefinedProperties: true });
 function sanitizeForFirestore(obj: unknown): unknown {
@@ -27,6 +20,60 @@ function sanitizeForFirestore(obj: unknown): unknown {
     return sanitized;
   }
   return obj;
+}
+
+export async function getUserChats(
+  userId: string
+): Promise<{ id: string; title: string }[]> {
+  try {
+    const querySnapshot = await adminDb
+      .collection("aiChats")
+      .where("userId", "==", userId)
+      .orderBy("createdAt", "desc")
+      .get();
+
+    if (querySnapshot.empty) {
+      return [];
+    }
+
+    return querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      title: doc.data().title || "Untitled Chat",
+    }));
+  } catch (error) {
+    console.error("Error fetching user chats:", error);
+    throw new Error("Could not fetch user chats.");
+  }
+}
+
+export async function getChat(
+  userId: string,
+  chatId: string
+): Promise<{ messages: ChatMessage[]; title: string } | null> {
+  try {
+    const doc = await adminDb.collection("aiChats").doc(chatId).get();
+
+    if (!doc.exists) {
+      return null;
+    }
+
+    const data = doc.data();
+
+    if (data?.userId !== userId) {
+      // Security check
+      return null;
+    }
+
+    // Return messages as-is - C1Component handles all rendering on the frontend
+    // The raw content format is required for proper rich UI element rendering
+    return {
+      messages: data.messages || [],
+      title: data.title || "Untitled Chat",
+    };
+  } catch (error) {
+    console.error("Error fetching chat:", error);
+    throw new Error("Could not fetch chat.");
+  }
 }
 
 export async function saveChatMessages(
@@ -83,83 +130,6 @@ export async function renameChat(
   }
 }
 
-export async function getUserChats(
-  userId: string
-): Promise<{ id: string; title: string }[]> {
-  try {
-    const querySnapshot = await adminDb
-      .collection("aiChats")
-      .where("userId", "==", userId)
-      .orderBy("createdAt", "desc")
-      .get();
-
-    if (querySnapshot.empty) {
-      return [];
-    }
-
-    return querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      title: doc.data().title || "Untitled Chat",
-    }));
-  } catch (error) {
-    console.error("Error fetching user chats:", error);
-    throw new Error("Could not fetch user chats.");
-  }
-}
-
-export async function getChat(
-  userId: string,
-  chatId: string
-): Promise<{ messages: ChatMessage[]; title: string } | null> {
-  try {
-    const doc = await adminDb.collection("aiChats").doc(chatId).get();
-
-    if (!doc.exists) {
-      return null;
-    }
-
-    const data = doc.data();
-
-    if (data?.userId !== userId) {
-      // Security check
-      return null;
-    }
-
-    // Format assistant messages that contain markdown
-    const formattedMessages = (data.messages || []).map(
-      (message: ChatMessage) => {
-        if (
-          message.role === "assistant" &&
-          message.content &&
-          typeof message.content === "string"
-        ) {
-          // Check if content looks like markdown (contains markdown syntax)
-          if (
-            message.content.includes("**") ||
-            message.content.includes("```") ||
-            message.content.includes("#") ||
-            message.content.includes("*")
-          ) {
-            return {
-              ...message,
-              content: purify.sanitize(marked(message.content) as string),
-            };
-          }
-        }
-        return message;
-      }
-    );
-
-    return {
-      messages: formattedMessages,
-      title: data.title || "Untitled Chat",
-    };
-  } catch (error) {
-    console.error("Error fetching chat:", error);
-    throw new Error("Could not fetch chat.");
-  }
-}
-
 export async function deleteChat(
   userId: string,
   chatId: string
@@ -179,32 +149,5 @@ export async function deleteChat(
   } catch (error) {
     console.error("Error deleting chat:", error);
     throw new Error("Could not delete chat.");
-  }
-}
-
-export async function getLatestChatForUser(
-  userId: string
-): Promise<{ messages: ChatMessage[]; chatId: string | null }> {
-  try {
-    const querySnapshot = await adminDb
-      .collection("aiChats")
-      .where("userId", "==", userId)
-      .orderBy("createdAt", "desc")
-      .limit(1)
-      .get();
-
-    if (querySnapshot.empty) {
-      return { messages: [], chatId: null };
-    }
-
-    const doc = querySnapshot.docs[0];
-    const data = doc.data();
-    return {
-      messages: data.messages || [],
-      chatId: doc.id,
-    };
-  } catch (error) {
-    console.error("Error fetching latest chat for user:", error);
-    throw new Error("Could not fetch chat history.");
   }
 }

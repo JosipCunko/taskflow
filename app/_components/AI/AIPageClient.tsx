@@ -1,5 +1,3 @@
-"use client";
-
 import Chat from "./Chat";
 import ChatSidebar from "./ChatSidebar";
 import { ChatMessage } from "@/app/_types/types";
@@ -19,7 +17,6 @@ export default function AIPageClient({
 }: AIPageClientProps) {
   return (
     <div className="flex h-full w-full">
-      {/* Main Chat Area */}
       <div className="flex flex-col flex-1 min-w-0">
         <Chat
           initialMessages={initialMessages}
@@ -29,7 +26,6 @@ export default function AIPageClient({
         />
       </div>
 
-      {/* Chat History Sidebar */}
       <ChatSidebar />
     </div>
   );
