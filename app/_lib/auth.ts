@@ -527,6 +527,9 @@ export const authOptions: NextAuthOptions = {
               bestStreak: 0,
               achievements: [],
               lastLoginAt: Date.now(),
+
+              currentPlan: "base",
+              aiPromptsToday: 0,
               // Mark anonymous users for potential cleanup
               ...(isAnonymous && {
                 isAnonymous: true,
@@ -627,6 +630,9 @@ export const authOptions: NextAuthOptions = {
               bestStreak: 0,
               achievements: [],
               lastLoginAt: Date.now(),
+
+              currentPlan: "base",
+              aiPromptsToday: 0,
               ...(user.email && { email: user.email }),
               ...(user.name && { displayName: user.name }),
               ...(user.image && { photoURL: user.image }),

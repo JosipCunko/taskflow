@@ -15,11 +15,6 @@ My main branch isnt protected, also in Firebase console I got an warning about o
 - anonymous data deletion
 - autoDelayIncompleteTasks
 
-#Fonts - I noticed that C1Component uses a different font then mine
-
-Inter is the default font used by C1 components. You can add it to your project by importing it in your global CSS file. The font and other styles can be customized later.
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-
 # clientCache
 
 - we only use it in AddLoggedMeal => is there really necessary and could we find more usecases of this
@@ -34,3 +29,7 @@ Inter is the default font used by C1 components. You can add it to your project 
 - that was while in dev server, didnt test in production on my vercel url
 
 # update skeleton loaders
+
+# chat sidebar
+
+- when editing a title, chat sidebar expands a few pixels to fit in the input. I would like it to stay in place

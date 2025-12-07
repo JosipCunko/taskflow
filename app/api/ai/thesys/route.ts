@@ -5,11 +5,15 @@ import { AI_FUNCTIONS } from "@/app/_utils/utils";
 import { executeFunctions } from "@/app/_lib/aiFunctions";
 import { saveChatMessages } from "@/app/_lib/ai-admin";
 import { ChatMessage } from "@/app/_types/types";
+import { getUserById } from "@/app/_lib/user-admin";
+import { canMakePrompt, getRemainingPrompts } from "@/app/_lib/stripe";
+import { adminDb } from "@/app/_lib/admin";
+import { startOfDay } from "date-fns";
 
 const apiKey = process.env.THESYS_API_KEY;
 
 // Default model if none specified
-const DEFAULT_MODEL = "c1-exp/openai/gpt-4.1";
+const DEFAULT_MODEL = "c1-exp/openai/gpt-4.1/v-20250709";
 
 // Types for SSE streaming
 interface ToolCall {
@@ -485,6 +489,53 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Rate limiting based on subscription plan
+  const user = await getUserById(session.user.id);
+  if (!user) {
+    return new Response(
+      JSON.stringify(
+        formatErrorResponse(
+          "User not found.",
+          "authentication_error",
+          "user_not_found"
+        )
+      ),
+      { status: 404 }
+    );
+  }
+
+  // Check if it's a new day and reset prompt count
+  const today = startOfDay(new Date()).getTime();
+  let promptsToday = user.aiPromptsToday || 0;
+
+  if (!user.lastPromptDate || user.lastPromptDate < today) {
+    // New day, reset count
+    promptsToday = 0;
+  }
+
+  const plan = user.currentPlan || "base";
+
+  if (!canMakePrompt(plan, promptsToday)) {
+    const remaining = getRemainingPrompts(plan, promptsToday);
+    return new Response(
+      JSON.stringify({
+        ...formatErrorResponse(
+          `You've reached your daily AI prompt limit. ${
+            plan === "base"
+              ? "Upgrade to Pro for 10 prompts/day or Ultra for unlimited prompts."
+              : "Upgrade to Ultra for unlimited prompts."
+          }`,
+          "rate_limit_error",
+          "daily_limit_exceeded"
+        ),
+        userFriendly: true,
+        remaining,
+        plan,
+      }),
+      { status: 429 }
+    );
+  }
+
   let requestBody;
   try {
     requestBody = await request.json();
@@ -709,6 +760,13 @@ export async function POST(request: NextRequest) {
           let newChatId = chatId;
           try {
             newChatId = await saveChatMessages(userId, allMessages, chatId);
+
+            // Increment prompt count for rate limiting
+            const userRef = adminDb.collection("users").doc(userId);
+            await userRef.update({
+              aiPromptsToday: (promptsToday || 0) + 1,
+              lastPromptDate: today,
+            });
           } catch (saveError) {
             console.error("Error saving chat:", saveError);
           }

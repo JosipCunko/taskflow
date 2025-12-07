@@ -5,7 +5,7 @@ import { programmingFeatures } from "@/app/_utils/utils";
 
 const cardVariants = {
   initial: { opacity: 0, y: 20 },
-  animate: (i: number) => ({
+  animate: () => ({
     opacity: 1,
     y: 0,
   }),

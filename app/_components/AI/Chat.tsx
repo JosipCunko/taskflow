@@ -11,9 +11,20 @@ import EmptyChat from "./EmptyChat";
 import FunctionResults from "./FunctionResults";
 import ModelDropdown, { models, AIModel } from "./ModelDropdown";
 import { errorToast, successToast, taskflowTheme } from "@/app/_utils/utils";
-import { C1Component, ThemeProvider } from "@thesysai/genui-sdk";
+import dynamic from "next/dynamic";
 import "@crayonai/react-ui/styles/index.css";
 import { completeTaskAction } from "@/app/_lib/actions";
+
+// Dynamically import C1Component with SSR disabled to prevent "document is not defined" errors
+const C1Component = dynamic(
+  () => import("@thesysai/genui-sdk").then((mod) => mod.C1Component),
+  { ssr: false }
+);
+
+const ThemeProvider = dynamic(
+  () => import("@thesysai/genui-sdk").then((mod) => mod.ThemeProvider),
+  { ssr: false }
+);
 
 // Action types supported by C1Component interactions
 type CustomActionType =

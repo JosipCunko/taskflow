@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/_lib/auth";
 import { getChat } from "@/app/_lib/ai-admin";
 import { ChatMessage } from "@/app/_types/types";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 
 export default async function ChatPage({
   params,
@@ -16,16 +16,22 @@ export default async function ChatPage({
   const userName = session?.user?.name;
   const userImage = session?.user?.image;
 
+  // Redirect to login if not authenticated
+  if (!userId) {
+    redirect("/login");
+  }
+
   let initialMessages: ChatMessage[] = [];
 
-  if (userId) {
+  try {
     const chat = await getChat(userId, chatId);
     if (chat) {
       initialMessages = chat.messages;
     } else {
       notFound();
     }
-  } else {
+  } catch (error) {
+    console.error("Error loading chat:", error);
     notFound();
   }
 

@@ -32,6 +32,7 @@ import RepeatingTaskCard from "../_components/RepeatingTaskCard";
 import dynamic from "next/dynamic";
 import NotificationSetup from "../_components/NotificationSetup";
 import { AnalyticsLoadingSkeleton } from "../_components/skeleton/AnalyticsLoadingSkeleton";
+import AnalyticsUpgradePrompt from "../_components/AnalyticsUpgradePrompt";
 
 // Dynamic import for heavy components with recharts
 const AnalyticsDashboard = dynamic(
@@ -178,7 +179,12 @@ export default async function DashboardPage() {
         />
       </div>
 
-      <AnalyticsDashboard user={user} />
+      {/* Analytics Dashboard - gated by subscription plan */}
+      {user.currentPlan === "base" ? (
+        <AnalyticsUpgradePrompt />
+      ) : (
+        <AnalyticsDashboard user={user} />
+      )}
 
       <NotificationSetup />
 

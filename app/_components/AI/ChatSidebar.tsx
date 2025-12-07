@@ -163,12 +163,19 @@ export default function ChatSidebar() {
       {/* Chat History */}
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
         {loading ? (
-          <div className="p-4 text-center text-text-low">
-            <div className="animate-pulse space-y-2">
-              <div className="h-10 bg-background-600 rounded"></div>
-              <div className="h-10 bg-background-600 rounded"></div>
-              <div className="h-10 bg-background-600 rounded"></div>
-            </div>
+          <div className="space-y-2 px-1">
+            {[...Array(5)].map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center p-3 gap-3 rounded-lg bg-background-600/30 animate-pulse"
+              >
+                <div className="h-4 w-4 bg-background-600 rounded-sm shrink-0" />
+                <div
+                  className="h-4 bg-background-600 rounded-md"
+                  style={{ width: `${[60, 40, 70, 50, 65][i]}%` }}
+                />
+              </div>
+            ))}
           </div>
         ) : chats.length === 0 ? (
           <div className="p-4 text-center">
@@ -274,12 +281,6 @@ export default function ChatSidebar() {
             </div>
           ))
         )}
-      </div>
-
-      <div className="p-4 border-t border-background-600">
-        <p className="text-xs text-text-low text-center">
-          Powered by openrouter
-        </p>
       </div>
     </div>
   );

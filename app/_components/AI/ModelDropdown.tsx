@@ -13,18 +13,22 @@ export interface AIModel {
 }
 
 export const models: AIModel[] = [
-  { name: "GPT-4.1", id: "c1-exp/openai/gpt-4.1", enabled: true },
+  { name: "GPT-4.1", id: "c1-exp/openai/gpt-4.1/v-20250709", enabled: true },
   {
-    name: "Claude 3.5 Sonnet",
-    id: "c1-exp/anthropic/claude-3.5-sonnet",
+    name: "GPT-5",
+    id: "c1/openai/gpt-5/v-20251130",
     enabled: true,
   },
   {
-    name: "Gemini 2.0 Flash",
-    id: "c1-exp/google/gemini-2.0-flash",
+    name: "Claude Sonnet 4",
+    id: "c1/anthropic/claude-sonnet-4/v-20251130",
     enabled: true,
   },
-  { name: "C1 Nightly", id: "c1-nightly", enabled: true },
+  {
+    name: "Claude 3.5 Haiku",
+    id: "c1-exp/anthropic/claude-3.5-haiku/v-20250709",
+    enabled: true,
+  },
 ];
 
 interface ModelDropdownProps {

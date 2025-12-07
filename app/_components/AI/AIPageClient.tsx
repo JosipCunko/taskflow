@@ -1,3 +1,5 @@
+"use client";
+
 import Chat from "./Chat";
 import ChatSidebar from "./ChatSidebar";
 import { ChatMessage } from "@/app/_types/types";

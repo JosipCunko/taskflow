@@ -40,6 +40,8 @@ export interface RepetitionRule {
   completions: number;
 }
 
+export type SubscriptionPlan = "base" | "pro" | "ultra";
+
 export interface AppUser {
   uid: string;
   displayName: string;
@@ -56,11 +58,18 @@ export interface AppUser {
   bestStreak: number;
   lastLoginAt?: number;
   nutritionGoals: UserNutritionGoals;
-  // Anonymous user fields
+
   isAnonymous?: boolean;
   anonymousCreatedAt?: number;
-  lastAutoDelayCheck?: number; // Timestamp of last auto-delay check
+  lastAutoDelayCheck?: number;
   receiveUpdateNotifications?: boolean; // Whether to show PWA update prompts
+
+  currentPlan: SubscriptionPlan;
+  planExpiresAt?: number;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+  aiPromptsToday: number;
+  lastPromptDate?: number; // Reset daily count
 }
 export interface UserNutritionGoals {
   calories: number;

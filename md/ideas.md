@@ -34,6 +34,25 @@ Integrate a recipe discovery feature that allows users to search for recipes by 
 - read @middleware.md to get ideas and insights of how can taskflow benifit of middleware
 
 **6. Stripe**
+I want to include some kind of payments inside my app. It is only monthly subscriptions for now. I want to have 3 options:
+Base, Pro and Ultra.
+Base plan is free plan, user can prompt the AI assistant at any model once per day and cant view analytics dashboard component in the dashboard page, but the data is still stored, just that user cant monitor it. On the pro plan, user can view the analyticsdashboard page and can prompt ai assitant at any model 10 times per day. At ultra plan, user dont have limitation on the AI assistant and can view analyticsdashboard component. That is just for now, if you think of some features that should be prohibited on the lower plans feel free to add it but let me know.
+Base plan is $0, Pro $4.99 and Ultra $14.99 per month. Feel free to add some suggestions for the prices and features of specific plans.
+
+We need to create new section in the landing page (pricing plan cards) so users can see the pricing plan, also add a link component in the navbar to scroll to the pricing section.
+
+Its optimal to store specific data about current plan on the user object. For now I think of these properties:
+currentPlan: "base" | "pro" | "ultra"
+planExpiresAt: number // unix timestamp
+
+- feel free to add some more properties but let me know
+
+I want to use stripe for handling subscriptions:
+I just created a new account in stripe called Taskflow.
+It asks me how do I want to start, and need to select any or more of the following:
+non-recurring and recurring payments, invoices, tax collection, identity verification, fraud protection, build a platform or marketplace, card issuing, climate contributions, bank data access, connect with a business that's using stripe
+
+I dont know how to set an API key and configure it or anything, so please search the web and for the stripe docs.
 
 **7. Sendgrid**
 

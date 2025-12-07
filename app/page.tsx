@@ -6,6 +6,7 @@ import CallToActionSection from "@/app/_components/landing/CallToActionSection";
 import Footer from "@/app/_components/landing/Footer";
 import Navbar from "@/app/_components/landing/Navbar";
 import ProgrammingFeatures from "./_components/landing/ProgrammingFeatures";
+import PricingSection from "./_components/landing/PricingSection";
 import LazyMotionProvider from "./_components/animations/LazyMotionProvider";
 
 // Route segment config for static landing page
@@ -23,6 +24,7 @@ export default async function LandingPage() {
           <StatsSection />
           <Features />
           <ProgrammingFeatures />
+          <PricingSection />
           <CallToActionSection />
         </main>
         <Footer />

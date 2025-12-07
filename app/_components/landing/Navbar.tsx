@@ -45,6 +45,12 @@ export default function Navbar() {
             _Features
           </Link>
           <Link
+            href="#pricing"
+            className="text-text-low hover:text-primary-300 hover:text-glow transition-all duration-200 text-base font-medium"
+          >
+            _Pricing
+          </Link>
+          <Link
             href="https://mail.google.com/mail/u/0/#inbox?compose=CllgCJZbjrwqZhdlnFdSGkCDrWzqCMDPVlffTKZHKVLxQZMgcDQKGsDlMZLDDlpjDpczSXcjtmg"
             className="text-text-low hover:text-primary-300 hover:text-glow transition-all duration-200 text-base font-medium"
           >
@@ -103,6 +109,13 @@ export default function Navbar() {
             onClick={() => setIsMenuOpen(false)}
           >
             _Features
+          </Link>
+          <Link
+            href="#pricing"
+            className="block text-text-low hover:text-primary-300 hover:text-glow transition-all duration-200 text-base font-medium py-2"
+            onClick={() => setIsMenuOpen(false)}
+          >
+            _Pricing
           </Link>
           <Link
             href="https://mail.google.com/mail/u/0/#inbox?compose=CllgCJZbjrwqZhdlnFdSGkCDrWzqCMDPVlffTKZHKVLxQZMgcDQKGsDlMZLDDlpjDpczSXcjtmg"
