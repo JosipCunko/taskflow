@@ -68,6 +68,7 @@ export interface AppUser {
   planExpiresAt?: number;
   stripeCustomerId?: string;
   stripeSubscriptionId?: string;
+  freeTrialUsed?: boolean;
   aiPromptsToday: number;
   lastPromptDate?: number; // Reset daily count
 }

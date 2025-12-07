@@ -46,7 +46,6 @@ const tiers: PricingTier[] = [
       "10 AI prompts per day",
       "Analytics dashboard",
       "Advanced insights",
-      "7-day free trial",
     ],
     cta: "Start Free Trial",
   },

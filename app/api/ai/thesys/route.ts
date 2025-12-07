@@ -6,7 +6,11 @@ import { executeFunctions } from "@/app/_lib/aiFunctions";
 import { saveChatMessages } from "@/app/_lib/ai-admin";
 import { ChatMessage } from "@/app/_types/types";
 import { getUserById } from "@/app/_lib/user-admin";
-import { canMakePrompt, getRemainingPrompts } from "@/app/_lib/stripe";
+import {
+  canMakePrompt,
+  getRemainingPrompts,
+  getEffectivePlan,
+} from "@/app/_lib/stripe";
 import { adminDb } from "@/app/_lib/admin";
 import { startOfDay } from "date-fns";
 
@@ -513,7 +517,8 @@ export async function POST(request: NextRequest) {
     promptsToday = 0;
   }
 
-  const plan = user.currentPlan || "base";
+  // Get effective plan considering expiration
+  const plan = getEffectivePlan(user.currentPlan || "base", user.planExpiresAt);
 
   if (!canMakePrompt(plan, promptsToday)) {
     const remaining = getRemainingPrompts(plan, promptsToday);
@@ -640,6 +645,11 @@ export async function POST(request: NextRequest) {
           currentToolCall: null,
         };
 
+        // Store function results for saving to database
+        let executedFunctionResults: Awaited<
+          ReturnType<typeof executeFunctions>
+        > | null = null;
+
         try {
           const reader = response.body?.getReader();
           if (!reader) throw new Error("No reader available");
@@ -658,7 +668,7 @@ export async function POST(request: NextRequest) {
               arguments: JSON.parse(call.function.arguments),
             }));
 
-            const functionResults = await executeFunctions(functionCalls);
+            executedFunctionResults = await executeFunctions(functionCalls);
 
             // Make follow-up request with tool results
             const followUpMessages = [
@@ -669,7 +679,7 @@ export async function POST(request: NextRequest) {
                 content: state.fullContent || null,
                 tool_calls: state.toolCalls,
               },
-              ...functionResults.map((result, i) => ({
+              ...executedFunctionResults.map((result, i) => ({
                 role: "tool" as const,
                 tool_call_id: state.toolCalls[i].id,
                 name: result.name,
@@ -727,7 +737,7 @@ export async function POST(request: NextRequest) {
 
             // Send function results to client
             controller.enqueue(
-              sse.encode("tool_results", { results: functionResults })
+              sse.encode("tool_results", { results: executedFunctionResults })
             );
           }
 
@@ -737,18 +747,12 @@ export async function POST(request: NextRequest) {
             ((endTime - startTime) / 1000).toFixed(2)
           );
 
-          // Save chat messages to database
+          // Save chat messages to database with actual function results
           const responseMessage: ChatMessage = {
             role: "assistant",
             content: state.fullContent,
             duration,
-            functionResults:
-              state.toolCalls.length > 0
-                ? state.toolCalls.map((tc) => ({
-                    name: tc.function.name,
-                    result: JSON.parse(tc.function.arguments),
-                  }))
-                : undefined,
+            functionResults: executedFunctionResults || undefined,
             modelId: model,
           };
 

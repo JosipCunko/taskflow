@@ -7,13 +7,15 @@ import { ChatMessage, FunctionResult } from "@/app/_types/types";
 import ThinkingIndicator from "./ThinkingIndicator";
 import Image from "next/image";
 import Textarea from "../reusable/Textarea";
-import EmptyChat from "./EmptyChat";
 import FunctionResults from "./FunctionResults";
 import ModelDropdown, { models, AIModel } from "./ModelDropdown";
 import { errorToast, successToast, taskflowTheme } from "@/app/_utils/utils";
 import dynamic from "next/dynamic";
 import "@crayonai/react-ui/styles/index.css";
 import { completeTaskAction } from "@/app/_lib/actions";
+import { motion } from "framer-motion";
+import { PromptLimitInfo } from "./AIPageClient";
+import UpgradePlan from "../UpgradePlan";
 
 // Dynamically import C1Component with SSR disabled to prevent "document is not defined" errors
 const C1Component = dynamic(
@@ -58,6 +60,7 @@ interface ChatProps {
   chatId: string | null;
   userName?: string | null;
   userImage?: string | null;
+  promptLimitInfo: PromptLimitInfo;
 }
 
 const getModelNameFromId = (modelId: string | undefined): string => {
@@ -71,6 +74,7 @@ export default function Chat({
   chatId: initialChatId,
   userName,
   userImage,
+  promptLimitInfo,
 }: ChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [chatId, setChatId] = useState<string | null>(initialChatId);
@@ -81,6 +85,13 @@ export default function Chat({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Track remaining prompts locally (decrements after each successful message)
+  const [remainingPrompts, setRemainingPrompts] = useState<
+    number | "unlimited"
+  >(promptLimitInfo.remaining);
+  const hasReachedLimit =
+    remainingPrompts !== "unlimited" && remainingPrompts <= 0;
 
   useEffect(() => {
     setMessages(initialMessages);
@@ -123,7 +134,7 @@ export default function Chat({
   // Send a follow-up message to the AI (used by action handlers)
   const sendFollowUpMessage = useCallback(
     async (message: string) => {
-      if (isPending) return;
+      if (isPending || hasReachedLimit) return;
 
       const newMessages: ChatMessage[] = [
         ...messages,
@@ -201,6 +212,13 @@ export default function Chat({
         setMessages([...newMessages, assistantMessage]);
         setStreamingContent("");
 
+        // Decrement remaining prompts after successful message
+        if (remainingPrompts !== "unlimited") {
+          setRemainingPrompts((prev) =>
+            prev === "unlimited" ? "unlimited" : Math.max(0, prev - 1)
+          );
+        }
+
         if (newChatId && !chatId) {
           setChatId(newChatId);
           router.replace(`/webapp/ai/${newChatId}`);
@@ -216,7 +234,15 @@ export default function Chat({
         abortControllerRef.current = null;
       }
     },
-    [messages, chatId, selectedModel, isPending, router]
+    [
+      messages,
+      chatId,
+      selectedModel,
+      isPending,
+      router,
+      remainingPrompts,
+      hasReachedLimit,
+    ]
   );
 
   // Handle custom actions like complete_task, navigate, etc.
@@ -300,7 +326,7 @@ export default function Chat({
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!input.trim() || isPending) return;
+    if (!input.trim() || isPending || hasReachedLimit) return;
 
     const userMessage = input;
     const newMessages: ChatMessage[] = [
@@ -422,6 +448,13 @@ export default function Chat({
       setMessages([...newMessages, assistantMessage]);
       setStreamingContent("");
 
+      // Decrement remaining prompts after successful message
+      if (remainingPrompts !== "unlimited") {
+        setRemainingPrompts((prev) =>
+          prev === "unlimited" ? "unlimited" : Math.max(0, prev - 1)
+        );
+      }
+
       if (newChatId && !chatId) {
         setChatId(newChatId);
         router.replace(`/webapp/ai/${newChatId}`);
@@ -452,163 +485,315 @@ export default function Chat({
     };
   }, []);
 
+  const exampleQueries = [
+    { text: "Tell me 5 things to stop procrastination", icon: "✨" },
+    { text: "I need gym workout plan 4 days a week", icon: "💪" },
+    { text: "Explain quantum computing simply", icon: "🧠" },
+    { text: "Write a python script to scrape a website", icon: "🐍" },
+  ];
+
   return (
     <ThemeProvider {...taskflowTheme}>
-      <div className="flex flex-col h-full w-full">
+      <div className="flex flex-col h-full w-full relative overflow-hidden">
         {messages.length === 0 ? (
-          <EmptyChat onExampleClick={handleExampleClick} />
+          <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 animate-fadeIn">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="text-center mb-8 sm:mb-12 max-w-2xl"
+            >
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-white via-primary-200 to-primary-400 bg-clip-text text-transparent drop-shadow-sm">
+                What can I help with?
+              </h1>
+              <p className="text-text-low text-base sm:text-lg">
+                Your intelligent AI assistant for tasks, productivity, and
+                creative work
+              </p>
+            </motion.div>
+
+            <div className="w-full max-w-3xl space-y-8">
+              {/* Upgrade prompt when limit is reached */}
+              {hasReachedLimit && (
+                <UpgradePlan
+                  storageKey="ai-prompts-limit"
+                  title="Daily Limit Reached"
+                  message={
+                    promptLimitInfo.plan === "base"
+                      ? "You've used your 1 free AI prompt for today. Upgrade to Pro for 10 prompts/day or Ultra for unlimited prompts."
+                      : "You've used all 10 AI prompts for today. Upgrade to Ultra for unlimited prompts."
+                  }
+                  ctaText="Upgrade Now"
+                  icon="zap"
+                  showCloseButton={false}
+                />
+              )}
+
+              <motion.div
+                layoutId="input-container"
+                className={`relative group rounded-2xl bg-background-600/50 p-1 transition-all duration-300 ${
+                  hasReachedLimit ? "opacity-50 pointer-events-none" : ""
+                }`}
+              >
+                {/* Animated rotating border gradient */}
+                <div className="chat-animated-border"></div>
+
+                {/* Content container */}
+                <div className="relative rounded-2xl bg-background-600 border border-primary-500/20 group-hover:border-primary-500/40 transition-all duration-300">
+                  <form
+                    onSubmit={handleSubmit}
+                    className="flex flex-col gap-2 p-2"
+                  >
+                    <Textarea
+                      name="message"
+                      value={input}
+                      onChange={handleInputChange}
+                      onKeyDown={handleKeyDown}
+                      placeholder={
+                        hasReachedLimit
+                          ? "Daily prompt limit reached"
+                          : "Ask anything here..."
+                      }
+                      className="w-full bg-transparent border-none focus:outline-none focus:ring-0 text-lg p-4 min-h-[120px] resize-none text-text-high placeholder:text-text-gray/50"
+                      disabled={isPending || hasReachedLimit}
+                      autoFocus
+                    />
+                    <div className="flex items-center justify-between px-2 pb-2">
+                      <div className="flex items-center gap-3">
+                        <ModelDropdown
+                          selectedModel={selectedModel}
+                          onModelChange={setSelectedModel}
+                          className="opacity-80 hover:opacity-100 transition-opacity"
+                        />
+                        {remainingPrompts !== "unlimited" && (
+                          <span className="text-xs text-text-low">
+                            {remainingPrompts} prompt
+                            {remainingPrompts !== 1 ? "s" : ""} left today
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={isPending || !input.trim() || hasReachedLimit}
+                        className="bg-primary-500 hover:bg-primary-600 text-white p-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg shadow-primary-500/20"
+                      >
+                        {isPending ? (
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        ) : (
+                          <Send size={20} />
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+                className="flex flex-wrap justify-center gap-3"
+              >
+                {exampleQueries.map((query, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleExampleClick(query.text)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-background-600 border border-background-500 hover:border-primary-500/50 hover:bg-primary-500/10 text-text-low hover:text-primary-300 transition-all duration-200 text-sm group"
+                  >
+                    <span className="text-lg opacity-70 group-hover:scale-110 transition-transform duration-200">
+                      {query.icon}
+                    </span>
+                    <span>{query.text}</span>
+                  </button>
+                ))}
+              </motion.div>
+            </div>
+          </div>
         ) : (
-          <div className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto pt-16 md:pt-6">
-            <div className="max-w-4xl mx-auto space-y-6">
-              {messages.map((msg, index) => (
-                <div
-                  key={index}
-                  className={`flex gap-4 ${
-                    msg.role === "user" ? "flex-row-reverse" : ""
-                  }`}
-                >
-                  {/* Avatar */}
-                  <div className="flex-shrink-0">
-                    {msg.role === "assistant" ? (
+          <>
+            <div className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto pt-16 md:pt-6 scroll-smooth">
+              <div className="max-w-4xl mx-auto space-y-6">
+                {messages.map((msg, index) => (
+                  <div
+                    key={index}
+                    className={`flex gap-4 ${
+                      msg.role === "user" ? "flex-row-reverse" : ""
+                    }`}
+                  >
+                    {/* Avatar */}
+                    <div className="flex-shrink-0">
+                      {msg.role === "assistant" ? (
+                        <div className="w-8 h-8 rounded-full bg-primary-500/10 border border-primary-500/30 flex items-center justify-center">
+                          <Bot size={18} className="text-primary-500" />
+                        </div>
+                      ) : userImage ? (
+                        <Image
+                          src={userImage}
+                          width={32}
+                          height={32}
+                          alt={userName || "User"}
+                          className="rounded-full"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-background-600 flex items-center justify-center">
+                          <User size={18} className="text-primary-400" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Message Content */}
+                    <div className="flex-1 min-w-0">
+                      {msg.role === "assistant" ? (
+                        <>
+                          <div className="mb-2">
+                            <span className="text-sm font-semibold text-primary-400">
+                              {msg.modelName || getModelNameFromId(msg.modelId)}
+                            </span>
+                          </div>
+                          <div className="rounded-lg p-4 bg-background-600 border border-background-500">
+                            {msg.content ? (
+                              <div className="text-sm leading-relaxed ai-response prose prose-invert max-w-none c1-message-container">
+                                <C1Component
+                                  c1Response={msg.content}
+                                  isStreaming={false}
+                                  onAction={handleC1Action}
+                                />
+                              </div>
+                            ) : (
+                              <p className="text-sm text-text-low italic">
+                                No response generated
+                              </p>
+                            )}
+                            {msg.functionResults && (
+                              <div className="mt-3">
+                                <FunctionResults
+                                  results={msg.functionResults}
+                                />
+                              </div>
+                            )}
+                            {msg.duration && (
+                              <p className="text-xs text-blue-400 mt-2">
+                                {msg.duration}s
+                              </p>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="mb-2 text-right">
+                            <span className="text-sm font-semibold text-text-high">
+                              {userName || "You"}
+                            </span>
+                          </div>
+                          <div className="rounded-lg p-4 bg-primary-500/10 border border-primary-500/30">
+                            <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                              {msg.content}
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {isPending && (
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0">
                       <div className="w-8 h-8 rounded-full bg-primary-500/10 border border-primary-500/30 flex items-center justify-center">
                         <Bot size={18} className="text-primary-500" />
                       </div>
-                    ) : userImage ? (
-                      <Image
-                        src={userImage}
-                        width={32}
-                        height={32}
-                        alt={userName || "User"}
-                        className="rounded-full"
-                      />
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-background-600 flex items-center justify-center">
-                        <User size={18} className="text-primary-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="mb-2">
+                        <span className="text-sm font-semibold text-primary-400">
+                          {selectedModel.name}
+                        </span>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Message Content */}
-                  <div className="flex-1 min-w-0">
-                    {msg.role === "assistant" ? (
-                      <>
-                        <div className="mb-2">
-                          <span className="text-sm font-semibold text-primary-400">
-                            {msg.modelName || getModelNameFromId(msg.modelId)}
-                          </span>
-                        </div>
+                      {streamingContent ? (
                         <div className="rounded-lg p-4 bg-background-600 border border-background-500">
-                          {msg.content ? (
-                            <div className="text-sm leading-relaxed ai-response prose prose-invert max-w-none c1-message-container">
-                              <C1Component
-                                c1Response={msg.content}
-                                isStreaming={false}
-                                onAction={handleC1Action}
-                              />
-                            </div>
-                          ) : (
-                            <p className="text-sm text-text-low italic">
-                              No response generated
-                            </p>
-                          )}
-                          {msg.functionResults && (
-                            <div className="mt-3">
-                              <FunctionResults results={msg.functionResults} />
-                            </div>
-                          )}
-                          {msg.duration && (
-                            <p className="text-xs text-blue-400 mt-2">
-                              {msg.duration}s
-                            </p>
-                          )}
+                          <div className="text-sm leading-relaxed ai-response prose prose-invert max-w-none c1-message-container">
+                            <C1Component
+                              c1Response={streamingContent}
+                              isStreaming={true}
+                              onAction={handleC1Action}
+                            />
+                          </div>
                         </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="mb-2 text-right">
-                          <span className="text-sm font-semibold text-text-high">
-                            {userName || "You"}
-                          </span>
-                        </div>
-                        <div className="rounded-lg p-4 bg-primary-500/10 border border-primary-500/30">
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                            {msg.content}
-                          </p>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {isPending && (
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 rounded-full bg-primary-500/10 border border-primary-500/30 flex items-center justify-center">
-                      <Bot size={18} className="text-primary-500" />
+                      ) : (
+                        <ThinkingIndicator />
+                      )}
                     </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="mb-2">
-                      <span className="text-sm font-semibold text-primary-400">
-                        {selectedModel.name}
-                      </span>
-                    </div>
-                    {streamingContent ? (
-                      <div className="rounded-lg p-4 bg-background-600 border border-background-500">
-                        <div className="text-sm leading-relaxed ai-response prose prose-invert max-w-none c1-message-container">
-                          <C1Component
-                            c1Response={streamingContent}
-                            isStreaming={true}
-                            onAction={handleC1Action}
-                          />
-                        </div>
-                      </div>
-                    ) : (
-                      <ThinkingIndicator />
-                    )}
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
+                )}
+                <div ref={messagesEndRef} />
+              </div>
             </div>
-          </div>
-        )}
 
-        <div className="p-3 md:p-6 border-t border-background-600">
-          <div className="max-w-4xl mx-auto">
-            <form
-              onSubmit={handleSubmit}
-              className="flex flex-col items-stretch gap-2"
-            >
-              <div className="flex-shrink-0 order-2 sm:order-1">
-                <ModelDropdown
-                  selectedModel={selectedModel}
-                  onModelChange={setSelectedModel}
-                  className="w-full sm:w-auto"
-                />
-              </div>
-              <div className="flex-1 flex items-end gap-2 bg-background-600 border border-background-500 rounded-xl px-3 sm:px-4 py-2 sm:py-3 focus-within:border-primary-500/50 transition-colors order-1 sm:order-2">
-                <Textarea
-                  name="message"
-                  value={input}
-                  onChange={handleInputChange}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Ask me anything... (Shift+Enter for new line)"
-                  rows={1}
-                  className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 p-0 text-sm sm:text-base max-h-32 overflow-y-auto"
-                  disabled={isPending}
-                />
-                <button
-                  type="submit"
-                  className="bg-primary-500 text-white rounded-lg p-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:bg-primary-600 flex-shrink-0 mb-0.5"
-                  disabled={isPending || !input.trim()}
+            <div className="p-3 md:p-6 border-t border-background-600 backdrop-blur-sm z-10">
+              <motion.div
+                layoutId="input-container"
+                className="max-w-4xl mx-auto space-y-3"
+              >
+                {/* Upgrade prompt when limit is reached */}
+                {hasReachedLimit && (
+                  <UpgradePlan
+                    storageKey="ai-prompts-limit-chat"
+                    message={
+                      promptLimitInfo.plan === "base"
+                        ? "You've used your free prompt for today. Upgrade to Pro for 10 prompts/day or Ultra for unlimited."
+                        : "You've used all 10 prompts for today. Upgrade to Ultra for unlimited prompts."
+                    }
+                    variant="compact"
+                    icon="zap"
+                    showCloseButton={false}
+                  />
+                )}
+
+                <form
+                  onSubmit={handleSubmit}
+                  className={`flex items-end gap-2 bg-background-600 border border-background-500 rounded-xl px-3 sm:px-4 py-2 sm:py-3 focus-within:border-primary-500/50 transition-colors ${
+                    hasReachedLimit ? "opacity-50" : ""
+                  }`}
                 >
-                  <Send size={18} />
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+                  <div className="flex-shrink-0 mb-0.5">
+                    <ModelDropdown
+                      selectedModel={selectedModel}
+                      onModelChange={setSelectedModel}
+                    />
+                  </div>
+                  <Textarea
+                    name="message"
+                    value={input}
+                    onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                    placeholder={
+                      hasReachedLimit
+                        ? "Daily limit reached"
+                        : "Ask me anything..."
+                    }
+                    rows={1}
+                    className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 p-0 text-sm sm:text-base max-h-32 overflow-y-auto resize-none py-2"
+                    disabled={isPending || hasReachedLimit}
+                    autoFocus
+                  />
+                  <div className="flex items-center gap-2 flex-shrink-0 mb-0.5">
+                    {remainingPrompts !== "unlimited" && !hasReachedLimit && (
+                      <span className="text-xs text-text-low hidden sm:inline">
+                        {remainingPrompts} left
+                      </span>
+                    )}
+                    <button
+                      type="submit"
+                      className="bg-primary-500 text-white rounded-lg p-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:bg-primary-600"
+                      disabled={isPending || !input.trim() || hasReachedLimit}
+                    >
+                      <Send size={18} />
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          </>
+        )}
       </div>
     </ThemeProvider>
   );

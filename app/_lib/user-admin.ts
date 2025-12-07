@@ -85,6 +85,21 @@ async function getUserByIdInternal(userId: string): Promise<AppUser | null> {
       ...(userData.anonymousCreatedAt && {
         anonymousCreatedAt: userData.anonymousCreatedAt,
       }),
+      // Subscription fields
+      currentPlan: userData.currentPlan || "base",
+      ...(userData.planExpiresAt && { planExpiresAt: userData.planExpiresAt }),
+      ...(userData.stripeCustomerId && {
+        stripeCustomerId: userData.stripeCustomerId,
+      }),
+      ...(userData.stripeSubscriptionId && {
+        stripeSubscriptionId: userData.stripeSubscriptionId,
+      }),
+      freeTrialUsed: userData.freeTrialUsed || false,
+      aiPromptsToday: userData.aiPromptsToday || 0,
+      ...(userData.lastPromptDate && {
+        lastPromptDate: userData.lastPromptDate,
+      }),
+      receiveUpdateNotifications: userData.receiveUpdateNotifications,
     };
   } catch (error) {
     console.error("Error fetching user by ID:", error);

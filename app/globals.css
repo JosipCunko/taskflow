@@ -442,6 +442,34 @@ select {
   }
 }
 
+/* border gradinet in Chat.tsx textarea*/
+.chat-animated-border {
+  background: conic-gradient(
+    from var(--gradient-angle),
+    var(--color-primary-500),
+    var(--color-background-500),
+    var(--color-background-600),
+    var(--color-background-500),
+    var(--color-primary-500)
+  );
+  animation: gradient-rotation 10s linear infinite;
+  @apply -z-1 absolute -inset-2 rounded-[inherit] blur-sm;
+}
+
+@property --gradient-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes gradient-rotation {
+  0% {
+    --gradient-angle: 0deg;
+  }
+  100% {
+    --gradient-angle: 360deg;
+  }
+}
+
 /* Range Input Styling */
 input[type="range"] {
   -webkit-appearance: none;
@@ -735,4 +763,115 @@ input[type="range"]:focus::-moz-range-thumb {
 .thesys-chat-wrapper [class*="assistantMessage"] {
   background-color: var(--color-background-600) !important;
   border: 1px solid var(--color-background-500) !important;
+}
+
+/* C1Component Button Styling - Match TaskFlow primary button style */
+.c1-message-container button,
+.ai-response button {
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-500) 0%,
+    var(--color-primary-600) 100%
+  ) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: 0.5rem !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  font-family: var(--font-plex-mono), "IBM Plex Mono", monospace !important;
+  font-size: 0.875rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+  box-shadow: 0 2px 8px rgba(51, 153, 255, 0.3) !important;
+}
+
+.c1-message-container button:hover,
+.ai-response button:hover {
+  background: linear-gradient(
+    135deg,
+    var(--color-primary-400) 0%,
+    var(--color-primary-500) 100%
+  ) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(51, 153, 255, 0.4) !important;
+}
+
+.c1-message-container button:active,
+.ai-response button:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 2px 4px rgba(51, 153, 255, 0.2) !important;
+}
+
+/* Style for danger/delete buttons in C1 */
+.c1-message-container button[data-variant="danger"],
+.c1-message-container button[data-variant="destructive"] {
+  background: linear-gradient(
+    135deg,
+    var(--color-error) 0%,
+    #b85a6a 100%
+  ) !important;
+  box-shadow: 0 2px 8px rgba(207, 102, 121, 0.3) !important;
+}
+
+.c1-message-container button[data-variant="danger"]:hover,
+.c1-message-container button[data-variant="destructive"]:hover {
+  background: linear-gradient(
+    135deg,
+    #e07383 0%,
+    var(--color-error) 100%
+  ) !important;
+  box-shadow: 0 4px 12px rgba(207, 102, 121, 0.4) !important;
+}
+
+/* Style for secondary/outline buttons in C1 */
+.c1-message-container button[data-variant="secondary"],
+.c1-message-container button[data-variant="outline"] {
+  background: transparent !important;
+  border: 1px solid var(--color-primary-500) !important;
+  color: var(--color-primary-400) !important;
+  box-shadow: none !important;
+}
+
+.c1-message-container button[data-variant="secondary"]:hover,
+.c1-message-container button[data-variant="outline"]:hover {
+  background: rgba(51, 153, 255, 0.1) !important;
+  border-color: var(--color-primary-400) !important;
+  color: var(--color-primary-300) !important;
+  box-shadow: none !important;
+}
+
+/* C1 Table styling */
+.c1-message-container table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  margin: 1rem 0 !important;
+  background: var(--color-background-600) !important;
+  border-radius: 0.5rem !important;
+  overflow: hidden !important;
+}
+
+.c1-message-container th {
+  background: var(--color-background-500) !important;
+  color: var(--color-text-high) !important;
+  font-weight: 600 !important;
+  padding: 0.75rem 1rem !important;
+  text-align: left !important;
+  border-bottom: 1px solid var(--color-divider) !important;
+}
+
+.c1-message-container td {
+  padding: 0.75rem 1rem !important;
+  border-bottom: 1px solid var(--color-divider) !important;
+  color: var(--color-text-low) !important;
+}
+
+.c1-message-container tr:last-child td {
+  border-bottom: none !important;
+}
+
+.c1-message-container tr:hover td {
+  background: rgba(51, 153, 255, 0.05) !important;
 }

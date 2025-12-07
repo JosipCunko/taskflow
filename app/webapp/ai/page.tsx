@@ -2,11 +2,44 @@ import AIPageClient from "@/app/_components/AI/AIPageClient";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/_lib/auth";
 import { ChatMessage } from "@/app/_types/types";
+import { getUserById } from "@/app/_lib/user-admin";
+import { redirect } from "next/navigation";
+import { startOfDay } from "date-fns";
+import {
+  canMakePrompt,
+  getRemainingPrompts,
+  getPromptsPerDay,
+  getEffectivePlan,
+} from "@/app/_lib/stripe";
+
+// Disable caching to ensure fresh data on each request
+export const dynamic = "force-dynamic";
 
 export default async function AI() {
   const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    redirect("/login");
+  }
+
   const userName = session?.user?.name;
   const userImage = session?.user?.image;
+
+  const user = await getUserById(session.user.id);
+  if (!user) {
+    redirect("/login");
+  }
+
+  const today = startOfDay(new Date()).getTime();
+  let promptsToday = user.aiPromptsToday || 0;
+  if (!user.lastPromptDate || user.lastPromptDate < today) {
+    promptsToday = 0; // New day, reset count
+  }
+
+  // Get effective plan considering expiration
+  const plan = getEffectivePlan(user.currentPlan || "base", user.planExpiresAt);
+  const canPrompt = canMakePrompt(plan, promptsToday);
+  const remaining = getRemainingPrompts(plan, promptsToday);
+  const limit = getPromptsPerDay(plan);
 
   // For new chats, start with empty messages
   const initialMessages: ChatMessage[] = [];
@@ -18,6 +51,13 @@ export default async function AI() {
       chatId={chatId}
       userName={userName}
       userImage={userImage}
+      promptLimitInfo={{
+        canPrompt,
+        remaining,
+        limit,
+        plan,
+        promptsToday,
+      }}
     />
   );
 }

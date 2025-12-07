@@ -5,6 +5,7 @@ import {
   stripe,
   PLAN_CONFIG,
   getOrCreateStripeCustomer,
+  resolvePriceId,
 } from "@/app/_lib/stripe";
 import { getUserById } from "@/app/_lib/user-admin";
 import { SubscriptionPlan } from "@/app/_types/types";
@@ -62,21 +63,31 @@ export async function POST(request: NextRequest) {
         session.user.name || undefined
       ));
 
+    // Only allow free trial if user hasn't used it before
+    const trialDays =
+      user.freeTrialUsed || planConfig.trialDays === 0
+        ? 0
+        : planConfig.trialDays;
+
+    // Resolve priceId (supports both price_ and prod_ configs)
+    const resolvedPriceId = await resolvePriceId(planConfig.priceId);
+
     const checkoutSession = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: "subscription",
       payment_method_types: ["card"],
       line_items: [
         {
-          price: planConfig.priceId,
+          price: resolvedPriceId,
           quantity: 1,
         },
       ],
       subscription_data: {
-        trial_period_days: planConfig.trialDays,
+        ...(trialDays > 0 && { trial_period_days: trialDays }),
         metadata: {
           userId: session.user.id,
           plan: selectedPlan,
+          isFreeTrial: trialDays > 0 ? "true" : "false",
         },
       },
       success_url: `${process.env.NEXTAUTH_URL}/webapp?subscription=success`,
@@ -84,6 +95,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         userId: session.user.id,
         plan: selectedPlan,
+        isFreeTrial: trialDays > 0 ? "true" : "false",
       },
     });
 

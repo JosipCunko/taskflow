@@ -29,13 +29,14 @@ import { getNotificationStats } from "../_lib/notifications-admin";
 import NotificationSummary from "../_components/inbox/NotificationSummary";
 import TaskCardSmall from "../_components/TaskCardSmall";
 import RepeatingTaskCard from "../_components/RepeatingTaskCard";
-import dynamic from "next/dynamic";
+import dynamicImport from "next/dynamic";
 import NotificationSetup from "../_components/NotificationSetup";
 import { AnalyticsLoadingSkeleton } from "../_components/skeleton/AnalyticsLoadingSkeleton";
-import AnalyticsUpgradePrompt from "../_components/AnalyticsUpgradePrompt";
+import UpgradePlan from "../_components/UpgradePlan";
+import { getEffectivePlan } from "../_lib/stripe";
 
 // Dynamic import for heavy components with recharts
-const AnalyticsDashboard = dynamic(
+const AnalyticsDashboard = dynamicImport(
   () => import("../_components/AnalyticsDashboard"),
   {
     loading: () => <AnalyticsLoadingSkeleton />,
@@ -180,8 +181,14 @@ export default async function DashboardPage() {
       </div>
 
       {/* Analytics Dashboard - gated by subscription plan */}
-      {user.currentPlan === "base" ? (
-        <AnalyticsUpgradePrompt />
+      {getEffectivePlan(user.currentPlan, user.planExpiresAt) === "base" ? (
+        <UpgradePlan
+          storageKey="analytics-dashboard"
+          title="Analytics Dashboard"
+          message="Unlock powerful insights about your productivity with detailed analytics, charts, and progress tracking."
+          ctaText="Upgrade to Pro"
+          icon="sparkles"
+        />
       ) : (
         <AnalyticsDashboard user={user} />
       )}

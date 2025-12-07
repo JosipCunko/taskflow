@@ -309,10 +309,6 @@ export const navItems: NavGroups = {
       label: "AI",
       href: "/webapp/ai",
       icon: Bot,
-      badge: {
-        label: "FREE",
-        color: "var(--color-primary-500)",
-      },
     },
     {
       label: "Profile",

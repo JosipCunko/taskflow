@@ -15,21 +15,12 @@ My main branch isnt protected, also in Firebase console I got an warning about o
 - anonymous data deletion
 - autoDelayIncompleteTasks
 
-# clientCache
-
-- we only use it in AddLoggedMeal => is there really necessary and could we find more usecases of this
-
-# UploadFile not used
-
-# Add thesys api key to vercel deployment
-
-# offline
-
-- 0 css styles were added when I was offline (actually stopped dev server then the white page with base font was shown saying that I am offline and some feature wont work something like that)
-- that was while in dev server, didnt test in production on my vercel url
-
-# update skeleton loaders
+# clientCache and UploadFile not used
 
 # chat sidebar
 
 - when editing a title, chat sidebar expands a few pixels to fit in the input. I would like it to stay in place
+
+# AppUser
+
+- need to store some boolean property if the user has used his free trial (freeTrial: boolean)

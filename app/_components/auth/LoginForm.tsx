@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState, FormEvent, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, FormEvent, useEffect, useCallback } from "react";
 import { useSession, signIn } from "next-auth/react";
 import {
   signInWithGoogle,
@@ -19,6 +19,8 @@ import PasswordGenerator from "@/app/_components/PasswordGenerator";
 export default function LoginForm() {
   const { status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const planFromUrl = searchParams.get("plan");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,11 +29,34 @@ export default function LoginForm() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Handle redirect after authentication
+  const handlePostAuthRedirect = useCallback(async () => {
+    // If user selected a plan from pricing, redirect to checkout
+    if (planFromUrl && ["pro", "ultra"].includes(planFromUrl)) {
+      try {
+        const res = await fetch("/api/stripe/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ plan: planFromUrl }),
+        });
+        const data = await res.json();
+        if (data.url) {
+          window.location.href = data.url;
+          return;
+        }
+      } catch (err) {
+        console.error("Failed to redirect to checkout:", err);
+      }
+    }
+    // Default redirect to webapp
+    router.push("/webapp");
+  }, [planFromUrl, router]);
+
   useEffect(() => {
     if (status === "authenticated") {
-      router.push("/webapp");
+      handlePostAuthRedirect();
     }
-  }, [status, router]);
+  }, [status, handlePostAuthRedirect]);
 
   if (status === "loading") return <Loader label="Loading session..." />;
   if (status === "authenticated") {
@@ -93,7 +118,11 @@ export default function LoginForm() {
     setIsLoading(true);
     setError(null);
     try {
-      await signIn("github", { callbackUrl: "/webapp" });
+      // If plan is selected, redirect back to login with plan param (will then trigger checkout)
+      const callbackUrl = planFromUrl
+        ? `/login?plan=${planFromUrl}`
+        : "/webapp";
+      await signIn("github", { callbackUrl });
     } catch (err: unknown) {
       const error = err as { message?: string };
       setError(error.message || "Failed to sign in with GitHub.");
@@ -131,7 +160,7 @@ export default function LoginForm() {
           {isSignUp ? "Create an Account" : "Welcome back"}
         </motion.h1>
         <motion.p
-          className="text-text-low text-sm mb-6"
+          className="text-text-low text-sm mb-4"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
@@ -140,6 +169,23 @@ export default function LoginForm() {
             ? "Fill in the details to create your account"
             : "Sign in to your account"}
         </motion.p>
+
+        {planFromUrl && ["pro", "ultra"].includes(planFromUrl) && (
+          <motion.div
+            className="mb-6 p-3 rounded-lg bg-primary-500/10 border border-primary-500/30"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.15 }}
+          >
+            <p className="text-sm text-primary-300">
+              ✨ You&apos;ll be redirected to start your{" "}
+              <span className="font-semibold capitalize">{planFromUrl}</span>{" "}
+              plan
+              {planFromUrl === "pro" && " with a 7-day free trial"} after
+              signing in.
+            </p>
+          </motion.div>
+        )}
 
         <motion.form
           onSubmit={handleSubmit}

@@ -32,9 +32,59 @@ export const PLAN_CONFIG: Record<
   },
 };
 
+/**
+ * Ensures we have a valid Stripe Price ID.
+ * If a Product ID (prod_...) is provided, it resolves the product's default price.
+ */
+export async function resolvePriceId(rawId: string): Promise<string> {
+  if (!rawId) {
+    throw new Error("Missing Stripe price ID configuration.");
+  }
+
+  if (rawId.startsWith("price_")) {
+    return rawId;
+  }
+
+  if (rawId.startsWith("prod_")) {
+    const product = await stripe.products.retrieve(rawId);
+    const defaultPrice = product.default_price;
+    if (typeof defaultPrice === "string" && defaultPrice.startsWith("price_")) {
+      return defaultPrice;
+    }
+    throw new Error(
+      "Stripe product has no default price configured. Please set a price_ ID."
+    );
+  }
+
+  throw new Error(
+    "Invalid Stripe price configuration. Expecting price_ or prod_ identifier."
+  );
+}
+
 export function getPromptsPerDay(plan: SubscriptionPlan): number {
   if (plan === "base") return 1;
   return PLAN_CONFIG[plan].promptsPerDay;
+}
+
+/**
+ * Returns the effective plan considering expiration.
+ * If planExpiresAt is set and has passed, returns "base".
+ */
+export function getEffectivePlan(
+  currentPlan: SubscriptionPlan,
+  planExpiresAt?: number | null
+): SubscriptionPlan {
+  // If no expiration set or plan is base, return as-is
+  if (!planExpiresAt || currentPlan === "base") {
+    return currentPlan;
+  }
+
+  // Check if plan has expired
+  if (planExpiresAt < Date.now()) {
+    return "base";
+  }
+
+  return currentPlan;
 }
 
 export function canMakePrompt(
@@ -81,8 +131,26 @@ export async function getOrCreateStripeCustomer(
   return customer.id;
 }
 
-export function getPlanFromPriceId(priceId: string): SubscriptionPlan {
-  if (priceId === process.env.STRIPE_PRO_PRICE_ID) return "pro";
-  if (priceId === process.env.STRIPE_ULTRA_PRICE_ID) return "ultra";
+export function getPlanFromPriceId(
+  priceId: string,
+  productId?: string
+): SubscriptionPlan {
+  const proId = process.env.STRIPE_PRO_PRICE_ID;
+  const ultraId = process.env.STRIPE_ULTRA_PRICE_ID;
+
+  if (priceId && proId && priceId === proId) return "pro";
+  if (priceId && ultraId && priceId === ultraId) return "ultra";
+
+  // If env is product-based, match on productId
+  if (productId && proId && proId.startsWith("prod_") && productId === proId)
+    return "pro";
+  if (
+    productId &&
+    ultraId &&
+    ultraId.startsWith("prod_") &&
+    productId === ultraId
+  )
+    return "ultra";
+
   return "base";
 }

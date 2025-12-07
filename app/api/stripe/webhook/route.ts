@@ -13,6 +13,7 @@ async function updateUserSubscription(
     stripeCustomerId?: string;
     stripeSubscriptionId?: string | null;
     planExpiresAt?: number | null;
+    freeTrialUsed?: boolean;
   }
 ) {
   const userRef = adminDb.collection("users").doc(userId);
@@ -31,6 +32,9 @@ async function updateUserSubscription(
   if (data.planExpiresAt !== undefined) {
     updateData.planExpiresAt = data.planExpiresAt;
   }
+  if (data.freeTrialUsed !== undefined) {
+    updateData.freeTrialUsed = data.freeTrialUsed;
+  }
 
   await userRef.update(updateData);
 }
@@ -40,6 +44,7 @@ async function handleCheckoutSessionCompleted(
 ) {
   const userId = session.metadata?.userId;
   const plan = session.metadata?.plan as "pro" | "ultra" | undefined;
+  const isFreeTrial = session.metadata?.isFreeTrial === "true";
 
   if (!userId || !plan) {
     console.error("Missing userId or plan in checkout session metadata");
@@ -52,14 +57,22 @@ async function handleCheckoutSessionCompleted(
   // Get subscription details to find the current period end
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
 
+  // Mark free trial as used if this subscription started with a trial
+  const usedFreeTrial = isFreeTrial || subscription.status === "trialing";
+
   await updateUserSubscription(userId, {
     currentPlan: plan,
     stripeCustomerId: customerId,
     stripeSubscriptionId: subscriptionId,
     planExpiresAt: subscription.current_period_end * 1000, // Convert to milliseconds
+    ...(usedFreeTrial && { freeTrialUsed: true }),
   });
 
-  console.log(`User ${userId} subscribed to ${plan} plan`);
+  console.log(
+    `User ${userId} subscribed to ${plan} plan${
+      usedFreeTrial ? " (free trial)" : ""
+    }`
+  );
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
@@ -79,8 +92,13 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     }
 
     const userDoc = usersSnapshot.docs[0];
-    const priceId = subscription.items.data[0]?.price.id;
-    const plan = getPlanFromPriceId(priceId);
+    const price = subscription.items.data[0]?.price;
+    const priceId = typeof price === "string" ? price : price?.id;
+    const productId =
+      price && typeof price !== "string" && typeof price.product === "string"
+        ? price.product
+        : undefined;
+    const plan = priceId ? getPlanFromPriceId(priceId, productId) : "base";
 
     // Handle cancellation at period end
     if (subscription.cancel_at_period_end) {
@@ -109,8 +127,13 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   }
 
   // If we have userId in metadata
-  const priceId = subscription.items.data[0]?.price.id;
-  const plan = getPlanFromPriceId(priceId);
+  const price = subscription.items.data[0]?.price;
+  const priceId = typeof price === "string" ? price : price?.id;
+  const productId =
+    price && typeof price !== "string" && typeof price.product === "string"
+      ? price.product
+      : undefined;
+  const plan = priceId ? getPlanFromPriceId(priceId, productId) : "base";
 
   if (subscription.status === "active" || subscription.status === "trialing") {
     await updateUserSubscription(userId, {
