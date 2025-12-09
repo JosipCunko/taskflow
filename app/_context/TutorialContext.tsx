@@ -40,7 +40,9 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   const checkTutorialStatus = async () => {
     try {
       if (isToday(session?.user?.createdAt as number)) {
-        infoToast("Welcome to TaskFlow! Do you want to learn how to use it?");
+        infoToast(
+          "Welcome to TaskFlow! Start the tutorial in the profile page."
+        );
       }
     } catch (error) {
       console.error("Error checking tutorial status:", error);

@@ -33,6 +33,23 @@ export async function createSavedMeal(
       .map((ingredient) => ingredient.trim())
       .filter((ingredient) => ingredient.length > 0);
 
+    // Barcode scanner fields
+    const barcode = formData.get("barcode") as string | null;
+    const quantity = formData.get("quantity") as string | null;
+    const nutriScore = formData.get("nutriScore") as
+      | "a"
+      | "b"
+      | "c"
+      | "d"
+      | "e"
+      | null;
+    const novaGroupStr = formData.get("novaGroup") as string | null;
+    const novaGroup = novaGroupStr
+      ? (parseInt(novaGroupStr) as 1 | 2 | 3 | 4)
+      : null;
+    const isVegan = formData.get("isVegan") === "true";
+    const isVegetarian = formData.get("isVegetarian") === "true";
+
     if (
       !name ||
       isNaN(calories) ||
@@ -59,6 +76,13 @@ export async function createSavedMeal(
       },
       ingredients,
       ...(readyInMinutes && { readyInMinutes }),
+      // Barcode scanner fields
+      ...(barcode && { barcode }),
+      ...(quantity && { quantity }),
+      ...(nutriScore && { nutriScore }),
+      ...(novaGroup && { novaGroup }),
+      ...(isVegan && { isVegan }),
+      ...(isVegetarian && { isVegetarian }),
       createdAt: Date.now(),
     };
 

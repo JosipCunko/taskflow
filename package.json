@@ -1,6 +1,6 @@
 {
   "name": "taskflow",
-  "version": "17.4.0",
+  "version": "17.5.0",
   "private": true,
   "scripts": {
     "dev": "cross-env NODE_ENV=development next dev",
@@ -37,7 +37,8 @@
     "server-only": "^0.0.1",
     "stripe": "^17.5.0",
     "tailwind-merge": "2.5.4",
-    "zustand": "^4.5.5"
+    "zustand": "^4.5.5",
+    "zxing-wasm": "^2.2.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

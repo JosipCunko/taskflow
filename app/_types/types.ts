@@ -280,6 +280,36 @@ export interface SavedMeal {
   ingredients: string[];
   createdAt: number;
   readyInMinutes?: number;
+  // Barcode scanner fields
+  barcode?: string;
+  quantity?: string;
+  nutriScore?: "a" | "b" | "c" | "d" | "e";
+  novaGroup?: 1 | 2 | 3 | 4;
+  isVegan?: boolean;
+  isVegetarian?: boolean;
+}
+
+// Response from barcode scanning API
+export interface BarcodeProductResponse {
+  barcode: string;
+  name: string;
+  producer?: string;
+  quantity?: string;
+  nutriScore?: "a" | "b" | "c" | "d" | "e";
+  novaGroup?: 1 | 2 | 3 | 4;
+  nutrientsPer100g: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fiber?: number;
+    sugar?: number;
+    sodium?: number;
+  };
+  ingredients: string[];
+  isVegan?: boolean;
+  isVegetarian?: boolean;
+  imageUrl?: string;
 }
 
 export interface LoggedMeal extends SavedMeal {
