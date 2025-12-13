@@ -27,6 +27,34 @@ Whether you're planning your day, tracking your workouts, monitoring your nutrit
 | **Analytics**        | Streaks, achievements, completion rates, and performance insights          |
 | **Notifications**    | Smart notification system with priority levels and inbox management        |
 
+## 💰 Subscription Plans
+
+TaskFlow offers flexible pricing tiers designed to scale with your productivity needs:
+
+### Base Plan ($0/month)
+
+- Unlimited tasks & notes
+- Calendar & scheduling
+- 1 AI prompt per day
+- Health & fitness tracking
+- Mobile PWA support
+
+### Pro Plan ($4.99/month)
+
+- Everything in Base
+- 10 AI prompts per day
+- Analytics dashboard
+- Advanced insights
+- 7-day free trial available
+
+### Ultra Plan ($14.99/month)
+
+- Everything in Pro
+- Unlimited AI prompts
+- Early access to new features
+
+**🔄 Flexible Billing**: Cancel or change plans anytime. Secure payment processing through Stripe with customer portal access.
+
 ## 🌟 Key Features
 
 ### 1. Smart Task Management
@@ -68,27 +96,33 @@ Whether you're planning your day, tracking your workouts, monitoring your nutrit
 
 ### 4. Progress Tracking & Analytics
 
-- **Gamification Engine**:
-  - **Streak System**: Tracks current and best streaks for daily task completion, encouraging consistency.
-  - **Points System**: Earn reward points for completing tasks, which contribute to unlocking achievements.
-  - **Achievements**: Unlock milestones for task completion, consistency, and point accumulation.
-- **Performance Metrics**:
-  - **Consistency Stats**: View current and best streak lengths in days.
-  - **Time Management Stats**: Analyze on-time completion rates and average task delay times.
-  - **Dashboard Analytics**: Visual charts and stats provide an at-a-glance overview of your productivity.
-- **Detailed Activity Log**: A comprehensive, immutable log of all task interactions, including creation, updates, completion, delays, and deletions, providing a full audit trail of your work.
+- **Advanced Gamification Engine**:
+  - **Multi-Tier Achievement System**: Points milestones, streak milestones, and task completionist achievements with automatic unlocking.
+  - **Dynamic Streak Tracking**: Real-time streak monitoring with best streak records and consistency rewards.
+  - **Reward Points System**: Earn points for task completion with tiered milestone unlocks and progress visualization.
+- **Comprehensive Analytics Dashboard**:
+  - **Session Analytics**: Detailed tracking of app usage time, page views, and active engagement metrics.
+  - **Performance Insights**: Productivity scores, consistency ratings, and trend analysis with visual charts.
+  - **Task Analytics**: Event-based tracking of task creation, completion, delays, and behavioral patterns.
+  - **Time Management Intelligence**: On-time completion rates, delay analysis, and productive hour identification.
+- **Activity Audit Trail**: Immutable log of all user interactions with detailed task lifecycle tracking and historical data export.
+- **Progress Visualization**: Interactive charts showing productivity trends, point growth, achievement progress, and performance metrics over time.
 
 ### 5. Health & Nutrition Tracker
 
-- **Calorie & Macro Tracking**: Comprehensive nutrition tracking integrated directly into your productivity workflow.
+- **Advanced Nutrition Intelligence**: Comprehensive nutrition tracking with barcode scanning, NutriScore ratings, and NOVA food processing classifications.
+- **Barcode Scanning**: Scan product barcodes for instant nutritional information, ingredients, and health ratings.
+- **Smart Food Database**: Extensive food library with detailed nutritional profiles, including micro-nutrients and health classifications.
+- **NutriScore & NOVA Classification**: Automatic food quality assessment with color-coded health ratings (A-E) and processing level indicators (1-4).
+- **Dietary Filters**: Identify vegan, vegetarian, and allergen-specific foods with comprehensive labeling.
 - **Daily Nutrition Dashboard**:
-  - Visual progress bars showing calories, protein, carbs, and fat intake vs. goals.
-- **Meal Logging**:
-  - Log foods for breakfast, lunch, dinner, or snacks.
-  - Flexible serving sizes with custom units.
-  - Automatic nutrient calculation based on serving size.
-- **Goal Setting**: Set personalized daily targets for calories and macronutrients.
-- **Daily History**: View and manage your complete meal log for any date.
+  - Visual progress bars showing calories, protein, carbs, and fat intake vs. personalized goals.
+  - Historical tracking with nutrition graphs and trends analysis.
+- **Advanced Meal Logging**:
+  - Log foods for breakfast, lunch, dinner, or snacks with flexible serving sizes.
+  - Saved meals system for quick re-logging of favorite foods.
+  - Automatic nutrient calculation with detailed micro-nutrient tracking.
+- **Personalized Goal Setting**: Set custom daily targets for calories and macronutrients with smart recommendations.
 
 ### 6. Advanced Fitness Tracking Module
 
@@ -108,7 +142,9 @@ Whether you're planning your day, tracking your workouts, monitoring your nutrit
 - **Progress Visualization & Analytics**:
 
   - **Interactive Charts**: Visualize progress over time with line graphs showing weight, volume, and strength trends.
-  - **Exercise-Specific Analysis**: Detailed progress tracking for individual exercises with historical data.
+  - **Exercise-Specific Analysis**: Detailed progress tracking for individual exercises with historical data and personal record tracking.
+
+- **Personal Records**: Automatic tracking of your best weights, reps, and performance metrics for each exercise.
 
 - **Progressive Overload Intelligence**:
 
@@ -123,13 +159,13 @@ Whether you're planning your day, tracking your workouts, monitoring your nutrit
 
 ### 7. AI Assistant & Automation
 
-- **Intelligent Chatbot**: Built-in AI assistant powered by advanced language models (OpenAI, Claude, Gemini) for contextual help and guidance.
-- **Multi-Model Support**: Choose from multiple AI providers with an intuitive model dropdown for different use cases.
-- **App Navigation**: Get help navigating TaskFlow features and finding specific functionality.
-- **Productivity Insights**: Receive personalized recommendations for task management and goal achievement.
-- **Contextual Support**: AI understands your current app context to provide relevant assistance.
-- **Chat History**: Persistent conversation history for ongoing productivity coaching.
-- **Function Calling**: AI can interact with your tasks, retrieve data, and perform actions on your behalf.
+- **Advanced Multi-Model AI**: Integrated AI assistant with support for cutting-edge models including GPT-4.1, GPT-5, Claude Sonnet 4, and Claude 3.5 Haiku.
+- **Multiple AI Providers**: Seamless integration with CrayonAI, ThesysAI, and OpenRouter for diverse AI capabilities and optimal performance.
+- **Intelligent Function Calling**: AI can directly interact with your tasks, retrieve data, create new tasks, update existing ones, and perform complex operations on your behalf.
+- **Contextual Productivity Coaching**: AI understands your current app context, task history, and productivity patterns to provide personalized recommendations and insights.
+- **Persistent Chat History**: Full conversation history with model tracking and function call results for continuous productivity coaching.
+- **Usage Limits & Billing**: Daily AI prompt limits based on subscription tier (1/day Base, 10/day Pro, unlimited Ultra) with automatic reset and usage tracking.
+- **Advanced Chat Features**: Model switching mid-conversation, function result visualization, and streaming responses for enhanced user experience.
 
 ### 8. Notes
 
@@ -157,6 +193,7 @@ Whether you're planning your day, tracking your workouts, monitoring your nutrit
 - **Background Sync**: Smart synchronization when connection is restored.
 - **App Shortcuts**: Quick access shortcuts in the PWA for common actions (Add Task, Today's Tasks, Fitness, Health).
 - **Push Notifications**: Receive native push notifications for task reminders and achievements (when installed as PWA).
+- **App Update Notifications**: Automatic detection and user-friendly prompts for PWA updates with seamless installation.
 - **Installable**: Beautiful install prompt with app icon and description for easy installation.
 
 ### 13. Today's View & Daily Planning
@@ -213,7 +250,10 @@ Whether you're planning your day, tracking your workouts, monitoring your nutrit
 
 ### APIs & External Services
 
-- **openrouter**: AI models.
+- **Stripe**: Payment processing and subscription management with webhooks and customer portal integration.
+- **CrayonAI**: Advanced AI model orchestration and streaming capabilities.
+- **ThesysAI**: Additional AI model provider for enhanced conversational experiences.
+- **ZXing WASM**: Barcode scanning and QR code processing for nutrition tracking.
 
 ### Development Tools & Infrastructure
 
@@ -252,6 +292,9 @@ Whether you're planning your day, tracking your workouts, monitoring your nutrit
 - **Row-Level Security**: Each document includes userId validation at the database level.
 - **Environment Variable Management**: Sensitive keys and configurations secured via environment variables.
 - **Secure Session Handling**: Encrypted JWT sessions managed by NextAuth.js with httpOnly cookies.
+- **Advanced Security Headers**: Comprehensive HTTP security headers including X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, and Strict-Transport-Security.
+- **Performance Monitoring**: Real-time performance tracking with request timing headers, user agent logging, and analytics integration.
+- **Feature Flag Security**: Environment-based feature toggles for controlled rollout and beta testing capabilities.
 - **XSS Protection**: Input sanitization and output encoding to prevent cross-site scripting.
 - **CSRF Protection**: Built-in CSRF token validation for all state-changing operations.
 - **Rate Limiting**: Protection against API abuse and brute force attacks.
@@ -279,10 +322,12 @@ Whether you're planning your day, tracking your workouts, monitoring your nutrit
       - Firebase project configuration (API key, project ID, etc.)
       - `NEXTAUTH_SECRET` and `NEXTAUTH_URL` for authentication
       - Firebase Admin SDK credentials path
+      - Stripe configuration (`STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`)
     - **Optional Variables**:
       - `GITHUB_ID` and `GITHUB_SECRET` for GitHub OAuth (callback URL: `http://localhost:3000/api/auth/callback/github`)
       - `OPENAI_API_KEY` for OpenAI GPT models in AI assistant
-      - `OPENROUTER_API_KEY` you'll need several of them
+      - `CRAYON_API_KEY` for CrayonAI integration
+      - `THESYS_API_KEY` for ThesysAI integration
 
 4.  **Run the development server**:
 
