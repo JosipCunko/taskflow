@@ -23,6 +23,14 @@ const googleProvider = new GoogleAuthProvider();
  */
 export const signInWithGoogle = async (): Promise<void> => {
   try {
+    // 0. Ensure Firebase is signed out first to prevent race conditions
+    // This is crucial when switching from anonymous to Google auth
+    if (auth.currentUser) {
+      await firebaseSignOut(auth);
+      // Small delay to ensure Firebase state is fully cleared
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
     // 1. Sign in with Firebase client-side
     const result = await firebaseSignInWithPopup(auth, googleProvider);
     const firebaseUser = result.user;

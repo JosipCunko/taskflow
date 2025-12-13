@@ -358,7 +358,7 @@ select {
   @apply w-[22rem] sm:w-[26rem] mx-auto px-4 bg-background-700 rounded-2xl shadow h-[90vh] sm:h-[65vh] overflow-y-auto overflow-x-hidden;
 }
 .modal-bigger {
-  @apply w-[26rem] sm:w-[30rem] mx-auto px-4 bg-background-700 rounded-2xl shadow h-[90vh] sm:h-[75vh] overflow-y-auto overflow-x-hidden;
+  @apply w-[26rem] sm:w-[30rem] mx-auto bg-background-700 rounded-2xl shadow h-[90vh] sm:h-[75vh] overflow-y-auto overflow-x-hidden;
 }
 
 /* Number input */

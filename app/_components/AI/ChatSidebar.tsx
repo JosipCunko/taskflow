@@ -139,7 +139,7 @@ export default function ChatSidebar() {
   };
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-background-700 border-l border-background-600">
+    <div className="flex flex-col h-full bg-background-700 w-sm rounded-2xl">
       <div className="p-4 border-b border-background-600">
         <div className="flex items-center justify-between mb-4 md:hidden">
           <h2 className="text-lg font-semibold text-text-low">Chat History</h2>
@@ -178,15 +178,13 @@ export default function ChatSidebar() {
             ))}
           </div>
         ) : chats.length === 0 ? (
-          <div className="p-4 text-center">
+          <div className="p-4 text-center text-text-low">
             <MessageSquare
               size={32}
               className="mx-auto mb-2 text-text-low opacity-50"
             />
-            <p className="text-sm text-text-low">No chats yet</p>
-            <p className="text-xs text-text-low mt-1">
-              Start a new conversation
-            </p>
+            <p className="text-sm">No chats yet</p>
+            <p className="text-xs mt-1">Start a new conversation</p>
           </div>
         ) : (
           chats.map((chat) => (
@@ -287,19 +285,28 @@ export default function ChatSidebar() {
 
   return (
     <>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 md:hidden fixed top-20 right-0 z-30 p-2 bg-background-500 backdrop-blur-sm rounded-md text-text-low shadow-md hover:bg-background-500 transition-colors cursor-pointer"
-      >
-        <ListIcon size={24} /> Chat History
-      </button>
+      <AnimatePresence>
+        {!isOpen && (
+          <motion.button
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsOpen(true)}
+            className="md:hidden fixed bottom-4 right-4 z-30 p-4 rounded-2xl bg-background-500 hover:bg-primary-500/20 border border-primary-500/50 text-primary-300"
+          >
+            <ListIcon size={24} />
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Mobile Overlay with Animation */}
       <AnimatePresence>
         {hasMounted && isOpen && window.innerWidth < 768 && (
           <motion.div
             key="backdrop-mobile"
-            className="md:hidden fixed inset-0 bg-black/60 z-40"
+            className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
             initial="closed"
             animate="open"
             exit="closed"
@@ -310,16 +317,16 @@ export default function ChatSidebar() {
       </AnimatePresence>
 
       {/* Sidebar - Desktop (Right side) */}
-      <aside className="hidden md:flex md:w-72 h-full">
+      <aside className="hidden md:flex md:w-sm h-full">
         <SidebarContent />
       </aside>
 
       {/* Sidebar - Mobile (Right side with animations) */}
       <motion.aside
-        className="md:hidden fixed top-0 right-0 bottom-0 w-72 z-50 bg-background-700 shadow-xl"
+        className="md:hidden fixed top-0 right-0 bottom-0 w-sm max-w-[85vw] z-50 bg-background-700 shadow-2xl"
         initial="closed"
         variants={sidebarVariants}
-        transition={{ type: "tween", duration: 0.3 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
         animate={
           hasMounted
             ? window.innerWidth < 768

@@ -19,7 +19,7 @@ import KeyboardShortcutsGuide from "@/app/_components/notes/KeyboardShortcutsGui
 import NotesWelcome from "@/app/_components/notes/NotesWelcome";
 import NoteStats from "@/app/_components/notes/NoteStats";
 import NoteExport from "@/app/_components/notes/NoteExport";
-import NotesSearch from "@/app/_components/notes/NotesSearch";
+import Search from "@/app/_components/reusable/Search";
 import NoteContentPreview from "@/app/_components/notes/NoteContentPreview";
 import { useTextEditorShortcuts } from "@/app/_hooks/useTextEditorShortcuts";
 
@@ -239,7 +239,14 @@ export default function NotesClientUI({
 
       {notes.length > 0 && (
         <div className="mb-6">
-          <NotesSearch onSearchChange={setSearchQuery} />
+          <Search
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Search notes by title or content..."
+            filteredCount={filteredNotes.length}
+            totalCount={notes.length}
+            itemLabel="notes"
+          />
         </div>
       )}
 

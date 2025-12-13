@@ -28,6 +28,7 @@ import { getTasksByUserId } from "./tasks-admin";
 import { generateNotificationsForUser } from "./notifications-admin";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { CacheTags } from "../_utils/serverCache";
+import { sanitizeForFirestore } from "../_utils/utils";
 
 interface FirebaseUser {
   uid: string;
@@ -385,7 +386,10 @@ export async function updateUserRepeatingTasks(userId: string) {
 
     // Only batch update if there are actual changes
     if (Object.keys(updates).length > 0) {
-      batch.update(taskRef, updates);
+      batch.update(
+        taskRef,
+        sanitizeForFirestore(updates) as Partial<TaskUpdatePayload>
+      );
       updatesDetails.count += 1;
       updatesDetails.tasksTitles.push(task.title);
     }
@@ -720,6 +724,8 @@ export const authOptions: NextAuthOptions = {
                 lastLoginAt: number;
                 currentStreak?: number;
                 bestStreak?: number;
+                aiPromptsToday?: number;
+                lastPromptDate?: number;
               } = {
                 lastLoginAt: Date.now(),
               };
@@ -747,6 +753,15 @@ export const authOptions: NextAuthOptions = {
                 // First time user - start streak at 1
                 updates.currentStreak = 1;
                 updates.bestStreak = 1;
+              }
+
+              const userLastPromptDate = userData.lastPromptDate
+                ? startOfDay(userData.lastPromptDate)
+                : undefined;
+
+              if (!userLastPromptDate || userLastPromptDate < today) {
+                // New day - reset AI prompt count
+                updates.aiPromptsToday = 0;
               }
 
               // Recently added notif generation on jwt callback, because noitfs are created only when the user goes to the inbox page

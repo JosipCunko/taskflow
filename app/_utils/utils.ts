@@ -339,16 +339,26 @@ export const navItemsToSearch = [
     link: "/webapp/tasks",
   },
   {
-    icon: CalendarArrowUp,
-    label: "Calendar",
-    command: ["Ctrl", "F1"],
-    link: "/webapp/calendar",
-  },
-  {
     icon: Calendar,
     label: "Today",
     command: ["Ctrl", "F2"],
     link: "/webapp/today",
+  },
+  {
+    icon: Heart,
+    label: "Health",
+    command: ["Ctrl", "F1"],
+    link: "/webapp/health",
+  },
+  {
+    icon: Dumbbell,
+    label: "Fitness",
+    link: "/webapp/fitness",
+  },
+  {
+    icon: Bot,
+    label: "AI",
+    link: "/webapp/ai",
   },
 ];
 
@@ -1610,3 +1620,23 @@ export const taskflowTheme = {
     roundedXl: "1.5rem",
   },
 };
+
+/** Utility function to remove undefined properties from objects, not necessary with adminDb.settings({ ignoreUndefinedProperties: true }); */
+export function sanitizeForFirestore(obj: unknown): unknown {
+  if (obj === null || obj === undefined) {
+    return null;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map((item) => sanitizeForFirestore(item));
+  }
+  if (typeof obj === "object") {
+    const sanitized: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+      if (value !== undefined) {
+        sanitized[key] = sanitizeForFirestore(value);
+      }
+    }
+    return sanitized;
+  }
+  return obj;
+}

@@ -179,6 +179,11 @@ export default function AddSavedMeal({
           formData.set("novaGroup", scannedProduct.novaGroup.toString());
         if (scannedProduct.isVegan) formData.set("isVegan", "true");
         if (scannedProduct.isVegetarian) formData.set("isVegetarian", "true");
+        if (scannedProduct.nutrientLevels)
+          formData.set(
+            "nutrientLevels",
+            JSON.stringify(scannedProduct.nutrientLevels)
+          );
       }
 
       const result = await createSavedMeal(formData);

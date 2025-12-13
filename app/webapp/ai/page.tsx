@@ -29,6 +29,7 @@ export default async function AI() {
     redirect("/login");
   }
 
+  // not explicitly reset in the database. Instead "lazy reset" on first prompt of the day
   const today = startOfDay(new Date()).getTime();
   let promptsToday = user.aiPromptsToday || 0;
   if (!user.lastPromptDate || user.lastPromptDate < today) {

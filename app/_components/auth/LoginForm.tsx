@@ -54,7 +54,11 @@ export default function LoginForm() {
 
   useEffect(() => {
     if (status === "authenticated") {
-      handlePostAuthRedirect();
+      // Add a small delay to ensure session is fully established
+      const timer = setTimeout(() => {
+        handlePostAuthRedirect();
+      }, 100);
+      return () => clearTimeout(timer);
     }
   }, [status, handlePostAuthRedirect]);
 

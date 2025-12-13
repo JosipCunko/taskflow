@@ -381,7 +381,10 @@ export default function WorkoutSession({
           {/* Add Exercise Button */}
           {!isFinished && (
             <Modal.Open opens="exercise-search">
-              <Button variant="secondary" className="w-full flex-col p-8">
+              <Button
+                variant="secondary"
+                className="flex-col p-8 justify-self-center"
+              >
                 <Plus className="w-8 h-8" />
                 <span>Add Exercise</span>
               </Button>
@@ -642,7 +645,9 @@ function ExerciseCard({
             name="weight"
             type="number"
             value={weight}
-            onChange={(e) => setWeight(e.target.value)}
+            onChange={(e) =>
+              setWeight(Math.max(0, parseInt(e.target.value)).toString())
+            }
             placeholder="Weight (kg)"
             className="flex-1 px-3 py-2 bg-background-700 border border-background-500 rounded-lg text-text-low"
           />
@@ -650,7 +655,9 @@ function ExerciseCard({
             name="reps"
             type="number"
             value={reps}
-            onChange={(e) => setReps(e.target.value)}
+            onChange={(e) =>
+              setReps(Math.max(0, parseInt(e.target.value)).toString())
+            }
             placeholder="Reps"
             className="flex-1 px-3 py-2 bg-background-700 border border-background-500 rounded-lg text-text-low"
           />

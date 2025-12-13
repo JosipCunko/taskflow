@@ -4,38 +4,42 @@ import React, { useState, useEffect, useTransition, useMemo } from "react";
 import { createLoggedMeal } from "@/app/_lib/healthActions";
 import { BookOpen, Plus, Calculator, Utensils } from "lucide-react";
 import Input from "./reusable/Input";
+import Search from "./reusable/Search";
 import Button from "./reusable/Button";
-import { LoggedMeal } from "../_types/types";
+import { LoggedMeal, SavedMeal } from "../_types/types";
 import { errorToast, successToast } from "../_utils/utils";
 import Loader from "./Loader";
 import { clientCache } from "../_utils/clientCache";
 import { mealTypes } from "../_utils/utils";
+import SavedMealCard from "./SavedMealCard";
 
-interface SavedMeal {
-  id: string;
-  name: string;
-  description?: string;
-  producer?: string;
-  nutrientsPer100g: {
-    calories: number;
-    carbs: number;
-    protein: number;
-    fat: number;
-  };
-  ingredients: string[];
-}
+type SavedMealItem = Omit<SavedMeal, "barcode" | "quantity" | "userId">;
 
 export default function AddLoggedMeal({
   onCloseModal,
 }: {
   onCloseModal?: () => void;
 }) {
-  const [savedMeals, setSavedMeals] = useState<SavedMeal[]>([]);
-  const [selectedMeal, setSelectedMeal] = useState<SavedMeal | null>(null);
+  const [savedMeals, setSavedMeals] = useState<SavedMealItem[]>([]);
+  const [selectedMeal, setSelectedMeal] = useState<SavedMealItem | null>(null);
   const [servingSize, setServingSize] = useState<number>(100);
   const [mealType, setMealType] = useState<LoggedMeal["mealType"]>("breakfast");
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredMeals = useMemo(() => {
+    if (!searchQuery.trim()) return savedMeals;
+
+    const query = searchQuery.toLowerCase();
+    return savedMeals.filter(
+      (meal) =>
+        meal.name.toLowerCase().includes(query) ||
+        meal.producer?.toLowerCase().includes(query) ||
+        meal.description?.toLowerCase().includes(query) ||
+        meal.ingredients.some((ing) => ing.toLowerCase().includes(query))
+    );
+  }, [savedMeals, searchQuery]);
 
   const { cache, invalidateCache } = useMemo(() => {
     return clientCache(
@@ -43,7 +47,7 @@ export default function AddLoggedMeal({
       5,
       "/api/health/savedMeals",
       setSavedMeals,
-      [] as SavedMeal[],
+      [] as SavedMealItem[],
       setIsLoading,
       (message) => errorToast(message)
     );
@@ -54,7 +58,7 @@ export default function AddLoggedMeal({
   }, [cache]);
 
   // Calculate nutrients based on serving size
-  const calculateNutrients = (meal: SavedMeal, serving: number) => {
+  const calculateNutrients = (meal: SavedMealItem, serving: number) => {
     const multiplier = serving / 100;
     return {
       calories: Math.round(meal.nutrientsPer100g.calories * multiplier),
@@ -127,164 +131,146 @@ export default function AddLoggedMeal({
                   Select Meal
                 </h3>
 
-                <div className="grid gap-3">
-                  {savedMeals.map((meal) => (
-                    <div
-                      key={meal.id}
-                      onClick={() =>
-                        setSelectedMeal((sm) =>
-                          sm?.id === meal.id ? null : meal
-                        )
-                      }
-                      className={`p-4 rounded-lg border cursor-pointer transition-all duration-200 ${
-                        selectedMeal?.id === meal.id
-                          ? "border-primary-500 bg-primary-500/10"
-                          : "border-divider bg-background-700 hover:border-primary-400"
-                      }`}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-text-low">
-                            {meal.name}
-                          </h4>
-                          {meal.producer && (
-                            <p className="text-sm text-text-gray">
-                              {meal.producer}
-                            </p>
-                          )}
-                          {meal.description && (
-                            <p className="text-sm text-text-gray mt-1">
-                              {meal.description}
-                            </p>
-                          )}
-                        </div>
-                        <div className="text-right text-sm">
-                          <div className="text-text-low font-medium">
-                            {meal.nutrientsPer100g.calories} cal
-                          </div>
-                          <div className="text-text-gray">per 100g</div>
-                        </div>
-                      </div>
+                <Search
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder="Search meals..."
+                  filteredCount={filteredMeals.length}
+                  totalCount={savedMeals.length}
+                  itemLabel="meals"
+                />
 
-                      <div className="flex gap-4 mt-3 text-xs text-text-gray">
-                        <span>C: {meal.nutrientsPer100g.carbs}g</span>
-                        <span>P: {meal.nutrientsPer100g.protein}g</span>
-                        <span>F: {meal.nutrientsPer100g.fat}g</span>
-                      </div>
+                <div className="grid gap-3 max-h-[40vh] overflow-y-auto pr-1">
+                  {filteredMeals.length === 0 && searchQuery ? (
+                    <div className="text-center py-6">
+                      <BookOpen className="w-10 h-10 text-text-gray mx-auto mb-3" />
+                      <p className="text-text-gray">
+                        No meals match &quot;{searchQuery}&quot;
+                      </p>
                     </div>
-                  ))}
+                  ) : (
+                    filteredMeals.map((meal) => (
+                      <div key={meal.id}>
+                        <SavedMealCard
+                          meal={meal}
+                          isSelected={selectedMeal?.id === meal.id}
+                          onClick={() =>
+                            setSelectedMeal((sm) =>
+                              sm?.id === meal.id ? null : meal
+                            )
+                          }
+                          showExpandedDetails={selectedMeal?.id === meal.id}
+                        />
+
+                        {/* Serving size and meal type options appear right below selected card */}
+                        {selectedMeal?.id === meal.id && (
+                          <div className="mt-4 space-y-4 p-4 bg-background-600 rounded-lg border border-primary-500/30">
+                            {/* Serving Size */}
+                            <div>
+                              <h4 className="text-sm font-semibold text-text-low mb-2 flex items-center gap-2">
+                                <Calculator className="w-4 h-4" />
+                                Serving Size
+                              </h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <label
+                                    htmlFor="servingSize"
+                                    className="text-xs text-text-gray block mb-1"
+                                  >
+                                    Amount (grams)
+                                  </label>
+                                  <Input
+                                    name="servingSize"
+                                    type="number"
+                                    value={servingSize}
+                                    onChange={(
+                                      e: React.ChangeEvent<HTMLInputElement>
+                                    ) =>
+                                      setServingSize(
+                                        Math.min(
+                                          parseFloat(e.target.value) || 0,
+                                          9999
+                                        )
+                                      )
+                                    }
+                                    min="1"
+                                    required
+                                  />
+                                </div>
+
+                                <div className="bg-background-700 rounded-lg p-3 space-y-1">
+                                  <p className="text-xs text-text-gray mb-2">
+                                    Calculated nutrients:
+                                  </p>
+                                  {(() => {
+                                    const nutrients = calculateNutrients(
+                                      selectedMeal,
+                                      servingSize
+                                    );
+                                    return (
+                                      <div className="grid grid-cols-2 gap-1 text-sm">
+                                        <span className="text-text-gray">
+                                          Calories:
+                                        </span>
+                                        <span className="text-text-low font-medium">
+                                          {nutrients.calories} kcal
+                                        </span>
+                                        <span className="text-text-gray">
+                                          Carbs:
+                                        </span>
+                                        <span className="text-text-low">
+                                          {nutrients.carbs}g
+                                        </span>
+                                        <span className="text-text-gray">
+                                          Protein:
+                                        </span>
+                                        <span className="text-text-low">
+                                          {nutrients.protein}g
+                                        </span>
+                                        <span className="text-text-gray">
+                                          Fat:
+                                        </span>
+                                        <span className="text-text-low">
+                                          {nutrients.fat}g
+                                        </span>
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Meal Type */}
+                            <div>
+                              <h4 className="text-sm font-semibold text-text-low mb-2">
+                                Meal Type
+                              </h4>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                {mealTypes.map((type) => (
+                                  <button
+                                    key={type}
+                                    type="button"
+                                    onClick={() => setMealType(type)}
+                                    className={`p-2 rounded-lg border-2 transition-all duration-200 text-sm ${
+                                      mealType === type
+                                        ? "border-primary-500 bg-primary-500/10 text-primary-500"
+                                        : "border-divider bg-background-700 text-text-gray hover:border-primary-300 hover:text-primary-300"
+                                    }`}
+                                  >
+                                    <span className="font-medium capitalize">
+                                      {type}
+                                    </span>
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
-
-              {selectedMeal && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-text-low border-b border-divider pb-2">
-                    Serving Size
-                  </h3>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label
-                        htmlFor="servingSize"
-                        className="text-sm font-medium "
-                      >
-                        Amount (grams)
-                      </label>
-                      <Input
-                        name="servingSize"
-                        type="number"
-                        value={servingSize}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                          setServingSize(
-                            Math.min(parseFloat(e.target.value) || 0, 9999)
-                          )
-                        }
-                        min="1"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-medium text-text-low flex items-center gap-2">
-                        <Calculator className="w-4 aspect-square" />
-                        Calculated Nutrients
-                      </h4>
-
-                      <div className="bg-background-700 rounded-lg p-4 space-y-2">
-                        {(() => {
-                          const nutrients = calculateNutrients(
-                            selectedMeal,
-                            servingSize
-                          );
-                          return (
-                            <>
-                              <div className="flex justify-between items-center">
-                                <span className="text-text-gray text-sm">
-                                  Calories:
-                                </span>
-                                <span className="text-text-low font-semibold">
-                                  {nutrients.calories} cal
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-text-gray text-sm">
-                                  Carbs:
-                                </span>
-                                <span className="text-text-low">
-                                  {nutrients.carbs}g
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-text-gray text-sm">
-                                  Protein:
-                                </span>
-                                <span className="text-text-low">
-                                  {nutrients.protein}g
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-center">
-                                <span className="text-text-gray text-sm">
-                                  Fat:
-                                </span>
-                                <span className="text-text-low">
-                                  {nutrients.fat}g
-                                </span>
-                              </div>
-                            </>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {selectedMeal && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-text-low border-b border-divider pb-2">
-                    Meal Type
-                  </h3>
-
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    {mealTypes.map((type) => (
-                      <button
-                        key={type}
-                        type="button"
-                        onClick={() => setMealType(type)}
-                        className={`p-3 rounded-lg border-2 transition-all duration-200 ${
-                          mealType === type
-                            ? "border-primary-500 bg-primary-500/10 text-primary-500"
-                            : "border-divider bg-background-700 text-text-gray hover:border-primary-300 hover:text-primary-300"
-                        }`}
-                      >
-                        <span className="text-sm font-medium capitalize">
-                          {type}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
 
               {selectedMeal && (
                 // padding of the parent box

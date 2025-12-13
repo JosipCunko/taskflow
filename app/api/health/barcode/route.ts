@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/_lib/auth";
 import { readBarcodes, type ReaderOptions } from "zxing-wasm/reader";
-import { BarcodeProductResponse } from "@/app/_types/types";
+import {
+  BarcodeProductResponse,
+  NutrientLevels,
+  NutrientLevel,
+} from "@/app/_types/types";
 
 const OFF_API_BASE = "https://world.openfoodfacts.org/api/v2/product";
 const USER_AGENT = "TaskFlow/1.0 (taskflow-health-scanner)";
@@ -25,6 +29,14 @@ interface OpenFoodFactsResponse {
       fiber_100g?: number;
       sugars_100g?: number;
       sodium_100g?: number;
+      "saturated-fat_100g"?: number;
+      salt_100g?: number;
+    };
+    nutrient_levels?: {
+      fat?: "low" | "moderate" | "high";
+      "saturated-fat"?: "low" | "moderate" | "high";
+      sugars?: "low" | "moderate" | "high";
+      salt?: "low" | "moderate" | "high";
     };
     ingredients_text?: string;
     ingredients_analysis_tags?: string[];
@@ -84,6 +96,36 @@ async function fetchProductFromOFF(
         .filter((i) => i.length > 0)
     : [];
 
+  // Parse nutrient levels
+  const nutrientLevels: NutrientLevels = {};
+  const levels = product.nutrient_levels;
+  if (levels) {
+    if (levels.fat) {
+      nutrientLevels.fat = {
+        level: levels.fat as NutrientLevel,
+        per100g: Math.round((nutriments.fat_100g || 0) * 10) / 10,
+      };
+    }
+    if (levels["saturated-fat"]) {
+      nutrientLevels.saturatedFat = {
+        level: levels["saturated-fat"] as NutrientLevel,
+        per100g: Math.round((nutriments["saturated-fat_100g"] || 0) * 10) / 10,
+      };
+    }
+    if (levels.sugars) {
+      nutrientLevels.sugars = {
+        level: levels.sugars as NutrientLevel,
+        per100g: Math.round((nutriments.sugars_100g || 0) * 10) / 10,
+      };
+    }
+    if (levels.salt) {
+      nutrientLevels.salt = {
+        level: levels.salt as NutrientLevel,
+        per100g: Math.round((nutriments.salt_100g || 0) * 10) / 10,
+      };
+    }
+  }
+
   return {
     barcode,
     name: product.product_name || "Unknown Product",
@@ -115,6 +157,8 @@ async function fetchProductFromOFF(
     ingredients,
     isVegan: isVegan || undefined,
     isVegetarian: isVegetarian || undefined,
+    nutrientLevels:
+      Object.keys(nutrientLevels).length > 0 ? nutrientLevels : undefined,
     imageUrl: product.image_front_url || undefined,
   };
 }

@@ -512,7 +512,7 @@ export default function Chat({
               </p>
             </motion.div>
 
-            <div className="w-full max-w-3xl space-y-8">
+            <div className="w-full max-w-3xl space-y-8 rounded-2xl">
               {/* Upgrade prompt when limit is reached */}
               {hasReachedLimit && (
                 <UpgradePlan
@@ -566,7 +566,7 @@ export default function Chat({
                           className="opacity-80 hover:opacity-100 transition-opacity"
                         />
                         {remainingPrompts !== "unlimited" && (
-                          <span className="text-xs text-text-low">
+                          <span className="text-xs hidden md:inline text-text-low">
                             {remainingPrompts} prompt
                             {remainingPrompts !== 1 ? "s" : ""} left today
                           </span>

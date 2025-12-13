@@ -82,6 +82,19 @@ export const defaultExercises: Omit<Exercise, "id">[] = [
       "Push back up until arms are straight",
     ],
   },
+  {
+    name: "Planche",
+    category: "Shoulders",
+    muscleGroups: ["Chest", "Shoulders", "Arms", "Core"],
+    equipment: "Bodyweight",
+    instructions: [
+      "Start in plank position with hands shoulder-width apart",
+      "Lean forward while keeping body straight and rigid",
+      "Shift weight onto hands and lift feet off ground",
+      "Hold body parallel to ground",
+      "Build up from tuck planche to full planche gradually",
+    ],
+  },
 
   // ---------------------- BACK ----------------------
   {
@@ -198,6 +211,45 @@ export const defaultExercises: Omit<Exercise, "id">[] = [
       "Stand over T-bar with knees bent",
       "Pull bar toward chest",
       "Lower with control",
+    ],
+  },
+  {
+    name: "Muscle Up",
+    category: "Back",
+    muscleGroups: ["Lats", "Chest", "Triceps", "Shoulders", "Core"],
+    equipment: "Bodyweight",
+    instructions: [
+      "Hang from bar with overhand grip, hands slightly wider than shoulders",
+      "Perform explosive pull-up to get chest to bar height",
+      "Transition to dip position by pressing up while leaning forward",
+      "Lower with control or drop back to hang position",
+      "Practice pull-ups and dips separately before combining",
+    ],
+  },
+  {
+    name: "Front Lever",
+    category: "Back",
+    muscleGroups: ["Lats", "Core", "Shoulders", "Rhomboids"],
+    equipment: "Bodyweight",
+    instructions: [
+      "Hang from bar with overhand grip",
+      "Engage core and pull shoulder blades down and back",
+      "Lift legs up while leaning back slightly",
+      "Hold body parallel to ground",
+      "Start with tuck front lever and progress to full extension",
+    ],
+  },
+  {
+    name: "Back Lever",
+    category: "Back",
+    muscleGroups: ["Lats", "Core", "Shoulders", "Rhomboids"],
+    equipment: "Bodyweight",
+    instructions: [
+      "Hang from bar with overhand grip",
+      "Engage core and pull shoulder blades together",
+      "Lower body backward while keeping arms straight",
+      "Hold body parallel to ground facing downward",
+      "Progress from tuck position to full back lever",
     ],
   },
 
@@ -371,6 +423,47 @@ export const defaultExercises: Omit<Exercise, "id">[] = [
       "Squeeze shoulder blades",
     ],
   },
+  {
+    name: "Handstand",
+    category: "Shoulders",
+    muscleGroups: ["Shoulders", "Core", "Arms"],
+    equipment: "Bodyweight",
+    instructions: [
+      "Start in plank position facing wall",
+      "Kick up into handstand with hands shoulder-width apart",
+      "Engage core and keep body straight",
+      "Press through hands to maintain balance",
+      "Hold for time or walk along wall",
+      "Start with wall support and progress to freestanding",
+    ],
+  },
+  {
+    name: "Handstand Push-ups",
+    category: "Shoulders",
+    muscleGroups: ["Shoulders", "Triceps", "Core"],
+    equipment: "Bodyweight",
+    instructions: [
+      "Start in handstand position against wall",
+      "Lower head toward ground by bending elbows",
+      "Keep body straight and core engaged",
+      "Press back up to handstand position",
+      "Start with pike push-ups and progress to handstand push-ups",
+    ],
+  },
+  {
+    name: "Human Flag",
+    category: "Shoulders",
+    muscleGroups: ["Shoulders", "Core", "Lats", "Arms"],
+    equipment: "Bodyweight",
+    instructions: [
+      "Hang from pole or sturdy vertical bar",
+      "Pull body up and twist to get one arm over the pole",
+      "Press down with top arm while pulling with bottom arm",
+      "Hold body parallel to ground",
+      "Engage core and keep legs straight",
+      "Start with assisted variations before full flag",
+    ],
+  },
 
   // ---------------------- ARMS ----------------------
   {
@@ -529,6 +622,20 @@ export const defaultExercises: Omit<Exercise, "id">[] = [
       "Kneel with wheel in hands",
       "Roll forward keeping core tight",
       "Return to start",
+    ],
+  },
+  {
+    name: "Side Plank",
+    category: "Core",
+    muscleGroups: ["Obliques", "Core", "Shoulders"],
+    equipment: "Bodyweight",
+    instructions: [
+      "Lie on side with elbow under shoulder",
+      "Stack feet or place top foot in front of bottom foot",
+      "Lift hips off ground, creating straight line from head to feet",
+      "Hold position while breathing steadily",
+      "Switch sides and repeat",
+      "Add leg lifts or reaches for progression",
     ],
   },
 ];

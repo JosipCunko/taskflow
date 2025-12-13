@@ -1,26 +1,7 @@
 import "server-only";
 import { adminDb } from "./admin";
 import { ChatMessage } from "../_types/types";
-
-// Utility function to remove undefined properties from objects, not necessary with adminDb.settings({ ignoreUndefinedProperties: true });
-function sanitizeForFirestore(obj: unknown): unknown {
-  if (obj === null || obj === undefined) {
-    return null;
-  }
-  if (Array.isArray(obj)) {
-    return obj.map((item) => sanitizeForFirestore(item));
-  }
-  if (typeof obj === "object") {
-    const sanitized: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
-      if (value !== undefined) {
-        sanitized[key] = sanitizeForFirestore(value);
-      }
-    }
-    return sanitized;
-  }
-  return obj;
-}
+import { sanitizeForFirestore } from "../_utils/utils";
 
 export async function getUserChats(
   userId: string

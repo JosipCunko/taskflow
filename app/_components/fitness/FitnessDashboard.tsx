@@ -32,6 +32,7 @@ import { handleToast } from "../../_utils/utils";
 import Button from "@/app/_components/reusable/Button";
 import CreateTemplateModal from "../../_components/fitness/CreateTemplateModal";
 import Loader from "../Loader";
+import Modal from "../Modal";
 
 interface FitnessDashboardProps {
   userId: string;
@@ -50,7 +51,6 @@ export default function FitnessDashboard({
   );
   const [isPending, startTransition] = useTransition();
   const [currentWeek, setCurrentWeek] = useState(new Date());
-  const [showCreateTemplateModal, setShowCreateTemplateModal] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -174,228 +174,239 @@ export default function FitnessDashboard({
   }
 
   return (
-    <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat) => (
-          <div
-            key={stat.label}
-            className="bg-background-600 rounded-lg p-4 border border-background-500"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-text-low text-sm">{stat.label}</p>
-                <p className="text-2xl font-bold text-text-high">
-                  {stat.value}
-                </p>
-              </div>
-              <div className={cn("p-3 rounded-lg", stat.bgColor)}>
-                <stat.icon className={cn("w-6 h-6", stat.color)} />
+    <Modal>
+      <div className="space-y-6">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {stats.map((stat) => (
+            <div
+              key={stat.label}
+              className="bg-background-600 rounded-lg p-4 border border-background-500"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-text-low text-sm">{stat.label}</p>
+                  <p className="text-2xl font-bold text-text-high">
+                    {stat.value}
+                  </p>
+                </div>
+                <div className={cn("p-3 rounded-lg", stat.bgColor)}>
+                  <stat.icon className={cn("w-6 h-6", stat.color)} />
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-
-      <div className="flex flex-col sm:flex-row gap-4">
-        <Button onClick={handleStartWorkout} className="flex-1">
-          <Plus className="size-5" />
-          <span className="p-3">Start New Workout</span>
-        </Button>
-        <Button
-          variant="secondary"
-          onClick={handleViewProgress}
-          className="flex-1"
-        >
-          <TrendingUp className="size-5" />
-          <span className="p-3">View Progress</span>
-        </Button>
-      </div>
-
-      <div className="bg-background-600 rounded-lg p-6 border border-background-500">
-        <div className="flex flex-col gap-2 items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-text-high flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            Weekly Overview
-          </h2>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              onClick={() =>
-                setCurrentWeek(
-                  new Date(currentWeek.getTime() - 7 * 24 * 60 * 60 * 1000)
-                )
-              }
-            >
-              ←
-            </Button>
-            <span className="text-text-low font-medium">
-              {formatDate(weekStart, undefined, false)} -{" "}
-              {formatDate(weekEnd, undefined, false)}
-            </span>
-            <Button
-              variant="secondary"
-              onClick={() =>
-                setCurrentWeek(
-                  new Date(currentWeek.getTime() + 7 * 24 * 60 * 60 * 1000)
-                )
-              }
-            >
-              →
-            </Button>
-          </div>
+          ))}
         </div>
 
-        <div className="grid grid-cols-7 gap-2">
-          {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
-            (day, index) => (
-              <div key={day} className="text-center">
-                <div className="text-sm font-medium text-text-low mb-2">
-                  {day}
-                </div>
-                <div
-                  className={cn(
-                    "h-16 rounded-lg border-2 border-dashed border-background-500 flex items-center justify-center relative",
-                    isToday(weekDays[index]) &&
-                      "border-primary-500 bg-primary-500/5"
-                  )}
-                >
-                  {getWorkoutForDay(weekDays[index]) ? (
-                    <div className="w-full h-full bg-success/20 border-2 border-success rounded-lg flex items-center justify-center">
-                      <div className="w-3 h-3 bg-success rounded-full" />
-                    </div>
-                  ) : (
-                    <div className="text-text-low text-xs">
-                      {format(weekDays[index], "d")}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          )}
-        </div>
-      </div>
-
-      <div className="bg-background-600 rounded-lg p-6 border border-background-500">
-        <h2 className="text-xl font-semibold text-text-high mb-4">
-          Recent Workouts
-        </h2>
-        {workoutSessions.length === 0 ? (
-          <div className="text-center py-8">
-            <div className="text-text-low mb-2">No workouts recorded yet</div>
-            <p className="text-text-low text-sm">
-              Start your first workout to see your progress!
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {workoutSessions.slice(0, 5).map((workout) => (
-              <Link
-                href={`/webapp/fitness/workout?id=${workout.id}`}
-                key={workout.id}
-                className={cn(
-                  "block p-4 bg-background-700 rounded-lg border border-background-500 hover:bg-background-600 transition-colors",
-                  !workout.duration &&
-                    "border-primary-500/50 bg-primary-500/10 hover:bg-primary-500/20"
-                )}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium text-text-high flex items-center gap-2">
-                      <span>{workout.name}</span>
-                      {!workout.duration ? (
-                        <span className="text-xs font-semibold bg-primary-500/20 text-primary-400 px-2 py-0.5 rounded-full">
-                          In Progress
-                        </span>
-                      ) : null}
-                    </h3>
-                    <p className="text-sm text-text-low">
-                      {formatDate(new Date(workout.createdAt))}
-                      {workout.duration ? ` • ${workout.duration} min` : ""}
-                    </p>
-                  </div>
-                  <div className="text-sm text-text-low">
-                    {workout.loggedExercises.length} exercises
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="bg-background-600 rounded-lg p-6 border border-background-500">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-text-high">
-            My Workout Templates
-          </h2>
-          <Button onClick={() => setShowCreateTemplateModal(true)}>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Button onClick={handleStartWorkout} className="flex-1">
             <Plus className="size-5" />
-            Create Template
+            <span className="p-3">Start New Workout</span>
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={handleViewProgress}
+            className="flex-1"
+          >
+            <TrendingUp className="size-5" />
+            <span className="p-3">View Progress</span>
           </Button>
         </div>
 
-        {workoutTemplates.length === 0 ? (
-          <div className="text-center py-8">
-            <div className="text-text-low mb-2">No templates created yet</div>
-            <p className="text-text-low text-sm">
-              Create workout templates for quick access to your favorite
-              routines
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {workoutTemplates.map((template) => (
-              <div
-                key={template.id}
-                className="bg-background-700 rounded-lg p-4 border border-background-500"
+        <div className="bg-background-600 rounded-lg p-6 border border-background-500">
+          <div className="flex flex-col gap-2 items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-text-high flex items-center gap-2">
+              <Calendar className="w-5 h-5" />
+              Weekly Overview
+            </h2>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  setCurrentWeek(
+                    new Date(currentWeek.getTime() - 7 * 24 * 60 * 60 * 1000)
+                  )
+                }
               >
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-text-high">
-                    {template.name}
-                  </h3>
-                  <span className="text-xs text-text-low">
-                    {template.exercises.length} exercises
-                  </span>
-                </div>
+                ←
+              </Button>
+              <span className="text-text-low font-medium">
+                {formatDate(weekStart, undefined, false)} -{" "}
+                {formatDate(weekEnd, undefined, false)}
+              </span>
+              <Button
+                disabled={
+                  new Date(currentWeek.getTime() + 7 * 24 * 60 * 60 * 1000) >
+                  actualWeekEnd
+                }
+                variant="secondary"
+                onClick={() =>
+                  setCurrentWeek(
+                    new Date(currentWeek.getTime() + 7 * 24 * 60 * 60 * 1000) >
+                      actualWeekEnd
+                      ? actualWeekEnd
+                      : new Date(
+                          currentWeek.getTime() + 7 * 24 * 60 * 60 * 1000
+                        )
+                  )
+                }
+              >
+                →
+              </Button>
+            </div>
+          </div>
 
-                <div className="mb-4">
-                  <div className="flex flex-wrap gap-1">
-                    {template.exercises.slice(0, 3).map((exercise, index) => (
-                      <span
-                        key={index}
-                        className="text-xs bg-background-600 text-text-low px-2 py-1 rounded"
-                      >
-                        {exercise}
-                      </span>
-                    ))}
-                    {template.exercises.length > 3 && (
-                      <span className="text-xs text-text-low px-2 py-1">
-                        +{template.exercises.length - 3} more
-                      </span>
+          <div className="grid grid-cols-7 gap-2">
+            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(
+              (day, index) => (
+                <div key={day} className="text-center">
+                  <div className="text-sm font-medium text-text-low mb-2">
+                    {day}
+                  </div>
+                  <div
+                    className={cn(
+                      "h-16 rounded-lg border-2 border-dashed border-background-500 flex items-center justify-center relative",
+                      isToday(weekDays[index]) &&
+                        "border-primary-500 bg-primary-500/5"
+                    )}
+                  >
+                    {getWorkoutForDay(weekDays[index]) ? (
+                      <div className="w-full h-full bg-success/20 border-2 border-success rounded-lg flex items-center justify-center">
+                        <div className="w-3 h-3 bg-success rounded-full" />
+                      </div>
+                    ) : (
+                      <div className="text-text-low text-xs">
+                        {format(weekDays[index], "d")}
+                      </div>
                     )}
                   </div>
                 </div>
-
-                <Button
-                  onClick={() => handleStartFromTemplate(template.id)}
-                  variant="secondary"
-                  className="w-full text-sm"
-                >
-                  <SquareArrowUpRight className="w-4 h-4" />
-                  Start Workout
-                </Button>
-              </div>
-            ))}
+              )
+            )}
           </div>
-        )}
-      </div>
+        </div>
 
-      <CreateTemplateModal
-        isOpen={showCreateTemplateModal}
-        onClose={() => setShowCreateTemplateModal(false)}
-        onTemplateCreated={handleTemplateCreated}
-      />
-    </div>
+        <div className="bg-background-600 rounded-lg p-6 border border-background-500">
+          <h2 className="text-xl font-semibold text-text-high mb-4">
+            Recent Workouts
+          </h2>
+          {workoutSessions.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-text-low mb-2">No workouts recorded yet</div>
+              <p className="text-text-low text-sm">
+                Start your first workout to see your progress!
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {workoutSessions.slice(0, 5).map((workout) => (
+                <Link
+                  href={`/webapp/fitness/workout?id=${workout.id}`}
+                  key={workout.id}
+                  className={cn(
+                    "block p-4 bg-background-700 rounded-lg border border-background-500 hover:bg-background-600 transition-colors",
+                    !workout.duration &&
+                      "border-primary-500/50 bg-primary-500/10 hover:bg-primary-500/20"
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium text-text-high flex items-center gap-2">
+                        <span>{workout.name}</span>
+                        {!workout.duration ? (
+                          <span className="text-xs font-semibold bg-primary-500/20 text-primary-400 px-2 py-0.5 rounded-full">
+                            In Progress
+                          </span>
+                        ) : null}
+                      </h3>
+                      <p className="text-sm text-text-low">
+                        {formatDate(new Date(workout.createdAt))}
+                        {workout.duration ? ` • ${workout.duration} min` : ""}
+                      </p>
+                    </div>
+                    <div className="text-sm text-text-low">
+                      {workout.loggedExercises.length} exercises
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-background-600 rounded-lg p-6 border border-background-500">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-text-high">
+              My Workout Templates
+            </h2>
+            <Modal.Open opens="create-template">
+              <Button>
+                <Plus className="size-5" />
+                Create Template
+              </Button>
+            </Modal.Open>
+          </div>
+
+          {workoutTemplates.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-text-low mb-2">No templates created yet</div>
+              <p className="text-text-low text-sm">
+                Create workout templates for quick access to your favorite
+                routines
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {workoutTemplates.map((template) => (
+                <div
+                  key={template.id}
+                  className="bg-background-700 rounded-lg p-4 border border-background-500"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-text-high">
+                      {template.name}
+                    </h3>
+                    <span className="text-xs text-text-low">
+                      {template.exercises.length} exercises
+                    </span>
+                  </div>
+
+                  <div className="mb-4">
+                    <div className="flex flex-wrap gap-1">
+                      {template.exercises.slice(0, 3).map((exercise, index) => (
+                        <span
+                          key={index}
+                          className="text-xs bg-background-600 text-text-low px-2 py-1 rounded"
+                        >
+                          {exercise}
+                        </span>
+                      ))}
+                      {template.exercises.length > 3 && (
+                        <span className="text-xs text-text-low px-2 py-1">
+                          +{template.exercises.length - 3} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <Button
+                    onClick={() => handleStartFromTemplate(template.id)}
+                    variant="secondary"
+                    className="w-full text-sm"
+                  >
+                    <SquareArrowUpRight className="w-4 h-4" />
+                    Start Workout
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <Modal.Window name="create-template">
+          <CreateTemplateModal onTemplateCreated={handleTemplateCreated} />
+        </Modal.Window>
+      </div>
+    </Modal>
   );
 }

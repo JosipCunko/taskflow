@@ -13,6 +13,8 @@ import {
 } from "@/app/_lib/stripe";
 import { adminDb } from "@/app/_lib/admin";
 import { startOfDay } from "date-fns";
+import { revalidateTag } from "next/cache";
+import { CacheTags } from "@/app/_utils/serverCache";
 
 const apiKey = process.env.THESYS_API_KEY;
 
@@ -771,6 +773,8 @@ export async function POST(request: NextRequest) {
               aiPromptsToday: (promptsToday || 0) + 1,
               lastPromptDate: today,
             });
+            revalidateTag(CacheTags.user(userId));
+            revalidateTag(CacheTags.users());
           } catch (saveError) {
             console.error("Error saving chat:", saveError);
           }

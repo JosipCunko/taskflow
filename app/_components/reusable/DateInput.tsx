@@ -14,6 +14,7 @@ export default function DateInput({
   placement = "bottom",
   className,
   disableDaysBefore = true,
+  disableDaysAfter = false,
 }: {
   date: number; // UNIX timestamp in milliseconds
   setDate: (date: number) => void; // UNIX timestamp in milliseconds
@@ -21,6 +22,7 @@ export default function DateInput({
   placement?: "top" | "bottom";
   className?: string;
   disableDaysBefore?: boolean;
+  disableDaysAfter?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const ref = useOutsideClick(() => setIsOpen(false));
@@ -32,7 +34,14 @@ export default function DateInput({
   };
 
   const today = new Date();
-  const disabledDays = disableDaysBefore ? { before: today } : undefined;
+  const disabledDays =
+    disableDaysBefore && disableDaysAfter
+      ? { before: today, after: today }
+      : disableDaysBefore
+      ? { before: today }
+      : disableDaysAfter
+      ? { after: today }
+      : undefined;
 
   const placementClass =
     placement === "top"

@@ -270,6 +270,15 @@ export interface CampaignNotification {
   priority: NotificationPriority;
 }
 
+export type NutrientLevel = "low" | "moderate" | "high";
+
+export interface NutrientLevels {
+  fat?: { level: NutrientLevel; per100g: number };
+  saturatedFat?: { level: NutrientLevel; per100g: number };
+  sugars?: { level: NutrientLevel; per100g: number };
+  salt?: { level: NutrientLevel; per100g: number };
+}
+
 export interface SavedMeal {
   id: string;
   userId: string;
@@ -279,7 +288,6 @@ export interface SavedMeal {
   nutrientsPer100g: MealNutrition;
   ingredients: string[];
   createdAt: number;
-  readyInMinutes?: number;
   // Barcode scanner fields
   barcode?: string;
   quantity?: string;
@@ -287,6 +295,7 @@ export interface SavedMeal {
   novaGroup?: 1 | 2 | 3 | 4;
   isVegan?: boolean;
   isVegetarian?: boolean;
+  nutrientLevels?: NutrientLevels;
 }
 
 // Response from barcode scanning API
@@ -309,6 +318,7 @@ export interface BarcodeProductResponse {
   ingredients: string[];
   isVegan?: boolean;
   isVegetarian?: boolean;
+  nutrientLevels?: NutrientLevels;
   imageUrl?: string;
 }
 

@@ -88,12 +88,9 @@ export default function NutritionGraphs() {
         </p>
       </div>
 
-      {/* Controls */}
       <div className="mb-6 space-y-4">
-        {/* Time Period Selector */}
         <div>
           <label className="block text-sm font-medium text-text-med mb-2">
-            <Calendar className="w-4 h-4 inline mr-1" />
             Time Period
           </label>
           <div className="flex flex-wrap gap-2">
@@ -112,7 +109,6 @@ export default function NutritionGraphs() {
           </div>
         </div>
 
-        {/* Nutrient Type Selector */}
         <div>
           <label className="block text-sm font-medium text-text-med mb-2">
             Nutrient Type
@@ -133,7 +129,6 @@ export default function NutritionGraphs() {
         </div>
       </div>
 
-      {/* Stats */}
       {hasData && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-background-700 rounded-lg p-4">

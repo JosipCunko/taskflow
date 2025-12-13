@@ -1,6 +1,5 @@
 import "server-only";
 import { adminAuth, adminDb } from "./admin";
-import { Timestamp } from "firebase-admin/firestore";
 
 /**
  * Cleans up anonymous user accounts that are older than 1 hour.
@@ -23,12 +22,13 @@ export async function cleanupExpiredAnonymousAccounts(): Promise<{
   try {
     console.log("Starting cleanup of expired anonymous accounts...");
 
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000); // 1 hour
+    // anonymousCreatedAt is stored as a number (Date.now()), so compare with number
+    const oneHourAgoTimestamp = Date.now() - 60 * 60 * 1000; // 1 hour in milliseconds
 
     const expiredUsersQuery = await adminDb
       .collection("users")
       .where("isAnonymous", "==", true)
-      .where("anonymousCreatedAt", "<=", Timestamp.fromDate(oneHourAgo))
+      .where("anonymousCreatedAt", "<=", oneHourAgoTimestamp)
       .get();
 
     if (expiredUsersQuery.empty) {

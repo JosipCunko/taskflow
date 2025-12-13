@@ -18,13 +18,13 @@ import { handleToast } from "@/app/_utils/utils";
 import {
   CheckCircle2,
   RefreshCw,
-  Search,
   Bell,
   AlertTriangle,
   Clock,
   Trophy,
 } from "lucide-react";
 import Button from "../reusable/Button";
+import Search from "../reusable/Search";
 
 interface InboxContentProps {
   initialNotifications: Notification[];
@@ -308,17 +308,12 @@ export default function InboxContent({
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-          <div className="relative flex-1 sm:max-w-xs">
+          <div className="flex-1 sm:max-w-xs">
             <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text-low"
-              size={16}
-            />
-            <input
-              type="text"
-              placeholder="Search notifications..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-background-700 border border-background-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              onChange={setSearchQuery}
+              placeholder="Search notifications..."
+              hideInfo
             />
           </div>
 

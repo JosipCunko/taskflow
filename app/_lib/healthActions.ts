@@ -3,7 +3,12 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "./auth";
 import { adminDb } from "./admin";
-import { ActionResult, LoggedMeal, SavedMeal } from "../_types/types";
+import {
+  ActionResult,
+  LoggedMeal,
+  NutrientLevels,
+  SavedMeal,
+} from "../_types/types";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { CacheTags } from "../_utils/serverCache";
 import { startOfDay, subMonths } from "date-fns";
@@ -49,6 +54,10 @@ export async function createSavedMeal(
       : null;
     const isVegan = formData.get("isVegan") === "true";
     const isVegetarian = formData.get("isVegetarian") === "true";
+    const nutrientLevelsStr = formData.get("nutrientLevels") as string | null;
+    const nutrientLevels: NutrientLevels | null = nutrientLevelsStr
+      ? JSON.parse(nutrientLevelsStr)
+      : null;
 
     if (
       !name ||
@@ -83,6 +92,7 @@ export async function createSavedMeal(
       ...(novaGroup && { novaGroup }),
       ...(isVegan && { isVegan }),
       ...(isVegetarian && { isVegetarian }),
+      ...(nutrientLevels && { nutrientLevels }),
       createdAt: Date.now(),
     };
 

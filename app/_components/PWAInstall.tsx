@@ -69,8 +69,11 @@ export default function PWAInstall({
       return;
     }
 
-    // Show install prompt after a short delay
-    if (isInstallable) {
+    // Show install prompt after a short delay (only if not previously dismissed)
+    if (
+      isInstallable &&
+      localStorage.getItem("pwa-install-dismissed") !== "true"
+    ) {
       setTimeout(() => {
         setShowInstallPrompt(true);
       }, 3000);
@@ -104,7 +107,7 @@ export default function PWAInstall({
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-3">
             <Image
-              src="/icon-192.png"
+              src="/pwaicons/ios/192.png"
               alt="TaskFlow"
               width={48}
               height={48}

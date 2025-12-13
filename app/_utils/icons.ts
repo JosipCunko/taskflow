@@ -310,5 +310,5 @@ export const FoodIcons = {
   Calories: BatteryFull,
   Protein: Ham,
   Carbs: Wheat,
-  Fat: Menu,
+  Fat: Pizza,
 };

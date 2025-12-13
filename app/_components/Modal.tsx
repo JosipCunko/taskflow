@@ -90,7 +90,7 @@ function Window({ children, name, showButton = undefined }: WindowProps) {
           transition={{ duration: 0.2 }}
         >
           <motion.div
-            className="fixed top-[50%] left-[50%]  rounded-lg shadow-lg translate-x-[-50%] translate-y-[-50%] bg-background-700"
+            className="fixed top-[50%] left-[50%] rounded-2xl shadow-lg translate-x-[-50%] translate-y-[-50%] bg-background-700 border border-primary-500/20"
             initial={{ opacity: 0, x: 50, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
             exit={{ opacity: 0, x: 50, y: 50, scale: 0.9 }}

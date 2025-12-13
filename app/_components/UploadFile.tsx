@@ -99,7 +99,9 @@ export default function UploadFile() {
 
       <div
         className={`border-2 border-dashed rounded-md p-6 mb-6 text-center ${
-          isDragging ? "border-primary bg-primary/5" : "border-background-500"
+          isDragging
+            ? "border-primary-500 bg-primary-500/5"
+            : "border-background-500"
         }`}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
@@ -157,7 +159,7 @@ export default function UploadFile() {
           disabled={!file}
           className={`px-4 py-2 rounded ${
             file
-              ? "bg-primary text-white hover:bg-primary/90"
+              ? "bg-primary-500 text-white hover:bg-primary-500/90"
               : "bg-background-500 text-text-low cursor-not-allowed"
           } transition-colors`}
         >

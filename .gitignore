@@ -1,9 +1,9 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-/pwaicons
-/pwaicons/windows11
-/pwaicons/android
-/pwaicons/ios
+/public/pwaicons
+/public/pwaicons/windows11
+/public/pwaicons/android
+/public/pwaicons/ios
 
 # dependencies
 /node_modules

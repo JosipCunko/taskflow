@@ -12,7 +12,7 @@ export function useKeyboardNavigation() {
         const key = event.key.toUpperCase();
 
         const matchingItem = navItemsToSearch.find(
-          (item) => item?.command[1] === key
+          (item) => item?.command?.[1] === key
         );
 
         if (matchingItem) {

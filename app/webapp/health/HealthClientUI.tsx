@@ -26,6 +26,7 @@ import { setUserNutritionGoalsAction } from "@/app/_lib/actions";
 import { CardSpecificIcons } from "@/app/_utils/icons";
 import AddLoggedMeal from "@/app/_components/AddLoggedMeal";
 import AddSavedMeal from "@/app/_components/AddSavedMeal";
+import ManageSavedMeals from "@/app/_components/ManageSavedMeals";
 import LoggedMealCard from "@/app/_components/LoggedMealCard";
 import NutritionGraphs from "../../_components/NutritionGraphs";
 
@@ -100,6 +101,20 @@ export default function HealthClientUI() {
       close: closeSaveMealModal,
     }),
     [saveMealModalOpenName]
+  );
+
+  const [manageMealsModalOpenName, setManageMealsModalOpenName] =
+    useState<string>("");
+  const openManageMealsModal = (name: string) =>
+    setManageMealsModalOpenName(name);
+  const closeManageMealsModal = () => setManageMealsModalOpenName("");
+  const manageMealsModalContextValue = useMemo(
+    () => ({
+      openName: manageMealsModalOpenName,
+      open: openManageMealsModal,
+      close: closeManageMealsModal,
+    }),
+    [manageMealsModalOpenName]
   );
 
   const loadDailyNutritionSummary = useCallback(async () => {
@@ -177,6 +192,7 @@ export default function HealthClientUI() {
           setDate={(date) => dispatchField("currentDate", date)}
           className="min-w-fit w-full sm:w-auto"
           disableDaysBefore={false}
+          disableDaysAfter={true}
         >
           <Button
             variant="secondary"
@@ -209,6 +225,18 @@ export default function HealthClientUI() {
             <Button className="w-full sm:w-auto justify-center">
               <Plus className="w-4 aspect-square" />
               <span className="sm:inline">Save Meal</span>
+            </Button>
+          </Modal.Open>
+        </ModalContext.Provider>
+
+        <ModalContext.Provider value={manageMealsModalContextValue}>
+          <Modal.Open opens="manage-meals">
+            <Button
+              variant="secondary"
+              className="w-full sm:w-auto justify-center"
+            >
+              <Utensils className="w-4 aspect-square" />
+              <span className="sm:inline">Manage Meals</span>
             </Button>
           </Modal.Open>
         </ModalContext.Provider>
@@ -371,6 +399,12 @@ export default function HealthClientUI() {
       <ModalContext.Provider value={logMealModalContextValue}>
         <Modal.Window name="log-meal">
           <AddLoggedMeal />
+        </Modal.Window>
+      </ModalContext.Provider>
+
+      <ModalContext.Provider value={manageMealsModalContextValue}>
+        <Modal.Window name="manage-meals">
+          <ManageSavedMeals />
         </Modal.Window>
       </ModalContext.Provider>
     </div>

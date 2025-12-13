@@ -14,7 +14,7 @@ import Button from "./reusable/Button";
 import AddTask from "./AddTask";
 import { useKeyboardNavigation } from "../_hooks/useKeyboardNavigation";
 import { Task } from "../_types/types";
-import Search from "./Search";
+import SearchApp from "./SearchApp";
 
 const NotificationBell = dynamic(() => import("./inbox/NotificationBell"), {
   ssr: false,
@@ -54,7 +54,7 @@ export default function TopSidebar({
     };
   }, []);
 
-  const MemoizedSearch = memo(Search);
+  const MemoizedSearch = memo(SearchApp);
   const MemoizedNotificationBell = memo(NotificationBell);
 
   return (
