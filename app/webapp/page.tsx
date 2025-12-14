@@ -331,7 +331,8 @@ export default async function DashboardPage() {
               <CheckCircle2 className="w-12 h-12 text-success mx-auto mb-2" />
               <p className="text-text-low">All tasks are up to date!</p>
               <p className="text-sm text-text-gray">
-                There are no missed or delayed tasks! You&apos;re doing great!
+                There are no missed or delayed regular tasks! You&apos;re doing
+                great!
               </p>
             </div>
           )}

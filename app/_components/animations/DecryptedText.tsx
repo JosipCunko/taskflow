@@ -30,6 +30,7 @@ interface DecryptedTextProps extends HTMLMotionProps<"span"> {
   parentClassName?: string;
   encryptedClassName?: string;
   animateOn?: "view" | "hover";
+  renderCursor?: boolean;
 }
 
 export default function DecryptedText({
@@ -44,6 +45,7 @@ export default function DecryptedText({
   parentClassName = "",
   encryptedClassName = "",
   animateOn = "hover",
+  renderCursor = false,
   ...props
 }: DecryptedTextProps) {
   const [displayText, setDisplayText] = useState<string>(text);
@@ -255,6 +257,9 @@ export default function DecryptedText({
           );
         })}
       </span>
+      {renderCursor && (
+        <span className="inline-block w-2 h-4 bg-primary-500/50 ml-1 animate-pulse"></span>
+      )}
     </motion.span>
   );
 }

@@ -12,11 +12,12 @@ export default function Sidebar() {
       className="w-64 h-full bg-background-700 flex flex-col"
       data-tutorial="sidebar"
     >
-      <div className="">
+      <div className="hidden sm:block">
         <div className="grid place-items-center">
           <Image src="/logo.png" alt="Taskflow" width={150} height={150} />
         </div>
       </div>
+      <div className="block sm:hidden w-12 aspect-square"></div>
       <nav className="p-2 flex-1 flex flex-col overflow-y-auto">
         {Object.entries(navItems).map(([groupName, items]) => (
           <div

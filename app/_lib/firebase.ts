@@ -1,7 +1,11 @@
 // Import the functions you need from the SDKs you need
 import { FirebaseApp, getApp, getApps, initializeApp } from "firebase/app";
 import { Auth, getAuth } from "firebase/auth";
-import { Firestore, getFirestore } from "firebase/firestore";
+import {
+  Firestore,
+  getFirestore,
+  initializeFirestore,
+} from "firebase/firestore";
 import { getAnalytics, Analytics } from "firebase/analytics";
 
 // TODO: Add SDKs for Firebase products that you want to use
@@ -20,7 +24,10 @@ const firebaseConfig = {
 const app: FirebaseApp =
   getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const auth: Auth = getAuth(app);
-const db: Firestore = getFirestore(app);
+const db: Firestore =
+  getApps().length === 0
+    ? initializeFirestore(app, { ignoreUndefinedProperties: true })
+    : getFirestore(app);
 
 // Initialize Analytics (only in browser)
 let analytics: Analytics | null = null;

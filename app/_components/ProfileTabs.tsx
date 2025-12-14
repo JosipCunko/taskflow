@@ -118,7 +118,7 @@ export default function ProfileTabs({
           }`}
         >
           <div className="flex items-center justify-center gap-2">
-            <Trophy size={16} />
+            <Trophy size={16} className="hidden sm:block" />
             Overview
           </div>
           {activeTab === "overview" && (
@@ -137,7 +137,7 @@ export default function ProfileTabs({
           }`}
         >
           <div className="flex items-center justify-center gap-2">
-            <Settings size={16} />
+            <Settings size={16} className="hidden sm:block" />
             Settings
           </div>
           {activeTab === "settings" && (
@@ -156,7 +156,7 @@ export default function ProfileTabs({
           }`}
         >
           <div className="flex items-center justify-center gap-2">
-            <CreditCard size={16} />
+            <CreditCard size={16} className="hidden sm:block" />
             Subscription
           </div>
           {activeTab === "subscription" && (

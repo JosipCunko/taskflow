@@ -28,7 +28,6 @@ import { getTasksByUserId } from "./tasks-admin";
 import { generateNotificationsForUser } from "./notifications-admin";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { CacheTags } from "../_utils/serverCache";
-import { sanitizeForFirestore } from "../_utils/utils";
 
 interface FirebaseUser {
   uid: string;
@@ -386,10 +385,7 @@ export async function updateUserRepeatingTasks(userId: string) {
 
     // Only batch update if there are actual changes
     if (Object.keys(updates).length > 0) {
-      batch.update(
-        taskRef,
-        sanitizeForFirestore(updates) as Partial<TaskUpdatePayload>
-      );
+      batch.update(taskRef, updates);
       updatesDetails.count += 1;
       updatesDetails.tasksTitles.push(task.title);
     }

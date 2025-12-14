@@ -1,7 +1,6 @@
 import "server-only";
 import { adminDb } from "./admin";
 import { ChatMessage } from "../_types/types";
-import { sanitizeForFirestore } from "../_utils/utils";
 
 export async function getUserChats(
   userId: string
@@ -63,18 +62,15 @@ export async function saveChatMessages(
   chatId?: string | null
 ): Promise<string> {
   try {
-    // Sanitize messages to remove undefined properties
-    const sanitizedMessages = sanitizeForFirestore(messages);
-
     if (chatId) {
       const chatRef = adminDb.collection("aiChats").doc(chatId);
-      await chatRef.update({ messages: sanitizedMessages });
+      await chatRef.update({ messages: messages });
       return chatId;
     } else {
       const chatRef = adminDb.collection("aiChats").doc();
       await chatRef.set({
         userId,
-        messages: sanitizedMessages,
+        messages,
         createdAt: new Date(),
         title: "New Chat",
       });

@@ -57,8 +57,8 @@ export default function Features() {
                     useOriginalCharsOnly
                     maxIterations={10}
                     className="inline"
+                    renderCursor={true}
                   />
-                  <span className="inline-block w-2 h-4 bg-primary-500/50 ml-1 animate-pulse align-middle"></span>
                 </div>
               </div>
             </TerminalCard>

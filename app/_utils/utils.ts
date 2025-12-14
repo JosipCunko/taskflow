@@ -13,18 +13,18 @@ import {
   CalendarArrowUp,
   CheckSquare,
   FileText,
-  Heart,
   Bot,
   User,
   ListChecks,
-  Tags,
-  BellRing,
   BarChart3,
   Sparkles,
   Rocket,
   LucideIcon,
   Brain,
   Dumbbell,
+  ChartSpline,
+  Paintbrush,
+  Apple,
 } from "lucide-react";
 import {
   DayOfWeek,
@@ -142,25 +142,25 @@ export const features = [
     icon: ListChecks,
     label: "Smart Task Management",
     description:
-      "Create tasks with dependencies, enjoy auto-rescheduling for missed items, track statuses (pending, completed, delayed), and earn experience points for completion.",
+      "Create tasks with many options, enjoy auto-rescheduling for missed ones, track statuses, set repeating options and earn experience points for completion.",
   },
   {
-    icon: Tags,
+    icon: Paintbrush,
     label: "Advanced Tagging & Customization",
     description:
-      "Organize with custom tags (e.g., morning routine, fitness), a versatile color palette, priority focus tags, and a wide selection of task icons.",
+      "Organize with custom tags, a versatile color palette, priority focus tags, and a wide selection of task icons.",
   },
   {
-    icon: BellRing,
-    label: "Intelligent Reminders",
+    icon: ChartSpline,
+    label: "Super advanced features",
     description:
-      "Set flexible reminders with snooze functionality and multiple dismiss options to stay on top of your schedule effortlessly.",
+      "Fitness and nutrition tracking, barcode scanning, notes, advanced notifications, tutorial, subscription management and more.",
   },
   {
     icon: BarChart3,
     label: "Progress Tracking & Analytics",
     description:
-      "Monitor your consistency with streak visuals, earn reward points, and view detailed performance metrics like completion rates and delay statistics on your dashboard.",
+      "Monitor your consistency with streak visuals, earn reward points, and view detailed performance metrics, analytics...",
   },
   {
     icon: Sparkles,
@@ -172,13 +172,13 @@ export const features = [
     icon: Rocket,
     label: "Optimized & Modern Tech",
     description:
-      "Built with Next.js 15 (App Router), React 19, and Firebase for a fast, scalable, and reliable task management solution with real-time updates.",
+      "Built with Next.js 15 (App Router), React 19, and Firebase for a fast, scalable, and reliable solution with real-time updates.",
   },
   {
     icon: Brain,
     label: "AI Integration",
     description:
-      "Get super productive with AI, manage your health, and stay on top of your schedule with our AI assistant.",
+      "Get super productive with AI, ask him anything, receive personalized recommendations with rich UI elements.",
   },
 ];
 
@@ -288,7 +288,7 @@ export const navItems: NavGroups = {
     {
       label: "Health",
       href: "/webapp/health",
-      icon: Heart,
+      icon: Apple,
       badge: {
         label: "NEW",
         color: "var(--color-error)",
@@ -345,7 +345,7 @@ export const navItemsToSearch = [
     link: "/webapp/today",
   },
   {
-    icon: Heart,
+    icon: Apple,
     label: "Health",
     command: ["Ctrl", "F1"],
     link: "/webapp/health",
@@ -1620,23 +1620,3 @@ export const taskflowTheme = {
     roundedXl: "1.5rem",
   },
 };
-
-/** Utility function to remove undefined properties from objects, not necessary with adminDb.settings({ ignoreUndefinedProperties: true }); */
-export function sanitizeForFirestore(obj: unknown): unknown {
-  if (obj === null || obj === undefined) {
-    return null;
-  }
-  if (Array.isArray(obj)) {
-    return obj.map((item) => sanitizeForFirestore(item));
-  }
-  if (typeof obj === "object") {
-    const sanitized: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
-      if (value !== undefined) {
-        sanitized[key] = sanitizeForFirestore(value);
-      }
-    }
-    return sanitized;
-  }
-  return obj;
-}
