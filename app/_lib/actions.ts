@@ -46,7 +46,7 @@ import { trackTaskAnalytics } from "./analytics-admin";
 /* User */
 export async function updateUserAction(
   userId: string,
-  data: Partial<AppUser>
+  data: Partial<AppUser>,
 ): Promise<ActionResult> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -66,7 +66,7 @@ export async function setUserNutritionGoalsAction(
   dailyCalories: number,
   dailyProtein: number,
   dailyCarbs: number,
-  dailyFat: number
+  dailyFat: number,
 ): Promise<ActionResult<UserNutritionGoals>> {
   try {
     const session = await getServerSession(authOptions);
@@ -121,7 +121,7 @@ export async function createTaskAction(
   isRepeating: boolean,
   repetitionRule: RepetitionRule | undefined,
   startDate?: number,
-  autoDelay?: boolean
+  autoDelay?: boolean,
 ): Promise<ActionResult<Task>> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -189,7 +189,7 @@ export async function createTaskAction(
           isReminder: createdTask.isReminder,
           risk: createdTask.risk,
           delayCount: createdTask.delayCount || 0,
-        }
+        },
       );
 
       revalidateTag(CacheTags.tasks());
@@ -223,7 +223,7 @@ export async function createTaskAction(
 }
 
 export async function completeTaskAction(
-  formData: FormData
+  formData: FormData,
 ): Promise<ActionResult> {
   const taskId = formData.get("taskId") as string;
   const session = await getServerSession(authOptions);
@@ -311,7 +311,7 @@ export async function delayTaskAction(
   formData: FormData,
   dueDate: number,
   delayCount: number,
-  currentTaskDueDate?: number
+  currentTaskDueDate?: number,
 ): Promise<ActionResult> {
   const taskId = formData.get("taskId") as string;
   const session = await getServerSession(authOptions);
@@ -405,7 +405,7 @@ export async function delayTaskAction(
 }
 
 export async function deleteTaskAction(
-  formData: FormData
+  formData: FormData,
 ): Promise<ActionResult> {
   const taskId = formData.get("taskId") as string;
   const session = await getServerSession(authOptions);
@@ -458,7 +458,7 @@ export async function deleteTaskAction(
 }
 
 export async function togglePriorityAction(
-  formData: FormData
+  formData: FormData,
 ): Promise<ActionResult> {
   const taskId = formData.get("taskId") as string;
   const session = await getServerSession(authOptions);
@@ -490,7 +490,7 @@ export async function togglePriorityAction(
 }
 
 export async function toggleReminderAction(
-  formData: FormData
+  formData: FormData,
 ): Promise<ActionResult> {
   const taskId = formData.get("taskId") as string;
   const session = await getServerSession(authOptions);
@@ -523,7 +523,7 @@ export async function toggleReminderAction(
 }
 
 export async function updateTaskExperienceAction(
-  formData: FormData
+  formData: FormData,
 ): Promise<ActionResult> {
   const taskId = formData.get("taskId") as string;
   const newExperience = formData.get("experience") as Task["experience"];
@@ -553,10 +553,12 @@ export async function updateTaskExperienceAction(
   }
 }
 
-/* Repeating Tasks */
+/**
+ * completedAt is the date of completion
+ */
 export async function completeRepeatingTaskWithInterval(
   task: Task,
-  completionDate: number = Date.now()
+  completionDate: number = Date.now(),
 ): Promise<ActionResult> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -588,7 +590,7 @@ export async function completeRepeatingTaskWithInterval(
   const taskDueDateObj = new Date(task.dueDate);
   completionDateObj.setHours(
     taskDueDateObj.getHours(),
-    taskDueDateObj.getMinutes()
+    taskDueDateObj.getMinutes(),
   );
   const finalDueDate = addDays(completionDateObj, rule.interval);
   const finalDueDateTimestamp = finalDueDate.getTime();
@@ -609,8 +611,12 @@ export async function completeRepeatingTaskWithInterval(
     startDate: undefined, // Clear startDate after first completion (no longer needed)
   };
 
+  const safeUpdates = Object.fromEntries(
+    Object.entries(updates).filter(([, value]) => value !== undefined),
+  );
+
   try {
-    await updateTask(task.id, updates);
+    await updateTask(task.id, safeUpdates);
     await updateUserCompletionStats(session.user.id, task.points);
 
     // Check for achievements after task completion
@@ -638,7 +644,7 @@ export async function completeRepeatingTaskWithInterval(
     return {
       success: true,
       message: `Task completed. Next due on ${formatDate(
-        finalDueDateTimestamp
+        finalDueDateTimestamp,
       )}`,
     };
   } catch (err) {
@@ -650,9 +656,12 @@ export async function completeRepeatingTaskWithInterval(
   }
 }
 
+/**
+ * completedAt is the date of full completion (whole week), if not => undefined
+ */
 export async function completeRepeatingTaskWithTimesPerWeek(
   task: Task,
-  completionDate: number = Date.now()
+  completionDate: number = Date.now(),
 ): Promise<ActionResult> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -693,7 +702,7 @@ export async function completeRepeatingTaskWithTimesPerWeek(
     // Week is complete, move to next Monday
     const nextWeekStart = startOfWeek(
       addWeeks(new Date(completionDate), 1),
-      MONDAY_START_OF_WEEK
+      MONDAY_START_OF_WEEK,
     );
     newStartDate = nextWeekStart.getTime();
     nextDueDateObj = new Date(nextWeekStart);
@@ -708,7 +717,7 @@ export async function completeRepeatingTaskWithTimesPerWeek(
   // Preserve time from original dueDate
   nextDueDateObj.setHours(
     taskDueDateObj.getHours(),
-    taskDueDateObj.getMinutes()
+    taskDueDateObj.getMinutes(),
   );
   const nextDueDate = nextDueDateObj.getTime();
 
@@ -726,14 +735,19 @@ export async function completeRepeatingTaskWithTimesPerWeek(
       completions: newCompletions,
     },
     // Only set completedAt when the full week cycle is complete
-    completedAt: isWeekComplete ? completionDate : undefined,
+    // firestore ignores undefined values
+    ...(isWeekComplete && { completedAt: completionDate }),
     dueDate: nextDueDate,
     points: newPoints,
     status: isWeekComplete ? "completed" : "pending",
   };
 
+  const safeUpdates = Object.fromEntries(
+    Object.entries(updates).filter(([, value]) => value !== undefined),
+  );
+
   try {
-    await updateTask(task.id, updates);
+    await updateTask(task.id, safeUpdates);
     await updateUserCompletionStats(session.user.id, task.points);
 
     // Check for achievements after task completion
@@ -773,9 +787,12 @@ export async function completeRepeatingTaskWithTimesPerWeek(
   }
 }
 
+/**
+ * completedAt is the date of full completion (whole week), if not => undefined
+ */
 export async function completeRepeatingTaskWithDaysOfWeek(
   task: Task,
-  completionDate: number = Date.now()
+  completionDate: number = Date.now(),
 ): Promise<ActionResult> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -817,12 +834,12 @@ export async function completeRepeatingTaskWithDaysOfWeek(
     // Week complete, move to first day of next week
     const currentWeekStart = startOfWeek(
       new Date(completionDate),
-      MONDAY_START_OF_WEEK
+      MONDAY_START_OF_WEEK,
     );
     const nextWeekStart = addWeeks(currentWeekStart, 1);
     const correctStartDate = addDays(
       nextWeekStart,
-      firstDayInWeek === 0 ? 7 : firstDayInWeek // Sunday (0) becomes day 7
+      firstDayInWeek === 0 ? 7 : firstDayInWeek, // Sunday (0) becomes day 7
     );
     newStartDate = correctStartDate.getTime();
     nextDueDateObj = new Date(correctStartDate);
@@ -846,7 +863,7 @@ export async function completeRepeatingTaskWithDaysOfWeek(
   const taskDueDateObj = new Date(task.dueDate);
   nextDueDateObj.setHours(
     taskDueDateObj.getHours(),
-    taskDueDateObj.getMinutes()
+    taskDueDateObj.getMinutes(),
   );
   const newDueDate = nextDueDateObj.getTime();
 
@@ -870,8 +887,12 @@ export async function completeRepeatingTaskWithDaysOfWeek(
     status: isWeekComplete ? "completed" : "pending",
   };
 
+  const safeUpdates = Object.fromEntries(
+    Object.entries(updates).filter(([, value]) => value !== undefined),
+  );
+
   try {
-    await updateTask(task.id, updates);
+    await updateTask(task.id, safeUpdates);
     await updateUserCompletionStats(session.user.id, task.points);
 
     // Check for achievements after task completion
@@ -914,7 +935,7 @@ export async function completeRepeatingTaskWithDaysOfWeek(
 /* FCM  */
 export async function sendCampaignNotificationAction(
   userIds: string[],
-  campaign: CampaignNotification
+  campaign: CampaignNotification,
 ): Promise<ActionResult> {
   try {
     const session = await getServerSession(authOptions);
@@ -999,7 +1020,7 @@ export async function autoDelayIncompleteTodayTasks(): Promise<ActionResult> {
         const newDueDate = new Date(tomorrowTimestamp);
         newDueDate.setHours(
           originalDueDate.getHours(),
-          originalDueDate.getMinutes()
+          originalDueDate.getMinutes(),
         );
 
         batch.update(doc.ref, {
@@ -1015,7 +1036,7 @@ export async function autoDelayIncompleteTodayTasks(): Promise<ActionResult> {
     if (delayedCount > 0) {
       await batch.commit();
       console.log(
-        `Auto-delayed ${delayedCount} regular task(s) to tomorrow for user ${session.user.id}`
+        `Auto-delayed ${delayedCount} regular task(s) to tomorrow for user ${session.user.id}`,
       );
 
       revalidateTag(CacheTags.tasks());
@@ -1044,3 +1065,10 @@ export async function autoDelayIncompleteTodayTasks(): Promise<ActionResult> {
     };
   }
 }
+
+export const refreshTasks = async (userId: string) => {
+  revalidateTag(CacheTags.tasks());
+  revalidateTag(CacheTags.userTasks(userId));
+  revalidatePath("/webapp/tasks");
+  revalidatePath("/webapp");
+};

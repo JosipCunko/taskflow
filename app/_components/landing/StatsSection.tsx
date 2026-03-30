@@ -4,24 +4,10 @@ import { stats } from "@/app/_utils/utils";
 
 function StatsSection() {
   return (
-    <section className="py-20 bg-background-700 relative overflow-hidden border-y border-primary-500/10">
+    <section className="bg-background-700 py-16 md:py-32 relative overflow-hidden border-y border-primary-500/10"
+    >
       <GridAndDotsBackground />
-      <div className="absolute inset-0 bg-background-700/90 z-0"></div>
-
       <div className="container mx-auto px-4 relative z-10">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-12 border-b border-primary-500/20 pb-4">
-          <div>
-            <h2 className="text-3xl md:text-4xl text-text-high mb-2 font-mono tracking-tighter">
-              SYSTEM_METRICS
-            </h2>
-          </div>
-          <div className="flex gap-2 mt-4 md:mt-0">
-            <span className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
-            <span className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse delay-75"></span>
-            <span className="w-3 h-3 bg-green-500 rounded-full animate-pulse delay-150"></span>
-          </div>
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {stats.map((stat, index) => (
             <div

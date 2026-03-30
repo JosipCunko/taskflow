@@ -26,8 +26,6 @@ import {
 import { checkAndAwardAchievements } from "./achievements";
 import { getTasksByUserId } from "./tasks-admin";
 import { generateNotificationsForUser } from "./notifications-admin";
-import { revalidatePath, revalidateTag } from "next/cache";
-import { CacheTags } from "../_utils/serverCache";
 
 interface FirebaseUser {
   uid: string;
@@ -54,6 +52,7 @@ type TaskUpdatePayload = {
  ** daysOfWeek tasks - status, dueDate and rule.completions only reset when the new week comes
  ** timesPerWeek tasks - status, dueDate and rule.completions are reset only when the new week comes
  ** Next due date calculated only for weekly tasks when the new week came
+ ** updatedAt property is NOT updated
  ** Needs admin access to the DB.
  * @param userId
  */
@@ -92,7 +91,7 @@ export async function updateUserRepeatingTasks(userId: string) {
     const setIfChanged = (
       key: keyof TaskUpdatePayload,
       newValue: unknown,
-      currentValue: unknown
+      currentValue: unknown,
     ) => {
       if (newValue !== currentValue && newValue !== undefined) {
         (updates as Record<string, unknown>)[key] = newValue;
@@ -103,7 +102,7 @@ export async function updateUserRepeatingTasks(userId: string) {
     const setNestedIfChanged = (
       key: string,
       newValue: unknown,
-      currentValue: unknown
+      currentValue: unknown,
     ) => {
       if (newValue !== currentValue && newValue !== undefined) {
         (updates as Record<string, unknown>)[key] = newValue;
@@ -156,7 +155,7 @@ export async function updateUserRepeatingTasks(userId: string) {
             setNestedIfChanged(
               "repetitionRule.completedAt",
               [],
-              rule.completedAt
+              rule.completedAt,
             );
             setIfChanged("points", 10, task.points);
           }
@@ -168,7 +167,7 @@ export async function updateUserRepeatingTasks(userId: string) {
           }
           newDueDate.setHours(
             new Date(taskDueDate).getHours(),
-            new Date(taskDueDate).getMinutes()
+            new Date(taskDueDate).getMinutes(),
           );
 
           if (newDueDate.getTime() !== new Date(taskDueDate).getTime()) {
@@ -229,7 +228,7 @@ export async function updateUserRepeatingTasks(userId: string) {
         const newDueDate = new Date(today);
         newDueDate.setHours(
           new Date(taskDueDate).getHours(),
-          new Date(taskDueDate).getMinutes()
+          new Date(taskDueDate).getMinutes(),
         );
 
         if (newDueDate.getTime() !== taskDueDate) {
@@ -243,7 +242,7 @@ export async function updateUserRepeatingTasks(userId: string) {
           const newDueDate = new Date(nextMonday);
           newDueDate.setHours(
             new Date(taskDueDate).getHours(),
-            new Date(taskDueDate).getMinutes()
+            new Date(taskDueDate).getMinutes(),
           );
 
           // update start date to monday
@@ -262,7 +261,7 @@ export async function updateUserRepeatingTasks(userId: string) {
             const newDueDate = new Date(today);
             newDueDate.setHours(
               new Date(taskDueDate).getHours(),
-              new Date(taskDueDate).getMinutes()
+              new Date(taskDueDate).getMinutes(),
             );
 
             if (newDueDate.getTime() !== taskDueDate) {
@@ -291,8 +290,8 @@ export async function updateUserRepeatingTasks(userId: string) {
       const correctStartDate = startOfDay(
         addDays(
           startOfWeek(today, MONDAY_START_OF_WEEK),
-          firstDayInWeek === 0 ? 7 : firstDayInWeek // Sunday (0) becomes day 7
-        )
+          firstDayInWeek === 0 ? 7 : firstDayInWeek, // Sunday (0) becomes day 7
+        ),
       );
 
       // Always ensure startDate is set to the first day in daysOfWeek
@@ -330,7 +329,7 @@ export async function updateUserRepeatingTasks(userId: string) {
       // Preserve time from original dueDate
       nextDueDate.setHours(
         new Date(taskDueDate).getHours(),
-        new Date(taskDueDate).getMinutes()
+        new Date(taskDueDate).getMinutes(),
       );
 
       if (nextDueDate.getTime() !== taskDueDate) {
@@ -372,7 +371,6 @@ export async function updateUserRepeatingTasks(userId: string) {
       }
     }
 
-    // Only calculate and update risk if there are other updates or if risk calculation might have changed
     if (Object.keys(updates).length > 0) {
       const tempTask = {
         ...task,
@@ -383,9 +381,15 @@ export async function updateUserRepeatingTasks(userId: string) {
       setIfChanged("risk", newRisk, task.risk);
     }
 
+    // FIX:
+    // Firestore cannot accept `undefined` values in update payloads.
+    const safeUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([, value]) => value !== undefined),
+    );
+
     // Only batch update if there are actual changes
-    if (Object.keys(updates).length > 0) {
-      batch.update(taskRef, updates);
+    if (Object.keys(safeUpdates).length > 0) {
+      batch.update(taskRef, safeUpdates);
       updatesDetails.count += 1;
       updatesDetails.tasksTitles.push(task.title);
     }
@@ -398,17 +402,18 @@ export async function updateUserRepeatingTasks(userId: string) {
       `Repeating tasks (${
         updatesDetails.count
       } of them: ${updatesDetails.tasksTitles.join(
-        ", "
-      )}) done updating for user: ${userId}.`
+        ", ",
+      )}) done updating for user: ${userId}.`,
     );
 
-    // Invalidate cache to ensure fresh data is served
+    /* “used revalidateTag during render” crash
     revalidateTag(CacheTags.tasks());
     revalidateTag(CacheTags.userTasks(userId));
     revalidateTag(CacheTags.user(userId));
     revalidatePath("/webapp");
     revalidatePath("/webapp/tasks");
     revalidatePath("/webapp/today");
+    */
   } else {
     console.log(`No repeating task updates needed for user: ${userId}.`);
   }
@@ -478,7 +483,7 @@ export const authOptions: NextAuthOptions = {
           // - Not tampered with
           // - Contains valid user claims
           const decodedToken = await adminAuth.verifyIdToken(
-            credentials.idToken
+            credentials.idToken,
           );
 
           // Ensure the decoded token contains required user identification
@@ -543,7 +548,7 @@ export const authOptions: NextAuthOptions = {
             await userDocRef.set(newUserData);
             console.log(
               `New user document created in Firestore via Firebase Credentials:`,
-              firebaseUser.uid
+              firebaseUser.uid,
             );
           } else {
             // ----- EXISTING USER LOGIN HANDLING -----
@@ -641,12 +646,12 @@ export const authOptions: NextAuthOptions = {
             await userDocRef.set(newUserData);
             console.log(
               `New user document created in Firestore via NextAuth OAuth (${account.provider}):`,
-              user.id
+              user.id,
             );
           } catch (dbError) {
             console.error(
               "Firestore error during OAuth new user creation:",
-              dbError
+              dbError,
             );
             return false; // Prevent sign-in if DB operation fails
           }
@@ -737,7 +742,7 @@ export const authOptions: NextAuthOptions = {
                   updates.currentStreak = newStreak;
                   updates.bestStreak = Math.max(
                     newStreak,
-                    userData.bestStreak || 0
+                    userData.bestStreak || 0,
                   );
                 } else if (diff > 1) {
                   // Gap in login days - restart streak at 1 for today
@@ -773,7 +778,7 @@ export const authOptions: NextAuthOptions = {
         } catch (error) {
           console.error(
             "Error during periodic maintenance in JWT callback:",
-            error
+            error,
           );
         }
       }

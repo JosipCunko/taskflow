@@ -65,7 +65,7 @@ export default function LoginPage() {
               </span>
               <div className="relative z-10">
                 <DecryptedText
-                  text="Taskflow team is doing some awesome stuff, with a focus on productivity, seamless collaboration, and efficient task management. Organize your work, track progress, and manage tasks effortlessly with intuitive tools designed for teams."
+                  text="Taskflow team is doing some awesome stuff, with a focus on productivity and discipline. Organize your work, track progress, and achieve your dream goals with all-in-one tool for your task management."
                   animateOn="view"
                   sequential
                   useOriginalCharsOnly

@@ -134,6 +134,53 @@ export default function LoginForm() {
     }
   };
 
+
+    try {
+    } catch (errUnknown: unknown) {
+      const googleError = errUnknown as {
+        message?: string;
+        code?: string;
+      };
+      let errorMessage = "Failed to sign in with Google.";
+      if (googleError.message) {
+        errorMessage = googleError.message;
+      }
+      if (googleError.code === "auth/popup-closed-by-user") {
+        errorMessage = "Sign-in process cancelled.";
+      }
+      setError(errorMessage);
+      console.error("Google Sign-In error:", googleError);
+      setIsLoading(false);
+    }
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      /*
+      const callbackUrl = planFromUrl
+        ? `/login?plan=${planFromUrl}`
+        : "/webapp";
+      */
+      await signInWithGoogle();
+    } catch (errUnknown:unknown) {
+      const googleError = errUnknown as {
+        message?: string;
+        code?: string;
+      };
+      let errorMessage = "Failed to sign in with Google.";
+      if (googleError.message) {
+        errorMessage = googleError.message;
+      }
+      if (googleError.code === "auth/popup-closed-by-user") {
+        errorMessage = "Sign-in process cancelled.";
+      }
+      setError(errorMessage);
+      console.error("Google Sign-In error:", googleError);
+      setIsLoading(false);
+    }
+  };
+
   const handleAnonymousSignIn = async () => {
     setIsLoading(true);
     setError(null);
@@ -296,28 +343,7 @@ export default function LoginForm() {
         <Button
           variant="secondary"
           className="flex items-center justify-center border border-background-500 rounded py-2 px-4 mb-4 text-text-high hover:bg-background-500 transition-colors w-full"
-          onClick={async () => {
-            setIsLoading(true);
-            setError(null);
-            try {
-              await signInWithGoogle();
-            } catch (errUnknown: unknown) {
-              const googleError = errUnknown as {
-                message?: string;
-                code?: string;
-              };
-              let errorMessage = "Failed to sign in with Google.";
-              if (googleError.message) {
-                errorMessage = googleError.message;
-              }
-              if (googleError.code === "auth/popup-closed-by-user") {
-                errorMessage = "Sign-in process cancelled.";
-              }
-              setError(errorMessage);
-              console.error("Google Sign-In error:", googleError);
-              setIsLoading(false);
-            }
-          }}
+          onClick={handleGoogleSignIn}
           disabled={isLoading}
         >
           <svg

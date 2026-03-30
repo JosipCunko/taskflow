@@ -64,7 +64,7 @@ export default function RepeatingTaskCard({ task }: { task: Task }) {
       });
     } catch (err) {
       errorToast(
-        err instanceof Error ? err.message : "Failed to complete task"
+        err instanceof Error ? err.message : "Failed to complete task",
       );
     }
   };
@@ -89,7 +89,7 @@ export default function RepeatingTaskCard({ task }: { task: Task }) {
       }}
       ref={outsideClickRef}
     >
-      <div className="flex-grow ">
+      <div className="flex-grow">
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2 min-w-0">
             <div

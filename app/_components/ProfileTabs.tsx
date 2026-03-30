@@ -310,11 +310,9 @@ export default function ProfileTabs({
                   checked={user.notifyReminders}
                   onChange={async (e) => {
                     setIsLoading(true);
-                    const res = await updateUserAction(user.uid, {
+                    await updateUserAction(user.uid, {
                       notifyReminders: e.target.checked,
                     });
-
-                    handleToast(res);
                     setIsLoading(false);
                   }}
                   disabled={isLoading}
@@ -335,11 +333,9 @@ export default function ProfileTabs({
                   checked={user.notifyAchievements}
                   onChange={async (e) => {
                     setIsLoading(true);
-                    const res = await updateUserAction(user.uid, {
+                    await updateUserAction(user.uid, {
                       notifyAchievements: e.target.checked,
                     });
-
-                    handleToast(res);
                     setIsLoading(false);
                   }}
                   disabled={isLoading}
@@ -360,11 +356,9 @@ export default function ProfileTabs({
                   checked={user.receiveUpdateNotifications ?? true}
                   onChange={async (e) => {
                     setIsLoading(true);
-                    const res = await updateUserAction(user.uid, {
+                    await updateUserAction(user.uid, {
                       receiveUpdateNotifications: e.target.checked,
                     });
-
-                    handleToast(res);
                     setIsLoading(false);
                   }}
                   disabled={isLoading}

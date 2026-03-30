@@ -15,8 +15,9 @@ import {
   ChevronDown,
   ChevronUp,
   ListFilter,
+  RefreshCw,
 } from "lucide-react";
-import { Task } from "@/app/_types/types";
+import { AppUser, Task } from "@/app/_types/types";
 import TaskCard from "@/app/_components/TaskCard";
 import RepeatingTaskCard from "@/app/_components/RepeatingTaskCard";
 import Modal from "@/app/_components/Modal";
@@ -25,6 +26,7 @@ import Button from "@/app/_components/reusable/Button";
 import { TASK_ICONS } from "@/app/_utils/icons";
 import { colorsColorPicker, getDayName } from "@/app/_utils/utils";
 import { DayOfWeek } from "@/app/_types/types";
+import { refreshTasks } from "@/app/_lib/actions";
 
 interface TaskFilters {
   dueBefore: number | null;
@@ -53,7 +55,13 @@ const initialFilters: TaskFilters = {
   daysOfWeek: [],
 };
 
-export default function TasksPageClient({ tasks }: { tasks: Task[] }) {
+export default function TasksPageClient({
+  tasks,
+  userId,
+}: {
+  tasks: Task[];
+  userId: AppUser["uid"];
+}) {
   const [filters, setFilters] = useState<TaskFilters>(initialFilters);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
@@ -217,19 +225,26 @@ export default function TasksPageClient({ tasks }: { tasks: Task[] }) {
           <span className="text-glow">Your tasks</span>
         </h1>
 
-        <Button
-          variant="primary"
-          onClick={() => setIsFilterOpen(!isFilterOpen)}
-          className="relative"
-        >
-          <ListFilter className="w-5 h-5" />
-          Filter
-          {getActiveFilterCount() > 0 && (
-            <span className="absolute -top-2 -right-2 bg-primary-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold">
-              {getActiveFilterCount()}
-            </span>
-          )}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" onClick={() => refreshTasks(userId)}>
+            <RefreshCw className="w-5 h-5" />
+            Refresh Tasks
+          </Button>
+
+          <Button
+            variant="primary"
+            onClick={() => setIsFilterOpen(!isFilterOpen)}
+            className="relative"
+          >
+            <ListFilter className="w-5 h-5" />
+            Filter
+            {getActiveFilterCount() > 0 && (
+              <span className="absolute -top-2 -right-2 bg-primary-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold">
+                {getActiveFilterCount()}
+              </span>
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* Filter Panel */}

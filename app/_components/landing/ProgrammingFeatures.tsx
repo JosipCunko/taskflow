@@ -1,5 +1,4 @@
 "use client";
-import Image from "next/image";
 import { m as motion } from "framer-motion";
 import { programmingFeatures } from "@/app/_utils/utils";
 
@@ -13,8 +12,7 @@ const cardVariants = {
 
 export default function ProgrammingFeatures() {
   return (
-    <>
-      <div className="flex flex-wrap gap-8 items-center justify-center py-16 bg-background-650 border-t border-b border-divider/10">
+      <div className="flex flex-wrap gap-8 items-center justify-center py-16">
         {programmingFeatures.map((feature, i) => (
           <motion.div
             key={feature.title}
@@ -38,34 +36,33 @@ export default function ProgrammingFeatures() {
                 {feature.title}
               </div>
             </div>
-
-            {/* Image with Glitch Effect */}
-            <div className="absolute h-60 w-full bottom-0 right-0 overflow-hidden ">
-              <Image
-                src={feature.imgPath}
-                fill
-                className="object-cover transition-transform duration-500 group-hover:scale-105"
-                alt="feature image"
-              />
-              {/* Glitch Layers */}
-              <div
-                className="absolute inset-0 bg-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+            <div className="absolute inset-0 bg-cover opacity-50 group-hover:opacity-40 transition-opacity duration-300"
                 style={{
                   backgroundImage: `url(${feature.imgPath})`,
-                  filter: "hue-rotate(20deg)",
+                  filter: "hue-rotate(320deg) saturate(3)",
                   mixBlendMode: "screen",
+                  transform: "translateX(4px) translateY(-2px) scale(1.06)",
                 }}
-              ></div>
-              <div className="absolute inset-0 bg-black opacity-50 group-hover:opacity-40 transition-opacity duration-300"></div>
-            </div>
-
+              />
+              <div className="absolute inset-0 bg-cover opacity-0 group-hover:opacity-40 transition-opacity duration-300"
+                style={{
+                  backgroundImage: `url(${feature.imgPath})`,
+                  filter: "hue-rotate(200deg) saturate(3)",
+                  mixBlendMode: "screen",
+                  transform: "translateX(-4px) translateY(2px) scale(1.06)",
+                   }}
+                 />
             {/* Border Glow */}
             <div
               className={`absolute -inset-px rounded-2xl opacity-0 group-hover:opacity-100 border border-primary-400/50 transition-opacity duration-300`}
             ></div>
+
+          {/* Scanlines after glitch effect*/}
+          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+          style={{ backgroundImage: "repeating-linear-gradient(to bottom, transparent 0px, transparent 3px, rgba(0,0,0,0.18) 3px, rgba(0,0,0,0.18) 4px)" }}
+          ></div>
           </motion.div>
         ))}
       </div>
-    </>
   );
 }

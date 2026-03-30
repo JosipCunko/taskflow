@@ -1,16 +1,17 @@
 // Must be when using framer-motion
 "use client";
 import DecryptedText from "../animations/DecryptedText";
-import { Terminal } from "lucide-react";
 import { features } from "@/app/_utils/utils";
 import TerminalCard from "./TerminalCard";
+import { Wrench } from "lucide-react";
 
 export default function Features() {
   return (
     <section
       id="features"
-      className="py-16 md:py-24 bg-background-700 relative"
+      className="py-12 md:py-24 bg-background-700 relative"
     >
+
       {/* Background Circuit Lines (Decoration) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-px h-full bg-gradient-to-b from-transparent via-primary-500/10 to-transparent"></div>
@@ -20,7 +21,7 @@ export default function Features() {
       <div className="container mx-auto px-6 relative z-10">
         <div className="text-center mb-12 md:mb-16">
           <div className="inline-block p-3 mb-4 bg-primary-500/10 rounded-xl border border-primary-500/20">
-            <Terminal className="w-10 h-10 sm:w-12 sm:h-12 text-primary-400 text-glow" />
+            <Wrench className="w-10 h-10 sm:w-12 sm:h-12 text-primary-400 text-glow" />
           </div>
           <h2 className="text-3xl sm:text-4xl text-glow font-mono tracking-tight">
             &lt;System_Modules /&gt;

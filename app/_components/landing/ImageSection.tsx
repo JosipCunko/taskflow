@@ -92,7 +92,7 @@ export default function ImageSection() {
   return (
     <section
       id="images"
-      className="py-16 md:py-24 bg-gradient-to-br from-background-700 to-background-650 relative overflow-hidden"
+      className="py-10 md:py-20 bg-gradient-to-br from-background-700 to-background-650 relative overflow-hidden"
     >
       <TechBackgroundPattern />
 

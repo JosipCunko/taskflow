@@ -1,4 +1,4 @@
-import { User, Calendar } from "lucide-react";
+import { User, Calendar, Mail } from "lucide-react";
 import Image from "next/image";
 import { AppUser } from "../_types/types";
 import StreakBar from "./StreakBar";
@@ -44,10 +44,22 @@ export default function UserInfoCard({ user }: { user: AppUser }) {
         </div>
       </div>
       <Link
-        href="https://mail.google.com/mail/u/0/#inbox?compose=CllgCJZbjrwqZhdlnFdSGkCDrWzqCMDPVlffTKZHKVLxQZMgcDQKGsDlMZLDDlpjDpczSXcjtmg"
-        className="bg-background-600 rounded-lg p-4 sm:p-6 border border-divider shadow-md flex items-center gap-2"
+        href="https://mail.google.com/mail/u/0/#inbox?
+      compose=CllgCJZbjrwqZhdlnFdSGkCDrWzqCMDPVlffTKZHKVLxQZMgcDQKGsDlMZLDDlpj
+      DpczSXcjtmg"
+        className="rounded-lg p-4 sm:p-6 border-2 border-divider flex items-center gap-3 transition hover:scale-105  duration-200"
+        target="_blank"
+        rel="noopener noreferrer"
       >
-        <h3 className="text-lg font-semibold text-text-low">Contact Us</h3>
+        <Mail />
+        <div>
+          <h3 className="text-lg font-bold text-primary drop-shadow">
+            Contact Us
+          </h3>
+          <span className="block text-xs whitespace-nowrap text-text-low">
+            Questions? We&apos;re here to help.
+          </span>
+        </div>
       </Link>
     </div>
   );

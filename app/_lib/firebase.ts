@@ -26,7 +26,7 @@ const app: FirebaseApp =
 const auth: Auth = getAuth(app);
 const db: Firestore =
   getApps().length === 0
-    ? initializeFirestore(app, { ignoreUndefinedProperties: true })
+    ? initializeFirestore(app, { ignoreUndefinedProperties: true }) //doesnt work, filtering out undefined value sin auth.ts does
     : getFirestore(app);
 
 // Initialize Analytics (only in browser)

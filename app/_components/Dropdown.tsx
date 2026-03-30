@@ -133,7 +133,7 @@ export default function Dropdown({
               <>
                 {!isSameDay(
                   task.dueDate,
-                  new Date(new Date().setDate(new Date().getDate() + 1))
+                  new Date(new Date().setDate(new Date().getDate() + 1)),
                 ) && (
                   <li>
                     <form
@@ -141,7 +141,7 @@ export default function Dropdown({
                         const res = await delayTaskAction(
                           formData,
                           task.dueDate,
-                          task.delayCount
+                          task.delayCount,
                         );
                         handleToast(res, () => setIsDropdownOpen(false));
                       }}
@@ -171,7 +171,7 @@ export default function Dropdown({
                   const nextMonday = new Date(today);
                   nextMonday.setDate(
                     today.getDate() +
-                      (daysUntilNextMonday === 0 ? 7 : daysUntilNextMonday)
+                      (daysUntilNextMonday === 0 ? 7 : daysUntilNextMonday),
                   ); // if today is monday, jump to next monday
                   nextMonday.setHours(0, 0, 0, 0);
 
@@ -182,7 +182,7 @@ export default function Dropdown({
                   // Adjust to get to the previous Monday (or current if it's Monday)
                   dueWeekMonday.setDate(
                     dueDate.getDate() -
-                      (dueDayOfWeek === 0 ? 6 : dueDayOfWeek - 1)
+                      (dueDayOfWeek === 0 ? 6 : dueDayOfWeek - 1),
                   );
                   dueWeekMonday.setHours(0, 0, 0, 0);
 
@@ -195,7 +195,7 @@ export default function Dropdown({
                             const res = await delayTaskAction(
                               formData,
                               task.dueDate,
-                              task.delayCount
+                              task.delayCount,
                             );
                             handleToast(res, () => setIsDropdownOpen(false));
                           }}
@@ -229,7 +229,7 @@ export default function Dropdown({
                       formData,
                       task.dueDate,
                       task.delayCount,
-                      task.dueDate
+                      task.dueDate,
                     );
                     handleToast(res, () => setIsDropdownOpen(false));
                   }}

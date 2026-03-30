@@ -18,7 +18,7 @@ export default async function LandingPage() {
     <LazyMotionProvider>
       <div className="flex flex-col min-h-screen bg-background-700 text-text-high overflow-x-hidden">
         <Navbar />
-        <main className="flex-grow">
+        <main className="grow">
           <HeroSection />
           <ImageSection />
           <StatsSection />

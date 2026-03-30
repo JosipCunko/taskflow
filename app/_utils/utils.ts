@@ -429,7 +429,7 @@ export const getPhaseOfTheDay = () => {
 export const formatDate = (
   date: Date | string | number | undefined,
   options?: Intl.DateTimeFormatOptions,
-  namedDates: boolean = true
+  namedDates: boolean = true,
 ): string => {
   if (!date) return "N/A";
   try {
@@ -455,7 +455,7 @@ export const formatDate = (
       options || {
         month: "long",
         day: "numeric",
-      }
+      },
     );
   } catch (error) {
     console.error("Error formatting date:", date, error);
@@ -464,7 +464,7 @@ export const formatDate = (
 };
 
 export const formatDateTime = (
-  date: Date | string | number | undefined
+  date: Date | string | number | undefined,
 ): string => {
   if (!date) return "N/A";
   try {
@@ -508,7 +508,7 @@ export const handleToast = (
     message?: string;
     error?: string;
   },
-  handler?: () => void
+  handler?: () => void,
 ) => {
   if (state.message || state.error) {
     if (state.success) {
@@ -516,7 +516,7 @@ export const handleToast = (
       handler?.();
     } else {
       errorToast(
-        state.error || state.message || "Failed to perform task action."
+        state.error || state.message || "Failed to perform task action.",
       );
     }
   }
@@ -610,7 +610,7 @@ export const calculateTaskPoints = (task: Task) => {
   if (isNaN(points)) {
     console.error(
       `calculateTaskPoints: Calculated NaN points! delayCount=${delayCount}, task:`,
-      task
+      task,
     );
     return 10; // Default to 10 points if calculation fails
   }
@@ -619,7 +619,7 @@ export const calculateTaskPoints = (task: Task) => {
 };
 
 export function calculateTimeManagementStats(
-  regularTasks: Task[]
+  regularTasks: Task[],
 ): TimeManagementStats {
   let onTimeTasksCount = 0;
   let totalDelayDays = 0;
@@ -897,7 +897,7 @@ export function getRepeatingTaskInfo(task: Task) {
       nextInstanceInfo = "Complete this week";
     } else {
       nextInstanceInfo = `Available ${formatDate(
-        task.startDate || task.dueDate
+        task.startDate || task.dueDate,
       )}`;
     }
   }
@@ -916,7 +916,7 @@ export function getRepeatingTaskInfo(task: Task) {
 
 export function getCompletionAvailabilityInfo(
   task: Task,
-  canComplete?: boolean
+  canComplete?: boolean,
 ) {
   if (task.status === "completed" && !task.isRepeating) {
     return {
@@ -935,6 +935,17 @@ export function getCompletionAvailabilityInfo(
   }
 
   if (task.completedAt && isToday(task.completedAt)) {
+    return {
+      text: "Completed today",
+      canComplete: false,
+      icon: CardSpecificIcons.MarkComplete,
+    };
+  }
+
+  if (
+    task.repetitionRule!.completedAt.length > 0 &&
+    task.repetitionRule!.completedAt.some((date) => isToday(date))
+  ) {
     return {
       text: "Completed today",
       canComplete: false,
@@ -1157,7 +1168,7 @@ export const taskCompletionistMilestones = [
   1, 10, 25, 50, 100, 150, 200, 300, 400, 500, 1000, 2500, 5000, 10000,
 ];
 export const calcNextPointsMilestone = (
-  currentPoints: number
+  currentPoints: number,
 ): { nextMilestone: number; currentMilestoneColor: string } => {
   const nextMilestone =
     pointsMilestones.find((m) => m > currentPoints) ||
@@ -1230,7 +1241,7 @@ export const defaultDailyNutritionSummary: DailyNutritionSummary = {
 export const generateNutrients = (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   nutrients?: any,
-  nutritionGoals?: UserNutritionGoals
+  nutritionGoals?: UserNutritionGoals,
 ) => [
   {
     label: "Calories",
@@ -1545,7 +1556,7 @@ export const AI_FUNCTIONS = [
  * Helper function to safely convert Firestore data to UNIX timestamps
  */
 export const safeConvertToTimestamp = (
-  dateValue: Timestamp | Date | string | number | undefined
+  dateValue: Timestamp | Date | string | number | undefined,
 ): number => {
   if (!dateValue) return Date.now();
   if (typeof dateValue === "number") return dateValue;
