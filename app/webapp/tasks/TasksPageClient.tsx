@@ -15,7 +15,6 @@ import {
   ChevronDown,
   ChevronUp,
   ListFilter,
-  RefreshCw,
 } from "lucide-react";
 import { AppUser, Task } from "@/app/_types/types";
 import TaskCard from "@/app/_components/TaskCard";
@@ -26,7 +25,6 @@ import Button from "@/app/_components/reusable/Button";
 import { TASK_ICONS } from "@/app/_utils/icons";
 import { colorsColorPicker, getDayName } from "@/app/_utils/utils";
 import { DayOfWeek } from "@/app/_types/types";
-import { refreshTasks } from "@/app/_lib/actions";
 
 interface TaskFilters {
   dueBefore: number | null;
@@ -55,23 +53,17 @@ const initialFilters: TaskFilters = {
   daysOfWeek: [],
 };
 
-export default function TasksPageClient({
-  tasks,
-  userId,
-}: {
-  tasks: Task[];
-  userId: AppUser["uid"];
-}) {
+export default function TasksPageClient({ tasks }: { tasks: Task[] }) {
   const [filters, setFilters] = useState<TaskFilters>(initialFilters);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
   // Filter state for icon/color modal
   const [selectedIconFilter, setSelectedIconFilter] = useState<string | null>(
-    null
+    null,
   );
   const [selectedColorFilter, setSelectedColorFilter] = useState<string | null>(
-    null
+    null,
   );
 
   // Check if any filters are active
@@ -144,7 +136,7 @@ export default function TasksPageClient({
         // Days of week filter
         if (filters.daysOfWeek.length > 0) {
           const hasMatchingDay = filters.daysOfWeek.some((day) =>
-            task.repetitionRule!.daysOfWeek.includes(day)
+            task.repetitionRule!.daysOfWeek.includes(day),
           );
           if (!hasMatchingDay) return false;
         }
@@ -156,7 +148,7 @@ export default function TasksPageClient({
 
   // Split filtered tasks if no filters applied
   const regularTasks = tasks.filter(
-    (task) => !task.isRepeating && task.status !== "completed"
+    (task) => !task.isRepeating && task.status !== "completed",
   );
   const repeatingTasks = tasks.filter((task) => task.isRepeating);
 
@@ -226,11 +218,6 @@ export default function TasksPageClient({
         </h1>
 
         <div className="flex items-center gap-2">
-          <Button variant="secondary" onClick={() => refreshTasks(userId)}>
-            <RefreshCw className="w-5 h-5" />
-            Refresh Tasks
-          </Button>
-
           <Button
             variant="primary"
             onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -255,12 +242,10 @@ export default function TasksPageClient({
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="overflow-hidden mb-6"
+            className="mb-6"
           >
             <div className="bg-gradient-to-br from-background-700 via-background-650 to-background-600 rounded-xl p-6 border border-primary-500/20 shadow-xl">
-              {/* Basic Filters */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-                {/* Due Before Filter */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-text-low flex items-center">
                     <CalendarIcon className="w-4 h-4 mr-2" />
@@ -283,6 +268,7 @@ export default function TasksPageClient({
                       <CalendarIcon className="w-4 h-4 text-primary-500" />
                     </div>
                   </DateInput>
+
                   {filters.dueBefore && (
                     <ClearFilterButton
                       onClear={() => clearFilter("dueBefore")}
@@ -302,16 +288,16 @@ export default function TasksPageClient({
                       filters.priority === true
                         ? "border-orange-500 bg-orange-500/10"
                         : filters.priority === false
-                        ? "border-gray-500 bg-gray-500/10"
-                        : "border-primary-500/30"
+                          ? "border-gray-500 bg-gray-500/10"
+                          : "border-primary-500/30"
                     }`}
                   >
                     <span className="text-text-high text-sm">
                       {filters.priority === true
                         ? "Priority Only"
                         : filters.priority === false
-                        ? "Non-Priority Only"
-                        : "All"}
+                          ? "Non-Priority Only"
+                          : "All"}
                     </span>
                   </button>
                 </div>
@@ -328,16 +314,16 @@ export default function TasksPageClient({
                       filters.reminder === true
                         ? "border-purple-500 bg-purple-500/10"
                         : filters.reminder === false
-                        ? "border-gray-500 bg-gray-500/10"
-                        : "border-primary-500/30"
+                          ? "border-gray-500 bg-gray-500/10"
+                          : "border-primary-500/30"
                     }`}
                   >
                     <span className="text-text-high text-sm">
                       {filters.reminder === true
                         ? "With Reminder"
                         : filters.reminder === false
-                        ? "Without Reminder"
-                        : "All"}
+                          ? "Without Reminder"
+                          : "All"}
                     </span>
                   </button>
                 </div>
@@ -354,16 +340,16 @@ export default function TasksPageClient({
                       filters.repeating === true
                         ? "border-blue-500 bg-blue-500/10"
                         : filters.repeating === false
-                        ? "border-green-500 bg-green-500/10"
-                        : "border-primary-500/30"
+                          ? "border-green-500 bg-green-500/10"
+                          : "border-primary-500/30"
                     }`}
                   >
                     <span className="text-text-high text-sm">
                       {filters.repeating === true
                         ? "Repeating Only"
                         : filters.repeating === false
-                        ? "Regular Only"
-                        : "All"}
+                          ? "Regular Only"
+                          : "All"}
                     </span>
                   </button>
                 </div>
@@ -380,16 +366,16 @@ export default function TasksPageClient({
                       filters.risk === true
                         ? "border-red-500 bg-red-500/10"
                         : filters.risk === false
-                        ? "border-gray-500 bg-gray-500/10"
-                        : "border-primary-500/30"
+                          ? "border-gray-500 bg-gray-500/10"
+                          : "border-primary-500/30"
                     }`}
                   >
                     <span className="text-text-high text-sm">
                       {filters.risk === true
                         ? "At Risk Only"
                         : filters.risk === false
-                        ? "Not At Risk"
-                        : "All"}
+                          ? "Not At Risk"
+                          : "All"}
                     </span>
                   </button>
                 </div>
@@ -408,7 +394,7 @@ export default function TasksPageClient({
                             <div className="flex items-center gap-1">
                               {(() => {
                                 const iconData = TASK_ICONS.find(
-                                  (i) => i.id === filters.icon
+                                  (i) => i.id === filters.icon,
                                 );
                                 if (iconData) {
                                   const IconComponent = iconData.icon;
@@ -590,7 +576,7 @@ export default function TasksPageClient({
           {filters.dueBefore && (
             <FilterChip
               label={`Due before ${new Date(
-                filters.dueBefore
+                filters.dueBefore,
               ).toLocaleDateString()}`}
               onClear={() => clearFilter("dueBefore")}
             />
@@ -671,7 +657,7 @@ export default function TasksPageClient({
                     <RepeatingTaskCard key={task.id} task={task} />
                   ) : (
                     <TaskCard key={task.id} task={task} index={idx} />
-                  )
+                  ),
                 )}
               </div>
             ) : (

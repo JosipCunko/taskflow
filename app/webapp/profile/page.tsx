@@ -9,8 +9,8 @@ import { AppUser } from "@/app/_types/types";
 import { authOptions } from "@/app/_lib/auth";
 import { getUserById } from "@/app/_lib/user-admin";
 
-// Route segment config - cache for 5 minutes
-export const revalidate = 300;
+// This page is user-specific (session-based) and must not be cached.
+export const dynamic = "force-dynamic";
 
 export default async function ProfilePage() {
   const session = await getServerSession(authOptions);

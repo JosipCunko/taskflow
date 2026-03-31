@@ -243,6 +243,13 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
 
         const baseDueDateObj = new Date(state.selectedDate);
         baseDueDateObj.setHours(endHour, endMinute);
+        if (isStartTimeSpecified) {
+          const startTotalMinutes = state.startTime[0] * 60 + state.startTime[1];
+          const endTotalMinutes = endHour * 60 + endMinute;
+          if (endTotalMinutes < startTotalMinutes) {
+            baseDueDateObj.setDate(baseDueDateObj.getDate() + 1);
+          }
+        }
         const baseDueDate = baseDueDateObj.getTime();
         const durationObject = {
           hours: state.duration[0],

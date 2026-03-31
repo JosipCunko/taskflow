@@ -360,12 +360,15 @@ export interface DailyNutritionSummary {
 export interface WorkoutSet {
   weight: number;
   reps: number;
+  // For hold-based exercises (e.g. planche/handstand/plank), store duration in seconds. Weight/reps are still present for internal consistency.
+  duration?: number;
 }
 
 export interface LoggedExercise {
   id: string;
   exerciseName: string;
   order?: number;
+  hold?: boolean;
   volume: WorkoutSet[];
 }
 
@@ -389,6 +392,7 @@ export interface Exercise {
   muscleGroups: string[];
   equipment?: string;
   instructions?: string[];
+  hold?: boolean;
 }
 
 export interface WorkoutTemplate {
@@ -403,6 +407,7 @@ export interface PersonalRecord {
   exercise: string;
   weight: number;
   reps: number;
+  duration?: number;
   date: number;
 }
 
@@ -410,6 +415,7 @@ export interface ExerciseProgressPoint {
   date: number;
   maxWeight: number;
   maxReps: number;
+  maxDuration?: number;
   sets: number;
 }
 

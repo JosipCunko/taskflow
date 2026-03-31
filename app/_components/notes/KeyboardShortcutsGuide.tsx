@@ -50,7 +50,6 @@ export default function KeyboardShortcutsGuide() {
     {
       category: "Editing",
       items: [
-        { keys: ["Ctrl", "/"], description: "Toggle line comment" },
         { keys: ["Tab"], description: "Indent" },
         { keys: ["Shift", "Tab"], description: "Outdent" },
       ],

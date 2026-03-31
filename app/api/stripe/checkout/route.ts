@@ -6,6 +6,7 @@ import {
   PLAN_CONFIG,
   getOrCreateStripeCustomer,
   resolvePriceId,
+  getEffectivePlan,
 } from "@/app/_lib/stripe";
 import { getUserById } from "@/app/_lib/user-admin";
 import { SubscriptionPlan } from "@/app/_types/types";
@@ -44,8 +45,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Check if user already has an active subscription
-    if (user.currentPlan !== "base" && user.stripeSubscriptionId) {
+    // Check if user already has an active subscription (treat expired plans as base)
+    const effectivePlan = getEffectivePlan(
+      user.currentPlan || "base",
+      user.planExpiresAt ?? null
+    );
+    if (effectivePlan !== "base" && user.stripeSubscriptionId) {
       return NextResponse.json(
         {
           error:

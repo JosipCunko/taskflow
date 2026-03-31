@@ -77,11 +77,11 @@ export default function AddTodayTask({
 
   const isStartTimeSpecified = useMemo(
     () => state.startTime[0] !== 0 || state.startTime[1] !== 0,
-    [state.startTime]
+    [state.startTime],
   );
   const isDurationSpecified = useMemo(
     () => state.duration[0] !== 0 || state.duration[1] !== 0,
-    [state.duration]
+    [state.duration],
   );
 
   const handleDurationChange = (newDuration: number[]) => {
@@ -169,6 +169,16 @@ export default function AddTodayTask({
 
         const today = new Date();
         today.setHours(endHour, endMinute, 0, 0);
+        const isStartTimeSpecified =
+          state.startTime[0] !== 0 || state.startTime[1] !== 0;
+        if (isStartTimeSpecified) {
+          const startTotalMinutes =
+            state.startTime[0] * 60 + state.startTime[1];
+          const endTotalMinutes = endHour * 60 + endMinute;
+          if (endTotalMinutes < startTotalMinutes) {
+            today.setDate(today.getDate() + 1);
+          }
+        }
 
         const durationObject = {
           hours: state.duration[0],
@@ -193,7 +203,7 @@ export default function AddTodayTask({
           false, // no repeating for today tasks
           undefined, // no repetition rule
           today.getTime(), // start date is today
-          state.autoDelay
+          state.autoDelay,
         );
 
         handleToast(res, () => {

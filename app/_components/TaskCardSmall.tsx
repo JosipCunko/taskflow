@@ -132,7 +132,7 @@ export default function TaskCardSmall({ task }: { task: Task }) {
               </div>
             )}
 
-          <DurationCalculator task={task} />
+          <DurationCalculator task={task} showTimeRangeInfo />
         </div>
 
         {/* Floating notification dot for priority/reminder */}

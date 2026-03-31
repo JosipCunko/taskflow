@@ -15,5 +15,5 @@ export default async function TasksPage() {
   const userId = session.user.id;
   const userTasks = await getTasksByUserId(userId);
 
-  return <TasksPageClient tasks={userTasks} userId={userId} />;
+  return <TasksPageClient tasks={userTasks} />;
 }

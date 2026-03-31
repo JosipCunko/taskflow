@@ -13,7 +13,7 @@ export default async function CompletedTasksPage() {
   const userId = session.user.id;
   const allUserTasks = await getTasksByUserId(userId);
   const userCompletedTasks = allUserTasks.filter(
-    (task) => task.status === "completed" && !task.isRepeating
+    (task) => task.status === "completed" && !task.isRepeating,
   );
 
   return (
@@ -24,7 +24,7 @@ export default async function CompletedTasksPage() {
           <span className="text-glow">Completed tasks</span>
         </h1>
         <p className="text-text-low mt-1 text-sm sm:text-base">
-          Manage and review your completed tasks.
+          Manage and review your completed regular tasks.
         </p>
       </div>
 
@@ -38,7 +38,7 @@ export default async function CompletedTasksPage() {
             </div>
           ) : (
             <p className="text-text-gray">
-              No completed tasks yet. You need to get serious now!
+              No completed REGULAR tasks yet. You need to get serious now!
             </p>
           )}
         </div>

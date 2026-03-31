@@ -33,7 +33,7 @@ import { Theme } from "../_context/ThemeContext";
 // Helper to get effective plan considering expiration
 function getEffectivePlan(
   currentPlan: SubscriptionPlan,
-  planExpiresAt?: number
+  planExpiresAt?: number,
 ): SubscriptionPlan {
   if (!planExpiresAt || currentPlan === "base") return currentPlan;
   if (planExpiresAt < Date.now()) return "base";
@@ -84,9 +84,12 @@ export default function ProfileTabs({
 
   const [isLoading, setIsLoading] = useState(false);
   const [isSubscriptionLoading, setIsSubscriptionLoading] = useState(false);
+  const [subscriptionLoadingPlan, setSubscriptionLoadingPlan] = useState<
+    null | "pro" | "ultra" | "portal"
+  >(null);
 
   const getActivityDisplayInfo = (
-    activityType: ActivityLog["type"]
+    activityType: ActivityLog["type"],
   ): string => {
     switch (activityType) {
       case "TASK_COMPLETED":
@@ -103,6 +106,72 @@ export default function ProfileTabs({
         return "Deleted task";
       default:
         return "Activity";
+    }
+  };
+
+  const openBillingPortal = async () => {
+    setIsSubscriptionLoading(true);
+    setSubscriptionLoadingPlan("portal");
+    try {
+      const res = await fetch("/api/stripe/portal", { method: "POST" });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        handleToast({
+          success: false,
+          error: data.error || "Failed to open portal",
+        });
+      }
+    } catch {
+      handleToast({
+        success: false,
+        error: "Failed to open billing portal",
+      });
+    } finally {
+      setIsSubscriptionLoading(false);
+      setSubscriptionLoadingPlan(null);
+    }
+  };
+
+  const startCheckout = async (plan: "pro" | "ultra") => {
+    setIsSubscriptionLoading(true);
+    setSubscriptionLoadingPlan(plan);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+        return;
+      }
+
+      // If user already has an active subscription, the correct flow is via portal
+      if (
+        typeof data.error === "string" &&
+        data.error.toLowerCase().includes("active subscription")
+      ) {
+        if (user.stripeCustomerId) {
+          await openBillingPortal();
+          return;
+        }
+      }
+
+      handleToast({
+        success: false,
+        error: data.error || "Failed to start checkout",
+      });
+    } catch {
+      handleToast({
+        success: false,
+        error: "Failed to start checkout",
+      });
+    } finally {
+      setIsSubscriptionLoading(false);
+      setSubscriptionLoadingPlan(null);
     }
   };
 
@@ -215,10 +284,10 @@ export default function ProfileTabs({
                     {/* Added custom-scrollbar */}
                     {activityLogs.map((activity) => {
                       const IconComponent = getTaskIconByName(
-                        activity.activityIcon
+                        activity.activityIcon,
                       );
                       const activityTitle = getActivityDisplayInfo(
-                        activity.type
+                        activity.type,
                       );
                       return (
                         <div
@@ -252,7 +321,7 @@ export default function ProfileTabs({
                             <span className="text-xs text-text-gray flex-shrink-0 ml-2 pt-1">
                               {formatDistanceToNowStrict(
                                 new Date(activity.timestamp),
-                                { addSuffix: true }
+                                { addSuffix: true },
                               )}
                             </span>
                           </div>
@@ -439,7 +508,7 @@ export default function ProfileTabs({
               {(() => {
                 const effectivePlan = getEffectivePlan(
                   user.currentPlan || "base",
-                  user.planExpiresAt
+                  user.planExpiresAt,
                 );
                 const isExpired =
                   user.planExpiresAt &&
@@ -452,8 +521,8 @@ export default function ProfileTabs({
                         effectivePlan === "ultra"
                           ? "bg-amber-500/10 border-amber-500/30"
                           : effectivePlan === "pro"
-                          ? "bg-primary-500/10 border-primary-500/30"
-                          : "bg-background-500 border-warning"
+                            ? "bg-primary-500/10 border-primary-500/30"
+                            : "bg-background-500 border-warning"
                       }`}
                     >
                       <div className={PLAN_DETAILS[effectivePlan].color}>
@@ -491,7 +560,7 @@ export default function ProfileTabs({
                               <div className="w-1.5 h-1.5 rounded-full bg-primary-500" />
                               {feature}
                             </li>
-                          )
+                          ),
                         )}
                       </ul>
                     </div>
@@ -517,41 +586,82 @@ export default function ProfileTabs({
                     portal.
                   </p>
                   <Button
-                    onClick={async () => {
-                      setIsSubscriptionLoading(true);
-                      try {
-                        const res = await fetch("/api/stripe/portal", {
-                          method: "POST",
-                        });
-                        const data = await res.json();
-                        if (data.url) {
-                          window.location.href = data.url;
-                        } else {
-                          handleToast({
-                            success: false,
-                            error: data.error || "Failed to open portal",
-                          });
-                        }
-                      } catch {
-                        handleToast({
-                          success: false,
-                          error: "Failed to open billing portal",
-                        });
-                      } finally {
-                        setIsSubscriptionLoading(false);
-                      }
-                    }}
+                    onClick={openBillingPortal}
                     variant="secondary"
                     className="flex items-center gap-2"
                     disabled={isSubscriptionLoading}
                   >
-                    {isSubscriptionLoading ? (
+                    {isSubscriptionLoading &&
+                    subscriptionLoadingPlan === "portal" ? (
                       <Loader2 size={16} className="animate-spin" />
                     ) : (
                       <ExternalLink size={16} />
                     )}
                     Open Billing Portal
                   </Button>
+
+                  {/* Upgrades */}
+                  {(() => {
+                    const effectivePlan = getEffectivePlan(
+                      user.currentPlan || "base",
+                      user.planExpiresAt,
+                    );
+
+                    if (effectivePlan === "ultra") return null;
+
+                    return (
+                      <div className="pt-2 border-t border-divider/60 space-y-3">
+                        <p className="text-sm text-text-low">
+                          Want more features? Upgrade your plan.
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          {effectivePlan === "base" && (
+                            <Button
+                              onClick={() => startCheckout("pro")}
+                              variant="primary"
+                              className="flex items-center gap-2"
+                              disabled={isSubscriptionLoading}
+                            >
+                              {isSubscriptionLoading &&
+                              subscriptionLoadingPlan === "pro" ? (
+                                <Loader2 size={16} className="animate-spin" />
+                              ) : (
+                                <Sparkles size={16} />
+                              )}
+                              {user.freeTrialUsed
+                                ? "Upgrade to Pro - $4.99/mo"
+                                : "Start Free Trial - Pro"}
+                            </Button>
+                          )}
+                          <Button
+                            onClick={() =>
+                              effectivePlan === "pro"
+                                ? openBillingPortal()
+                                : startCheckout("ultra")
+                            }
+                            variant="secondary"
+                            className="flex items-center gap-2 bg-amber-500/10 hover:bg-amber-500/15 text-amber-200 border border-amber-500/30 hover:border-amber-500/50"
+                            disabled={isSubscriptionLoading}
+                          >
+                            {isSubscriptionLoading &&
+                            subscriptionLoadingPlan === "ultra" ? (
+                              <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                              <Crown size={16} className="text-amber-400" />
+                            )}
+                            Upgrade to Ultra - $14.99/mo
+                          </Button>
+                        </div>
+                        {effectivePlan === "pro" && (
+                          <p className="text-xs text-text-gray">
+                            You already have an active subscription — upgrades
+                            are managed via the billing portal to avoid
+                            double-billing.
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -561,37 +671,12 @@ export default function ProfileTabs({
                   </p>
                   <div className="flex flex-col sm:flex-row gap-3">
                     <Button
-                      onClick={async () => {
-                        setIsSubscriptionLoading(true);
-                        try {
-                          const res = await fetch("/api/stripe/checkout", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ plan: "pro" }),
-                          });
-                          const data = await res.json();
-                          if (data.url) {
-                            window.location.href = data.url;
-                          } else {
-                            handleToast({
-                              success: false,
-                              error: data.error || "Failed to start checkout",
-                            });
-                          }
-                        } catch {
-                          handleToast({
-                            success: false,
-                            error: "Failed to start checkout",
-                          });
-                        } finally {
-                          setIsSubscriptionLoading(false);
-                        }
-                      }}
+                      onClick={() => startCheckout("pro")}
                       variant="primary"
-                      className="flex items-center gap-2"
                       disabled={isSubscriptionLoading}
                     >
-                      {isSubscriptionLoading ? (
+                      {isSubscriptionLoading &&
+                      subscriptionLoadingPlan === "pro" ? (
                         <Loader2 size={16} className="animate-spin" />
                       ) : (
                         <Sparkles size={16} />
@@ -601,37 +686,12 @@ export default function ProfileTabs({
                         : "Start Free Trial - Pro"}
                     </Button>
                     <Button
-                      onClick={async () => {
-                        setIsSubscriptionLoading(true);
-                        try {
-                          const res = await fetch("/api/stripe/checkout", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ plan: "ultra" }),
-                          });
-                          const data = await res.json();
-                          if (data.url) {
-                            window.location.href = data.url;
-                          } else {
-                            handleToast({
-                              success: false,
-                              error: data.error || "Failed to start checkout",
-                            });
-                          }
-                        } catch {
-                          handleToast({
-                            success: false,
-                            error: "Failed to start checkout",
-                          });
-                        } finally {
-                          setIsSubscriptionLoading(false);
-                        }
-                      }}
+                      onClick={() => startCheckout("ultra")}
                       variant="secondary"
-                      className="flex items-center gap-2 border-amber-500/30 hover:border-amber-500/50"
                       disabled={isSubscriptionLoading}
                     >
-                      {isSubscriptionLoading ? (
+                      {isSubscriptionLoading &&
+                      subscriptionLoadingPlan === "ultra" ? (
                         <Loader2 size={16} className="animate-spin" />
                       ) : (
                         <Crown size={16} className="text-amber-400" />
@@ -639,11 +699,7 @@ export default function ProfileTabs({
                       Upgrade to Ultra - $14.99/mo
                     </Button>
                   </div>
-                  <p className="text-xs text-text-gray">
-                    {user.freeTrialUsed
-                      ? "Cancel anytime."
-                      : "Pro plan includes a 7-day free trial. Cancel anytime."}
-                  </p>
+                  <p className="text-xs text-text-gray">Cancel anytime</p>
                 </div>
               )}
             </div>
@@ -652,14 +708,14 @@ export default function ProfileTabs({
             {(() => {
               const effectivePlan = getEffectivePlan(
                 user.currentPlan || "base",
-                user.planExpiresAt
+                user.planExpiresAt,
               );
               const limit =
                 effectivePlan === "ultra"
                   ? Infinity
                   : effectivePlan === "pro"
-                  ? 10
-                  : 1;
+                    ? 10
+                    : 1;
               return (
                 <div className="bg-background-600 rounded-lg p-4 sm:p-6 border border-divider shadow-md">
                   <div className="flex items-center gap-3 mb-4">
@@ -678,19 +734,19 @@ export default function ProfileTabs({
                         {limit === Infinity ? "∞" : limit}
                       </span>
                     </div>
-                    <div className="w-full bg-background-500 rounded-full h-2">
-                      <div
-                        className="bg-primary-500 h-2 rounded-full transition-all duration-300"
-                        style={{
-                          width: `${Math.min(
-                            100,
-                            ((user.aiPromptsToday || 0) /
-                              (limit === Infinity ? 100 : limit)) *
-                              100
-                          )}%`,
-                        }}
-                      />
-                    </div>
+                    {limit !== Infinity && (
+                      <div className="w-full bg-background-500 rounded-full h-2">
+                        <div
+                          className="bg-primary-500 h-2 rounded-full transition-all duration-300"
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              ((user.aiPromptsToday || 0) / limit) * 100,
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               );

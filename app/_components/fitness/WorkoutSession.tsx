@@ -7,7 +7,6 @@ import {
   Plus,
   Trash2,
   Save,
-  Target,
   Search,
   X,
   Edit,
@@ -15,6 +14,7 @@ import {
   ThumbsDown,
   Clock,
   ArrowLeft,
+  Trophy,
 } from "lucide-react";
 import {
   WorkoutSession as WorkoutSessionType,
@@ -103,7 +103,7 @@ export default function WorkoutSession({
 
   useEffect(() => {
     setExercises(
-      defaultExercises.map((ex, index) => ({ ...ex, id: index.toString() }))
+      defaultExercises.map((ex, index) => ({ ...ex, id: index.toString() })),
     );
   }, []);
 
@@ -129,6 +129,7 @@ export default function WorkoutSession({
       id: Date.now().toString(),
       exerciseName: exercise.name,
       order: workout.loggedExercises.length,
+      hold: !!exercise.hold,
       volume: [],
     };
 
@@ -138,15 +139,20 @@ export default function WorkoutSession({
     });
   };
 
-  const addSet = (exerciseId: string, weight: number, reps: number) => {
+  const addSet = (
+    exerciseId: string,
+    weight: number,
+    reps: number,
+    duration?: number,
+  ) => {
     if (!workout) return;
 
-    const newSet: WorkoutSet = { weight, reps };
+    const newSet: WorkoutSet = { weight, reps, duration };
 
     setWorkout({
       ...workout,
       loggedExercises: workout.loggedExercises.map((ex) =>
-        ex.id === exerciseId ? { ...ex, volume: [...ex.volume, newSet] } : ex
+        ex.id === exerciseId ? { ...ex, volume: [...ex.volume, newSet] } : ex,
       ),
     });
   };
@@ -162,7 +168,7 @@ export default function WorkoutSession({
               ...ex,
               volume: ex.volume.filter((_, index) => index !== setIndex),
             }
-          : ex
+          : ex,
       ),
     });
   };
@@ -173,7 +179,7 @@ export default function WorkoutSession({
     setWorkout({
       ...workout,
       loggedExercises: workout.loggedExercises.filter(
-        (ex) => ex.id !== exerciseId
+        (ex) => ex.id !== exerciseId,
       ),
     });
   };
@@ -195,7 +201,7 @@ export default function WorkoutSession({
 
     // Check if at least one set was performed
     const hasPerformedSets = workout.loggedExercises.some(
-      (exercise) => exercise.volume.length > 0
+      (exercise) => exercise.volume.length > 0,
     );
 
     if (!hasPerformedSets) {
@@ -215,7 +221,7 @@ export default function WorkoutSession({
       workout.id,
       durationInMinutes,
       notes,
-      workout.loggedExercises
+      workout.loggedExercises,
     );
 
     handleToast(result, () => {
@@ -375,6 +381,10 @@ export default function WorkoutSession({
               onRemoveSet={removeSet}
               onRemoveExercise={removeExercise}
               isPastWorkout={isFinished}
+              isHoldExercise={
+                exercise.hold ??
+                !!exercises.find((e) => e.name === exercise.exerciseName)?.hold
+              }
             />
           ))}
 
@@ -481,7 +491,7 @@ export default function WorkoutSession({
               onClick={finishWorkout}
               className="flex-1 bg-success hover:bg-success/90 text-white border border-success/50 justify-center py-5"
             >
-              <Target className="w-5 h-5" />
+              <Trophy className="w-5 h-5" />
               Finish Workout
             </Button>
           )}
@@ -511,7 +521,7 @@ function ExerciseSearchModal({
   const filteredExercises = exercises.filter(
     (exercise) =>
       exercise.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      exercise.category.toLowerCase().includes(searchTerm.toLowerCase())
+      exercise.category.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
   return (
@@ -558,10 +568,16 @@ function ExerciseSearchModal({
 
 interface ExerciseCardProps {
   exercise: LoggedExercise;
-  onAddSet: (exerciseId: string, weight: number, reps: number) => void;
+  onAddSet: (
+    exerciseId: string,
+    weight: number,
+    reps: number,
+    duration?: number,
+  ) => void;
   onRemoveSet: (exerciseId: string, setIndex: number) => void;
   onRemoveExercise: (exerciseId: string) => void;
   isPastWorkout: boolean;
+  isHoldExercise: boolean;
 }
 
 function ExerciseCard({
@@ -570,14 +586,17 @@ function ExerciseCard({
   onRemoveSet,
   onRemoveExercise,
   isPastWorkout,
+  isHoldExercise,
 }: ExerciseCardProps) {
   const [weight, setWeight] = useState("");
   const [reps, setReps] = useState("");
+  const [holdSeconds, setHoldSeconds] = useState("");
   const [lastPerformance, setLastPerformance] =
     useState<LastPerformance | null>(null);
 
   useEffect(() => {
     const loadLastPerformance = async () => {
+      if (isHoldExercise) return;
       const result = await getLastPerformanceAction(exercise.exerciseName);
       if (result.success && result.data) {
         setLastPerformance(result.data);
@@ -585,9 +604,19 @@ function ExerciseCard({
     };
 
     loadLastPerformance();
-  }, [exercise.exerciseName]);
+  }, [exercise.exerciseName, isHoldExercise]);
 
   const handleAddSet = () => {
+    if (isHoldExercise) {
+      const durationNum = parseInt(holdSeconds);
+      if (durationNum > 0) {
+        // Keep internal shape consistent: weight/reps exist but are not meaningful for holds.
+        onAddSet(exercise.id, 1, 1, durationNum);
+        setHoldSeconds("");
+      }
+      return;
+    }
+
     const weightNum = parseFloat(weight);
     const repsNum = parseInt(reps);
 
@@ -623,7 +652,9 @@ function ExerciseCard({
             className="flex items-center justify-between bg-background-700 rounded-lg p-3"
           >
             <span className="text-text-low">
-              Set {index + 1}: {set.weight}kg × {set.reps} reps
+              {isHoldExercise
+                ? `Set ${index + 1}: ${set.duration ?? 0}s`
+                : `Set ${index + 1}: ${set.weight}kg × ${set.reps} reps`}
             </span>
             {!isPastWorkout && (
               <Button
@@ -641,30 +672,45 @@ function ExerciseCard({
       {/* Add Set Form */}
       {!isPastWorkout && (
         <div className="flex gap-2">
-          <Input
-            name="weight"
-            type="number"
-            value={weight}
-            onChange={(e) =>
-              setWeight(Math.max(0, parseInt(e.target.value)).toString())
-            }
-            placeholder="Weight (kg)"
-            className="flex-1 px-3 py-2 bg-background-700 border border-background-500 rounded-lg text-text-low"
-          />
-          <Input
-            name="reps"
-            type="number"
-            value={reps}
-            onChange={(e) =>
-              setReps(Math.max(0, parseInt(e.target.value)).toString())
-            }
-            placeholder="Reps"
-            className="flex-1 px-3 py-2 bg-background-700 border border-background-500 rounded-lg text-text-low"
-          />
+          {isHoldExercise ? (
+            <Input
+              name="hold-seconds"
+              type="number"
+              value={holdSeconds}
+              onChange={(e) =>
+                setHoldSeconds(Math.max(0, parseInt(e.target.value)).toString())
+              }
+              placeholder="Hold (sec)"
+              className="flex-1 px-3 py-2 bg-background-700 border border-background-500 rounded-lg text-text-low"
+            />
+          ) : (
+            <>
+              <Input
+                name="weight"
+                type="number"
+                value={weight}
+                onChange={(e) =>
+                  setWeight(Math.max(0, parseInt(e.target.value)).toString())
+                }
+                placeholder="Weight (kg)"
+                className="flex-1 px-3 py-2 bg-background-700 border border-background-500 rounded-lg text-text-low"
+              />
+              <Input
+                name="reps"
+                type="number"
+                value={reps}
+                onChange={(e) =>
+                  setReps(Math.max(0, parseInt(e.target.value)).toString())
+                }
+                placeholder="Reps"
+                className="flex-1 px-3 py-2 bg-background-700 border border-background-500 rounded-lg text-text-low"
+              />
+            </>
+          )}
           <Button
             variant="secondary"
             onClick={handleAddSet}
-            disabled={!weight || !reps}
+            disabled={isHoldExercise ? !holdSeconds : !weight || !reps}
             className="bg-primary-500/50 hover:bg-primary-600/50"
           >
             <Plus className="w-4 h-4" />
@@ -673,7 +719,7 @@ function ExerciseCard({
       )}
 
       {/* Progressive Overload Hint */}
-      {exercise.volume.length === 0 && lastPerformance && (
+      {!isHoldExercise && exercise.volume.length === 0 && lastPerformance && (
         <div className="mt-3 p-3 bg-info/10 border border-info/20 rounded-lg">
           <p className="text-sm text-info">
             💡 Progressive Overload Hint: Last time your first set was{" "}

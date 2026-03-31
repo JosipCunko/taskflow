@@ -43,7 +43,6 @@ const MATH_SYMBOLS: SymbolCategory[] = [
       { display: "∛x", value: "∛", label: "Cube root" },
       { display: "x⁰", value: "⁰", label: "Power 0" },
       { display: "x¹", value: "¹", label: "Power 1" },
-      { display: "x⁴", value: "⁴", label: "Power 4" },
     ],
   },
   {
@@ -98,6 +97,7 @@ const MATH_SYMBOLS: SymbolCategory[] = [
   {
     name: "Calculus",
     symbols: [
+      { display: "d/dx", value: "d/dx", label: "Derivative" },
       { display: "∫", value: "∫", label: "Integral" },
       { display: "∬", value: "∬", label: "Double integral" },
       { display: "∭", value: "∭", label: "Triple integral" },
@@ -105,9 +105,7 @@ const MATH_SYMBOLS: SymbolCategory[] = [
       { display: "∂", value: "∂", label: "Partial derivative" },
       { display: "∇", value: "∇", label: "Nabla/gradient" },
       { display: "∆", value: "∆", label: "Laplacian" },
-      { display: "d/dx", value: "d/dx", label: "Derivative" },
       { display: "lim", value: "lim", label: "Limit" },
-      { display: "∞", value: "∞", label: "Infinity" },
     ],
   },
   {
@@ -116,7 +114,6 @@ const MATH_SYMBOLS: SymbolCategory[] = [
       { display: "∧", value: " ∧ ", label: "And" },
       { display: "∨", value: " ∨ ", label: "Or" },
       { display: "¬", value: "¬", label: "Not" },
-      { display: "⇒", value: " ⇒ ", label: "Implies" },
       { display: "⇔", value: " ⇔ ", label: "If and only if" },
       { display: "∴", value: " ∴ ", label: "Therefore" },
       { display: "∵", value: " ∵ ", label: "Because" },
@@ -142,14 +139,14 @@ const MATH_SYMBOLS: SymbolCategory[] = [
   {
     name: "Fractions & Numbers",
     symbols: [
+      { display: "∞", value: "∞", label: "Infinity" },
       { display: "½", value: "½", label: "One half" },
       { display: "⅓", value: "⅓", label: "One third" },
       { display: "⅔", value: "⅔", label: "Two thirds" },
       { display: "¼", value: "¼", label: "One quarter" },
       { display: "¾", value: "¾", label: "Three quarters" },
       { display: "⅕", value: "⅕", label: "One fifth" },
-      { display: "⅛", value: "⅛", label: "One eighth" },
-      { display: "℮", value: "℮", label: "Estimated" },
+      { display: "℮", value: "℮", label: "Euler's number" },
     ],
   },
 ];
@@ -254,14 +251,13 @@ export default function MathSymbolsModal({
             </motion.button>
           </motion.div>
 
-          {/* Content */}
           <motion.div
-            className="flex-1 overflow-y-auto overflow-x-visible p-2"
+            className="flex-1 overflow-y-auto overflow-x-hidden p-2"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.3 }}
           >
-            <div className="space-y-4 pt-8 pb-4">
+            <div className="space-y-4 py-4">
               {MATH_SYMBOLS.map((category, categoryIndex) => (
                 <motion.div
                   key={category.name}
@@ -358,7 +354,7 @@ export default function MathSymbolsModal({
                         <AnimatePresence>
                           {hoveredSymbol === symbol.value && (
                             <motion.div
-                              className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full mt-1 px-2 py-1 bg-background-800 text-text-low text-xs rounded whitespace-nowrap pointer-events-none z-30 border border-divider"
+                              className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full mt-1 px-2 py-1 bg-background-700 text-text-low text-xs rounded whitespace-nowrap pointer-events-none z-30 border border-divider"
                               initial={{ opacity: 0, scale: 0.8, y: -10 }}
                               animate={{ opacity: 1, scale: 1, y: 0 }}
                               exit={{ opacity: 0, scale: 0.8, y: -10 }}

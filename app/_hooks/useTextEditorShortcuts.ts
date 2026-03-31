@@ -212,57 +212,30 @@ export function useTextEditorShortcuts({
         return;
       }
 
-      // Ctrl/Cmd + /: Toggle comment
-      if (ctrlKey && e.key === "/") {
+      // Tab / Shift+Tab
+      if (e.key === "Tab") {
         e.preventDefault();
-        const { selectionStart, selectionEnd, value } = textarea;
-        const lines = value.split("\n");
-        let startLineIndex = 0;
-        let endLineIndex = 0;
 
-        let charCount = 0;
-        for (let i = 0; i < lines.length; i++) {
-          const lineLength = lines[i].length + 1;
-          if (
-            charCount <= selectionStart &&
-            selectionStart < charCount + lineLength
-          ) {
-            startLineIndex = i;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const value = textarea.value;
+
+        // Shift + Tab → unindent
+        if (e.shiftKey) {
+          if (value.substring(start - 2, start) === "  ") {
+            textarea.value =
+              value.substring(0, start - 2) + value.substring(end);
+            textarea.selectionStart = textarea.selectionEnd = start - 2;
           }
-          if (
-            charCount <= selectionEnd &&
-            selectionEnd <= charCount + lineLength
-          ) {
-            endLineIndex = i;
-            break;
-          }
-          charCount += lineLength;
+        } else {
+          // Tab → indent
+          textarea.value =
+            value.substring(0, start) + "  " + value.substring(end);
+          textarea.selectionStart = textarea.selectionEnd = start + 2;
         }
-
-        // Toggle comment on selected lines
-        const allCommented = lines
-          .slice(startLineIndex, endLineIndex + 1)
-          .every((line) => line.trim().startsWith("//"));
-
-        for (let i = startLineIndex; i <= endLineIndex; i++) {
-          if (allCommented) {
-            // Remove comment
-            lines[i] = lines[i].replace(/^(\s*)\/\/\s?/, "$1");
-          } else {
-            // Add comment
-            const leadingSpaces = lines[i].match(/^\s*/)?.[0] || "";
-            lines[i] =
-              leadingSpaces + "// " + lines[i].substring(leadingSpaces.length);
-          }
-        }
-
-        const newValue = lines.join("\n");
-        textarea.value = newValue;
-        textarea.dispatchEvent(new Event("input", { bubbles: true }));
-        return;
       }
     },
-    [onSave]
+    [onSave],
   );
 
   return { handleKeyDown };

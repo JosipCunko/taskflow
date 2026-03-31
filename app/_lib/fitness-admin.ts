@@ -257,6 +257,28 @@ export async function getExerciseProgress(
       );
 
       if (exercise && exercise.volume.length > 0) {
+        const isHoldExercise =
+          !!exercise.hold ||
+          exercise.volume.some((set: { duration?: number }) => !!set.duration);
+
+        if (isHoldExercise) {
+          const maxDuration = Math.max(
+            ...exercise.volume.map((set: { duration?: number }) =>
+              typeof set.duration === "number" ? set.duration : 0
+            )
+          );
+
+          progressData.push({
+            date: workout.createdAt,
+            // Keep legacy fields for backwards compatibility with existing UI/code.
+            maxWeight: 1,
+            maxReps: 1,
+            maxDuration,
+            sets: exercise.volume.length,
+          });
+          return;
+        }
+
         const maxWeight = Math.max(
           ...exercise.volume.map((set: { weight: number }) => set.weight)
         );
@@ -298,6 +320,28 @@ export async function getPersonalRecords(
 
       workout.loggedExercises?.forEach((exercise: LoggedExercise) => {
         if (exercise.volume && exercise.volume.length > 0) {
+          const isHoldExercise =
+            !!exercise.hold ||
+            exercise.volume.some((set: { duration?: number }) => !!set.duration);
+
+          if (isHoldExercise) {
+            exercise.volume.forEach((set: { duration?: number }) => {
+              const duration = typeof set.duration === "number" ? set.duration : 0;
+              const currentRecord = exerciseRecords[exercise.exerciseName];
+
+              if (!currentRecord || (currentRecord.duration ?? 0) < duration) {
+                exerciseRecords[exercise.exerciseName] = {
+                  exercise: exercise.exerciseName,
+                  weight: 1,
+                  reps: 1,
+                  duration,
+                  date: workoutDate,
+                };
+              }
+            });
+            return;
+          }
+
           exercise.volume.forEach((set: { weight: number; reps: number }) => {
             const currentRecord = exerciseRecords[exercise.exerciseName];
 
@@ -315,7 +359,10 @@ export async function getPersonalRecords(
     });
 
     return Object.values(exerciseRecords)
-      .sort((a, b) => b.weight - a.weight)
+      .sort(
+        (a, b) =>
+          (b.duration ?? b.weight) - (a.duration ?? a.weight)
+      )
       .slice(0, 10); // Top 10 records
   } catch (error) {
     console.error("Error getting personal records:", error);

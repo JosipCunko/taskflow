@@ -53,7 +53,7 @@ export default function NotesClientUI({
   const handleAddNewNote = async () => {
     if (!canAddNewNote()) {
       toast.error(
-        "Please provide a title or content for the current empty note before adding a new one."
+        "Please provide a title or content for the current empty note before adding a new one.",
       );
       return;
     }
@@ -81,7 +81,7 @@ export default function NotesClientUI({
       toast.error(
         error instanceof Error
           ? error.message
-          : "An error occurred while adding the note."
+          : "An error occurred while adding the note.",
       );
     } finally {
       setIsAdding(false);
@@ -102,7 +102,7 @@ export default function NotesClientUI({
         noteId,
         currentTitle,
         currentContent,
-        userId
+        userId,
       );
       if (result.success) {
         setNotes((prev) =>
@@ -114,8 +114,8 @@ export default function NotesClientUI({
                   content: currentContent,
                   updatedAt: Date.now(),
                 } // Optimistic update
-              : n
-          )
+              : n,
+          ),
         );
         setEditingNoteId(null);
         toast.success(result.message || "Note updated.");
@@ -127,7 +127,7 @@ export default function NotesClientUI({
       toast.error(
         error instanceof Error
           ? error.message
-          : "An error occurred while saving the note."
+          : "An error occurred while saving the note.",
       );
     } finally {
       setIsSaving(false);
@@ -154,7 +154,7 @@ export default function NotesClientUI({
         toast.error(
           error instanceof Error
             ? error.message
-            : "An error occurred while deleting the note."
+            : "An error occurred while deleting the note.",
         );
       }
     }
@@ -214,26 +214,6 @@ export default function NotesClientUI({
         </div>
         <KeyboardShortcutsGuide />
       </div>
-      {editingNoteId && (
-        <div className="mb-4 p-4 bg-gradient-to-r from-primary-500/10 to-purple-500/10 rounded-lg border border-primary-500/30 backdrop-blur-sm">
-          <div className="flex items-start gap-3">
-            <div className="text-2xl">✨</div>
-            <div className="flex-1">
-              <p className="text-sm text-text-low font-medium mb-2">
-                <span className="text-primary-400 font-bold">
-                  Advanced Editor Active
-                </span>
-              </p>
-              <p className="text-xs text-text-gray">
-                Quick tips: <kbd className="kbd">Ctrl+S</kbd> Save •{" "}
-                <kbd className="kbd">Ctrl+D</kbd> Duplicate •{" "}
-                <kbd className="kbd">Alt+↑/↓</kbd> Move line •{" "}
-                <kbd className="kbd">Ctrl+/</kbd> Comment
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {notes.length === 0 && !isAdding && <NotesWelcome />}
 

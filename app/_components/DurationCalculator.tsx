@@ -1,7 +1,25 @@
 import { Task } from "../_types/types";
 import { CardSpecificIcons } from "../_utils/icons";
+import { getStartAndEndTime } from "../_utils/utils";
 
-export default function DurationCalculator({ task }: { task: Task }) {
+function getTimeHint(task: Task): string {
+  const { startTime, endTime } = getStartAndEndTime(task);
+  const hasStartTime = startTime !== "00:00";
+  const hasEndTime = endTime !== "23:59" && endTime !== "00:00";
+
+  if (hasStartTime && hasEndTime) return `${startTime} - ${endTime}`;
+  if (hasStartTime && !hasEndTime) return `From ${startTime}`;
+  if (!hasStartTime && hasEndTime) return `To ${endTime}`;
+  return "";
+}
+
+export default function DurationCalculator({
+  task,
+  showTimeRangeInfo = false,
+}: {
+  task: Task;
+  showTimeRangeInfo?: boolean;
+}) {
   // Use explicit duration if provided
   let calculatedDuration = task.duration;
 
@@ -44,6 +62,7 @@ export default function DurationCalculator({ task }: { task: Task }) {
     calculatedDuration &&
     (calculatedDuration.hours > 0 || calculatedDuration.minutes > 0)
   ) {
+    const timeHint = showTimeRangeInfo ? getTimeHint(task) : "";
     return (
       <div className="flex items-center space-x-1.5 text-xs px-2.5 py-1.5 rounded-md bg-indigo-500/10 text-indigo-400 w-fit">
         <CardSpecificIcons.Time size={14} />
@@ -51,6 +70,7 @@ export default function DurationCalculator({ task }: { task: Task }) {
           {calculatedDuration.hours > 0 && `${calculatedDuration.hours}h `}
           {calculatedDuration.minutes > 0 && `${calculatedDuration.minutes}m`}
         </span>
+        {timeHint && <span className="opacity-80">• {timeHint}</span>}
       </div>
     );
   }

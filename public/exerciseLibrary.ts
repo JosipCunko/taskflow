@@ -86,6 +86,7 @@ export const defaultExercises: Omit<Exercise, "id">[] = [
     name: "Planche",
     category: "Shoulders",
     muscleGroups: ["Chest", "Shoulders", "Arms", "Core"],
+    hold: true,
     equipment: "Bodyweight",
     instructions: [
       "Start in plank position with hands shoulder-width apart",
@@ -230,6 +231,7 @@ export const defaultExercises: Omit<Exercise, "id">[] = [
     name: "Front Lever",
     category: "Back",
     muscleGroups: ["Lats", "Core", "Shoulders", "Rhomboids"],
+    hold: true,
     equipment: "Bodyweight",
     instructions: [
       "Hang from bar with overhand grip",
@@ -243,6 +245,7 @@ export const defaultExercises: Omit<Exercise, "id">[] = [
     name: "Back Lever",
     category: "Back",
     muscleGroups: ["Lats", "Core", "Shoulders", "Rhomboids"],
+    hold: true,
     equipment: "Bodyweight",
     instructions: [
       "Hang from bar with overhand grip",
@@ -427,6 +430,7 @@ export const defaultExercises: Omit<Exercise, "id">[] = [
     name: "Handstand",
     category: "Shoulders",
     muscleGroups: ["Shoulders", "Core", "Arms"],
+    hold: true,
     equipment: "Bodyweight",
     instructions: [
       "Start in plank position facing wall",
@@ -454,14 +458,14 @@ export const defaultExercises: Omit<Exercise, "id">[] = [
     name: "Human Flag",
     category: "Shoulders",
     muscleGroups: ["Shoulders", "Core", "Lats", "Arms"],
+    hold: true,
     equipment: "Bodyweight",
     instructions: [
-      "Hang from pole or sturdy vertical bar",
+      "Hang from pole or sturdy vertical bar in a dead hang",
       "Pull body up and twist to get one arm over the pole",
-      "Press down with top arm while pulling with bottom arm",
+      "Pull with top arm while pushing with bottom arm",
+      "Engage core, glutes and keep legs straight",
       "Hold body parallel to ground",
-      "Engage core and keep legs straight",
-      "Start with assisted variations before full flag",
     ],
   },
 
@@ -583,6 +587,7 @@ export const defaultExercises: Omit<Exercise, "id">[] = [
     name: "Plank",
     category: "Core",
     muscleGroups: ["Core", "Shoulders"],
+    hold: true,
     equipment: "Bodyweight",
     instructions: [
       "Place forearms on floor under shoulders",
@@ -600,6 +605,14 @@ export const defaultExercises: Omit<Exercise, "id">[] = [
       "Raise legs until parallel",
       "Lower with control",
     ],
+  },
+  {
+    name: "L-Sit",
+    category: "Core",
+    muscleGroups: ["Lower Abs", "Hip Flexors"],
+    hold: true,
+    equipment: "Pull-up Bar",
+    instructions: ["Hang from bar", "Raise legs until parallel"],
   },
   {
     name: "Cable Crunch",
@@ -628,6 +641,7 @@ export const defaultExercises: Omit<Exercise, "id">[] = [
     name: "Side Plank",
     category: "Core",
     muscleGroups: ["Obliques", "Core", "Shoulders"],
+    hold: true,
     equipment: "Bodyweight",
     instructions: [
       "Lie on side with elbow under shoulder",

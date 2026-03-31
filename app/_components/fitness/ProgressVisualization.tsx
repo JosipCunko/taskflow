@@ -25,12 +25,13 @@ interface ProgressVisualizationProps {
   userId: string;
 }
 
-type MetricType = "maxWeight";
+type MetricType = "maxWeight" | "maxDuration";
 
 interface ProgressData {
   date: string;
   maxWeight: number;
   maxReps: number;
+  maxDuration?: number;
 }
 
 export default function ProgressVisualization({
@@ -46,6 +47,9 @@ export default function ProgressVisualization({
   const [exerciseSearchTerm, setExerciseSearchTerm] = useState("");
 
   const exercises = defaultExercises.map((ex) => ex.name);
+  const isHoldExercise = !!defaultExercises.find(
+    (ex) => ex.name === selectedExercise
+  )?.hold;
   const filteredExercises = exercises.filter((exercise) =>
     exercise.toLowerCase().includes(exerciseSearchTerm.toLowerCase())
   );
@@ -68,6 +72,7 @@ export default function ProgressVisualization({
               }).format(new Date(item.date)),
               maxWeight: item.maxWeight,
               maxReps: item.maxReps,
+              maxDuration: item.maxDuration,
             };
           });
 
@@ -110,10 +115,17 @@ export default function ProgressVisualization({
           color: "#3b82f6",
           icon: Target,
         };
+      case "maxDuration":
+        return {
+          label: "Max Hold",
+          unit: "s",
+          color: "#22c55e",
+          icon: Target,
+        };
     }
   };
 
-  const selectedMetric: MetricType = "maxWeight";
+  const selectedMetric: MetricType = isHoldExercise ? "maxDuration" : "maxWeight";
   const currentConfig = getMetricConfig(selectedMetric);
   const latestData = progressData[progressData.length - 1];
   const previousData = progressData[progressData.length - 2];
@@ -191,7 +203,7 @@ export default function ProgressVisualization({
       </div>
 
       {isLoading ? (
-        <div className="h-[10rem] relative">
+        <div className="h-40 relative">
           <Loader label="Loading progress data..." />
         </div>
       ) : (
@@ -293,11 +305,15 @@ export default function ProgressVisualization({
             </div>
             <div className="text-2xl font-bold text-text-high">
               {latestData
-                ? `${latestData.maxWeight}kg × ${latestData.maxReps} reps`
+                ? isHoldExercise
+                  ? `${latestData.maxDuration ?? 0}s`
+                  : `${latestData.maxWeight}kg × ${latestData.maxReps} reps`
                 : "No data"}
             </div>
             <p className="text-sm text-text-low">
-              Personal record (weight × reps)
+              {isHoldExercise
+                ? "Personal record (seconds)"
+                : "Personal record (kg × reps)"}
             </p>
           </div>
 
@@ -342,7 +358,9 @@ export default function ProgressVisualization({
                     </div>
                     <div className="text-right">
                       <div className="text-lg font-bold text-text-high">
-                        {record.weight}kg × {record.reps}
+                        {"duration" in record && typeof record.duration === "number"
+                          ? `${record.duration}s`
+                          : `${record.weight}kg × ${record.reps}`}
                       </div>
                     </div>
                   </div>

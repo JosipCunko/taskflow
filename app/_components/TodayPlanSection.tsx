@@ -6,6 +6,7 @@ import Modal, { ModalContext } from "./Modal";
 import AddTodayTask from "./AddTodayTask";
 import { getStartAndEndTime } from "@/app/_utils/utils";
 import TaskCardSmall from "./TaskCardSmall";
+import DurationCalculator from "./DurationCalculator";
 
 interface TodayPlanSectionProps {
   todayTasks: Task[];
@@ -23,12 +24,12 @@ export default function TodayPlanSection({
       open: openModal,
       close: closeModal,
     }),
-    [modalOpenName]
+    [modalOpenName],
   );
 
   // Filter tasks that need to be completed today and are not completed
   const incompleteTodayTasks = todayTasks.filter(
-    (task) => task.status !== "completed"
+    (task) => task.status !== "completed",
   );
 
   // Separate scheduled tasks (with specific times) and whole day tasks
@@ -58,10 +59,12 @@ export default function TodayPlanSection({
     const [endHour, endMinute] = endTime.split(":").map(Number);
 
     const startPos = startHour + startMinute / 60;
-    const endPos = endHour + endMinute / 60;
+    const rawEndPos = endHour + endMinute / 60;
+    const isOvernight = rawEndPos < startPos;
+    const endPos = isOvernight ? rawEndPos + 24 : rawEndPos;
     const duration = endPos - startPos;
 
-    return { startPos, duration };
+    return { startPos, duration, rawEndPos, isOvernight };
   };
 
   if (incompleteTodayTasks.length === 0) {
@@ -123,8 +126,13 @@ export default function TodayPlanSection({
           <div className="flex flex-col space-y-0 border border-background-600 rounded-lg overflow-hidden">
             {hours.map((hour) => {
               const tasksInThisHour = scheduledTasks.filter((task) => {
-                const { startPos, duration } = getTaskPosition(task);
-                return startPos <= hour && startPos + duration > hour;
+                const { startPos, rawEndPos, isOvernight } =
+                  getTaskPosition(task);
+                if (isOvernight) {
+                  // e.g. 22:00 -> 02:00 should appear for hours 22, 23, 0, 1
+                  return hour >= startPos || hour < rawEndPos;
+                }
+                return startPos <= hour && rawEndPos > hour;
               });
 
               return (
@@ -134,7 +142,7 @@ export default function TodayPlanSection({
                   style={{ minHeight: "60px" }}
                 >
                   {/* Hour Label */}
-                  <div className="w-16 flex-shrink-0 p-2 text-sm text-text-gray border-r border-background-600">
+                  <div className="w-16 shrink-0 p-2 text-sm text-text-gray border-r border-background-600">
                     {hour.toString().padStart(2, "0")}:00
                   </div>
 
@@ -161,10 +169,11 @@ export default function TodayPlanSection({
                               {task.title}
                             </span>
                             {task.isPriority && (
-                              <span className="text-xs px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400">
+                              <span className="text-xs px-2.5 py-1.5 rounded bg-orange-500/20 text-orange-400">
                                 Priority
                               </span>
                             )}
+                            <DurationCalculator task={task} showTimeRangeInfo />
                           </div>
                         </div>
                       );
@@ -176,8 +185,7 @@ export default function TodayPlanSection({
           </div>
         </div>
 
-        {/* Whole Day Tasks Section */}
-        <div>
+        <div className="overflow-y-auto">
           <h3 className="text-md font-semibold text-text-low mb-3">
             Tasks for Today
           </h3>

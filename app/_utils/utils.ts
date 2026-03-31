@@ -943,8 +943,10 @@ export function getCompletionAvailabilityInfo(
   }
 
   if (
-    task.repetitionRule!.completedAt.length > 0 &&
-    task.repetitionRule!.completedAt.some((date) => isToday(date))
+    task.repetitionRule &&
+    task.repetitionRule.completedAt &&
+    task.repetitionRule.completedAt.length > 0 &&
+    task.repetitionRule.completedAt.some((date) => isToday(date))
   ) {
     return {
       text: "Completed today",
