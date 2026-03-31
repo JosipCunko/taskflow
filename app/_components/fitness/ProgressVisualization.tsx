@@ -130,11 +130,13 @@ export default function ProgressVisualization({
   const latestData = progressData[progressData.length - 1];
   const previousData = progressData[progressData.length - 2];
 
+  const latestValue = latestData?.[selectedMetric];
+  const previousValue = previousData?.[selectedMetric];
   const improvement =
-    latestData && previousData
-      ? ((latestData[selectedMetric] - previousData[selectedMetric]) /
-          previousData[selectedMetric]) *
-        100
+    typeof latestValue === "number" &&
+    typeof previousValue === "number" &&
+    previousValue !== 0
+      ? ((latestValue - previousValue) / previousValue) * 100
       : 0;
 
   return (

@@ -16,7 +16,7 @@ import {
   ChevronUp,
   ListFilter,
 } from "lucide-react";
-import { AppUser, Task } from "@/app/_types/types";
+import { Task } from "@/app/_types/types";
 import TaskCard from "@/app/_components/TaskCard";
 import RepeatingTaskCard from "@/app/_components/RepeatingTaskCard";
 import Modal from "@/app/_components/Modal";
