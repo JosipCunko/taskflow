@@ -20,12 +20,12 @@ import UpgradePlan from "../UpgradePlan";
 // Dynamically import C1Component with SSR disabled to prevent "document is not defined" errors
 const C1Component = dynamic(
   () => import("@thesysai/genui-sdk").then((mod) => mod.C1Component),
-  { ssr: false }
+  { ssr: false },
 );
 
 const ThemeProvider = dynamic(
   () => import("@thesysai/genui-sdk").then((mod) => mod.ThemeProvider),
-  { ssr: false }
+  { ssr: false },
 );
 
 // Action types supported by C1Component interactions
@@ -215,7 +215,7 @@ export default function Chat({
         // Decrement remaining prompts after successful message
         if (remainingPrompts !== "unlimited") {
           setRemainingPrompts((prev) =>
-            prev === "unlimited" ? "unlimited" : Math.max(0, prev - 1)
+            prev === "unlimited" ? "unlimited" : Math.max(0, prev - 1),
           );
         }
 
@@ -242,7 +242,7 @@ export default function Chat({
       router,
       remainingPrompts,
       hasReachedLimit,
-    ]
+    ],
   );
 
   // Handle custom actions like complete_task, navigate, etc.
@@ -291,7 +291,7 @@ export default function Chat({
           return false;
       }
     },
-    [router]
+    [router],
   );
 
   // Handle C1Component actions (user interactions with rich UI)
@@ -321,7 +321,7 @@ export default function Chat({
       // Default behavior: send the message back to the AI as a follow-up
       sendFollowUpMessage(event.humanFriendlyMessage);
     },
-    [executeCustomAction, sendFollowUpMessage]
+    [executeCustomAction, sendFollowUpMessage],
   );
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -415,7 +415,7 @@ export default function Chat({
               } else if (parsed.type === "tool_start") {
                 // Tool execution started - append indicator to content
                 setStreamingContent(
-                  accumulatedContent + "\n\n*Executing actions...*"
+                  accumulatedContent + "\n\n*Executing actions...*",
                 );
               } else if (parsed.type === "tool_results") {
                 functionResults = parsed.results;
@@ -451,7 +451,7 @@ export default function Chat({
       // Decrement remaining prompts after successful message
       if (remainingPrompts !== "unlimited") {
         setRemainingPrompts((prev) =>
-          prev === "unlimited" ? "unlimited" : Math.max(0, prev - 1)
+          prev === "unlimited" ? "unlimited" : Math.max(0, prev - 1),
         );
       }
 
@@ -650,7 +650,7 @@ export default function Chat({
                               {msg.modelName || getModelNameFromId(msg.modelId)}
                             </span>
                           </div>
-                          <div className="rounded-lg p-4 bg-background-600 border border-background-500">
+                          <div className="rounded-lg p-4 bg-background-600 border border-background-500 sm:ml-0 -ml-14 sm:mt-0 mt-4">
                             {msg.content ? (
                               <div className="text-sm leading-relaxed ai-response prose prose-invert max-w-none c1-message-container">
                                 <C1Component

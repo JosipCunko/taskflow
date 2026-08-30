@@ -15,8 +15,10 @@ import {
   ChevronDown,
   ChevronUp,
   ListFilter,
+  RefreshCw,
+  Plus,
 } from "lucide-react";
-import { Task } from "@/app/_types/types";
+import { AppUser, Task } from "@/app/_types/types";
 import TaskCard from "@/app/_components/TaskCard";
 import RepeatingTaskCard from "@/app/_components/RepeatingTaskCard";
 import Modal from "@/app/_components/Modal";
@@ -25,6 +27,9 @@ import Button from "@/app/_components/reusable/Button";
 import { TASK_ICONS } from "@/app/_utils/icons";
 import { colorsColorPicker, getDayName } from "@/app/_utils/utils";
 import { DayOfWeek } from "@/app/_types/types";
+import { refreshTasks } from "@/app/_lib/actions";
+import { useRouter } from "next/navigation";
+import AddTask from "@/app/_components/AddTask";
 
 interface TaskFilters {
   dueBefore: number | null;
@@ -53,7 +58,13 @@ const initialFilters: TaskFilters = {
   daysOfWeek: [],
 };
 
-export default function TasksPageClient({ tasks }: { tasks: Task[] }) {
+export default function TasksPageClient({
+  tasks,
+  userId,
+}: {
+  tasks: Task[];
+  userId: AppUser["uid"];
+}) {
   const [filters, setFilters] = useState<TaskFilters>(initialFilters);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
@@ -207,17 +218,28 @@ export default function TasksPageClient({ tasks }: { tasks: Task[] }) {
     });
     return count;
   };
+  const router = useRouter();
 
   return (
     <div className="container mx-auto p-1 sm:p-6 pb-8">
       {/* Header with Filter Toggle */}
-      <div className="mb-6 md:mb-8 flex items-center justify-between">
+      <div className="mb-6 md:mb-8 flex items-center justify-between sm:flex-row flex-col gap-4">
         <h1 className="text-3xl sm:text-4xl font-bold text-primary-400 flex items-center">
           <ChartColumn className="w-8 h-8 mr-3 text-primary-500 icon-glow" />
           <span className="text-glow">Your tasks</span>
         </h1>
 
         <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            onClick={async () => {
+              await refreshTasks(userId);
+              router.refresh(); //doesnt work
+            }}
+          >
+            <RefreshCw className="w-5 h-5" />
+            Refresh <span className="sm:inline hidden">Tasks</span>
+          </Button>
           <Button
             variant="primary"
             onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -231,6 +253,23 @@ export default function TasksPageClient({ tasks }: { tasks: Task[] }) {
               </span>
             )}
           </Button>
+          <div className="sm:hidden block">
+            <Modal>
+              <Modal.Open opens="add-task">
+                <Button
+                  className="text-nowrap transition-all duration-200"
+                  data-tutorial="btn-add-task"
+                >
+                  <Plus size={18} />
+                  <span>New Task</span>
+                </Button>
+              </Modal.Open>
+
+              <Modal.Window name="add-task">
+                <AddTask />
+              </Modal.Window>
+            </Modal>
+          </div>
         </div>
       </div>
 

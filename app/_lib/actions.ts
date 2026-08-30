@@ -604,7 +604,7 @@ export async function completeRepeatingTaskWithInterval(
       completedAt: [...rule.completedAt, completionDate],
       completions: 0, // Reset completions for interval-based tasks
     },
-    status: "pending", // Reset to pending for the next occurrence
+    status: "completed", // Previously reset to pending for the next occurrence
     dueDate: finalDueDateTimestamp,
     completedAt: completionDate,
     points: newPoints,

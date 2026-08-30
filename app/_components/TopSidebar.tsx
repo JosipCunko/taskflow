@@ -15,8 +15,6 @@ import AddTask from "./AddTask";
 import { useKeyboardNavigation } from "../_hooks/useKeyboardNavigation";
 import { Task } from "../_types/types";
 import SearchApp from "./SearchApp";
-import { refreshTasks } from "@/app/_lib/actions";
-import { useRouter } from "next/navigation";
 
 const NotificationBell = dynamic(() => import("./inbox/NotificationBell"), {
   ssr: false,
@@ -58,7 +56,6 @@ export default function TopSidebar({
 
   const MemoizedSearch = memo(SearchApp);
   const MemoizedNotificationBell = memo(NotificationBell);
-  const router = useRouter();
 
   return (
     <header className="flex items-center justify-between p-4 border-b border-background-500 h-[80px] sticky top-0 z-10 bg-background-625">
@@ -83,17 +80,6 @@ export default function TopSidebar({
       </div>
 
       <div className="flex items-center gap-3 tooltip-container">
-        <Button
-          variant="secondary"
-          onClick={async () => {
-            await refreshTasks(session!.user.id);
-            router.refresh();
-          }}
-        >
-          <RefreshCw className="w-5 h-5" />
-          Refresh Tasks
-        </Button>
-
         <Modal>
           <Modal.Open opens="search">
             <Button
@@ -110,21 +96,23 @@ export default function TopSidebar({
           </Modal.Window>
         </Modal>
 
-        <Modal>
-          <Modal.Open opens="add-task">
-            <Button
-              className="text-nowrap transition-all duration-200"
-              data-tutorial="btn-add-task"
-            >
-              <Plus size={18} />
-              <span>New Task</span>
-            </Button>
-          </Modal.Open>
+        <div className="sm:block hidden">
+          <Modal>
+            <Modal.Open opens="add-task">
+              <Button
+                className="text-nowrap transition-all duration-200"
+                data-tutorial="btn-add-task"
+              >
+                <Plus size={18} />
+                <span>New Task</span>
+              </Button>
+            </Modal.Open>
 
-          <Modal.Window name="add-task">
-            <AddTask />
-          </Modal.Window>
-        </Modal>
+            <Modal.Window name="add-task">
+              <AddTask />
+            </Modal.Window>
+          </Modal>
+        </div>
 
         <MemoizedNotificationBell />
 

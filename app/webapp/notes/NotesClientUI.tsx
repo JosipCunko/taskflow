@@ -9,10 +9,16 @@ import {
 } from "@/app/_lib/notesActions";
 import Button from "@/app/_components/reusable/Button";
 import Input from "@/app/_components/reusable/Input";
-import { PlusCircle, Save, Trash2, XCircle, Edit3, Sigma } from "lucide-react";
-import { toast } from "react-hot-toast";
-import { formatDateTime } from "@/app/_utils/utils";
-import { Tooltip } from "react-tooltip";
+import {
+  PlusCircle,
+  Save,
+  Trash2,
+  XCircle,
+  Edit3,
+  Sigma,
+  SearchIcon,
+} from "lucide-react";
+import { errorToast, formatDateTime, successToast } from "@/app/_utils/utils";
 import AutoGrowTextarea from "@/app/_components/notes/AutoGrowTextarea";
 import MathSymbolsModal from "@/app/_components/notes/MathSymbolsModal";
 import KeyboardShortcutsGuide from "@/app/_components/notes/KeyboardShortcutsGuide";
@@ -52,7 +58,7 @@ export default function NotesClientUI({
 
   const handleAddNewNote = async () => {
     if (!canAddNewNote()) {
-      toast.error(
+      errorToast(
         "Please provide a title or content for the current empty note before adding a new one.",
       );
       return;
@@ -72,13 +78,13 @@ export default function NotesClientUI({
         setEditingNoteId(result.newNoteId);
         setCurrentTitle("New Note");
         setCurrentContent("");
-        toast.success(result?.message || "Note added.");
+        successToast(result?.message || "Note added.");
       } else {
-        toast.error(result.error ?? "Failed to add note.");
+        errorToast(result.error ?? "Failed to add note.");
       }
     } catch (error) {
       console.error("Add note client error:", error);
-      toast.error(
+      errorToast(
         error instanceof Error
           ? error.message
           : "An error occurred while adding the note.",
@@ -118,13 +124,13 @@ export default function NotesClientUI({
           ),
         );
         setEditingNoteId(null);
-        toast.success(result.message || "Note updated.");
+        successToast(result.message || "Note updated.");
       } else {
-        toast.error(result.error ?? "Failed to update note.");
+        errorToast(result.error ?? "Failed to update note.");
       }
     } catch (error) {
       console.error("Save note client error:", error);
-      toast.error(
+      errorToast(
         error instanceof Error
           ? error.message
           : "An error occurred while saving the note.",
@@ -145,13 +151,13 @@ export default function NotesClientUI({
           if (editingNoteId === noteId) {
             setEditingNoteId(null);
           }
-          toast.success(result.message || "Note deleted.");
+          successToast(result.message || "Note deleted.");
         } else {
-          toast.error(result.error ?? "Failed to delete note.");
+          errorToast(result.error ?? "Failed to delete note.");
         }
       } catch (error) {
         console.error("Delete note client error:", error);
-        toast.error(
+        errorToast(
           error instanceof Error
             ? error.message
             : "An error occurred while deleting the note.",
@@ -219,6 +225,7 @@ export default function NotesClientUI({
 
       {notes.length > 0 && (
         <div className="mb-6">
+          <SearchIcon size={10} />
           <Search
             value={searchQuery}
             onChange={setSearchQuery}
@@ -269,12 +276,9 @@ export default function NotesClientUI({
                     onClick={() => setIsMathModalOpen(true)}
                     variant="secondary"
                     disabled={!editingNoteId}
-                    data-tooltip-id="math-symbols-btn"
-                    data-tooltip-content="Insert mathematical symbols"
                   >
                     <Sigma size={18} /> Math Symbols
                   </Button>
-                  <Tooltip id="math-symbols-btn" place="top" />
                   <MathSymbolsModal
                     isOpen={isMathModalOpen}
                     onClose={() => setIsMathModalOpen(false)}
