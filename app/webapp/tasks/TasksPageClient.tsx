@@ -28,7 +28,6 @@ import { TASK_ICONS } from "@/app/_utils/icons";
 import { colorsColorPicker, getDayName } from "@/app/_utils/utils";
 import { DayOfWeek } from "@/app/_types/types";
 import { refreshTasks } from "@/app/_lib/actions";
-import { useRouter } from "next/navigation";
 import AddTask from "@/app/_components/AddTask";
 
 interface TaskFilters {
@@ -218,8 +217,6 @@ export default function TasksPageClient({
     });
     return count;
   };
-  const router = useRouter();
-
   return (
     <div className="container mx-auto p-1 sm:p-6 pb-8">
       {/* Header with Filter Toggle */}
@@ -234,7 +231,7 @@ export default function TasksPageClient({
             variant="secondary"
             onClick={async () => {
               await refreshTasks(userId);
-              router.refresh(); //doesnt work
+              //router.refresh();
             }}
           >
             <RefreshCw className="w-5 h-5" />

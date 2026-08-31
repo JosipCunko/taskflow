@@ -35,12 +35,16 @@ import { AnalyticsLoadingSkeleton } from "../_components/skeleton/AnalyticsLoadi
 import UpgradePlan from "../_components/UpgradePlan";
 import { getEffectivePlan } from "../_lib/stripe";
 
+//Dashboard is now always dynamic because of problem with revalidation during tasks updates inside /tasks
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 // Dynamic import for heavy components with recharts
 const AnalyticsDashboard = dynamicImport(
   () => import("../_components/AnalyticsDashboard"),
   {
     loading: () => <AnalyticsLoadingSkeleton />,
-  }
+  },
 );
 
 export default async function DashboardPage() {

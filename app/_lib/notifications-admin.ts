@@ -20,6 +20,8 @@ import {
   differenceInMinutes,
   isPast,
   endOfDay,
+  getISOWeek,
+  getISOWeekYear,
 } from "date-fns";
 import {
   canCompleteRepeatingTaskNow,
@@ -27,6 +29,8 @@ import {
 } from "../_utils/utils";
 import { getUserById, getUserPreferences } from "./user-admin";
 import admin from "firebase-admin";
+
+const generateNotificationsInFlight = new Map<string, Promise<void>>();
 
 // Add FCM push notification sending
 const sendPushNotification = async (
@@ -216,20 +220,95 @@ export const getNotificationsByUserIdAdmin = async (
     );
 
     const now = Date.now();
-    return notifications.filter(
+    const active = notifications.filter(
       (notification) => !notification.expiresAt || notification.expiresAt > now
     );
+    return dedupeNotifications(active);
   } catch (error) {
     console.error("Error fetching notifications:", error);
     throw error;
   }
 };
 
+function notificationDedupeKey(notification: Notification): string {
+  if (notification.taskId) {
+    return `${notification.type}:${notification.taskId}`;
+  }
+  const achievementId = notification.data?.achievementId;
+  if (notification.type === "ACHIEVEMENT_UNLOCKED" && achievementId) {
+    return `${notification.type}:${achievementId}`;
+  }
+  return notification.id;
+}
+
+function taskNotificationDocId(taskId: string, type: string): string {
+  return `task_${taskId}_${type}`;
+}
+
+/** Keep the newest notification per task/type (or achievement). */
+function dedupeNotifications(notifications: Notification[]): Notification[] {
+  const newestByKey = new Map<string, Notification>();
+  for (const notification of notifications) {
+    const key = notificationDedupeKey(notification);
+    const existing = newestByKey.get(key);
+    if (!existing || notification.createdAt > existing.createdAt) {
+      newestByKey.set(key, notification);
+    }
+  }
+  return Array.from(newestByKey.values()).sort(
+    (a, b) => b.createdAt - a.createdAt
+  );
+}
+
+async function cleanupDuplicateNotifications(userId: string): Promise<void> {
+  try {
+    const snapshot = await adminDb
+      .collection("notifications")
+      .where("userId", "==", userId)
+      .get();
+
+    const grouped = new Map<
+      string,
+      admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData>[]
+    >();
+    snapshot.docs.forEach((docSnapshot) => {
+      const notification = fromFirestore(docSnapshot);
+      if (notification.isArchived) return;
+      const key = notificationDedupeKey(notification);
+      const group = grouped.get(key) ?? [];
+      group.push(docSnapshot);
+      grouped.set(key, group);
+    });
+
+    const batch = adminDb.batch();
+    let deleteCount = 0;
+    grouped.forEach((docs) => {
+      if (docs.length < 2) return;
+      const sorted = [...docs].sort((a, b) => {
+        const aCreated = (a.data().createdAt as number) || 0;
+        const bCreated = (b.data().createdAt as number) || 0;
+        return bCreated - aCreated;
+      });
+      sorted.slice(1).forEach((docSnapshot) => {
+        batch.delete(docSnapshot.ref);
+        deleteCount++;
+      });
+    });
+
+    if (deleteCount > 0) {
+      await batch.commit();
+    }
+  } catch (error) {
+    console.error("Error cleaning up duplicate notifications:", error);
+  }
+}
+
 export const createNotification = async (
   notificationData: Omit<
     Notification,
     "id" | "createdAt" | "isRead" | "isArchived"
-  >
+  >,
+  options?: { id?: string }
 ): Promise<Notification> => {
   try {
     const notificationToCreate = {
@@ -241,6 +320,27 @@ export const createNotification = async (
         expiresAt: notificationData.expiresAt,
       }),
     };
+
+    if (options?.id) {
+      const docRef = adminDb.collection("notifications").doc(options.id);
+      const existing = await docRef.get();
+      if (existing.exists) {
+        const existingNotification = fromFirestore(
+          existing as admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData>
+        );
+        const expired =
+          existingNotification.expiresAt &&
+          existingNotification.expiresAt <= Date.now();
+        if (!expired && !existingNotification.isArchived) {
+          return existingNotification;
+        }
+      }
+      await docRef.set(notificationToCreate);
+      const createdDoc = await docRef.get();
+      return fromFirestore(
+        createdDoc as admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData>
+      );
+    }
 
     const docRef = await adminDb
       .collection("notifications")
@@ -345,21 +445,7 @@ export const generateOverdueTaskNotifications = async (
       task.isReminder && task.status !== "completed" && isPast(task.dueDate)
   );
 
-  const existingNotifications = await getNotificationsByUserIdAdmin(userId);
-
   for (const task of overdueTasks) {
-    // Check if there's ANY recent notification for this task (not just overdue)
-    const hasRecentNotification = existingNotifications.some(
-      (n) =>
-        n.taskId === task.id &&
-        (n.type === "TASK_OVERDUE" || n.type === "TASK_DUE_SOON") &&
-        differenceInHours(now, n.createdAt) < 24
-    );
-
-    if (hasRecentNotification) {
-      continue; // Skip if any notification exists for this task recently
-    }
-
     const daysOverdue = differenceInDays(now, task.dueDate);
     const priority: NotificationPriority = task.isPriority
       ? "URGENT"
@@ -391,18 +477,21 @@ export const generateOverdueTaskNotifications = async (
     // Add repeating task indicator to the message
     const repeatingIndicator = task.isRepeating ? " (Repeating Task)" : "";
 
-    await createNotification({
-      userId,
-      type: "TASK_OVERDUE",
-      priority,
-      title: "⏰ Task Overdue",
-      message: `"${task.title}" ${overdueMessage}${repeatingIndicator}`,
-      actionText: "Complete Now",
-      actionUrl: `/webapp/tasks`,
-      taskId: task.id,
-      data: { daysOverdue, isRepeating: task.isRepeating },
-      expiresAt: addDays(new Date(), 7).getTime(),
-    });
+    await createNotification(
+      {
+        userId,
+        type: "TASK_OVERDUE",
+        priority,
+        title: "⏰ Task Overdue",
+        message: `"${task.title}" ${overdueMessage}${repeatingIndicator}`,
+        actionText: "Complete Now",
+        actionUrl: `/webapp/tasks`,
+        taskId: task.id,
+        data: { daysOverdue, isRepeating: task.isRepeating },
+        expiresAt: addDays(new Date(), 7).getTime(),
+      },
+      { id: taskNotificationDocId(task.id, "TASK_OVERDUE") }
+    );
   }
 };
 
@@ -430,40 +519,29 @@ export const generateDueSoonNotifications = async (
       isAfter(task.dueDate, now)
   );
 
-  const existingNotifications = await getNotificationsByUserIdAdmin(userId);
-
   for (const task of dueSoonTasks) {
-    // Check if there's ANY recent notification for this task
-    const hasRecentNotification = existingNotifications.some(
-      (n) =>
-        n.taskId === task.id &&
-        (n.type === "TASK_OVERDUE" || n.type === "TASK_DUE_SOON") &&
-        differenceInHours(now, n.createdAt) < 12
-    );
-
-    if (hasRecentNotification) {
-      continue; // Skip if any notification exists for this task recently
-    }
-
     const priority: NotificationPriority = task.isPriority ? "HIGH" : "MEDIUM";
 
     // Add repeating task indicator to the message
     const repeatingIndicator = task.isRepeating ? " (Repeating Task)" : "";
 
-    await createNotification({
-      userId,
-      type: "TASK_DUE_SOON",
-      priority,
-      title: "📅 Task Due Soon",
-      message: `"${task.title}" is due ${
-        isToday(task.dueDate) ? "today" : "tomorrow"
-      }${repeatingIndicator}`,
-      actionText: "View Task",
-      actionUrl: `/webapp/tasks`,
-      taskId: task.id,
-      data: { isRepeating: task.isRepeating },
-      expiresAt: addDays(now, 7).getTime(),
-    });
+    await createNotification(
+      {
+        userId,
+        type: "TASK_DUE_SOON",
+        priority,
+        title: "📅 Task Due Soon",
+        message: `"${task.title}" is due ${
+          isToday(task.dueDate) ? "today" : "tomorrow"
+        }${repeatingIndicator}`,
+        actionText: "View Task",
+        actionUrl: `/webapp/tasks`,
+        taskId: task.id,
+        data: { isRepeating: task.isRepeating },
+        expiresAt: addDays(now, 7).getTime(),
+      },
+      { id: taskNotificationDocId(task.id, "TASK_DUE_SOON") }
+    );
   }
 };
 
@@ -545,16 +623,8 @@ export const generateTimeWindowNotifications = async (
     }
 
     if (notificationType) {
-      const existingNotifications = await getNotificationsByUserIdAdmin(userId);
-      const hasRecentNotification = existingNotifications.some(
-        (n) =>
-          n.type === notificationType &&
-          n.taskId === task.id &&
-          differenceInMinutes(now, n.createdAt) < 24
-      );
-
-      if (!hasRecentNotification) {
-        await createNotification({
+      await createNotification(
+        {
           userId,
           type: notificationType as "TASK_DUE_SOON",
           priority,
@@ -569,8 +639,9 @@ export const generateTimeWindowNotifications = async (
             durationMinutes: durationInMinutes,
           },
           expiresAt: addDays(new Date(), 1).getTime(),
-        });
-      }
+        },
+        { id: taskNotificationDocId(task.id, notificationType) }
+      );
     }
   }
 };
@@ -624,17 +695,20 @@ export const generateAchievementNotification = async (
   };
 
   // Create notification regardless of user.achievements check to avoid race conditions
-  await createNotification({
-    userId,
-    type: "ACHIEVEMENT_UNLOCKED",
-    priority: "LOW",
-    title: achievementTitles[achievementType],
-    message: achievementMessages[achievementType],
-    actionText: "View Achievement",
-    actionUrl: "/webapp/profile",
-    data: { achievementId },
-    expiresAt: addDays(new Date(), 30).getTime(),
-  });
+  await createNotification(
+    {
+      userId,
+      type: "ACHIEVEMENT_UNLOCKED",
+      priority: "LOW",
+      title: achievementTitles[achievementType],
+      message: achievementMessages[achievementType],
+      actionText: "View Achievement",
+      actionUrl: "/webapp/profile",
+      data: { achievementId },
+      expiresAt: addDays(new Date(), 30).getTime(),
+    },
+    { id: `achievement_${userId}_${achievementId}` }
+  );
 };
 
 /**
@@ -660,17 +734,23 @@ export const generateWeeklySummaryNotification = async (
     (weeklyStats.completedTasks / Math.max(weeklyStats.totalTasks, 1)) * 100
   );
 
-  await createNotification({
-    userId,
-    type: "WEEKLY_SUMMARY",
-    priority: "LOW",
-    title: "📊 Weekly Summary",
-    message: `This week: ${weeklyStats.completedTasks}/${weeklyStats.totalTasks} tasks completed (${completionRate}%), ${weeklyStats.pointsEarned} points earned`,
-    actionText: "View Dashboard",
-    actionUrl: "/webapp",
-    data: weeklyStats,
-    expiresAt: addDays(new Date(), 7).getTime(),
-  });
+  const now = new Date();
+  const weekId = `${getISOWeekYear(now)}-${getISOWeek(now)}`;
+
+  await createNotification(
+    {
+      userId,
+      type: "WEEKLY_SUMMARY",
+      priority: "LOW",
+      title: "📊 Weekly Summary",
+      message: `This week: ${weeklyStats.completedTasks}/${weeklyStats.totalTasks} tasks completed (${completionRate}%), ${weeklyStats.pointsEarned} points earned`,
+      actionText: "View Dashboard",
+      actionUrl: "/webapp",
+      data: weeklyStats,
+      expiresAt: addDays(new Date(), 7).getTime(),
+    },
+    { id: `weekly_${userId}_${weekId}` }
+  );
 };
 
 /**
@@ -714,16 +794,29 @@ export const generateNotificationsForUser = async (
   userId: string,
   tasks: Task[]
 ): Promise<void> => {
-  try {
-    await Promise.all([
-      generateOverdueTaskNotifications(userId, tasks),
-      generateDueSoonNotifications(userId, tasks),
-      generateTimeWindowNotifications(userId, tasks),
-    ]);
-  } catch (error) {
-    console.error("Error generating notifications for user:", error);
-    throw error;
+  const inFlight = generateNotificationsInFlight.get(userId);
+  if (inFlight) {
+    return inFlight;
   }
+
+  const run = (async () => {
+    try {
+      await cleanupDuplicateNotifications(userId);
+      await Promise.all([
+        generateOverdueTaskNotifications(userId, tasks),
+        generateDueSoonNotifications(userId, tasks),
+        generateTimeWindowNotifications(userId, tasks),
+      ]);
+    } catch (error) {
+      console.error("Error generating notifications for user:", error);
+      throw error;
+    }
+  })().finally(() => {
+    generateNotificationsInFlight.delete(userId);
+  });
+
+  generateNotificationsInFlight.set(userId, run);
+  return run;
 };
 
 /**
@@ -771,8 +864,10 @@ export const getNotificationStats = async (
       }
     });
 
+    const uniqueUnread = dedupeNotifications(unreadNotifications);
+
     const stats: NotificationStats = {
-      totalUnread: unreadNotifications.length,
+      totalUnread: uniqueUnread.length,
       unreadByPriority: {
         LOW: 0,
         MEDIUM: 0,
@@ -782,7 +877,7 @@ export const getNotificationStats = async (
       unreadByType: {},
     };
 
-    unreadNotifications.forEach((notification) => {
+    uniqueUnread.forEach((notification) => {
       stats.unreadByPriority[notification.priority]++;
       stats.unreadByType[notification.type] =
         (stats.unreadByType[notification.type] || 0) + 1;

@@ -255,7 +255,7 @@ export default function AddTodayTask({
             {tab}
             {activeTab === tab && (
               <motion.div
-                className="absolute bottom-[-1px] left-0 right-0 h-[2px] bg-primary-500"
+                className="absolute -bottom-px left-0 right-0 h-0.5 bg-primary-500"
                 layoutId="underline"
               />
             )}

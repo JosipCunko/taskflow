@@ -46,16 +46,10 @@ export default function InboxContent({
   const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    const generateNotifications = async () => {
-      try {
-        await generateNotificationsAction();
-      } catch (error) {
-        console.error("Error auto-generating notifications:", error);
-      }
-    };
-
-    generateNotifications();
-  }, []);
+    // avoid calling another await generateNotificationsAction(); to prevent duplicates
+    setNotifications(initialNotifications);
+    setStats(initialStats);
+  }, [initialNotifications, initialStats]);
 
   const filteredNotifications = notifications
     .filter((notification) => {
@@ -101,7 +95,9 @@ export default function InboxContent({
     // Optimistic update first
     setNotifications((prev) => {
       const updated = prev.map((n) =>
-        n.id === notificationId ? { ...n, isRead: true, readAt: Date.now() } : n
+        n.id === notificationId
+          ? { ...n, isRead: true, readAt: Date.now() }
+          : n,
       );
       // Update stats with the new notifications list
       updateStats(updated);
@@ -119,7 +115,7 @@ export default function InboxContent({
           const reverted = prev.map((n) =>
             n.id === notificationId
               ? { ...n, isRead: false, readAt: undefined }
-              : n
+              : n,
           );
           updateStats(reverted);
           return reverted;
@@ -154,7 +150,7 @@ export default function InboxContent({
           const reverted = prev.map((n) =>
             unreadIds.includes(n.id)
               ? { ...n, isRead: false, readAt: undefined }
-              : n
+              : n,
           );
           updateStats(reverted);
           return reverted;
@@ -263,10 +259,11 @@ export default function InboxContent({
               option.value === "all"
                 ? notifications.length
                 : option.value === "unread"
-                ? stats.totalUnread
-                : option.value === "priority"
-                ? stats.unreadByPriority.HIGH + stats.unreadByPriority.URGENT
-                : stats.unreadByType[option.value as NotificationType] || 0;
+                  ? stats.totalUnread
+                  : option.value === "priority"
+                    ? stats.unreadByPriority.HIGH +
+                      stats.unreadByPriority.URGENT
+                    : stats.unreadByType[option.value as NotificationType] || 0;
 
             return (
               <Button
@@ -363,15 +360,15 @@ export default function InboxContent({
               {searchQuery
                 ? "No matching notifications"
                 : filter === "unread"
-                ? "No unread notifications"
-                : "No notifications"}
+                  ? "No unread notifications"
+                  : "No notifications"}
             </h3>
             <p className="text-text-low">
               {searchQuery
                 ? "Try adjusting your search terms"
                 : filter === "unread"
-                ? "You're all caught up!"
-                : "Notifications will appear here when you have task alerts and updates."}
+                  ? "You're all caught up!"
+                  : "Notifications will appear here when you have task alerts and updates."}
             </p>
           </div>
         ) : (

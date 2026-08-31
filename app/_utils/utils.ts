@@ -734,8 +734,11 @@ export function generateTaskTypes(allTasks: Task[]) {
     }
 
     if (isToday(task.dueDate) && task.status === "pending") {
-      if (task.isPriority) pendingPriorityTasks.push(task);
       pendingTodayTasks.push(task);
+    }
+
+    if (task.isPriority && task.status !== "completed") {
+      pendingPriorityTasks.push(task);
     }
     if (task.status === "pending") pendingTasks.push(task);
   });

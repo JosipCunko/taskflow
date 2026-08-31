@@ -58,7 +58,7 @@ export async function updateUserAction(
     revalidateTag(CacheTags.user(userId));
     revalidateTag(CacheTags.users());
     revalidatePath("/webapp/profile");
-    revalidatePath("/webapp");
+    revalidatePath("/webapp", "layout");
   }
   return result;
 }
@@ -92,7 +92,7 @@ export async function setUserNutritionGoalsAction(
     revalidateTag(CacheTags.user(session.user.id));
     revalidateTag(CacheTags.userHealth(session.user.id));
     revalidatePath("/webapp/health");
-    revalidatePath("/webapp");
+    revalidatePath("/webapp", "layout");
 
     return {
       success: true,
@@ -198,7 +198,7 @@ export async function createTaskAction(
       revalidateTag(CacheTags.user(session.user.id));
       revalidateTag(CacheTags.userActivity(session.user.id));
       revalidatePath("/webapp/tasks");
-      revalidatePath("/webapp");
+      revalidatePath("/webapp", "layout");
 
       return {
         success: true,
@@ -296,7 +296,7 @@ export async function completeTaskAction(
     revalidateTag(CacheTags.task(taskId));
     revalidateTag(CacheTags.user(userId));
     revalidatePath("/webapp/tasks");
-    revalidatePath("/webapp");
+    revalidatePath("/webapp", "layout");
     return { success: true, message: `Task marked as completed` };
   } catch (err) {
     const error = err as ActionError;
@@ -393,7 +393,7 @@ export async function delayTaskAction(
     revalidateTag(CacheTags.userTasks(userId));
     revalidateTag(CacheTags.task(taskId));
     revalidatePath("/webapp/tasks");
-    revalidatePath("/webapp");
+    revalidatePath("/webapp", "layout");
     return {
       success: true,
       message: `Task delayed to ${formatDate(newDueDate)}`,
@@ -449,7 +449,7 @@ export async function deleteTaskAction(
     revalidateTag(CacheTags.userTasks(session.user.id));
     revalidateTag(CacheTags.task(taskId));
     revalidatePath("/webapp/tasks");
-    revalidatePath("/webapp");
+    revalidatePath("/webapp", "layout");
     return { success: true, message: "Task deleted" };
   } catch (err) {
     const error = err as ActionError;
@@ -475,7 +475,7 @@ export async function togglePriorityAction(
     revalidateTag(CacheTags.userTasks(session.user.id));
     revalidateTag(CacheTags.task(taskId));
     revalidatePath("/webapp/tasks");
-    revalidatePath("/webapp");
+    revalidatePath("/webapp", "layout");
     return {
       success: true,
       message: `Task priority ${newIsPriority ? "added" : "removed"}`,
@@ -508,7 +508,7 @@ export async function toggleReminderAction(
     revalidateTag(CacheTags.userTasks(session.user.id));
     revalidateTag(CacheTags.task(taskId));
     revalidatePath("/webapp/tasks");
-    revalidatePath("/webapp");
+    revalidatePath("/webapp", "layout");
     return {
       success: true,
       message: `Task reminder ${newIsReminder ? "added" : "removed"}`,
@@ -540,7 +540,7 @@ export async function updateTaskExperienceAction(
     revalidateTag(CacheTags.userTasks(session.user.id));
     revalidateTag(CacheTags.task(taskId));
     revalidatePath("/webapp/tasks");
-    revalidatePath("/webapp");
+    revalidatePath("/webapp", "layout");
     return {
       success: true,
     };
@@ -639,7 +639,7 @@ export async function completeRepeatingTaskWithInterval(
     revalidateTag(CacheTags.task(task.id));
     revalidateTag(CacheTags.user(session.user.id)); // User stats changed
     revalidatePath("/webapp/tasks");
-    revalidatePath("/webapp");
+    revalidatePath("/webapp", "layout");
 
     return {
       success: true,
@@ -770,7 +770,7 @@ export async function completeRepeatingTaskWithTimesPerWeek(
     revalidateTag(CacheTags.task(task.id));
     revalidateTag(CacheTags.user(session.user.id)); // User stats changed
     revalidatePath("/webapp/tasks");
-    revalidatePath("/webapp");
+    revalidatePath("/webapp", "layout");
 
     return {
       success: true,
@@ -915,7 +915,7 @@ export async function completeRepeatingTaskWithDaysOfWeek(
     revalidateTag(CacheTags.task(task.id));
     revalidateTag(CacheTags.user(session.user.id)); // User stats changed
     revalidatePath("/webapp/tasks");
-    revalidatePath("/webapp");
+    revalidatePath("/webapp", "layout");
 
     return {
       success: true,
@@ -945,7 +945,7 @@ export async function sendCampaignNotificationAction(
     const result = await sendCampaignNotification(userIds, campaign);
 
     revalidatePath("/webapp/inbox");
-    revalidatePath("/webapp");
+    revalidatePath("/webapp", "layout");
 
     return {
       success: true,
@@ -1043,7 +1043,7 @@ export async function autoDelayIncompleteTodayTasks(): Promise<ActionResult> {
       revalidateTag(CacheTags.userTasks(session.user.id));
       revalidatePath("/webapp/today");
       revalidatePath("/webapp/tasks");
-      revalidatePath("/webapp");
+      revalidatePath("/webapp", "layout");
     }
 
     await userRef.update({
@@ -1070,5 +1070,6 @@ export const refreshTasks = async (userId: string) => {
   revalidateTag(CacheTags.tasks());
   revalidateTag(CacheTags.userTasks(userId));
   revalidatePath("/webapp/tasks");
-  revalidatePath("/webapp");
+  revalidatePath("/webapp", "layout");
+  //revalidatePath("/webapp");
 };

@@ -21,6 +21,7 @@ import {
 import EmojiExperience from "./EmojiExperience";
 import DateInput from "./reusable/DateInput";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 function ActionSubmitButton({
   children,
@@ -76,6 +77,7 @@ export default function Dropdown({
 }) {
   const completionInfo = getCompletionAvailabilityInfo(task);
   const [rescheduleDate, setRescheduleDate] = useState<Date>(new Date());
+  const router = useRouter();
 
   return (
     <div className="relative shrink-0">
@@ -276,7 +278,10 @@ export default function Dropdown({
                 <form
                   action={async (formData: FormData) => {
                     const res = await togglePriorityAction(formData);
-                    handleToast(res, () => setIsDropdownOpen(false));
+                    handleToast(res, () => {
+                      setIsDropdownOpen(false);
+                      router.refresh(); //check if neccessary
+                    });
                   }}
                 >
                   <input type="hidden" name="taskId" value={task.id} />
@@ -303,7 +308,10 @@ export default function Dropdown({
                 <form
                   action={async (formData: FormData) => {
                     const res = await toggleReminderAction(formData);
-                    handleToast(res, () => setIsDropdownOpen(false));
+                    handleToast(res, () => {
+                      setIsDropdownOpen(false);
+                      router.refresh();
+                    });
                   }}
                 >
                   <input type="hidden" name="taskId" value={task.id} />

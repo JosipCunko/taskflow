@@ -25,7 +25,7 @@ export async function markAsReadAction(
 
     await markNotificationAsRead(notificationId);
     revalidatePath("/webapp/inbox");
-    revalidatePath("/webapp");
+    revalidatePath("/webapp", "layout");
 
     return { success: true, message: "Notification marked as read" };
   } catch (error) {
@@ -45,7 +45,7 @@ export async function markAllAsReadAction(
 
     await markNotificationsAsRead(notificationIds);
     revalidatePath("/webapp/inbox");
-    revalidatePath("/webapp");
+    revalidatePath("/webapp", "layout");
 
     return { success: true, message: "All notifications marked as read" };
   } catch (error) {
@@ -68,7 +68,7 @@ export async function archiveNotificationAction(
 
     await archiveNotification(notificationId);
     revalidatePath("/webapp/inbox");
-    revalidatePath("/webapp");
+    revalidatePath("/webapp", "layout");
 
     return { success: true, message: "Notification archived" };
   } catch (error) {
@@ -88,7 +88,7 @@ export async function deleteNotificationAction(
 
     await deleteNotification(notificationId);
     revalidatePath("/webapp/inbox");
-    revalidatePath("/webapp");
+    revalidatePath("/webapp", "layout");
 
     return { success: true, message: "Notification deleted" };
   } catch (error) {
@@ -109,7 +109,7 @@ export async function generateNotificationsAction(): Promise<ActionResult> {
     await cleanupExpiredNotifications(session.user.id);
 
     revalidatePath("/webapp/inbox");
-    revalidatePath("/webapp");
+    revalidatePath("/webapp", "layout");
 
     return { success: true, message: "Notifications updated" };
   } catch (error) {

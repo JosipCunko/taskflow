@@ -1,6 +1,6 @@
 "use client";
 
-import { User, Search as SearchIcon, RefreshCw } from "lucide-react";
+import { User, Search as SearchIcon } from "lucide-react";
 import { Session } from "next-auth";
 import Image from "next/image";
 import Link from "next/link";
@@ -58,7 +58,7 @@ export default function TopSidebar({
   const MemoizedNotificationBell = memo(NotificationBell);
 
   return (
-    <header className="flex items-center justify-between p-4 border-b border-background-500 h-[80px] sticky top-0 z-10 bg-background-625">
+    <header className="flex items-center justify-between p-4 border-b border-background-500 h-20 sticky top-0 z-10 bg-background-625">
       <div className="flex items-center gap-6">
         <div>
           <h1 className="text-xl font-semibold sm:block hidden text-balance text-text-low">

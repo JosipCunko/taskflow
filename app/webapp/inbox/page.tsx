@@ -4,7 +4,10 @@ import { redirect } from "next/navigation";
 import {
   getNotificationsByUserIdAdmin,
   getNotificationStats,
+  generateNotificationsForUser,
+  cleanupExpiredNotifications,
 } from "@/app/_lib/notifications-admin";
+import { getTasksByUserId } from "@/app/_lib/tasks-admin";
 import InboxContent from "../../_components/inbox/InboxContent";
 import { Inbox } from "lucide-react";
 
@@ -18,9 +21,14 @@ export default async function InboxPage() {
     redirect("/login");
   }
 
+  const userId = session.user.id;
+  const tasks = await getTasksByUserId(userId);
+  await generateNotificationsForUser(userId, tasks);
+  await cleanupExpiredNotifications(userId);
+
   const [notifications, stats] = await Promise.all([
-    getNotificationsByUserIdAdmin(session.user.id, false),
-    getNotificationStats(session.user.id),
+    getNotificationsByUserIdAdmin(userId, false),
+    getNotificationStats(userId),
   ]);
 
   return (

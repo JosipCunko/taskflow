@@ -411,6 +411,7 @@ export async function updateUserRepeatingTasks(userId: string) {
     revalidateTag(CacheTags.userTasks(userId));
     revalidateTag(CacheTags.user(userId));
     revalidatePath("/webapp");
+    revalidatePath("/webapp", "layout");
     revalidatePath("/webapp/tasks");
     revalidatePath("/webapp/today");
     */

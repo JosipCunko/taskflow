@@ -328,7 +328,7 @@ async function createTaskAI(params: AICreateTaskParams) {
       }
       revalidateTag(CacheTags.user(userId));
       revalidatePath("/webapp/tasks");
-      revalidatePath("/webapp");
+      revalidatePath("/webapp", "layout");
       revalidatePath("/webapp/today");
 
       return {
