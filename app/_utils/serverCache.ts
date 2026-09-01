@@ -1,5 +1,6 @@
 import "server-only";
-import { unstable_cache } from "next/cache";
+import { revalidatePath, revalidateTag, unstable_cache } from "next/cache";
+import { after } from "next/server";
 
 export interface CacheConfig {
   tags: string[];
@@ -58,8 +59,9 @@ export const CacheDuration = {
   USER_DATA: 300,
 
   /**
-   * Tasks - no time-based revalidation, only tag-based
-   * undefined = cache indefinitely until revalidateTag is called
+   * Tasks are not stored in the Next.js Data Cache.
+   * They change from server actions, other devices, and daily repeating-task
+   * resets during auth — a cross-request cache goes stale immediately.
    */
   TASKS: undefined,
 
@@ -92,3 +94,62 @@ export const CacheDuration = {
    */
   FITNESS_HEALTH: 180,
 } as const;
+
+const TASK_PAGES = [
+  "/webapp",
+  "/webapp/tasks",
+  "/webapp/today",
+  "/webapp/calendar",
+  "/webapp/completed",
+  "/webapp/inbox",
+] as const;
+
+export type TaskRevalidateOptions = {
+  taskId?: string;
+  includeUser?: boolean;
+  includeActivity?: boolean;
+};
+
+/**
+ * Invalidate every surface that shows tasks: data tags, the webapp layout
+ * (search/sidebar), and each task-related page — including the dashboard.
+ */
+export function revalidateTaskData(
+  userId: string,
+  options?: TaskRevalidateOptions,
+) {
+  revalidateTag(CacheTags.tasks());
+  revalidateTag(CacheTags.userTasks(userId));
+  if (options?.taskId) {
+    revalidateTag(CacheTags.task(options.taskId));
+  }
+  if (options?.includeUser) {
+    revalidateTag(CacheTags.user(userId));
+  }
+  if (options?.includeActivity) {
+    revalidateTag(CacheTags.userActivity(userId));
+  }
+
+  revalidatePath("/webapp", "layout");
+  for (const path of TASK_PAGES) {
+    revalidatePath(path);
+  }
+}
+
+/**
+ * Same as revalidateTaskData, but runs after the response is sent.
+ * Use this from auth/JWT or other code that runs during render —
+ * revalidateTag/revalidatePath throw "used during render" in that context.
+ */
+export function scheduleTaskRevalidation(
+  userId: string,
+  options?: TaskRevalidateOptions,
+) {
+  try {
+    after(() => {
+      revalidateTaskData(userId, options);
+    });
+  } catch (error) {
+    console.error("Could not schedule task revalidation:", error);
+  }
+}

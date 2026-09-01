@@ -14,7 +14,7 @@ import { CacheTags } from "../_utils/serverCache";
 import { startOfDay, subMonths } from "date-fns";
 
 export async function createSavedMeal(
-  formData: FormData
+  formData: FormData,
 ): Promise<ActionResult<SavedMeal>> {
   try {
     const session = await getServerSession(authOptions);
@@ -109,7 +109,7 @@ export async function createSavedMeal(
 
     return {
       success: true,
-      message: "Meal saved successfully!",
+      message: "Meal saved!",
       data: savedMealWithId,
     };
   } catch (error) {
@@ -135,7 +135,7 @@ export async function deleteSavedMeal(mealId: string): Promise<ActionResult> {
 
     return {
       success: true,
-      message: "Saved meal deleted successfully",
+      message: "Saved meal deleted",
     };
   } catch (error) {
     console.error("Error deleting saved meal:", error);
@@ -147,7 +147,7 @@ export async function deleteSavedMeal(mealId: string): Promise<ActionResult> {
 }
 
 export async function createLoggedMeal(
-  formData: FormData
+  formData: FormData,
 ): Promise<ActionResult<LoggedMeal>> {
   try {
     const session = await getServerSession(authOptions);
@@ -184,7 +184,7 @@ export async function createLoggedMeal(
 
     const calculatedNutrients = {
       calories: Math.round(
-        savedMealData.nutrientsPer100g.calories * multiplier
+        savedMealData.nutrientsPer100g.calories * multiplier,
       ),
       carbs:
         Math.round(savedMealData.nutrientsPer100g.carbs * multiplier * 10) / 10,
@@ -217,7 +217,7 @@ export async function createLoggedMeal(
 
     return {
       success: true,
-      message: `Logged ${servingSize}g of ${savedMealData.name} successfully!`,
+      message: `Logged ${servingSize}g of ${savedMealData.name}!`,
       data: loggedMealWithId,
     };
   } catch (error) {
@@ -232,7 +232,7 @@ export async function updateLoggedMeal(
     name?: string;
     mealType?: LoggedMeal["mealType"];
     servingSize?: number;
-  }
+  },
 ): Promise<ActionResult<LoggedMeal>> {
   try {
     const session = await getServerSession(authOptions);
@@ -268,15 +268,15 @@ export async function updateLoggedMeal(
       const multiplier = updates.servingSize / 100;
       updatedCalculatedNutrients = {
         calories: Math.round(
-          currentLoggedMeal.nutrientsPer100g.calories * multiplier
+          currentLoggedMeal.nutrientsPer100g.calories * multiplier,
         ),
         carbs:
           Math.round(
-            currentLoggedMeal.nutrientsPer100g.carbs * multiplier * 10
+            currentLoggedMeal.nutrientsPer100g.carbs * multiplier * 10,
           ) / 10,
         protein:
           Math.round(
-            currentLoggedMeal.nutrientsPer100g.protein * multiplier * 10
+            currentLoggedMeal.nutrientsPer100g.protein * multiplier * 10,
           ) / 10,
         fat:
           Math.round(currentLoggedMeal.nutrientsPer100g.fat * multiplier * 10) /
@@ -301,7 +301,7 @@ export async function updateLoggedMeal(
 
     return {
       success: true,
-      message: "Logged meal updated successfully",
+      message: "Logged meal updated",
       data: updatedLoggedMeal,
     };
   } catch (error) {
@@ -314,7 +314,7 @@ export async function updateLoggedMeal(
 }
 
 export async function deleteLoggedMeal(
-  loggedMealId: string
+  loggedMealId: string,
 ): Promise<ActionResult> {
   try {
     const session = await getServerSession(authOptions);
@@ -358,7 +358,7 @@ export interface HistoricalNutritionData {
 }
 
 export async function getHistoricalNutritionData(
-  monthsBack: number
+  monthsBack: number,
 ): Promise<ActionResult<HistoricalNutritionData>> {
   try {
     const session = await getServerSession(authOptions);
@@ -446,7 +446,7 @@ export async function getHistoricalNutritionData(
           carbs: acc.carbs + day.carbs,
           fat: acc.fat + day.fat,
         }),
-        { calories: 0, protein: 0, carbs: 0, fat: 0 }
+        { calories: 0, protein: 0, carbs: 0, fat: 0 },
       );
 
       averages.calories = Math.round(totals.calories / dataPoints.length);

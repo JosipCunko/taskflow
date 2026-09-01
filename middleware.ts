@@ -29,7 +29,7 @@ function addPerformanceHeaders(request: NextRequest, response: NextResponse) {
   response.headers.set("X-Request-Method", request.method);
   response.headers.set(
     "X-Request-User-Agent",
-    request.headers.get("user-agent") || "unknown"
+    request.headers.get("user-agent") || "unknown",
   );
 
   return response;
@@ -49,7 +49,7 @@ function addAnalyticsHeaders(request: NextRequest, response: NextResponse) {
 function addFeatureFlagHeaders(
   request: NextRequest,
   response: NextResponse,
-  token?: JWT | null
+  token?: JWT | null,
 ) {
   const userId = token?.sub;
 
@@ -79,7 +79,7 @@ function addFeatureFlagHeaders(
 function addTaskPrivacyHeaders(
   request: NextRequest,
   response: NextResponse,
-  token?: JWT | null
+  token?: JWT | null,
 ) {
   if (request.nextUrl.pathname.startsWith("/webapp/tasks/")) {
     const taskId = request.nextUrl.pathname.split("/").pop();
@@ -154,7 +154,7 @@ export default withAuth(
 
     // Redirect authenticated users away from login page
     if (isAuthPage && isAuthenticated) {
-      return NextResponse.redirect(new URL("/webapp/today", request.url));
+      return NextResponse.redirect(new URL("/webapp", request.url));
     }
 
     // Redirect unauthenticated users to login for protected routes
@@ -189,7 +189,7 @@ export default withAuth(
     ) {
       response.headers.set(
         "Cache-Control",
-        "public, max-age=31536000, immutable"
+        "public, max-age=31536000, immutable",
       );
     }
 
@@ -199,7 +199,7 @@ export default withAuth(
       `middleware;dur=${
         Date.now() -
         parseInt(response.headers.get("X-Request-Start-Time") || "0")
-      }`
+      }`,
     );
 
     return response;
@@ -212,23 +212,20 @@ export default withAuth(
         return true;
       },
     },
-  }
+  },
 );
 
 // Configure which routes this middleware runs on
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (public folder)
+     * Match all request paths except:
+     * - _next/static, _next/image, favicon, public
+     * - api/auth (NextAuth session/csrf/callback — withAuth here causes
+     *   CLIENT_FETCH_ERROR / Failed to fetch)
      */
-    "/((?!_next/static|_next/image|favicon.ico|public/).*)",
-    // Specifically include API routes for protection
-    "/api/:path*",
-    // Include webapp routes
+    //previosly /api/:path
+    "/((?!_next/static|_next/image|favicon.ico|public/|api/auth).*)",
     "/webapp/:path*",
     // Include auth pages
     "/login",

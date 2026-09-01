@@ -111,7 +111,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
       open: openRepetitionModal,
       close: closeRepetitionModal,
     }),
-    [repetitionModalOpenName]
+    [repetitionModalOpenName],
   );
 
   const [locationModalOpenName, setLocationModalOpenName] =
@@ -124,7 +124,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
       open: openLocationModal,
       close: closeLocationModal,
     }),
-    [locationModalOpenName]
+    [locationModalOpenName],
   );
 
   useEffect(() => {
@@ -143,11 +143,11 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
 
   const isStartTimeSpecified = useMemo(
     () => state.startTime[0] !== 0 || state.startTime[1] !== 0,
-    [state.startTime]
+    [state.startTime],
   );
   const isDurationSpecified = useMemo(
     () => state.duration[0] !== 0 || state.duration[1] !== 0,
-    [state.duration]
+    [state.duration],
   );
 
   const handleDurationChange = (newDuration: number[]) => {
@@ -244,7 +244,8 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
         const baseDueDateObj = new Date(state.selectedDate);
         baseDueDateObj.setHours(endHour, endMinute);
         if (isStartTimeSpecified) {
-          const startTotalMinutes = state.startTime[0] * 60 + state.startTime[1];
+          const startTotalMinutes =
+            state.startTime[0] * 60 + state.startTime[1];
           const endTotalMinutes = endHour * 60 + endMinute;
           if (endTotalMinutes < startTotalMinutes) {
             baseDueDateObj.setDate(baseDueDateObj.getDate() + 1);
@@ -286,7 +287,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
             argTimesPerWeek,
             argDaysOfWeek,
             baseDueDate,
-            state.startDate
+            state.startDate,
           );
           firstInstanceDueDate = result.dueDate;
           repetitionRule = result.repetitionRule;
@@ -306,7 +307,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
           state.isRepeating,
           repetitionRule,
           state.startDate,
-          state.autoDelay
+          state.autoDelay,
         );
 
         handleToast(res, () => {
@@ -650,7 +651,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
                   onClick={() => openRepetitionModal("repetition-rules")}
                   className="text-sm text-primary-500 hover:text-primary-400 text-left w-full"
                 >
-                  <CardSpecificIcons.Edit size={20} />
+                  <CardSpecificIcons.Edit size={20} className="mr-2" />
                   {activeRepetitionType === "interval" &&
                     `Repeats every ${state.interval} day${
                       state.interval === 1 ? "" : "s"
@@ -660,7 +661,9 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
                       state.selectedDaysOfWeek
                         .map(
                           (d) =>
-                            ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d]
+                            ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][
+                              d
+                            ],
                         )
                         .join(", ") || "selected days"
                     }`}
@@ -676,7 +679,7 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
                 <p className="text-sm text-text-gray text-center">
                   Week from{" "}
                   {formatDate(
-                    startOfWeek(state.startDate, MONDAY_START_OF_WEEK)
+                    startOfWeek(state.startDate, MONDAY_START_OF_WEEK),
                   )}
                   {" - "}
                   {formatDate(endOfWeek(state.startDate, MONDAY_START_OF_WEEK))}

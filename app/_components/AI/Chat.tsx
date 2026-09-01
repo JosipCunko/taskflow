@@ -486,7 +486,6 @@ export default function Chat({
   }, []);
 
   const exampleQueries = [
-    { text: "Tell me 5 things to stop procrastination", icon: "✨" },
     { text: "I need gym workout plan 4 days a week", icon: "💪" },
     { text: "Explain quantum computing simply", icon: "🧠" },
     { text: "Write a python script to scrape a website", icon: "🐍" },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   LineChart,
   Line,
@@ -17,6 +17,7 @@ import {
   getPersonalRecordsAction,
 } from "../../_lib/fitnessActions";
 import { cn } from "../../_utils/utils";
+import { getExerciseTracking } from "../../_utils/exercises";
 import { ExerciseProgressPoint, PersonalRecord } from "../../_types/types";
 import Input from "@/app/_components/reusable/Input";
 import Loader from "../Loader";
@@ -25,12 +26,12 @@ interface ProgressVisualizationProps {
   userId: string;
 }
 
-type MetricType = "maxWeight" | "maxDuration";
+type MetricType = "maxWeight" | "maxReps" | "maxDuration";
 
 interface ProgressData {
   date: string;
-  maxWeight: number;
-  maxReps: number;
+  maxWeight?: number;
+  maxReps?: number;
   maxDuration?: number;
 }
 
@@ -44,15 +45,39 @@ export default function ProgressVisualization({
   const [personalRecords, setPersonalRecords] = useState<PersonalRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showExerciseDropdown, setShowExerciseDropdown] = useState(false);
-  const [exerciseSearchTerm, setExerciseSearchTerm] = useState("");
+  /** `null` means the user is not editing, so the input mirrors the selection. */
+  const [exerciseSearchTerm, setExerciseSearchTerm] = useState<string | null>(
+    null
+  );
+  const exercisePickerRef = useRef<HTMLDivElement>(null);
 
   const exercises = defaultExercises.map((ex) => ex.name);
-  const isHoldExercise = !!defaultExercises.find(
-    (ex) => ex.name === selectedExercise
-  )?.hold;
+  const tracking = getExerciseTracking(selectedExercise);
   const filteredExercises = exercises.filter((exercise) =>
-    exercise.toLowerCase().includes(exerciseSearchTerm.toLowerCase())
+    exercise.toLowerCase().includes((exerciseSearchTerm ?? "").toLowerCase())
   );
+
+  const closeExerciseDropdown = () => {
+    setShowExerciseDropdown(false);
+    setExerciseSearchTerm(null);
+  };
+
+  useEffect(() => {
+    if (!showExerciseDropdown) return;
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      if (!exercisePickerRef.current?.contains(event.target as Node)) {
+        closeExerciseDropdown();
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+    };
+  }, [showExerciseDropdown]);
 
   useEffect(() => {
     const loadProgressData = async () => {
@@ -115,6 +140,13 @@ export default function ProgressVisualization({
           color: "#3b82f6",
           icon: Target,
         };
+      case "maxReps":
+        return {
+          label: "Max Reps",
+          unit: "reps",
+          color: "#f59e0b",
+          icon: Target,
+        };
       case "maxDuration":
         return {
           label: "Max Hold",
@@ -125,7 +157,12 @@ export default function ProgressVisualization({
     }
   };
 
-  const selectedMetric: MetricType = isHoldExercise ? "maxDuration" : "maxWeight";
+  const selectedMetric: MetricType =
+    tracking === "hold"
+      ? "maxDuration"
+      : tracking === "bodyweight"
+        ? "maxReps"
+        : "maxWeight";
   const currentConfig = getMetricConfig(selectedMetric);
   const latestData = progressData[progressData.length - 1];
   const previousData = progressData[progressData.length - 2];
@@ -143,7 +180,7 @@ export default function ProgressVisualization({
     <div className="flex flex-col gap-y-6 relative">
       <div className="bg-background-600 rounded-lg p-6 border border-background-500">
         <div className="flex flex-col sm:flex-row gap-4">
-          <div className="w-full relative">
+          <div className="w-full relative" ref={exercisePickerRef}>
             <label className="block text-sm font-medium text-text-low mb-2">
               Select Exercise
             </label>
@@ -152,7 +189,7 @@ export default function ProgressVisualization({
               <Input
                 name="exercise-search"
                 type="text"
-                value={exerciseSearchTerm || selectedExercise}
+                value={exerciseSearchTerm ?? selectedExercise}
                 onChange={(e) => {
                   setExerciseSearchTerm(e.target.value);
                   setShowExerciseDropdown(true);
@@ -161,15 +198,19 @@ export default function ProgressVisualization({
                   setExerciseSearchTerm("");
                   setShowExerciseDropdown(true);
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") closeExerciseDropdown();
+                  if (e.key === "Enter" && filteredExercises.length > 0) {
+                    setSelectedExercise(filteredExercises[0]);
+                    closeExerciseDropdown();
+                  }
+                }}
                 placeholder="Search exercises..."
                 className="w-full bg-background-700 pl-10 pr-10 py-3 text-text-high"
               />
               {showExerciseDropdown && (
                 <button
-                  onClick={() => {
-                    setShowExerciseDropdown(false);
-                    setExerciseSearchTerm("");
-                  }}
+                  onClick={closeExerciseDropdown}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text-low hover:text-text-high"
                 >
                   <X className="w-4 h-4" />
@@ -185,8 +226,7 @@ export default function ProgressVisualization({
                       key={exercise}
                       onClick={() => {
                         setSelectedExercise(exercise);
-                        setShowExerciseDropdown(false);
-                        setExerciseSearchTerm("");
+                        closeExerciseDropdown();
                       }}
                       className="w-full px-4 py-2 text-left text-text-high hover:bg-background-600 transition-colors"
                     >
@@ -307,15 +347,19 @@ export default function ProgressVisualization({
             </div>
             <div className="text-2xl font-bold text-text-high">
               {latestData
-                ? isHoldExercise
+                ? tracking === "hold"
                   ? `${latestData.maxDuration ?? 0}s`
-                  : `${latestData.maxWeight}kg × ${latestData.maxReps} reps`
+                  : tracking === "bodyweight"
+                    ? `${latestData.maxReps ?? 0} reps`
+                    : `${latestData.maxWeight ?? 0}kg × ${latestData.maxReps ?? 0} reps`
                 : "No data"}
             </div>
             <p className="text-sm text-text-low">
-              {isHoldExercise
+              {tracking === "hold"
                 ? "Personal record (seconds)"
-                : "Personal record (kg × reps)"}
+                : tracking === "bodyweight"
+                  ? "Personal record (reps)"
+                  : "Personal record (kg × reps)"}
             </p>
           </div>
 
@@ -360,9 +404,11 @@ export default function ProgressVisualization({
                     </div>
                     <div className="text-right">
                       <div className="text-lg font-bold text-text-high">
-                        {"duration" in record && typeof record.duration === "number"
+                        {typeof record.duration === "number"
                           ? `${record.duration}s`
-                          : `${record.weight}kg × ${record.reps}`}
+                          : typeof record.weight === "number"
+                            ? `${record.weight}kg × ${record.reps}`
+                            : `${record.reps ?? 0} reps`}
                       </div>
                     </div>
                   </div>

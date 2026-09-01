@@ -7,7 +7,7 @@ export function preCreateRepeatingTask(
   timesPerWeek: number | undefined,
   daysOfWeek: DayOfWeek[],
   dueDate: number, // UNIX timestamp
-  taskStartDate: number // UNIX timestamp
+  taskStartDate: number, // UNIX timestamp
 ): Partial<Task> {
   const dueDateObj = new Date(dueDate);
   const taskStartDateObj = new Date(taskStartDate);
@@ -78,11 +78,12 @@ export function preCreateRepeatingTask(
     // Calculate startDate as the first day in daysOfWeek array
     const currentWeekStart = startOfWeek(
       taskStartDateObj,
-      MONDAY_START_OF_WEEK
+      MONDAY_START_OF_WEEK,
     );
     const correctStartDate = addDays(
       currentWeekStart,
-      firstDayInWeek === 0 ? 7 : firstDayInWeek // Sunday (0) becomes day 7
+      firstDayInWeek === 0 ? 6 : firstDayInWeek - 1,
+      //firstDayInWeek === 0 ? 7 : firstDayInWeek //sunday (0) becomes day 7
     );
 
     return {
@@ -99,7 +100,7 @@ export function preCreateRepeatingTask(
     };
   } else {
     throw new Error(
-      "Something went very wrong with the preCreateRepeatingTask function!"
+      "Something went very wrong with the preCreateRepeatingTask function!",
     );
   }
 }

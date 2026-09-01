@@ -5,6 +5,11 @@ import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { navItems } from "../_utils/utils";
 
+function isNavItemActive(pathname: string, href: string) {
+  if (href === "/webapp") return pathname === "/webapp";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export default function Sidebar() {
   const pathname = usePathname();
   return (
@@ -29,7 +34,7 @@ export default function Sidebar() {
             </h2>
             <ul className="space-y-1">
               {items.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = isNavItemActive(pathname, item.href);
                 const getTutorialAttribute = () => {
                   switch (item.label) {
                     case "Dashboard":

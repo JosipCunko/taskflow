@@ -7,6 +7,10 @@ const nextConfig: NextConfig = {
     //typedRoutes: true, issues in Sidebar, Search...
     // Note: PPR requires Next.js canary version, commented out for stable release
     // ppr: "incremental",
+    staleTimes: {
+      dynamic: 0,
+      static: 180,
+    },
   },
 
   // Performance: Remove data attributes in production

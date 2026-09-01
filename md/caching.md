@@ -25,7 +25,7 @@ export async function getData(id: string) {
     {
       tags: [CacheTags.data(id)], // Tags for invalidation
       revalidate: CacheDuration.YOUR_DURATION,
-    }
+    },
   );
 
   return cachedGetData(id);
@@ -309,3 +309,23 @@ revalidateTag(CacheTags.userTasks(uid)); // User's tasks
 7. **Document dependencies** when one cache affects another
 
 Remember: **When in doubt, invalidate more caches rather than fewer!**
+
+What was going wrong
+
+Task lists were cached forever. getTasksByUserId used Next’s Data Cache with no TTL. A log like “6 repeating tasks updated” meant Firestore changed, but the next page render still returned the cached list.
+
+Daily resets could not bust that cache. Repeating-task updates run inside the NextAuth JWT callback (during render). revalidateTag there crashes with “used revalidateTag during render”, so it had been commented out. The write happened; the UI never learned about it.
+
+The dashboard was never invalidated. Task mutations called revalidatePath("/webapp", "layout") and /webapp/tasks, but not the dashboard page itself. Refreshing /tasks updated that page; navigating home reused the old dashboard payload.
+
+The service worker cached App Router data. Client navigations (\_rsc / RSC headers) were cache-first. A phone refresh could show yesterday’s HTML/RSC even when the server was fine. That’s why the in-app Refresh button “worked” (it was a POST server action) and a normal refresh often didn’t.
+
+What I changed
+
+Task reads always go to Firestore (request-local only). No more indefinite task Data Cache.
+Repeating-task resets now run before tasks are read, then cache invalidation is scheduled with after() so it doesn’t crash during auth.
+One helper, revalidateTaskData, invalidates the layout and dashboard, tasks, today, calendar, completed, and inbox after every task mutation.
+Service worker no longer precaches /webapp pages or caches RSC payloads. Only hashed static assets are cache-first.
+The Refresh button is gone. Coming back to the app after 5+ seconds in the background triggers a silent router.refresh() so the other-device case works without a button.
+
+Added export const dynamic = "force-dynamic"; to many page.tsx

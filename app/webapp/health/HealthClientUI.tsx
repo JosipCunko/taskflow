@@ -64,7 +64,7 @@ export default function HealthClientUI() {
     (field: keyof State, value: State[keyof State]) => {
       dispatch({ type: "SET_FIELD", payload: { field, value } });
     },
-    []
+    [],
   );
 
   const [goalsModalOpenName, setGoalsModalOpenName] = useState<string>("");
@@ -76,7 +76,7 @@ export default function HealthClientUI() {
       open: openGoalsModal,
       close: closeGoalsModal,
     }),
-    [goalsModalOpenName]
+    [goalsModalOpenName],
   );
   const [logMealModalOpenName, setLogMealModalOpenName] = useState<string>("");
   const openLogMealModal = (name: string) => setLogMealModalOpenName(name);
@@ -87,7 +87,7 @@ export default function HealthClientUI() {
       open: openLogMealModal,
       close: closeLogMealModal,
     }),
-    [logMealModalOpenName]
+    [logMealModalOpenName],
   );
 
   const [saveMealModalOpenName, setSaveMealModalOpenName] =
@@ -100,7 +100,7 @@ export default function HealthClientUI() {
       open: openSaveMealModal,
       close: closeSaveMealModal,
     }),
-    [saveMealModalOpenName]
+    [saveMealModalOpenName],
   );
 
   const [manageMealsModalOpenName, setManageMealsModalOpenName] =
@@ -114,7 +114,7 @@ export default function HealthClientUI() {
       open: openManageMealsModal,
       close: closeManageMealsModal,
     }),
-    [manageMealsModalOpenName]
+    [manageMealsModalOpenName],
   );
 
   const loadDailyNutritionSummary = useCallback(async () => {
@@ -164,7 +164,7 @@ export default function HealthClientUI() {
           state.nutritionGoals.calories,
           state.nutritionGoals.protein,
           state.nutritionGoals.carbs,
-          state.nutritionGoals.fat
+          state.nutritionGoals.fat,
         );
         successToast("Nutrition goals updated!");
         closeGoalsModal();
@@ -245,17 +245,17 @@ export default function HealthClientUI() {
       {/* Daily Summary */}
       <div>
         <h2 className="text-xl font-semibold text-text-low flex items-center gap-2 mb-4">
-          <Calendar className="w-5 h-5" />
+          <Calendar className="w-5 h-5 min-w-5 mr-1" />
           Daily nutrition summary for {formatDate(state.currentDate)}
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {generateNutrients(
             state.dailyNutritionSummary,
-            state.nutritionGoals
+            state.nutritionGoals,
           ).map((nutrient) => {
             const percentage = getProgressPercentage(
               nutrient.current || 0, // Displays NaN without default
-              nutrient.goal!
+              nutrient.goal!,
             );
             const Icon = nutrient.icon;
             return (
@@ -280,7 +280,7 @@ export default function HealthClientUI() {
                 <div className="w-full bg-background-500 rounded-full h-3 mb-2">
                   <div
                     className={`h-3 rounded-full transition-all duration-300 ${getProgressColor(
-                      percentage
+                      percentage,
                     )}`}
                     style={{ width: `${percentage}%` }}
                   />
@@ -298,9 +298,10 @@ export default function HealthClientUI() {
 
       {/* Logged Meals */}
       <div className="bg-background-600 border border-background-500 rounded-xl shadow-lg p-6">
-        <h2 className="text-xl font-semibold text-text-low flex items-center gap-2 mb-4">
-          <Utensils className="w-5 h-5" />
-          Meals recorded on {formatDate(state.currentDate)}
+        <h2 className="text-xl font-semibold text-text-low flex flex-wrap items-center gap-2 mb-4">
+          <Utensils className="w-5 h-5 min-w-5 mr-2" />
+          <span className="text-nowrap">Meals recorded on </span>
+          <span className="text-nowrap">{formatDate(state.currentDate)}</span>
         </h2>
         <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
           {state.dailyNutritionSummary.loggedMeals.length > 0 ? (

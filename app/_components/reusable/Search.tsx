@@ -37,7 +37,7 @@ export default function Search({
   return (
     <div className={`space-y-2 ${className}`}>
       <div className="relative flex items-center">
-        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-gray pointer-events-none" />
+        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 min-w-5 z-2 text-text-gray pointer-events-none" />
         <Input
           name="search"
           type="text"

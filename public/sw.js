@@ -25,24 +25,13 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-const CACHE_VERSION = "17.8.2";
+const CACHE_VERSION = "17.9.0";
 const CACHE_NAME = `taskflow-cache-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `taskflow-runtime-${CACHE_VERSION}`;
 const STATIC_CACHE = `taskflow-static-${CACHE_VERSION}`;
 
-// Assets to cache on install - Main app pages and essential resources
+// Static assets only — never precache personalized App Router HTML.
 const PRECACHE_URLS = [
-  "/",
-  "/webapp",
-  "/webapp/tasks",
-  "/webapp/today",
-  "/webapp/notes",
-  "/webapp/profile",
-  "/webapp/calendar",
-  "/webapp/completed",
-  "/webapp/fitness",
-  "/webapp/health",
-  "/login",
   "/offline",
   "/manifest.json",
   "/icon-512.png",
@@ -85,10 +74,27 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+function isNextDataRequest(request) {
+  const url = new URL(request.url);
+  if (url.searchParams.has("_rsc")) return true;
+  if (request.headers.get("RSC") === "1") return true;
+  if (request.headers.get("Next-Router-Prefetch")) return true;
+  if (request.headers.get("Next-Router-State-Tree")) return true;
+  const accept = request.headers.get("Accept") || "";
+  if (accept.includes("text/x-component")) return true;
+  return false;
+}
+
 // Fetch event - serve from cache, fallback to network
 self.addEventListener("fetch", (event) => {
   // Skip Chrome extensions and other non-http(s) requests
   if (!event.request.url.startsWith("http")) return;
+
+  // Never intercept or cache RSC / App Router data payloads.
+  // Cache-first here is what made /tasks and the dashboard show stale data.
+  if (isNextDataRequest(event.request) || event.request.method !== "GET") {
+    return;
+  }
 
   // Skip API calls and auth requests - network-first with offline fallback
   if (
@@ -96,60 +102,23 @@ self.addEventListener("fetch", (event) => {
     event.request.url.includes("/auth/")
   ) {
     event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          // Clone and cache successful API responses for short-term offline access
-          if (response.ok && event.request.method === "GET") {
-            const responseClone = response.clone();
-            caches.open(RUNTIME_CACHE).then((cache) => {
-              cache.put(event.request, responseClone);
-            });
-          }
-          return response;
-        })
-        .catch(() => {
-          // Try to serve from cache first for GET requests
-          if (event.request.method === "GET") {
-            return caches.match(event.request).then((cachedResponse) => {
-              if (cachedResponse) {
-                return cachedResponse;
-              }
-              // Return meaningful offline response if no cache available
-              return new Response(
-                JSON.stringify({
-                  error: "offline",
-                  message:
-                    "You are currently offline and no cached data is available",
-                  timestamp: Date.now(),
-                }),
-                {
-                  status: 503,
-                  statusText: "Service Unavailable",
-                  headers: new Headers({
-                    "Content-Type": "application/json",
-                  }),
-                }
-              );
-            });
-          }
-
-          // For non-GET requests, return offline error
-          return new Response(
-            JSON.stringify({
-              error: "offline",
-              message:
-                "You are currently offline. This action will be synced when you're back online.",
-              timestamp: Date.now(),
+      fetch(event.request).catch(() => {
+        return new Response(
+          JSON.stringify({
+            error: "offline",
+            message:
+              "You are currently offline and no cached data is available",
+            timestamp: Date.now(),
+          }),
+          {
+            status: 503,
+            statusText: "Service Unavailable",
+            headers: new Headers({
+              "Content-Type": "application/json",
             }),
-            {
-              status: 503,
-              statusText: "Service Unavailable",
-              headers: new Headers({
-                "Content-Type": "application/json",
-              }),
-            }
-          );
-        })
+          }
+        );
+      })
     );
     return;
   }
@@ -182,55 +151,34 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Skip non-GET requests for static assets
-  if (event.request.method !== "GET") return;
+  // Cache-first only for hashed/static assets. Everything else goes to the network.
+  const url = new URL(event.request.url);
+  const isStatic =
+    url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|woff2?|ttf|eot)$/) ||
+    url.pathname.startsWith("/_next/static/");
 
-  // Cache-first strategy for static assets (CSS, JS, images, fonts)
+  if (!isStatic) {
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       if (cachedResponse) {
         return cachedResponse;
       }
 
-      return fetch(event.request)
-        .then((response) => {
-          // Don't cache non-successful responses
-          if (
-            !response ||
-            response.status !== 200 ||
-            response.type === "error"
-          ) {
-            return response;
-          }
-
-          // Cache static assets (JS, CSS, images, fonts)
-          const url = new URL(event.request.url);
-          const isStatic =
-            url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|woff2?|ttf|eot)$/) ||
-            url.pathname.startsWith("/_next/static/");
-
-          if (isStatic) {
-            const responseClone = response.clone();
-            caches.open(STATIC_CACHE).then((cache) => {
-              cache.put(event.request, responseClone);
-            });
-          } else {
-            // Cache other requests in runtime cache
-            const responseClone = response.clone();
-            caches.open(RUNTIME_CACHE).then((cache) => {
-              cache.put(event.request, responseClone);
-            });
-          }
-
+      return fetch(event.request).then((response) => {
+        if (!response || response.status !== 200 || response.type === "error") {
           return response;
-        })
-        .catch(() => {
-          // If both network and cache fail, return offline page for navigation requests
-          if (event.request.mode === "navigate") {
-            return caches.match("/offline");
-          }
-          return null;
+        }
+
+        const responseClone = response.clone();
+        caches.open(STATIC_CACHE).then((cache) => {
+          cache.put(event.request, responseClone);
         });
+
+        return response;
+      });
     })
   );
 });

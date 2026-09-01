@@ -34,6 +34,10 @@ import {
   deleteWorkoutAction,
 } from "../../_lib/fitnessActions";
 import { formatDate, handleToast } from "../../_utils/utils";
+import {
+  getExerciseTracking,
+  type ExerciseTracking,
+} from "../../_utils/exercises";
 import { defaultExercises } from "../../../public/exerciseLibrary";
 import Button from "@/app/_components/reusable/Button";
 import Input from "@/app/_components/reusable/Input";
@@ -130,6 +134,7 @@ export default function WorkoutSession({
       exerciseName: exercise.name,
       order: workout.loggedExercises.length,
       hold: !!exercise.hold,
+      bodyweight: !!exercise.bodyweight,
       volume: [],
     };
 
@@ -139,20 +144,13 @@ export default function WorkoutSession({
     });
   };
 
-  const addSet = (
-    exerciseId: string,
-    weight: number,
-    reps: number,
-    duration?: number,
-  ) => {
+  const addSet = (exerciseId: string, set: WorkoutSet) => {
     if (!workout) return;
-
-    const newSet: WorkoutSet = { weight, reps, duration };
 
     setWorkout({
       ...workout,
       loggedExercises: workout.loggedExercises.map((ex) =>
-        ex.id === exerciseId ? { ...ex, volume: [...ex.volume, newSet] } : ex,
+        ex.id === exerciseId ? { ...ex, volume: [...ex.volume, set] } : ex,
       ),
     });
   };
@@ -293,11 +291,10 @@ export default function WorkoutSession({
             <span className="text-glow">Back</span>
           </Button>
         </Link>
-        {/* Header with Timer */}
         <div className="bg-background-600 rounded-lg p-6 border border-background-500">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <div className="flex items-center">
+              <div className="flex items-center gap-2">
                 <Edit className="w-5 h-5" />
                 <Input
                   name="name"
@@ -310,11 +307,12 @@ export default function WorkoutSession({
                   disabled={isFinished}
                 />
               </div>
-              <p className="text-text-low">{formatDate(workout.createdAt)}</p>
+              <p className="text-text-low mt-1 sm:mb-0 -mb-2">
+                Date: {formatDate(workout.createdAt)}
+              </p>
             </div>
 
             <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4">
-              {/* Timer Mode Switcher */}
               {!isFinished && (
                 <div className="flex items-center gap-2 text-sm">
                   <Button
@@ -371,7 +369,6 @@ export default function WorkoutSession({
           </div>
         </div>
 
-        {/* Exercises */}
         <div className="space-y-4">
           {workout.loggedExercises.map((exercise) => (
             <ExerciseCard
@@ -381,19 +378,15 @@ export default function WorkoutSession({
               onRemoveSet={removeSet}
               onRemoveExercise={removeExercise}
               isPastWorkout={isFinished}
-              isHoldExercise={
-                exercise.hold ??
-                !!exercises.find((e) => e.name === exercise.exerciseName)?.hold
-              }
+              tracking={getExerciseTracking(exercise.exerciseName, exercise)}
             />
           ))}
 
-          {/* Add Exercise Button */}
           {!isFinished && (
             <Modal.Open opens="exercise-search">
               <Button
                 variant="secondary"
-                className="flex-col p-8 justify-self-center"
+                className="flex-col p-8 justify-self-center sm:w-fit w-full"
               >
                 <Plus className="w-8 h-8" />
                 <span>Add Exercise</span>
@@ -403,8 +396,8 @@ export default function WorkoutSession({
         </div>
 
         {/* Notes */}
-        <div className="bg-background-600 rounded-lg p-6 border border-background-500">
-          <h3 className="text-lg font-semibold text-text-low mb-3">
+        <div className="bg-background-600 rounded-lg sm:p-6 p-2 border border-background-500">
+          <h3 className="text-lg font-semibold text-text-low sm:mb-3 mb-1 sm:p-0 p-1">
             Workout Notes
           </h3>
           <textarea
@@ -458,14 +451,14 @@ export default function WorkoutSession({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-4">
+        <div className="flex sm:gap-4 gap-2">
           <Button
             variant="danger"
             onClick={handleDeleteWorkout}
             className="flex-1 justify-center"
           >
             <Trash2 className="w-5 h-5" />
-            Delete Workout
+            Delete <span className="sm:inline hidden">workout</span>
           </Button>
           {!isFinished && (
             <Button
@@ -474,7 +467,7 @@ export default function WorkoutSession({
               className="flex-1 justify-center"
             >
               <Save className="w-5 h-5" />
-              Save Progress
+              Save <span className="sm:inline hidden">progress</span>
             </Button>
           )}
           {isFinished ? (
@@ -492,7 +485,7 @@ export default function WorkoutSession({
               className="flex-1 bg-success hover:bg-success/90 text-white border border-success/50 justify-center py-5"
             >
               <Trophy className="w-5 h-5" />
-              Finish Workout
+              Finish <span className="sm:inline hidden">workout</span>
             </Button>
           )}
         </div>
@@ -533,8 +526,8 @@ function ExerciseSearchModal({
         </Button>
       </div>
 
-      <div className="relative mb-4 ">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-text-low" />
+      <div className="relative mb-4">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 z-2 text-text-low" />
         <Input
           name="search-exercise"
           type="text"
@@ -568,16 +561,11 @@ function ExerciseSearchModal({
 
 interface ExerciseCardProps {
   exercise: LoggedExercise;
-  onAddSet: (
-    exerciseId: string,
-    weight: number,
-    reps: number,
-    duration?: number,
-  ) => void;
+  onAddSet: (exerciseId: string, set: WorkoutSet) => void;
   onRemoveSet: (exerciseId: string, setIndex: number) => void;
   onRemoveExercise: (exerciseId: string) => void;
   isPastWorkout: boolean;
-  isHoldExercise: boolean;
+  tracking: ExerciseTracking;
 }
 
 function ExerciseCard({
@@ -586,7 +574,7 @@ function ExerciseCard({
   onRemoveSet,
   onRemoveExercise,
   isPastWorkout,
-  isHoldExercise,
+  tracking,
 }: ExerciseCardProps) {
   const [weight, setWeight] = useState("");
   const [reps, setReps] = useState("");
@@ -596,7 +584,7 @@ function ExerciseCard({
 
   useEffect(() => {
     const loadLastPerformance = async () => {
-      if (isHoldExercise) return;
+      if (tracking === "hold") return;
       const result = await getLastPerformanceAction(exercise.exerciseName);
       if (result.success && result.data) {
         setLastPerformance(result.data);
@@ -604,27 +592,39 @@ function ExerciseCard({
     };
 
     loadLastPerformance();
-  }, [exercise.exerciseName, isHoldExercise]);
+  }, [exercise.exerciseName, tracking]);
 
   const handleAddSet = () => {
-    if (isHoldExercise) {
+    if (tracking === "hold") {
       const durationNum = parseInt(holdSeconds);
       if (durationNum > 0) {
-        // Keep internal shape consistent: weight/reps exist but are not meaningful for holds.
-        onAddSet(exercise.id, 1, 1, durationNum);
+        onAddSet(exercise.id, { duration: durationNum });
         setHoldSeconds("");
       }
       return;
     }
 
-    const weightNum = parseFloat(weight);
     const repsNum = parseInt(reps);
+    if (!(repsNum > 0)) return;
 
-    if (weightNum > 0 && repsNum > 0) {
-      onAddSet(exercise.id, weightNum, repsNum);
+    if (tracking === "bodyweight") {
+      onAddSet(exercise.id, { reps: repsNum });
+      setReps("");
+      return;
+    }
+
+    const weightNum = parseFloat(weight);
+    if (weightNum > 0) {
+      onAddSet(exercise.id, { weight: weightNum, reps: repsNum });
       setWeight("");
       setReps("");
     }
+  };
+
+  const describeSet = (set: WorkoutSet) => {
+    if (tracking === "hold") return `${set.duration ?? 0}s`;
+    if (tracking === "bodyweight") return `${set.reps ?? 0} reps`;
+    return `${set.weight ?? 0}kg × ${set.reps ?? 0} reps`;
   };
 
   return (
@@ -652,9 +652,7 @@ function ExerciseCard({
             className="flex items-center justify-between bg-background-700 rounded-lg p-3"
           >
             <span className="text-text-low">
-              {isHoldExercise
-                ? `Set ${index + 1}: ${set.duration ?? 0}s`
-                : `Set ${index + 1}: ${set.weight}kg × ${set.reps} reps`}
+              {`Set ${index + 1}: ${describeSet(set)}`}
             </span>
             {!isPastWorkout && (
               <Button
@@ -672,7 +670,7 @@ function ExerciseCard({
       {/* Add Set Form */}
       {!isPastWorkout && (
         <div className="flex gap-2">
-          {isHoldExercise ? (
+          {tracking === "hold" ? (
             <Input
               name="hold-seconds"
               type="number"
@@ -685,16 +683,18 @@ function ExerciseCard({
             />
           ) : (
             <>
-              <Input
-                name="weight"
-                type="number"
-                value={weight}
-                onChange={(e) =>
-                  setWeight(Math.max(0, parseInt(e.target.value)).toString())
-                }
-                placeholder="Weight (kg)"
-                className="flex-1 px-3 py-2 bg-background-700 border border-background-500 rounded-lg text-text-low"
-              />
+              {tracking === "weighted" && (
+                <Input
+                  name="weight"
+                  type="number"
+                  value={weight}
+                  onChange={(e) =>
+                    setWeight(Math.max(0, parseInt(e.target.value)).toString())
+                  }
+                  placeholder="Weight (kg)"
+                  className="flex-1 px-3 py-2 bg-background-700 border border-background-500 rounded-lg text-text-low"
+                />
+              )}
               <Input
                 name="reps"
                 type="number"
@@ -710,7 +710,13 @@ function ExerciseCard({
           <Button
             variant="secondary"
             onClick={handleAddSet}
-            disabled={isHoldExercise ? !holdSeconds : !weight || !reps}
+            disabled={
+              tracking === "hold"
+                ? !holdSeconds
+                : tracking === "bodyweight"
+                  ? !reps
+                  : !weight || !reps
+            }
             className="bg-primary-500/50 hover:bg-primary-600/50"
           >
             <Plus className="w-4 h-4" />
@@ -719,19 +725,33 @@ function ExerciseCard({
       )}
 
       {/* Progressive Overload Hint */}
-      {!isHoldExercise && exercise.volume.length === 0 && lastPerformance && (
-        <div className="mt-3 p-3 bg-info/10 border border-info/20 rounded-lg">
-          <p className="text-sm text-info">
-            💡 Progressive Overload Hint: Last time your first set was{" "}
-            {lastPerformance.weight}kg × {lastPerformance.reps} reps
-            <br />
-            <span className="text-xs text-text-low">
-              Try: {lastPerformance.weight + 2.5}kg × {lastPerformance.reps} or{" "}
-              {lastPerformance.weight}kg × {lastPerformance.reps + 1}
-            </span>
-          </p>
-        </div>
-      )}
+      {tracking !== "hold" &&
+        exercise.volume.length === 0 &&
+        lastPerformance && (
+          <div className="mt-3 p-3 bg-info/10 border border-info/20 rounded-lg">
+            {tracking === "bodyweight" ? (
+              <p className="text-sm text-info">
+                💡 Progressive Overload Hint: Last time your first set was{" "}
+                {lastPerformance.reps} reps
+                <br />
+                <span className="text-xs text-text-low">
+                  Try: {lastPerformance.reps + 1} reps
+                </span>
+              </p>
+            ) : (
+              <p className="text-sm text-info">
+                💡 Progressive Overload Hint: Last time your first set was{" "}
+                {lastPerformance.weight ?? 0}kg × {lastPerformance.reps} reps
+                <br />
+                <span className="text-xs text-text-low">
+                  Try: {(lastPerformance.weight ?? 0) + 2.5}kg ×{" "}
+                  {lastPerformance.reps} or {lastPerformance.weight ?? 0}kg ×{" "}
+                  {lastPerformance.reps + 1}
+                </span>
+              </p>
+            )}
+          </div>
+        )}
     </div>
   );
 }

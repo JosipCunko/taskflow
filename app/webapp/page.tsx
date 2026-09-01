@@ -35,9 +35,8 @@ import { AnalyticsLoadingSkeleton } from "../_components/skeleton/AnalyticsLoadi
 import UpgradePlan from "../_components/UpgradePlan";
 import { getEffectivePlan } from "../_lib/stripe";
 
-//Dashboard is now always dynamic because of problem with revalidation during tasks updates inside /tasks
+// Dashboard is always dynamic so task mutations on other routes show up here.
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 // Dynamic import for heavy components with recharts
 const AnalyticsDashboard = dynamicImport(

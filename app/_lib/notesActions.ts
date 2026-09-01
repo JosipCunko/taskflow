@@ -8,7 +8,7 @@ import { CacheTags } from "../_utils/serverCache";
 export async function addNoteAction(
   userId: string,
   initialTitle: string = "Untitled Note",
-  initialContent: string = ""
+  initialContent: string = "",
 ): Promise<ActionResult & { newNoteId?: string }> {
   if (!userId) {
     return { success: false, error: "User ID is required to add a note." };
@@ -31,7 +31,7 @@ export async function addNoteAction(
 
     return {
       success: true,
-      message: "Note added successfully.",
+      message: "Note added",
       newNoteId: newNoteRef.id,
     };
   } catch (error) {
@@ -44,7 +44,7 @@ export async function updateNoteAction(
   noteId: string,
   title: string,
   content: string,
-  userId: string
+  userId: string,
 ): Promise<ActionResult> {
   if (!noteId || !userId) {
     return { success: false, error: "Note ID and User ID are required." };
@@ -72,7 +72,7 @@ export async function updateNoteAction(
     revalidatePath("/notes");
     revalidatePath("/webapp");
 
-    return { success: true, message: "Note updated successfully." };
+    return { success: true, message: "Note updated" };
   } catch (error) {
     console.error("Error updating note:", noteId, error);
     return { success: false, error: "Failed to update note." };
@@ -81,7 +81,7 @@ export async function updateNoteAction(
 
 export async function deleteNoteAction(
   noteId: string,
-  userId: string
+  userId: string,
 ): Promise<ActionResult> {
   if (!noteId || !userId) {
     return { success: false, error: "Note ID and User ID are required." };
@@ -107,7 +107,7 @@ export async function deleteNoteAction(
     revalidatePath("/notes");
     revalidatePath("/webapp");
 
-    return { success: true, message: "Note deleted successfully." };
+    return { success: true, message: "Note deleted" };
   } catch (error) {
     console.error("Error deleting note:", noteId, error);
     return { success: false, error: "Failed to delete note." };

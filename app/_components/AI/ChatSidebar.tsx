@@ -105,7 +105,7 @@ export default function ChatSidebar() {
 
     const originalChats = chats;
     const optimisticChats = chats.map((c) =>
-      c.id === editingChatId ? { ...c, title: newChatTitle } : c
+      c.id === editingChatId ? { ...c, title: newChatTitle } : c,
     );
     setChats(optimisticChats);
     cancelEditing();
@@ -153,7 +153,7 @@ export default function ChatSidebar() {
         </div>
         <Button
           onClick={handleNewChat}
-          className="w-full flex items-center justify-center gap-2 bg-primary-500/10 hover:bg-primary-500/20 border border-primary-500/30"
+          className="w-fit sm:w-full flex items-center justify-center gap-2 bg-primary-500/10 hover:bg-primary-500/20 border border-primary-500/30"
         >
           <MessageSquarePlus size={18} />
           <span className="font-semibold">New Chat</span>
@@ -294,7 +294,7 @@ export default function ChatSidebar() {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setIsOpen(true)}
-            className="md:hidden fixed bottom-4 right-4 z-30 p-4 rounded-2xl bg-background-500 hover:bg-primary-500/20 border border-primary-500/50 text-primary-300"
+            className="md:hidden fixed bottom-20 right-5 z-30 p-4 rounded-2xl bg-background-500 hover:bg-primary-500/20 border border-primary-500/50 text-primary-300"
           >
             <ListIcon size={24} />
           </motion.button>
@@ -323,7 +323,7 @@ export default function ChatSidebar() {
 
       {/* Sidebar - Mobile (Right side with animations) */}
       <motion.aside
-        className="md:hidden fixed top-0 right-0 bottom-0 w-sm max-w-[85vw] z-50 bg-background-700 shadow-2xl"
+        className="md:hidden fixed top-0 right-0 bottom-0 w-sm max-w-[80vw] z-50 bg-background-700 shadow-2xl"
         initial="closed"
         variants={sidebarVariants}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}

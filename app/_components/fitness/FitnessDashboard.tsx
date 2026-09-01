@@ -11,6 +11,7 @@ import {
   Clock,
   SquareArrowUpRight,
   CalendarArrowUp,
+  CircleCheck,
 } from "lucide-react";
 import {
   format,
@@ -47,7 +48,7 @@ export default function FitnessDashboard({
   const [workoutSessions, setWorkoutSessions] =
     useState<WorkoutSession[]>(initialWorkouts);
   const [workoutTemplates, setWorkoutTemplates] = useState<WorkoutTemplate[]>(
-    []
+    [],
   );
   const [isPending, startTransition] = useTransition();
   const [currentWeek, setCurrentWeek] = useState(new Date());
@@ -83,7 +84,7 @@ export default function FitnessDashboard({
 
   const getWorkoutForDay = (date: Date) => {
     return workoutSessions.find((session) =>
-      isSameDay(new Date(session.createdAt), date)
+      isSameDay(new Date(session.createdAt), date),
     );
   };
 
@@ -113,7 +114,7 @@ export default function FitnessDashboard({
         workoutSessions.length > 0
           ? `${Math.round(
               workoutSessions.reduce((acc, w) => acc + (w.duration || 0), 0) /
-                workoutSessions.length
+                workoutSessions.length,
             )}m`
           : "0m",
       icon: Clock,
@@ -144,11 +145,11 @@ export default function FitnessDashboard({
     const workoutName = `${template.name} ${formatDate(
       new Date(),
       undefined,
-      false
+      false,
     )}`;
     const result = await startWorkoutFromTemplateAction(
       templateId,
-      workoutName
+      workoutName,
     );
 
     if (result.success && result.data) {
@@ -176,7 +177,6 @@ export default function FitnessDashboard({
   return (
     <Modal>
       <div className="space-y-6">
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map((stat) => (
             <div
@@ -213,7 +213,7 @@ export default function FitnessDashboard({
           </Button>
         </div>
 
-        <div className="bg-background-600 rounded-lg p-6 border border-background-500">
+        <div className="bg-background-600 rounded-lg sm:p-6 py-6 px-2 border border-background-500">
           <div className="flex flex-col gap-2 items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-text-high flex items-center gap-2">
               <Calendar className="w-5 h-5" />
@@ -224,16 +224,22 @@ export default function FitnessDashboard({
                 variant="secondary"
                 onClick={() =>
                   setCurrentWeek(
-                    new Date(currentWeek.getTime() - 7 * 24 * 60 * 60 * 1000)
+                    new Date(currentWeek.getTime() - 7 * 24 * 60 * 60 * 1000),
                   )
                 }
               >
                 ←
               </Button>
-              <span className="text-text-low font-medium">
-                {formatDate(weekStart, undefined, false)} -{" "}
-                {formatDate(weekEnd, undefined, false)}
-              </span>
+              <div className="flex flex-wrap">
+                <span className="text-text-low font-medium text-nowrap">
+                  {`${weekStart.getDate()}.${weekStart.getMonth() + 1}.`}
+                </span>
+                <span className="mx-1">-</span>
+                <span className="text-text-low font-medium text-nowrap">
+                  {`${weekEnd.getDate()}.${weekEnd.getMonth() + 1}.`}
+                </span>
+              </div>
+
               <Button
                 disabled={
                   new Date(currentWeek.getTime() + 7 * 24 * 60 * 60 * 1000) >
@@ -246,8 +252,8 @@ export default function FitnessDashboard({
                       actualWeekEnd
                       ? actualWeekEnd
                       : new Date(
-                          currentWeek.getTime() + 7 * 24 * 60 * 60 * 1000
-                        )
+                          currentWeek.getTime() + 7 * 24 * 60 * 60 * 1000,
+                        ),
                   )
                 }
               >
@@ -267,12 +273,12 @@ export default function FitnessDashboard({
                     className={cn(
                       "h-16 rounded-lg border-2 border-dashed border-background-500 flex items-center justify-center relative",
                       isToday(weekDays[index]) &&
-                        "border-primary-500 bg-primary-500/5"
+                        "border-primary-500 bg-primary-500/5",
                     )}
                   >
                     {getWorkoutForDay(weekDays[index]) ? (
                       <div className="w-full h-full bg-success/20 border-2 border-success rounded-lg flex items-center justify-center">
-                        <div className="w-3 h-3 bg-success rounded-full" />
+                        <CircleCheck className="w-6 h-6 text-text-low bg-success rounded-full" />
                       </div>
                     ) : (
                       <div className="text-text-low text-xs">
@@ -281,7 +287,7 @@ export default function FitnessDashboard({
                     )}
                   </div>
                 </div>
-              )
+              ),
             )}
           </div>
         </div>
@@ -306,7 +312,7 @@ export default function FitnessDashboard({
                   className={cn(
                     "block p-4 bg-background-700 rounded-lg border border-background-500 hover:bg-background-600 transition-colors",
                     !workout.duration &&
-                      "border-primary-500/50 bg-primary-500/10 hover:bg-primary-500/20"
+                      "border-primary-500/50 bg-primary-500/10 hover:bg-primary-500/20",
                   )}
                 >
                   <div className="flex items-center justify-between">
@@ -341,8 +347,8 @@ export default function FitnessDashboard({
             </h2>
             <Modal.Open opens="create-template">
               <Button>
-                <Plus className="size-5" />
-                Create Template
+                <Plus className="size-5 min-w-5" />
+                Create <span className="sm:inline hidden">Template</span>
               </Button>
             </Modal.Open>
           </div>

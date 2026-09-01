@@ -21,7 +21,7 @@ import Search from "./reusable/Search";
 
 const debounce = <T extends (...args: Parameters<T>) => ReturnType<T>>(
   func: T,
-  waitFor: number
+  waitFor: number,
 ) => {
   let timeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -90,7 +90,7 @@ export default function SearchApp({ onCloseModal, tasks }: SearchProps) {
             noteResults = allNotes.filter(
               (note: Note) =>
                 note.title.toLowerCase().includes(lowerCaseQuery) ||
-                note.content.toLowerCase().includes(lowerCaseQuery)
+                note.content.toLowerCase().includes(lowerCaseQuery),
             );
           }
         } catch (err) {
@@ -103,7 +103,7 @@ export default function SearchApp({ onCloseModal, tasks }: SearchProps) {
           const chatsResult = await getChats();
           if (chatsResult.chats) {
             chatResults = chatsResult.chats.filter((chat) =>
-              chat.title.toLowerCase().includes(lowerCaseQuery)
+              chat.title.toLowerCase().includes(lowerCaseQuery),
             );
           }
         } catch (err) {
@@ -123,8 +123,8 @@ export default function SearchApp({ onCloseModal, tasks }: SearchProps) {
                 meal.description?.toLowerCase().includes(lowerCaseQuery) ||
                 meal.producer?.toLowerCase().includes(lowerCaseQuery) ||
                 meal.ingredients.some((ing) =>
-                  ing.toLowerCase().includes(lowerCaseQuery)
-                )
+                  ing.toLowerCase().includes(lowerCaseQuery),
+                ),
             );
           }
         } catch (err) {
@@ -150,12 +150,12 @@ export default function SearchApp({ onCloseModal, tasks }: SearchProps) {
         setIsLoading(false);
       }
     },
-    [tasks]
+    [tasks],
   );
 
   const debouncedSearch = useMemo(
     () => debounce(performSearch, 300),
-    [performSearch]
+    [performSearch],
   );
 
   useEffect(() => {
@@ -206,7 +206,7 @@ export default function SearchApp({ onCloseModal, tasks }: SearchProps) {
           e.preventDefault();
           setHighlightedIndex(
             (prev) =>
-              (prev - 1 + navItemsToSearch.length) % navItemsToSearch.length
+              (prev - 1 + navItemsToSearch.length) % navItemsToSearch.length,
           );
         } else if (e.key === "Enter" && highlightedIndex > -1) {
           e.preventDefault();
@@ -231,12 +231,13 @@ export default function SearchApp({ onCloseModal, tasks }: SearchProps) {
     searchResults.savedMeals.length;
 
   return (
-    <div className="modal-bigger relative">
+    <div className="sm:modal-bigger modal relative">
       <Search
         value={searchQuery}
         onChange={setSearchQuery}
         placeholder="Search or type a command..."
         hideInfo
+        className="sm:w-full w-[120%] sm:ml-0 -ml-4"
       />
 
       <div className="overflow-y-auto ">

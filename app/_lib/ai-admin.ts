@@ -2,6 +2,30 @@ import "server-only";
 import { adminDb } from "./admin";
 import { ChatMessage } from "../_types/types";
 
+/** Firestore rejects explicit `undefined` field values. */
+function stripUndefined<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value.map((item) => stripUndefined(item)) as T;
+  }
+  if (
+    value &&
+    typeof value === "object" &&
+    !(value instanceof Date) &&
+    Object.getPrototypeOf(value) === Object.prototype
+  ) {
+    const result: Record<string, unknown> = {};
+    for (const [key, nested] of Object.entries(
+      value as Record<string, unknown>,
+    )) {
+      if (nested !== undefined) {
+        result[key] = stripUndefined(nested);
+      }
+    }
+    return result as T;
+  }
+  return value;
+}
+
 export async function getUserChats(
   userId: string
 ): Promise<{ id: string; title: string }[]> {
@@ -62,15 +86,17 @@ export async function saveChatMessages(
   chatId?: string | null
 ): Promise<string> {
   try {
+    const sanitizedMessages = stripUndefined(messages);
+
     if (chatId) {
       const chatRef = adminDb.collection("aiChats").doc(chatId);
-      await chatRef.update({ messages: messages });
+      await chatRef.update({ messages: sanitizedMessages });
       return chatId;
     } else {
       const chatRef = adminDb.collection("aiChats").doc();
       await chatRef.set({
         userId,
-        messages,
+        messages: sanitizedMessages,
         createdAt: new Date(),
         title: "New Chat",
       });

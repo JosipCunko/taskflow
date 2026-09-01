@@ -97,7 +97,7 @@ export default function KeyboardShortcutsGuide() {
                 <div>
                   <h2
                     id="shortcuts-modal-title"
-                    className="text-2xl font-bold text-primary-400 flex items-center gap-2"
+                    className="text-2xl font-bold text-primary-400 flex items-center gap-2 text-nowrap"
                   >
                     <Keyboard size={24} />
                     Keyboard Shortcuts
@@ -127,7 +127,7 @@ export default function KeyboardShortcutsGuide() {
                         {section.items.map((item, idx) => (
                           <div
                             key={idx}
-                            className="flex items-center justify-between p-3 bg-background-600 rounded-lg hover:bg-background-550 transition-colors"
+                            className="flex items-center gap-2 justify-between p-3 bg-background-600 rounded-lg hover:bg-background-550 transition-colors"
                           >
                             <span className="text-text-low">
                               {item.description}

@@ -4,6 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "./auth";
 import { CacheTags } from "../_utils/serverCache";
+import { getExerciseTracking } from "../_utils/exercises";
 import {
   createWorkout,
   createWorkoutTemplate,
@@ -26,6 +27,7 @@ import {
   LoggedExercise,
   PersonalRecord,
   ExerciseProgressPoint,
+  LastPerformance,
 } from "../_types/types";
 
 async function getAuthenticatedUserId(): Promise<string> {
@@ -37,7 +39,7 @@ async function getAuthenticatedUserId(): Promise<string> {
 }
 
 export async function getWorkoutAction(
-  workoutId: string
+  workoutId: string,
 ): Promise<ActionResult<WorkoutSession | null>> {
   try {
     const userId = await getAuthenticatedUserId();
@@ -77,7 +79,10 @@ export async function getWorkoutsAction(): Promise<
 }
 
 export async function createWorkoutAction(
-  workoutData: Omit<WorkoutSession, "id" | "userId" | "createdAt" | "updatedAt">
+  workoutData: Omit<
+    WorkoutSession,
+    "id" | "userId" | "createdAt" | "updatedAt"
+  >,
 ): Promise<ActionResult<string>> {
   try {
     const userId = await getAuthenticatedUserId();
@@ -92,7 +97,7 @@ export async function createWorkoutAction(
 
     return {
       success: true,
-      message: "Workout created successfully",
+      message: "Workout created",
       data: workoutId,
     };
   } catch (error) {
@@ -107,7 +112,7 @@ export async function createWorkoutAction(
 
 export async function updateWorkoutAction(
   workoutId: string,
-  updates: Partial<Omit<WorkoutSession, "id" | "userId" | "createdAt">>
+  updates: Partial<Omit<WorkoutSession, "id" | "userId" | "createdAt">>,
 ): Promise<ActionResult> {
   try {
     const userId = await getAuthenticatedUserId();
@@ -119,7 +124,7 @@ export async function updateWorkoutAction(
 
     return {
       success: true,
-      message: "Workout updated successfully",
+      message: "Workout updated",
     };
   } catch (error) {
     console.error("Error in updateWorkout action:", error);
@@ -132,7 +137,7 @@ export async function updateWorkoutAction(
 }
 
 export async function deleteWorkoutAction(
-  workoutId: string
+  workoutId: string,
 ): Promise<ActionResult> {
   try {
     const userId = await getAuthenticatedUserId();
@@ -144,7 +149,7 @@ export async function deleteWorkoutAction(
 
     return {
       success: true,
-      message: "Workout deleted successfully",
+      message: "Workout deleted",
     };
   } catch (error) {
     console.error("Error in deleteWorkout action:", error);
@@ -157,7 +162,7 @@ export async function deleteWorkoutAction(
 }
 
 export async function startWorkoutSessionAction(
-  name: string
+  name: string,
 ): Promise<ActionResult<string>> {
   try {
     const userId = await getAuthenticatedUserId();
@@ -191,7 +196,7 @@ export async function completeWorkoutSessionAction(
   workoutId: string,
   duration: number,
   notes: string | undefined,
-  loggedExercises: LoggedExercise[]
+  loggedExercises: LoggedExercise[],
 ): Promise<ActionResult> {
   try {
     const userId = await getAuthenticatedUserId();
@@ -207,7 +212,7 @@ export async function completeWorkoutSessionAction(
 
     return {
       success: true,
-      message: "Workout completed successfully",
+      message: "Workout completed",
     };
   } catch (error) {
     console.error("Error in completeWorkoutSession action:", error);
@@ -220,7 +225,7 @@ export async function completeWorkoutSessionAction(
 }
 
 export async function createTemplateAction(
-  templateData: Omit<WorkoutTemplate, "id" | "userId">
+  templateData: Omit<WorkoutTemplate, "id" | "userId">,
 ): Promise<ActionResult<string>> {
   try {
     const userId = await getAuthenticatedUserId();
@@ -232,7 +237,7 @@ export async function createTemplateAction(
     revalidatePath("/webapp/fitness");
     return {
       success: true,
-      message: "Workout template created successfully",
+      message: "Workout template created",
       data: templateId,
     };
   } catch (error) {
@@ -265,7 +270,7 @@ export async function getExerciseLibraryAction(): Promise<
 }
 
 export async function searchExerciseLibraryAction(
-  searchTerm: string
+  searchTerm: string,
 ): Promise<ActionResult<Exercise[]>> {
   try {
     const exercises = await searchExercises(searchTerm);
@@ -306,7 +311,7 @@ export async function getWorkoutTemplatesAction(): Promise<
 }
 
 export async function createWorkoutTemplateAction(
-  templateData: Omit<WorkoutTemplate, "id" | "userId" | "createdAt">
+  templateData: Omit<WorkoutTemplate, "id" | "userId" | "createdAt">,
 ): Promise<ActionResult<string>> {
   try {
     const userId = await getAuthenticatedUserId();
@@ -319,7 +324,7 @@ export async function createWorkoutTemplateAction(
     revalidatePath("/webapp/fitness");
     return {
       success: true,
-      message: "Workout template created successfully",
+      message: "Workout template created",
       data: templateId,
     };
   } catch (error) {
@@ -334,7 +339,7 @@ export async function createWorkoutTemplateAction(
 
 export async function startWorkoutFromTemplateAction(
   templateId: string,
-  workoutName: string
+  workoutName: string,
 ): Promise<ActionResult<string>> {
   try {
     const userId = await getAuthenticatedUserId();
@@ -352,12 +357,17 @@ export async function startWorkoutFromTemplateAction(
 
     // Create logged exercises from template exercises
     const loggedExercises: LoggedExercise[] = template.exercises.map(
-      (exerciseName, index) => ({
-        id: Date.now().toString() + index,
-        exerciseName,
-        order: index,
-        volume: [],
-      })
+      (exerciseName, index) => {
+        const tracking = getExerciseTracking(exerciseName);
+        return {
+          id: Date.now().toString() + index,
+          exerciseName,
+          order: index,
+          hold: tracking === "hold",
+          bodyweight: tracking === "bodyweight",
+          volume: [],
+        };
+      },
     );
 
     const workoutData: Omit<WorkoutSession, "id" | "createdAt" | "updatedAt"> =
@@ -388,7 +398,7 @@ export async function startWorkoutFromTemplateAction(
 }
 
 export async function getExerciseProgressAction(
-  exerciseName: string
+  exerciseName: string,
 ): Promise<ActionResult<ExerciseProgressPoint[]>> {
   try {
     const userId = await getAuthenticatedUserId();
@@ -433,14 +443,9 @@ export async function getPersonalRecordsAction(): Promise<
   }
 }
 
-export async function getLastPerformanceAction(exerciseName: string): Promise<
-  ActionResult<{
-    weight: number;
-    reps: number;
-    sets: number;
-    date: number;
-  } | null>
-> {
+export async function getLastPerformanceAction(
+  exerciseName: string,
+): Promise<ActionResult<LastPerformance | null>> {
   try {
     const userId = await getAuthenticatedUserId();
     const lastPerformance = await getLastPerformance(userId, exerciseName);
@@ -462,7 +467,7 @@ export async function getLastPerformanceAction(exerciseName: string): Promise<
 }
 
 export async function likeWorkoutAction(
-  workoutId: string
+  workoutId: string,
 ): Promise<ActionResult> {
   try {
     const userId = await getAuthenticatedUserId();
@@ -485,7 +490,7 @@ export async function likeWorkoutAction(
 }
 
 export async function dislikeWorkoutAction(
-  workoutId: string
+  workoutId: string,
 ): Promise<ActionResult> {
   try {
     const userId = await getAuthenticatedUserId();
@@ -509,7 +514,7 @@ export async function dislikeWorkoutAction(
 }
 
 export async function removeWorkoutRatingAction(
-  workoutId: string
+  workoutId: string,
 ): Promise<ActionResult> {
   try {
     const userId = await getAuthenticatedUserId();

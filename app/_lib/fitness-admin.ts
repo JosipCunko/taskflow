@@ -8,9 +8,11 @@ import {
   PersonalRecord,
   ExerciseProgressPoint,
   LastPerformance,
+  WorkoutSet,
 } from "../_types/types";
 import { unstable_cache } from "next/cache";
 import { CacheTags, CacheDuration } from "../_utils/serverCache";
+import { getExerciseTracking } from "../_utils/exercises";
 
 async function getWorkoutsInternal(userId: string): Promise<WorkoutSession[]> {
   try {
@@ -257,43 +259,39 @@ export async function getExerciseProgress(
       );
 
       if (exercise && exercise.volume.length > 0) {
-        const isHoldExercise =
-          !!exercise.hold ||
-          exercise.volume.some((set: { duration?: number }) => !!set.duration);
+        const volume: WorkoutSet[] = exercise.volume;
+        const tracking = getExerciseTracking(exerciseName, exercise);
 
-        if (isHoldExercise) {
-          const maxDuration = Math.max(
-            ...exercise.volume.map((set: { duration?: number }) =>
-              typeof set.duration === "number" ? set.duration : 0
-            )
-          );
-
+        if (tracking === "hold" || volume.some((set) => !!set.duration)) {
           progressData.push({
             date: workout.createdAt,
-            // Keep legacy fields for backwards compatibility with existing UI/code.
-            maxWeight: 1,
-            maxReps: 1,
-            maxDuration,
-            sets: exercise.volume.length,
+            maxDuration: Math.max(...volume.map((set) => set.duration ?? 0)),
+            sets: volume.length,
           });
           return;
         }
 
-        const maxWeight = Math.max(
-          ...exercise.volume.map((set: { weight: number }) => set.weight)
-        );
+        if (tracking === "bodyweight") {
+          progressData.push({
+            date: workout.createdAt,
+            maxReps: Math.max(...volume.map((set) => set.reps ?? 0)),
+            sets: volume.length,
+          });
+          return;
+        }
+
+        const maxWeight = Math.max(...volume.map((set) => set.weight ?? 0));
 
         // Find the reps corresponding to the max weight (take the first occurrence)
-        const maxWeightSet = exercise.volume.find(
-          (set: { weight: number; reps: number }) => set.weight === maxWeight
+        const maxWeightSet = volume.find(
+          (set) => (set.weight ?? 0) === maxWeight
         );
-        const maxReps = maxWeightSet ? maxWeightSet.reps : 0;
 
         progressData.push({
           date: workout.createdAt,
           maxWeight,
-          maxReps,
-          sets: exercise.volume.length,
+          maxReps: maxWeightSet?.reps ?? 0,
+          sets: volume.length,
         });
       }
     });
@@ -319,50 +317,62 @@ export async function getPersonalRecords(
       const workoutDate = workout.createdAt;
 
       workout.loggedExercises?.forEach((exercise: LoggedExercise) => {
-        if (exercise.volume && exercise.volume.length > 0) {
-          const isHoldExercise =
-            !!exercise.hold ||
-            exercise.volume.some((set: { duration?: number }) => !!set.duration);
+        if (!exercise.volume?.length) return;
 
-          if (isHoldExercise) {
-            exercise.volume.forEach((set: { duration?: number }) => {
-              const duration = typeof set.duration === "number" ? set.duration : 0;
-              const currentRecord = exerciseRecords[exercise.exerciseName];
+        const { exerciseName, volume } = exercise;
+        const tracking = getExerciseTracking(exerciseName, exercise);
 
-              if (!currentRecord || (currentRecord.duration ?? 0) < duration) {
-                exerciseRecords[exercise.exerciseName] = {
-                  exercise: exercise.exerciseName,
-                  weight: 1,
-                  reps: 1,
-                  duration,
-                  date: workoutDate,
-                };
-              }
-            });
-            return;
-          }
+        if (tracking === "hold" || volume.some((set) => !!set.duration)) {
+          volume.forEach((set) => {
+            const duration = set.duration ?? 0;
+            const currentRecord = exerciseRecords[exerciseName];
 
-          exercise.volume.forEach((set: { weight: number; reps: number }) => {
-            const currentRecord = exerciseRecords[exercise.exerciseName];
-
-            if (!currentRecord || set.weight > currentRecord.weight) {
-              exerciseRecords[exercise.exerciseName] = {
-                exercise: exercise.exerciseName,
-                weight: set.weight,
-                reps: set.reps,
+            if (!currentRecord || (currentRecord.duration ?? 0) < duration) {
+              exerciseRecords[exerciseName] = {
+                exercise: exerciseName,
+                duration,
                 date: workoutDate,
               };
             }
           });
+          return;
         }
+
+        if (tracking === "bodyweight") {
+          volume.forEach((set) => {
+            const reps = set.reps ?? 0;
+            const currentRecord = exerciseRecords[exerciseName];
+
+            if (!currentRecord || (currentRecord.reps ?? 0) < reps) {
+              exerciseRecords[exerciseName] = {
+                exercise: exerciseName,
+                reps,
+                date: workoutDate,
+              };
+            }
+          });
+          return;
+        }
+
+        volume.forEach((set) => {
+          const weight = set.weight ?? 0;
+          const currentRecord = exerciseRecords[exerciseName];
+
+          if (!currentRecord || weight > (currentRecord.weight ?? 0)) {
+            exerciseRecords[exerciseName] = {
+              exercise: exerciseName,
+              weight,
+              reps: set.reps ?? 0,
+              date: workoutDate,
+            };
+          }
+        });
       });
     });
 
+    // Records use different units, so rank them by recency rather than magnitude.
     return Object.values(exerciseRecords)
-      .sort(
-        (a, b) =>
-          (b.duration ?? b.weight) - (a.duration ?? a.weight)
-      )
+      .sort((a, b) => b.date - a.date)
       .slice(0, 10); // Top 10 records
   } catch (error) {
     console.error("Error getting personal records:", error);
@@ -393,7 +403,7 @@ export async function getLastPerformance(
 
         return {
           weight: firstSet.weight,
-          reps: firstSet.reps,
+          reps: firstSet.reps ?? 0,
           sets: totalSets,
           date: workout.createdAt,
         };

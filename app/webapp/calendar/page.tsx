@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { getTasksByUserId } from "@/app/_lib/tasks-admin";
 import Calendar from "./Calendar";
 
+export const dynamic = "force-dynamic";
+
 export default async function CalendarPage() {
   const session = await getServerSession(authOptions);
   if (!session || !session.user || !session.user.id) redirect("/login");

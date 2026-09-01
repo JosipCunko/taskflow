@@ -16,8 +16,7 @@ import {
 } from "../_types/types";
 import { isToday, isPast } from "date-fns";
 import { formatDate } from "../_utils/utils";
-import { revalidatePath, revalidateTag } from "next/cache";
-import { CacheTags } from "../_utils/serverCache";
+import { revalidateTaskData } from "../_utils/serverCache";
 
 // AI Function Parameter Interfaces
 interface AIShowTasksParams {
@@ -225,6 +224,10 @@ async function updateTaskAI(params: AIUpdateTaskParams) {
 
   try {
     const updatedTask = await updateTask(task_id, updateData);
+    const session = await getServerSession(authOptions);
+    if (session?.user?.id) {
+      revalidateTaskData(session.user.id, { taskId: task_id });
+    }
     return {
       success: true,
       message: `Task "${updatedTask.title}" updated successfully`,
@@ -320,17 +323,6 @@ async function createTaskAI(params: AICreateTaskParams) {
     );
 
     if (result.success) {
-      const userId = session.user.id;
-      revalidateTag(CacheTags.tasks());
-      revalidateTag(CacheTags.userTasks(userId));
-      if (result.data?.id) {
-        revalidateTag(CacheTags.task(result.data.id));
-      }
-      revalidateTag(CacheTags.user(userId));
-      revalidatePath("/webapp/tasks");
-      revalidatePath("/webapp", "layout");
-      revalidatePath("/webapp/today");
-
       return {
         success: true,
         message: `Task "${

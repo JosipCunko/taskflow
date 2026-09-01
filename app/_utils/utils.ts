@@ -56,7 +56,7 @@ import { Timestamp } from "firebase-admin/firestore";
 export const stats = [
   {
     icon: CardSpecificIcons.User,
-    value: 1,
+    value: 7,
     label: "Active Users",
     suffix: "",
   },
@@ -1080,13 +1080,16 @@ export function canCompleteRepeatingTaskNow(task: Task): {
   const rule = task.repetitionRule;
 
   // If task hasn't started yet, can't complete
-  if (task.startDate && isFuture(task.startDate)) {
+  if (
+    task.startDate &&
+    isBefore(startOfDay(today), startOfDay(task.startDate))
+  ) {
     return { canCompleteNow: false, isDueToday: false };
   }
 
   // Check if task was completed today already
   const completedToday =
-    task.status === "completed" ||
+    //task.status === "completed" ||
     (task.completedAt && isToday(task.completedAt)) ||
     rule.completedAt?.some((d) => isToday(d));
 

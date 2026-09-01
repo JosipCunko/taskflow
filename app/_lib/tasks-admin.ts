@@ -13,8 +13,7 @@ import {
   safeConvertToTimestamp,
 } from "@/app/_utils/utils";
 import { Timestamp } from "firebase-admin/firestore";
-import { revalidateTag, unstable_cache } from "next/cache";
-import { CacheTags, CacheDuration } from "@/app/_utils/serverCache";
+import { cache } from "react";
 
 const fromFirestore = (
   snapshot: admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData>
@@ -90,18 +89,11 @@ async function getTaskByTaskIdInternal(taskId: string): Promise<Task | null> {
   }
 }
 
-export const getTaskByTaskId = async (taskId: string): Promise<Task | null> => {
-  const cachedGetTask = unstable_cache(
-    getTaskByTaskIdInternal,
-    [`task-${taskId}`],
-    {
-      tags: [CacheTags.task(taskId), CacheTags.tasks()],
-      revalidate: CacheDuration.TASKS,
-    }
-  );
-
-  return cachedGetTask(taskId);
-};
+export const getTaskByTaskId = cache(
+  async (taskId: string): Promise<Task | null> => {
+    return getTaskByTaskIdInternal(taskId);
+  }
+);
 
 async function getTasksByUserIdInternal(
   userId: string | undefined
@@ -132,27 +124,18 @@ async function getTasksByUserIdInternal(
 }
 
 /**
- * Cache is invalidated when:
- *  any task is created/updated/deleted (via revalidateTag("tasks"))
+ * Tasks are not stored in the Next.js Data Cache.
+ * They change from other devices, server actions, and daily repeating-task
+ * resets, so a cross-request cache is always wrong.
+ *
+ * Do not wrap this in React.cache() either: today-page auto-delay (and similar
+ * writes) can happen in the same request after the layout has already read
+ * tasks, and React.cache cannot be invalidated mid-request.
  */
 export const getTasksByUserId = async (
   userId: string | undefined
 ): Promise<Task[]> => {
-  if (!userId) {
-    console.warn("getTasksByUserId called without a userId.");
-    return [];
-  }
-
-  const cachedGetTasks = unstable_cache(
-    getTasksByUserIdInternal,
-    [`tasks-user-${userId}`],
-    {
-      tags: [CacheTags.userTasks(userId), CacheTags.tasks()],
-      revalidate: CacheDuration.TASKS,
-    }
-  );
-
-  return cachedGetTasks(userId);
+  return getTasksByUserIdInternal(userId);
 };
 
 interface TaskFirestoreData {
@@ -234,7 +217,6 @@ export const createTask = async (taskData: TaskToCreateData): Promise<Task> => {
       createdTask.risk = risk;
     }
 
-    revalidateTag("tasks");
     return createdTask;
   } catch (error) {
     console.error("Error creating task:", error);
@@ -264,7 +246,6 @@ export const updateTask = async (
     updates.risk = isTaskAtRisk(updates as Task);
 
     await taskRef.update(updateData);
-    revalidateTag("tasks");
     const updatedDocSnap = await taskRef.get();
     return fromFirestore(
       updatedDocSnap as admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData>
@@ -286,7 +267,6 @@ export const deleteTask = async (taskId: string): Promise<Task> => {
       taskSnap as admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData>
     );
     await taskRef.delete();
-    revalidateTag("tasks");
     return taskToDelete;
   } catch (error) {
     console.error(`Error deleting task ${taskId}:`, error);

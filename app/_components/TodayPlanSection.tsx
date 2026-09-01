@@ -157,14 +157,14 @@ export default function TodayPlanSection({
                       return (
                         <div
                           key={task.id}
-                          className="absolute left-2 right-2 p-2 rounded-md border-l-4 bg-background-600/50"
+                          className="absolute left-2 right-2 sm:p-2 px-2 py-1 rounded-md border-l-4 bg-background-600/50"
                           style={{
                             borderLeftColor: task.color,
                             height: `${duration * 60}px`,
                             top: `${(startPos - hour) * 60}px`,
                           }}
                         >
-                          <div className="flex items-start gap-2">
+                          <div className="flex items-center gap-1 flex-wrap">
                             <span className="text-sm font-medium text-white truncate">
                               {task.title}
                             </span>

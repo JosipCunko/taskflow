@@ -8,7 +8,7 @@ import {
   Save,
   Trash2,
   Utensils,
-  Camera,
+  Scan,
   Leaf,
   AlertCircle,
   X,
@@ -81,7 +81,7 @@ export default function AddSavedMeal({
   };
 
   const handleBarcodeUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -114,7 +114,7 @@ export default function AddSavedMeal({
         descParts.push(`Nutri-Score: ${product.nutriScore.toUpperCase()}`);
       if (product.novaGroup)
         descParts.push(
-          `NOVA: ${product.novaGroup} (${novaDescriptions[product.novaGroup]})`
+          `NOVA: ${product.novaGroup} (${novaDescriptions[product.novaGroup]})`,
         );
       if (product.isVegan) descParts.push("Vegan");
       else if (product.isVegetarian) descParts.push("Vegetarian");
@@ -182,7 +182,7 @@ export default function AddSavedMeal({
         if (scannedProduct.nutrientLevels)
           formData.set(
             "nutrientLevels",
-            JSON.stringify(scannedProduct.nutrientLevels)
+            JSON.stringify(scannedProduct.nutrientLevels),
           );
       }
 
@@ -248,7 +248,7 @@ export default function AddSavedMeal({
                 className="border-2 border-dashed border-background-400 rounded-lg p-6 text-center hover:border-primary-500 transition-colors cursor-pointer"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <Camera className="w-10 h-10 mx-auto mb-3 text-text-gray" />
+                <Scan className="w-10 h-10 mx-auto mb-3 text-text-gray" />
                 <p className="text-text-low font-medium mb-1">
                   Upload barcode image
                 </p>

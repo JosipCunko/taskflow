@@ -36,7 +36,11 @@ import { logUserActivity } from "./activity";
 import { authOptions } from "./auth";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { updateUser, updateUserCompletionStats } from "./user-admin";
-import { CacheTags } from "../_utils/serverCache";
+import {
+  CacheTags,
+  revalidateTaskData,
+  scheduleTaskRevalidation,
+} from "../_utils/serverCache";
 import { adminDb } from "./admin";
 import { FieldValue } from "firebase-admin/firestore";
 import { sendCampaignNotification } from "./notifications-admin";
@@ -192,17 +196,15 @@ export async function createTaskAction(
         },
       );
 
-      revalidateTag(CacheTags.tasks());
-      revalidateTag(CacheTags.userTasks(session.user.id));
-      revalidateTag(CacheTags.task(createdTask.id));
-      revalidateTag(CacheTags.user(session.user.id));
-      revalidateTag(CacheTags.userActivity(session.user.id));
-      revalidatePath("/webapp/tasks");
-      revalidatePath("/webapp", "layout");
+      revalidateTaskData(session.user.id, {
+        taskId: createdTask.id,
+        includeUser: true,
+        includeActivity: true,
+      });
 
       return {
         success: true,
-        message: "Task created successfully",
+        message: "Task created",
         data: createdTask,
       };
     } else {
@@ -291,12 +293,7 @@ export async function completeTaskAction(
     // Check for achievements after task completion
     await checkAndAwardAchievements(userId);
 
-    revalidateTag(CacheTags.tasks());
-    revalidateTag(CacheTags.userTasks(userId));
-    revalidateTag(CacheTags.task(taskId));
-    revalidateTag(CacheTags.user(userId));
-    revalidatePath("/webapp/tasks");
-    revalidatePath("/webapp", "layout");
+    revalidateTaskData(userId, { taskId, includeUser: true });
     return { success: true, message: `Task marked as completed` };
   } catch (err) {
     const error = err as ActionError;
@@ -389,11 +386,7 @@ export async function delayTaskAction(
       });
     }
 
-    revalidateTag(CacheTags.tasks());
-    revalidateTag(CacheTags.userTasks(userId));
-    revalidateTag(CacheTags.task(taskId));
-    revalidatePath("/webapp/tasks");
-    revalidatePath("/webapp", "layout");
+    revalidateTaskData(userId, { taskId });
     return {
       success: true,
       message: `Task delayed to ${formatDate(newDueDate)}`,
@@ -445,11 +438,7 @@ export async function deleteTaskAction(
       });
     }
 
-    revalidateTag(CacheTags.tasks());
-    revalidateTag(CacheTags.userTasks(session.user.id));
-    revalidateTag(CacheTags.task(taskId));
-    revalidatePath("/webapp/tasks");
-    revalidatePath("/webapp", "layout");
+    revalidateTaskData(session.user.id, { taskId });
     return { success: true, message: "Task deleted" };
   } catch (err) {
     const error = err as ActionError;
@@ -471,11 +460,7 @@ export async function togglePriorityAction(
   try {
     await updateTask(taskId, { isPriority: newIsPriority });
 
-    revalidateTag(CacheTags.tasks());
-    revalidateTag(CacheTags.userTasks(session.user.id));
-    revalidateTag(CacheTags.task(taskId));
-    revalidatePath("/webapp/tasks");
-    revalidatePath("/webapp", "layout");
+    revalidateTaskData(session.user.id, { taskId });
     return {
       success: true,
       message: `Task priority ${newIsPriority ? "added" : "removed"}`,
@@ -504,11 +489,7 @@ export async function toggleReminderAction(
   try {
     await updateTask(taskId, { isReminder: newIsReminder });
 
-    revalidateTag(CacheTags.tasks());
-    revalidateTag(CacheTags.userTasks(session.user.id));
-    revalidateTag(CacheTags.task(taskId));
-    revalidatePath("/webapp/tasks");
-    revalidatePath("/webapp", "layout");
+    revalidateTaskData(session.user.id, { taskId });
     return {
       success: true,
       message: `Task reminder ${newIsReminder ? "added" : "removed"}`,
@@ -536,11 +517,7 @@ export async function updateTaskExperienceAction(
       experience: newExperience,
     });
 
-    revalidateTag(CacheTags.tasks());
-    revalidateTag(CacheTags.userTasks(session.user.id));
-    revalidateTag(CacheTags.task(taskId));
-    revalidatePath("/webapp/tasks");
-    revalidatePath("/webapp", "layout");
+    revalidateTaskData(session.user.id, { taskId });
     return {
       success: true,
     };
@@ -634,12 +611,10 @@ export async function completeRepeatingTaskWithInterval(
       risk: false,
     });
 
-    revalidateTag(CacheTags.tasks());
-    revalidateTag(CacheTags.userTasks(session.user.id));
-    revalidateTag(CacheTags.task(task.id));
-    revalidateTag(CacheTags.user(session.user.id)); // User stats changed
-    revalidatePath("/webapp/tasks");
-    revalidatePath("/webapp", "layout");
+    revalidateTaskData(session.user.id, {
+      taskId: task.id,
+      includeUser: true,
+    });
 
     return {
       success: true,
@@ -732,7 +707,8 @@ export async function completeRepeatingTaskWithTimesPerWeek(
     repetitionRule: {
       ...rule,
       completedAt: [...rule.completedAt, completionDate],
-      completions: newCompletions,
+      //completions: newCompletions
+      completions: isWeekComplete ? 0 : newCompletions,
     },
     // Only set completedAt when the full week cycle is complete
     // firestore ignores undefined values
@@ -765,12 +741,10 @@ export async function completeRepeatingTaskWithTimesPerWeek(
       risk: false,
     });
 
-    revalidateTag(CacheTags.tasks());
-    revalidateTag(CacheTags.userTasks(session.user.id));
-    revalidateTag(CacheTags.task(task.id));
-    revalidateTag(CacheTags.user(session.user.id)); // User stats changed
-    revalidatePath("/webapp/tasks");
-    revalidatePath("/webapp", "layout");
+    revalidateTaskData(session.user.id, {
+      taskId: task.id,
+      includeUser: true,
+    });
 
     return {
       success: true,
@@ -839,7 +813,8 @@ export async function completeRepeatingTaskWithDaysOfWeek(
     const nextWeekStart = addWeeks(currentWeekStart, 1);
     const correctStartDate = addDays(
       nextWeekStart,
-      firstDayInWeek === 0 ? 7 : firstDayInWeek, // Sunday (0) becomes day 7
+      firstDayInWeek === 0 ? 6 : firstDayInWeek - 1,
+      //firstDayInWeek === 0 ? 7 : firstDayInWeek //sunday (0) becomes day 7
     );
     newStartDate = correctStartDate.getTime();
     nextDueDateObj = new Date(correctStartDate);
@@ -878,7 +853,8 @@ export async function completeRepeatingTaskWithDaysOfWeek(
     repetitionRule: {
       ...rule,
       completedAt: [...rule.completedAt, completionDate],
-      completions: newCompletions,
+      completions: isWeekComplete ? 0 : newCompletions,
+      //completions: newCompletions
     },
     // Only set completedAt when the full week cycle is complete
     completedAt: isWeekComplete ? completionDate : undefined,
@@ -910,12 +886,10 @@ export async function completeRepeatingTaskWithDaysOfWeek(
       risk: false,
     });
 
-    revalidateTag(CacheTags.tasks());
-    revalidateTag(CacheTags.userTasks(session.user.id));
-    revalidateTag(CacheTags.task(task.id));
-    revalidateTag(CacheTags.user(session.user.id)); // User stats changed
-    revalidatePath("/webapp/tasks");
-    revalidatePath("/webapp", "layout");
+    revalidateTaskData(session.user.id, {
+      taskId: task.id,
+      includeUser: true,
+    });
 
     return {
       success: true,
@@ -1039,11 +1013,7 @@ export async function autoDelayIncompleteTodayTasks(): Promise<ActionResult> {
         `Auto-delayed ${delayedCount} regular task(s) to tomorrow for user ${session.user.id}`,
       );
 
-      revalidateTag(CacheTags.tasks());
-      revalidateTag(CacheTags.userTasks(session.user.id));
-      revalidatePath("/webapp/today");
-      revalidatePath("/webapp/tasks");
-      revalidatePath("/webapp", "layout");
+      scheduleTaskRevalidation(session.user.id);
     }
 
     await userRef.update({
@@ -1066,10 +1036,3 @@ export async function autoDelayIncompleteTodayTasks(): Promise<ActionResult> {
   }
 }
 
-export const refreshTasks = async (userId: string) => {
-  revalidateTag(CacheTags.tasks());
-  revalidateTag(CacheTags.userTasks(userId));
-  revalidatePath("/webapp/tasks");
-  revalidatePath("/webapp", "layout");
-  //revalidatePath("/webapp");
-};

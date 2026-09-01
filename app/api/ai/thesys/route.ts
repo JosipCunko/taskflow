@@ -49,7 +49,7 @@ function createSSEEncoder() {
       encoder.encode(`data: ${JSON.stringify({ type, ...data })}\n\n`),
     encodeContent: (content: string) =>
       encoder.encode(
-        `data: ${JSON.stringify({ type: "content", content })}\n\n`
+        `data: ${JSON.stringify({ type: "content", content })}\n\n`,
       ),
   };
 }
@@ -57,7 +57,7 @@ function createSSEEncoder() {
 // Helper to parse a single SSE line and update stream state
 function parseSSELine(
   line: string,
-  state: StreamState
+  state: StreamState,
 ): { content?: string; done?: boolean } {
   if (!line.startsWith("data: ")) return {};
 
@@ -139,7 +139,7 @@ async function processStream(
   reader: ReadableStreamDefaultReader<Uint8Array>,
   decoder: TextDecoder,
   state: StreamState,
-  onContent?: (content: string) => void
+  onContent?: (content: string) => void,
 ): Promise<void> {
   while (true) {
     const { done, value } = await reader.read();
@@ -224,7 +224,7 @@ FORMATTING BEST PRACTICES:
 🔧 AVAILABLE FUNCTIONS & WHEN TO USE THEM
 
 You have access to these functions: ${AI_FUNCTIONS.map((f) => f.name).join(
-  ", "
+  ", ",
 )}
 
 CRITICAL FUNCTION CALLING RULES:
@@ -378,7 +378,7 @@ function formatErrorResponse(
   message: string,
   type: string = "api_error",
   code: string = "unknown_error",
-  param: string | null = null
+  param: string | null = null,
 ): ThesysAPIError {
   return {
     error: {
@@ -475,10 +475,10 @@ export async function POST(request: NextRequest) {
         formatErrorResponse(
           "You must be logged in to use the AI assistant.",
           "authentication_error",
-          "unauthorized"
-        )
+          "unauthorized",
+        ),
       ),
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -488,10 +488,10 @@ export async function POST(request: NextRequest) {
         formatErrorResponse(
           "AI service is not configured. Please contact support.",
           "configuration_error",
-          "missing_api_key"
-        )
+          "missing_api_key",
+        ),
       ),
-      { status: 500 }
+      { status: 500 },
     );
   }
 
@@ -503,10 +503,10 @@ export async function POST(request: NextRequest) {
         formatErrorResponse(
           "User not found.",
           "authentication_error",
-          "user_not_found"
-        )
+          "user_not_found",
+        ),
       ),
-      { status: 404 }
+      { status: 404 },
     );
   }
 
@@ -533,13 +533,13 @@ export async function POST(request: NextRequest) {
               : "Upgrade to Ultra for unlimited prompts."
           }`,
           "rate_limit_error",
-          "daily_limit_exceeded"
+          "daily_limit_exceeded",
         ),
         userFriendly: true,
         remaining,
         plan,
       }),
-      { status: 429 }
+      { status: 429 },
     );
   }
 
@@ -552,10 +552,10 @@ export async function POST(request: NextRequest) {
         formatErrorResponse(
           "Invalid request format.",
           "invalid_request_error",
-          "invalid_json"
-        )
+          "invalid_json",
+        ),
       ),
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -573,10 +573,10 @@ export async function POST(request: NextRequest) {
         formatErrorResponse(
           "Invalid messages format. Expected an array.",
           "invalid_request_error",
-          "invalid_messages"
-        )
+          "invalid_messages",
+        ),
       ),
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -612,7 +612,7 @@ export async function POST(request: NextRequest) {
           temperature: 0.7,
           stream: true,
         }),
-      }
+      },
     );
 
     if (!response.ok) {
@@ -626,11 +626,11 @@ export async function POST(request: NextRequest) {
           ...formatErrorResponse(
             parsedError.message,
             "api_error",
-            parsedError.code
+            parsedError.code,
           ),
           userFriendly: parsedError.userFriendly,
         }),
-        { status: response.status }
+        { status: response.status },
       );
     }
 
@@ -703,7 +703,7 @@ export async function POST(request: NextRequest) {
                   temperature: 0.7,
                   stream: true,
                 }),
-              }
+              },
             );
 
             if (followUpResponse.ok) {
@@ -722,7 +722,7 @@ export async function POST(request: NextRequest) {
                   followUpState,
                   (content) => {
                     controller.enqueue(sse.encodeContent(content));
-                  }
+                  },
                 );
 
                 state.fullContent = followUpState.fullContent;
@@ -732,21 +732,21 @@ export async function POST(request: NextRequest) {
               console.error("Follow-up request error:", followUpError);
               controller.enqueue(
                 sse.encodeContent(
-                  "\n\n*Note: There was an issue processing the results. Please try again.*"
-                )
+                  "\n\n*Note: There was an issue processing the results. Please try again.*",
+                ),
               );
             }
 
             // Send function results to client
             controller.enqueue(
-              sse.encode("tool_results", { results: executedFunctionResults })
+              sse.encode("tool_results", { results: executedFunctionResults }),
             );
           }
 
           // Calculate duration
           const endTime = Date.now();
           const duration = parseFloat(
-            ((endTime - startTime) / 1000).toFixed(2)
+            ((endTime - startTime) / 1000).toFixed(2),
           );
 
           // Save chat messages to database with actual function results
@@ -754,7 +754,9 @@ export async function POST(request: NextRequest) {
             role: "assistant",
             content: state.fullContent,
             duration,
-            functionResults: executedFunctionResults || undefined,
+            ...(executedFunctionResults && executedFunctionResults.length > 0
+              ? { functionResults: executedFunctionResults }
+              : {}),
             modelId: model,
           };
 
@@ -766,8 +768,12 @@ export async function POST(request: NextRequest) {
           let newChatId = chatId;
           try {
             newChatId = await saveChatMessages(userId, allMessages, chatId);
+          } catch (saveError) {
+            console.error("Error saving chat:", saveError);
+          }
 
-            // Increment prompt count for rate limiting
+          // Count the prompt even if chat persistence fails
+          try {
             const userRef = adminDb.collection("users").doc(userId);
             await userRef.update({
               aiPromptsToday: (promptsToday || 0) + 1,
@@ -775,13 +781,13 @@ export async function POST(request: NextRequest) {
             });
             revalidateTag(CacheTags.user(userId));
             revalidateTag(CacheTags.users());
-          } catch (saveError) {
-            console.error("Error saving chat:", saveError);
+          } catch (usageError) {
+            console.error("Error updating AI prompt usage:", usageError);
           }
 
           // Send completion
           controller.enqueue(
-            sse.encode("done", { chatId: newChatId, duration })
+            sse.encode("done", { chatId: newChatId, duration }),
           );
           controller.close();
         } catch (error) {
@@ -790,7 +796,7 @@ export async function POST(request: NextRequest) {
             sse.encode("error", {
               error:
                 "An error occurred while processing your request. Please try again.",
-            })
+            }),
           );
           controller.close();
         }
@@ -811,10 +817,10 @@ export async function POST(request: NextRequest) {
         formatErrorResponse(
           "An unexpected error occurred. Please try again.",
           "internal_error",
-          "server_error"
-        )
+          "server_error",
+        ),
       ),
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

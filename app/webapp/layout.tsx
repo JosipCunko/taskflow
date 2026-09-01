@@ -4,15 +4,17 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import TopSidebar from "../_components/TopSidebar";
 import AnimatedSidebar from "../_components/AnimatedSidebar";
-import dynamic from "next/dynamic";
+import dynamicImport from "next/dynamic";
 import { getUserById } from "../_lib/user-admin";
 import Providers from "./providers";
 import PWAInstall from "../_components/PWAInstall";
 import OfflineIndicator from "../_components/OfflineIndicator";
+import RefreshOnFocus from "../_components/RefreshOnFocus";
 
-// Dynamic imports for background/non-critical components
-const AnalyticsTracker = dynamic(
-  () => import("../_components/AnalyticsTracker")
+export const dynamic = "force-dynamic";
+
+const AnalyticsTracker = dynamicImport(
+  () => import("../_components/AnalyticsTracker"),
 );
 
 export default async function RootLayout({
@@ -34,12 +36,15 @@ export default async function RootLayout({
         receiveUpdateNotifications={userData.receiveUpdateNotifications ?? true}
       />
       <OfflineIndicator />
+      <RefreshOnFocus />
       <AnalyticsTracker userData={userData} />
       <main className="grid grid-rows-1 grid-cols-1 sm:grid-cols-[16rem_1fr] relative h-screen bg-background-625">
         <AnimatedSidebar />
         <div className="h-screen flex flex-col px-2 sm:px-4 lg:px-6 relative overflow-hidden">
           <TopSidebar session={session} tasks={tasks} />
-          <div className="overflow-y-auto overflow-x-hidden">{children}</div>
+          <div className="overflow-y-auto overflow-x-hidden h-full">
+            {children}
+          </div>
         </div>
       </main>
     </Providers>

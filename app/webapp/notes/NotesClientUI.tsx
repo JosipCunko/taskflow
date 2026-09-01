@@ -9,15 +9,7 @@ import {
 } from "@/app/_lib/notesActions";
 import Button from "@/app/_components/reusable/Button";
 import Input from "@/app/_components/reusable/Input";
-import {
-  PlusCircle,
-  Save,
-  Trash2,
-  XCircle,
-  Edit3,
-  Sigma,
-  SearchIcon,
-} from "lucide-react";
+import { PlusCircle, Save, Trash2, XCircle, Edit3, Sigma } from "lucide-react";
 import { errorToast, formatDateTime, successToast } from "@/app/_utils/utils";
 import AutoGrowTextarea from "@/app/_components/notes/AutoGrowTextarea";
 import MathSymbolsModal from "@/app/_components/notes/MathSymbolsModal";
@@ -225,7 +217,6 @@ export default function NotesClientUI({
 
       {notes.length > 0 && (
         <div className="mb-6">
-          <SearchIcon size={10} />
           <Search
             value={searchQuery}
             onChange={setSearchQuery}

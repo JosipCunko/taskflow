@@ -72,23 +72,23 @@ export default function NutritionGraphs() {
   };
 
   const currentNutrient = NUTRIENT_OPTIONS.find(
-    (n) => n.value === selectedNutrient
+    (n) => n.value === selectedNutrient,
   )!;
   const hasData = data && data.dataPoints.length > 0;
 
   return (
-    <div className="bg-background-600 border border-background-500 rounded-xl shadow-lg p-6">
-      <div className="mb-6">
+    <div className="bg-background-600 border border-background-500 rounded-xl shadow-lg sm:p-6 py-6 px-0">
+      <div className="mb-6 sm:px-0 px-2">
         <h2 className="text-2xl font-semibold text-text-low flex items-center gap-2 mb-2">
-          <TrendingUp className="w-6 h-6 text-primary-500" />
-          <span>Nutrition Progress</span>
+          <TrendingUp className="w-5 h-5 min-w-5 text-primary-500" />
+          <span className="text-nowrap">Nutrition Progress</span>
         </h2>
         <p className="text-text-low text-sm">
           Track your nutrition trends over time
         </p>
       </div>
 
-      <div className="mb-6 space-y-4">
+      <div className="mb-6 space-y-4 sm:px-0 px-2">
         <div>
           <label className="block text-sm font-medium text-text-med mb-2">
             Time Period
@@ -163,7 +163,7 @@ export default function NutritionGraphs() {
       )}
 
       {/* Chart */}
-      <div className="bg-background-700 rounded-lg p-4">
+      <div className="bg-background-700 rounded-lg sm:p-4 p-2">
         {isPending && (
           <div className="h-[400px] flex items-center justify-center">
             <div className="text-text-low">Loading...</div>

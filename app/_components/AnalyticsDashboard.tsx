@@ -20,7 +20,7 @@ import { AnalyticsLoadingSkeleton } from "./skeleton/AnalyticsLoadingSkeleton";
 
 export default function AnalyticsDashboard({ user }: { user: AppUser }) {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(
-    null
+    null,
   );
   const [isLoading, startTransition] = useTransition();
 
@@ -40,7 +40,7 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
           const analyticsResponse = await fetch("/api/analytics");
           if (!analyticsResponse.ok) {
             throw new Error(
-              `Analytics API failed: ${analyticsResponse.status}`
+              `Analytics API failed: ${analyticsResponse.status}`,
             );
           }
           const data = await analyticsResponse.json();
@@ -146,8 +146,8 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
                         (usage /
                           Math.max(
                             ...Object.values(analyticsData.pagesVisited).filter(
-                              (v) => v > 0
-                            )
+                              (v) => v > 0,
+                            ),
                           )) *
                         100
                       }%`,
@@ -162,7 +162,7 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
       <WeeklyPointsGrowthChart data={analyticsData.pointsGrowth} />
       {/* Achievement Analytics */}
       <div className="bg-background-700 rounded-lg p-6 relative">
-        <h3 className="text-lg font-semibold text-text-high mb-4 flex items-center">
+        <h3 className="sm:mt-0 mt-3 text-lg font-semibold text-text-high mb-4 flex items-center">
           <Award className="w-5 h-5 mr-2 text-yellow-400" />
           All Achievements
         </h3>
@@ -172,22 +172,22 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
               {analyticsData.allAchievements.map((achievement, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between py-2 px-3 rounded-lg bg-background-600 hover:bg-background-500 transition-colors"
+                  className="flex sm:gap-0 flex-wrap gap-1 items-center justify-between py-2 px-3 rounded-lg bg-background-600 hover:bg-background-500 transition-colors"
                 >
-                  <div className="flex items-center space-x-3">
+                  <span className="text-nowrap flex items-center space-x-3">
                     <span className="text-2xl">
                       {achievement.type === "streak_milestone"
                         ? "🔥"
                         : achievement.type === "points_milestone"
-                        ? "🏆"
-                        : achievement.type === "task_completionist"
-                        ? "✅"
-                        : "🎯"}
+                          ? "🏆"
+                          : achievement.type === "task_completionist"
+                            ? "✅"
+                            : "🎯"}
                     </span>
                     <span className="text-sm text-text-low capitalize">
                       {achievement.id.replaceAll("_", " ")}
                     </span>
-                  </div>
+                  </span>
                   <span className="text-xs text-text-low">
                     {formatDate(achievement.unlockedAt)}
                   </span>
@@ -347,7 +347,7 @@ const WeeklyPointsGrowthChart = ({ data }: { data: number[] }) => {
   }));
 
   return (
-    <div className="bg-background-700 rounded-lg p-6">
+    <div className="bg-background-700 rounded-lg sm:p-6 py-6 px-2">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-accent/10 rounded-lg">
@@ -363,7 +363,7 @@ const WeeklyPointsGrowthChart = ({ data }: { data: number[] }) => {
       </div>
 
       <div className="h-80 relative">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" className="-ml-6">
           <RechartsLineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
             <XAxis dataKey="week" stroke="#9ca3af" fontSize={12} />

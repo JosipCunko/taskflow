@@ -126,25 +126,14 @@ export default function NotificationBell() {
             urgentCount > 0
               ? "bg-red-500"
               : priorityCount > 0
-              ? "bg-orange-500"
-              : "bg-blue-500"
+                ? "bg-orange-500"
+                : "bg-blue-500"
           }
           animate-pulse
         `}
         >
           {formatNotificationCount(stats.totalUnread)}
         </div>
-      )}
-
-      {/* Priority indicator */}
-      {priorityCount > 0 && (
-        <div
-          className={`
-          absolute -bottom-1 -right-1 w-2 h-2 rounded-full
-          ${urgentCount > 0 ? "bg-red-400" : "bg-orange-400"}
-          animate-bounce
-        `}
-        />
       )}
     </Link>
   );

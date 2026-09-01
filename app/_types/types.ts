@@ -357,10 +357,12 @@ export interface DailyNutritionSummary {
   loggedMeals: LoggedMeal[];
 }
 
+// Only the fields relevant to the exercise's tracking mode are stored:
+// weighted -> weight + reps, bodyweight -> reps, hold -> duration.
 export interface WorkoutSet {
-  weight: number;
-  reps: number;
-  // For hold-based exercises (e.g. planche/handstand/plank), store duration in seconds. Weight/reps are still present for internal consistency.
+  weight?: number;
+  reps?: number;
+  /** Seconds held, for hold-based exercises (e.g. planche/handstand/plank). */
   duration?: number;
 }
 
@@ -369,6 +371,8 @@ export interface LoggedExercise {
   exerciseName: string;
   order?: number;
   hold?: boolean;
+  /** Bodyweight movement (e.g. muscle up, hanging leg raise) — reps only, no load. */
+  bodyweight?: boolean;
   volume: WorkoutSet[];
 }
 
@@ -393,6 +397,7 @@ export interface Exercise {
   equipment?: string;
   instructions?: string[];
   hold?: boolean;
+  bodyweight?: boolean;
 }
 
 export interface WorkoutTemplate {
@@ -405,16 +410,16 @@ export interface WorkoutTemplate {
 
 export interface PersonalRecord {
   exercise: string;
-  weight: number;
-  reps: number;
+  weight?: number;
+  reps?: number;
   duration?: number;
   date: number;
 }
 
 export interface ExerciseProgressPoint {
   date: number;
-  maxWeight: number;
-  maxReps: number;
+  maxWeight?: number;
+  maxReps?: number;
   maxDuration?: number;
   sets: number;
 }
@@ -432,7 +437,7 @@ export interface ExerciseProgress {
 }
 
 export interface LastPerformance {
-  weight: number;
+  weight?: number;
   reps: number;
   sets: number;
   date: number;

@@ -26,6 +26,7 @@ import {
 import { checkAndAwardAchievements } from "./achievements";
 import { getTasksByUserId } from "./tasks-admin";
 import { generateNotificationsForUser } from "./notifications-admin";
+import { scheduleTaskRevalidation } from "../_utils/serverCache";
 
 interface FirebaseUser {
   uid: string;
@@ -406,15 +407,9 @@ export async function updateUserRepeatingTasks(userId: string) {
       )}) done updating for user: ${userId}.`,
     );
 
-    /* “used revalidateTag during render” crash
-    revalidateTag(CacheTags.tasks());
-    revalidateTag(CacheTags.userTasks(userId));
-    revalidateTag(CacheTags.user(userId));
-    revalidatePath("/webapp");
-    revalidatePath("/webapp", "layout");
-    revalidatePath("/webapp/tasks");
-    revalidatePath("/webapp/today");
-    */
+    // Cannot revalidateTag during render (JWT callback). Schedule it after
+    // the response so later navigations and other devices see fresh data.
+    scheduleTaskRevalidation(userId, { includeUser: true });
   } else {
     console.log(`No repeating task updates needed for user: ${userId}.`);
   }
@@ -766,11 +761,15 @@ export const authOptions: NextAuthOptions = {
                 updates.aiPromptsToday = 0;
               }
 
-              // Recently added notif generation on jwt callback, because noitfs are created only when the user goes to the inbox page
-              const tasks = await getTasksByUserId(token.uid);
+              // Write repeating-task resets BEFORE reading tasks so notifications
+              // and the page that triggered this JWT refresh see Firestore, not
+              // pre-reset data.
               await Promise.all([
                 userDocRef.update(updates),
                 updateUserRepeatingTasks(token.uid),
+              ]);
+              const tasks = await getTasksByUserId(token.uid);
+              await Promise.all([
                 checkAndAwardAchievements(token.uid),
                 generateNotificationsForUser(token.uid, tasks),
               ]);

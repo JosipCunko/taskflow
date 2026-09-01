@@ -74,6 +74,7 @@ export const defaultExercises: Omit<Exercise, "id">[] = [
     name: "Push-ups",
     category: "Chest",
     muscleGroups: ["Chest", "Triceps", "Core"],
+    bodyweight: true,
     equipment: "Bodyweight",
     instructions: [
       "Place hands slightly wider than shoulders",
@@ -114,6 +115,18 @@ export const defaultExercises: Omit<Exercise, "id">[] = [
     name: "Pull-ups",
     category: "Back",
     muscleGroups: ["Lats", "Biceps", "Rhomboids"],
+    bodyweight: true,
+    equipment: "Pull-up Bar",
+    instructions: [
+      "Hang from bar with overhand grip",
+      "Pull chest toward bar",
+      "Lower under control",
+    ],
+  },
+  {
+    name: "Weighted pull-ups",
+    category: "Back",
+    muscleGroups: ["Lats", "Biceps", "Rhomboids"],
     equipment: "Pull-up Bar",
     instructions: [
       "Hang from bar with overhand grip",
@@ -125,6 +138,7 @@ export const defaultExercises: Omit<Exercise, "id">[] = [
     name: "Chin-ups",
     category: "Back",
     muscleGroups: ["Lats", "Biceps"],
+    bodyweight: true,
     equipment: "Pull-up Bar",
     instructions: [
       "Use underhand grip, shoulder-width apart",
@@ -218,6 +232,7 @@ export const defaultExercises: Omit<Exercise, "id">[] = [
     name: "Muscle Up",
     category: "Back",
     muscleGroups: ["Lats", "Chest", "Triceps", "Shoulders", "Core"],
+    bodyweight: true,
     equipment: "Bodyweight",
     instructions: [
       "Hang from bar with overhand grip, hands slightly wider than shoulders",
@@ -445,6 +460,7 @@ export const defaultExercises: Omit<Exercise, "id">[] = [
     name: "Handstand Push-ups",
     category: "Shoulders",
     muscleGroups: ["Shoulders", "Triceps", "Core"],
+    bodyweight: true,
     equipment: "Bodyweight",
     instructions: [
       "Start in handstand position against wall",
@@ -504,7 +520,19 @@ export const defaultExercises: Omit<Exercise, "id">[] = [
     ],
   },
   {
-    name: "Tricep Dips",
+    name: "Dips",
+    category: "Arms",
+    muscleGroups: ["Triceps"],
+    bodyweight: true,
+    equipment: "Parallel Bars / Bench",
+    instructions: [
+      "Support body on bars with arms straight",
+      "Lower until elbows at 90°",
+      "Press back up",
+    ],
+  },
+  {
+    name: "Weighted dips",
     category: "Arms",
     muscleGroups: ["Triceps"],
     equipment: "Parallel Bars / Bench",
@@ -599,6 +627,7 @@ export const defaultExercises: Omit<Exercise, "id">[] = [
     name: "Hanging Leg Raise",
     category: "Core",
     muscleGroups: ["Lower Abs", "Hip Flexors"],
+    bodyweight: true,
     equipment: "Pull-up Bar",
     instructions: [
       "Hang from bar",
@@ -630,6 +659,7 @@ export const defaultExercises: Omit<Exercise, "id">[] = [
     name: "Ab Wheel Rollout",
     category: "Core",
     muscleGroups: ["Abs", "Core", "Lats"],
+    bodyweight: true,
     equipment: "Ab Wheel",
     instructions: [
       "Kneel with wheel in hands",
