@@ -65,6 +65,19 @@ export default function CalendarSkeleton() {
           </div>
         </div>
       </div>
+
+      {/* Repeating tasks section skeleton */}
+      <div className="mt-6 md:mt-8 bg-background-600 p-4 sm:p-6 rounded-xl shadow-xl animate-pulse">
+        <div className="flex items-center mb-4 sm:mb-6">
+          <div className="w-6 h-6 bg-background-500 rounded mr-2"></div>
+          <div className="h-6 w-64 bg-background-500 rounded"></div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+          {[...Array(3)].map((_, i) => (
+            <TaskCardSmallSkeleton key={i} />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

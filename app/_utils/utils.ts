@@ -444,10 +444,13 @@ export const formatDate = (
     tomorrow.setDate(today.getDate() + 1);
 
     const givenDate = startOfDay(dateObj);
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
 
     if (namedDates) {
       if (isEqual(givenDate, today)) return "Today";
       if (isEqual(givenDate, tomorrow)) return "Tomorrow";
+      if (isEqual(givenDate, yesterday)) return "Yesterday";
     }
 
     return dateObj.toLocaleDateString(

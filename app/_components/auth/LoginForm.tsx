@@ -134,25 +134,6 @@ export default function LoginForm() {
     }
   };
 
-
-    try {
-    } catch (errUnknown: unknown) {
-      const googleError = errUnknown as {
-        message?: string;
-        code?: string;
-      };
-      let errorMessage = "Failed to sign in with Google.";
-      if (googleError.message) {
-        errorMessage = googleError.message;
-      }
-      if (googleError.code === "auth/popup-closed-by-user") {
-        errorMessage = "Sign-in process cancelled.";
-      }
-      setError(errorMessage);
-      console.error("Google Sign-In error:", googleError);
-      setIsLoading(false);
-    }
-
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setError(null);
@@ -163,7 +144,7 @@ export default function LoginForm() {
         : "/webapp";
       */
       await signInWithGoogle();
-    } catch (errUnknown:unknown) {
+    } catch (errUnknown: unknown) {
       const googleError = errUnknown as {
         message?: string;
         code?: string;
@@ -306,10 +287,10 @@ export default function LoginForm() {
             {isLoading && !isSignUp && !error
               ? "Signing In..."
               : isLoading && isSignUp && !error
-              ? "Creating Account..."
-              : isSignUp
-              ? "Create Account"
-              : "Sign In"}
+                ? "Creating Account..."
+                : isSignUp
+                  ? "Create Account"
+                  : "Sign In"}
           </Button>
         </motion.form>
 

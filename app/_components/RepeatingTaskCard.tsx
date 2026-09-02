@@ -240,7 +240,7 @@ export default function RepeatingTaskCard({ task }: { task: Task }) {
       </div>
       <div className="flex items-center justify-between text-xs text-text-low mt-3 pt-2 border-t border-divider/30">
         <div className="flex items-center gap-1">
-          <CalendarDays size={12} className="opacity-70 flex-shrink-0" />
+          <CalendarDays size={12} className="opacity-70 flex-shrink-0 mr-1" />
           <span>{nextInstanceInfo}</span>
         </div>
         {task.risk && !isFullyCompletedForCurrentCycle && (

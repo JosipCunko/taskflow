@@ -7,17 +7,82 @@ import { CardSpecificIcons, getTaskIconByName } from "../_utils/icons";
 import { Task } from "../_types/types";
 import DurationCalculator from "./DurationCalculator";
 import { Calendar, Repeat, CheckCircle2 } from "lucide-react";
-import { isPast, isToday } from "date-fns";
+import { isBefore, isPast, isToday, startOfDay } from "date-fns";
+import { wasRepeatingTaskCompletedOnDate } from "../_lib/repeatingTasks";
 
-export default function TaskCardSmall({ task }: { task: Task }) {
+function getLiveTaskDotColor(task: Task): string {
+  if (task.status === "completed") return "#10b981";
+  if (task.status === "pending") {
+    return isPast(task.dueDate) ? "#ef4444" : "#f59e0b";
+  }
+  return "#ef4444";
+}
+
+function getActivitySnapshotDotColor(task: Task): string {
+  if (task.status === "completed") return "#10b981";
+  if (task.status === "delayed") return "#ef4444";
+  return "#f59e0b";
+}
+
+export default function TaskCardSmall({
+  task,
+  forDate,
+  showDot = true,
+}: {
+  task: Task;
+  /** Calendar-only: the day this repeating occurrence is being shown for. */
+  forDate?: Date;
+  showDot?: boolean;
+}) {
   const IconComponent = getTaskIconByName(task.icon);
-  const statusInfo = getStatusStyles(task.status);
+  const isCalendarOccurrence = Boolean(forDate);
+  const completedOnViewedDate = forDate
+    ? wasRepeatingTaskCompletedOnDate(task, forDate)
+    : false;
+  const missedOnViewedDate =
+    Boolean(forDate) &&
+    !completedOnViewedDate &&
+    isBefore(startOfDay(forDate as Date), startOfDay(new Date()));
 
-  // Get repeating task information if applicable
+  const displayStatus = completedOnViewedDate
+    ? "completed"
+    : isCalendarOccurrence
+      ? "pending"
+      : task.status;
+  const statusInfo = missedOnViewedDate
+    ? {
+        icon: CardSpecificIcons.StatusMissed,
+        text: "Missed",
+        colorClass: "text-red-400",
+        bgColorClass: "bg-red-500/10",
+      }
+    : getStatusStyles(displayStatus);
+
   const repeatingInfo =
     task.isRepeating && task.repetitionRule ? getRepeatingTaskInfo(task) : null;
 
   const isFullyCompletedForCurrentCycle = task.status === "completed";
+  const showCurrentCycleProgress = !isCalendarOccurrence || isToday(forDate!);
+
+  const formattedViewedDate = forDate ? formatDate(forDate) : "";
+  const dateLabel = forDate
+    ? completedOnViewedDate
+      ? `Completed ${formattedViewedDate}`
+      : missedOnViewedDate
+        ? `Was available on ${formattedViewedDate}`
+        : `Available ${formattedViewedDate}`
+    : formatDate(task.dueDate);
+
+  const isActivitySnapshot = !task.id;
+  const dotColor = isCalendarOccurrence
+    ? completedOnViewedDate
+      ? "#10b981"
+      : missedOnViewedDate
+        ? "#ef4444"
+        : "#f59e0b"
+    : isActivitySnapshot
+      ? getActivitySnapshotDotColor(task)
+      : getLiveTaskDotColor(task);
 
   return (
     <li className="group relative list-none overflow-hidden cursor-default">
@@ -50,8 +115,12 @@ export default function TaskCardSmall({ task }: { task: Task }) {
 
         {/* Due Date - Always show for both regular and repeating tasks */}
         <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs font-medium bg-background-800/60 text-text-low border border-background-500/40">
-          <Calendar size={12} />
-          <span>{formatDate(task.dueDate)}</span>
+          {completedOnViewedDate ? (
+            <CheckCircle2 size={12} className="text-green-400" />
+          ) : (
+            <Calendar size={12} />
+          )}
+          <span>{dateLabel}</span>
         </div>
 
         {/* Repeating task info - compact version */}
@@ -61,14 +130,17 @@ export default function TaskCardSmall({ task }: { task: Task }) {
             <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs font-medium bg-background-800/60 text-text-low border border-background-500/40">
               <Repeat size={12} />
               <span className="text-left text-balance">
-                {repeatingInfo.nextInstanceInfo}
+                {isCalendarOccurrence
+                  ? repeatingInfo.repetitionSummary
+                  : repeatingInfo.nextInstanceInfo}
               </span>
             </div>
 
             {/* Progress Bar for weekly tasks */}
-            {(task.repetitionRule?.timesPerWeek ||
-              (task.repetitionRule?.daysOfWeek &&
-                task.repetitionRule?.daysOfWeek.length > 0)) &&
+            {showCurrentCycleProgress &&
+              (task.repetitionRule?.timesPerWeek ||
+                (task.repetitionRule?.daysOfWeek &&
+                  task.repetitionRule?.daysOfWeek.length > 0)) &&
               repeatingInfo.progressPercentage >= 0 && (
                 <div className="w-full bg-background-500 rounded-full h-1.5 overflow-hidden">
                   <div
@@ -82,7 +154,8 @@ export default function TaskCardSmall({ task }: { task: Task }) {
               )}
 
             {/* Completion fraction */}
-            {repeatingInfo.completionFraction &&
+            {showCurrentCycleProgress &&
+              repeatingInfo.completionFraction &&
               !isFullyCompletedForCurrentCycle && (
                 <div className="text-2xs text-text-low text-right">
                   <span>{repeatingInfo.completionFraction} done</span>
@@ -92,19 +165,23 @@ export default function TaskCardSmall({ task }: { task: Task }) {
         )}
 
         <div className="flex flex-wrap gap-2 items-center">
-          <div
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border backdrop-blur-sm ${statusInfo.bgColorClass} ${statusInfo.colorClass} shadow-sm`}
-          >
-            <statusInfo.icon size={13} />
-            <span>{statusInfo.text}</span>
-            {task.status === "delayed" && task.delayCount > 0 && (
-              <span
-                className={`ml-1 font-bold ${statusInfo.colorClass} bg-current/20 px-1.5 py-0.5 rounded-full text-[10px]`}
-              >
-                {task.delayCount}
-              </span>
-            )}
-          </div>
+          {showDot && (
+            <div
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border backdrop-blur-sm ${statusInfo.bgColorClass} ${statusInfo.colorClass} shadow-sm`}
+            >
+              <statusInfo.icon size={13} />
+              <span>{statusInfo.text}</span>
+              {task.status === "delayed" &&
+                task.delayCount > 0 &&
+                !isCalendarOccurrence && (
+                  <span
+                    className={`ml-1 font-bold ${statusInfo.colorClass} bg-current/20 px-1.5 py-0.5 rounded-full text-[10px]`}
+                  >
+                    {task.delayCount}
+                  </span>
+                )}
+            </div>
+          )}
 
           {/* Repeating task tag */}
           {task.isRepeating && (
@@ -122,7 +199,8 @@ export default function TaskCardSmall({ task }: { task: Task }) {
           )}
 
           {/* Completed Today indicator for repeating tasks */}
-          {task.isRepeating &&
+          {!isCalendarOccurrence &&
+            task.isRepeating &&
             !task.repetitionRule?.interval &&
             task.completedAt &&
             isToday(task.completedAt) && (
@@ -136,20 +214,15 @@ export default function TaskCardSmall({ task }: { task: Task }) {
         </div>
 
         {/* Floating notification dot for priority/reminder */}
-        <div
-          className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full animate-pulse"
-          style={{
-            backgroundColor:
-              task.status === "completed"
-                ? "#10b981"
-                : task.status === "pending"
-                ? isPast(task.dueDate)
-                  ? "#ef4444"
-                  : "#f59e0b"
-                : "#ef4444",
-            border: "2px solid var(--background-600)",
-          }}
-        />
+        {showDot && (
+          <div
+            className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full animate-pulse"
+            style={{
+              backgroundColor: dotColor,
+              border: "2px solid var(--background-600)",
+            }}
+          />
+        )}
 
         {/* Subtle bottom glow effect */}
         <div

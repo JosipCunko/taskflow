@@ -305,37 +305,43 @@ export default function FitnessDashboard({
             </div>
           ) : (
             <div className="space-y-3">
-              {workoutSessions.slice(0, 5).map((workout) => (
-                <Link
-                  href={`/webapp/fitness/workout?id=${workout.id}`}
-                  key={workout.id}
-                  className={cn(
-                    "block p-4 bg-background-700 rounded-lg border border-background-500 hover:bg-background-600 transition-colors",
-                    !workout.duration &&
-                      "border-primary-500/50 bg-primary-500/10 hover:bg-primary-500/20",
-                  )}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium text-text-high flex items-center gap-2">
-                        <span>{workout.name}</span>
-                        {!workout.duration ? (
-                          <span className="text-xs font-semibold bg-primary-500/20 text-primary-400 px-2 py-0.5 rounded-full">
-                            In Progress
-                          </span>
-                        ) : null}
-                      </h3>
-                      <p className="text-sm text-text-low">
-                        {formatDate(new Date(workout.createdAt))}
-                        {workout.duration ? ` • ${workout.duration} min` : ""}
-                      </p>
+              {workoutSessions.slice(0, 5).map((workout) => {
+                const isWorkoutFinished =
+                  workout.duration !== undefined && workout.duration !== null;
+                return (
+                  <Link
+                    href={`/webapp/fitness/workout?id=${workout.id}`}
+                    key={workout.id}
+                    className={cn(
+                      "block p-4 bg-background-700 rounded-lg border border-background-500 hover:bg-background-600 transition-colors",
+                      !isWorkoutFinished &&
+                        "border-primary-500/50 bg-primary-500/10 hover:bg-primary-500/20",
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium text-text-high flex items-center gap-2">
+                          <span>{workout.name}</span>
+                          {!isWorkoutFinished ? (
+                            <span className="text-xs font-semibold bg-primary-500/20 text-primary-400 px-2 py-0.5 rounded-full">
+                              In Progress
+                            </span>
+                          ) : null}
+                        </h3>
+                        <p className="text-sm text-text-low">
+                          {formatDate(new Date(workout.createdAt))}
+                          {isWorkoutFinished
+                            ? ` • ${workout.duration} min`
+                            : ""}
+                        </p>
+                      </div>
+                      <div className="text-sm text-text-low">
+                        {workout.loggedExercises.length} exercises
+                      </div>
                     </div>
-                    <div className="text-sm text-text-low">
-                      {workout.loggedExercises.length} exercises
-                    </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                );
+              })}
             </div>
           )}
         </div>

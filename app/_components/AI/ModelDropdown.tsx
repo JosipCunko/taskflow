@@ -85,10 +85,12 @@ export default function ModelDropdown({
       <Button
         variant="secondary"
         onClick={() => setIsOpen(!isOpen)}
-        className={className}
+        className={`px-2 sm:px-4 ${className ?? ""}`}
       >
         <SelectedIcon className="w-4 h-4 text-primary-500 flex-shrink-0" />
-        <span className="text-sm text-nowrap">{selectedModel.name}</span>
+        <span className="text-sm truncate max-w-[7.5rem] sm:max-w-none">
+          {selectedModel.name}
+        </span>
         <ChevronDown
           size={16}
           className={`text-text-low transition-transform ${

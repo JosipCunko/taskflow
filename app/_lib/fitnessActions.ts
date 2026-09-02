@@ -208,6 +208,7 @@ export async function completeWorkoutSessionAction(
       updatedAt: Date.now(),
     });
 
+    revalidateTag(CacheTags.userFitness(userId));
     revalidatePath("/webapp/fitness");
 
     return {

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Send, Bot, User } from "lucide-react";
+import { Send, Bot, User, History } from "lucide-react";
 import { ChatMessage, FunctionResult } from "@/app/_types/types";
 import ThinkingIndicator from "./ThinkingIndicator";
 import Image from "next/image";
@@ -61,6 +61,7 @@ interface ChatProps {
   userName?: string | null;
   userImage?: string | null;
   promptLimitInfo: PromptLimitInfo;
+  onOpenHistory?: () => void;
 }
 
 const getModelNameFromId = (modelId: string | undefined): string => {
@@ -75,6 +76,7 @@ export default function Chat({
   userName,
   userImage,
   promptLimitInfo,
+  onOpenHistory,
 }: ChatProps) {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [chatId, setChatId] = useState<string | null>(initialChatId);
@@ -116,19 +118,12 @@ export default function Chat({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      const fakeEvent = {
-        preventDefault: () => {},
-      } as React.FormEvent<HTMLFormElement>;
-      handleSubmit(fakeEvent);
+      void submitMessage(input);
     }
   };
 
   const handleExampleClick = (query: string) => {
-    setInput(query);
-    const fakeEvent = {
-      preventDefault: () => {},
-    } as React.FormEvent<HTMLFormElement>;
-    handleSubmit(fakeEvent);
+    void submitMessage(query);
   };
 
   // Send a follow-up message to the AI (used by action handlers)
@@ -324,11 +319,10 @@ export default function Chat({
     [executeCustomAction, sendFollowUpMessage],
   );
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!input.trim() || isPending || hasReachedLimit) return;
+  const submitMessage = async (messageText: string) => {
+    const userMessage = messageText.trim();
+    if (!userMessage || isPending || hasReachedLimit) return;
 
-    const userMessage = input;
     const newMessages: ChatMessage[] = [
       ...messages,
       { role: "user", content: userMessage },
@@ -476,6 +470,11 @@ export default function Chat({
     }
   };
 
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    void submitMessage(input);
+  };
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -557,8 +556,8 @@ export default function Chat({
                       disabled={isPending || hasReachedLimit}
                       autoFocus
                     />
-                    <div className="flex items-center justify-between px-2 pb-2">
-                      <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-between gap-2 px-2 pb-2">
+                      <div className="flex items-center gap-2 min-w-0">
                         <ModelDropdown
                           selectedModel={selectedModel}
                           onModelChange={setSelectedModel}
@@ -571,17 +570,29 @@ export default function Chat({
                           </span>
                         )}
                       </div>
-                      <button
-                        type="submit"
-                        disabled={isPending || !input.trim() || hasReachedLimit}
-                        className="bg-primary-500 hover:bg-primary-600 text-white p-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg shadow-primary-500/20"
-                      >
-                        {isPending ? (
-                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        ) : (
-                          <Send size={20} />
+                      <div className="flex items-center gap-2 shrink-0">
+                        {onOpenHistory && (
+                          <button
+                            type="button"
+                            onClick={onOpenHistory}
+                            className="md:hidden p-2.5 rounded-xl border border-primary-500/30 text-primary-300 hover:bg-primary-500/10 transition-colors"
+                            aria-label="Open chat history"
+                          >
+                            <History size={18} />
+                          </button>
                         )}
-                      </button>
+                        <button
+                          type="submit"
+                          disabled={isPending || !input.trim() || hasReachedLimit}
+                          className="bg-primary-500 hover:bg-primary-600 text-white p-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 active:scale-95 shadow-lg shadow-primary-500/20"
+                        >
+                          {isPending ? (
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          ) : (
+                            <Send size={20} />
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </form>
                 </div>
@@ -596,8 +607,10 @@ export default function Chat({
                 {exampleQueries.map((query, i) => (
                   <button
                     key={i}
+                    type="button"
+                    disabled={isPending || hasReachedLimit}
                     onClick={() => handleExampleClick(query.text)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-background-600 border border-background-500 hover:border-primary-500/50 hover:bg-primary-500/10 text-text-low hover:text-primary-300 transition-all duration-200 text-sm group"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-background-600 border border-background-500 hover:border-primary-500/50 hover:bg-primary-500/10 text-text-low hover:text-primary-300 transition-all duration-200 text-sm group disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <span className="text-lg opacity-70 group-hover:scale-110 transition-transform duration-200">
                       {query.icon}
@@ -749,16 +762,10 @@ export default function Chat({
 
                 <form
                   onSubmit={handleSubmit}
-                  className={`flex items-end gap-2 bg-background-600 border border-background-500 rounded-xl px-3 sm:px-4 py-2 sm:py-3 focus-within:border-primary-500/50 transition-colors ${
+                  className={`flex flex-col gap-2 bg-background-600 border border-background-500 rounded-xl px-3 sm:px-4 py-2 sm:py-3 focus-within:border-primary-500/50 transition-colors ${
                     hasReachedLimit ? "opacity-50" : ""
                   }`}
                 >
-                  <div className="flex-shrink-0 mb-0.5">
-                    <ModelDropdown
-                      selectedModel={selectedModel}
-                      onModelChange={setSelectedModel}
-                    />
-                  </div>
                   <Textarea
                     name="message"
                     value={input}
@@ -769,24 +776,42 @@ export default function Chat({
                         ? "Daily limit reached"
                         : "Ask me anything..."
                     }
-                    rows={1}
-                    className="flex-1 bg-transparent border-none focus:outline-none focus:ring-0 p-0 text-sm sm:text-base max-h-32 overflow-y-auto resize-none py-2"
+                    rows={2}
+                    className="w-full bg-transparent border-none focus:outline-none focus:ring-0 px-1 py-2 text-sm sm:text-base max-h-32 overflow-y-auto resize-none"
                     disabled={isPending || hasReachedLimit}
                     autoFocus
                   />
-                  <div className="flex items-center gap-2 flex-shrink-0 mb-0.5">
-                    {remainingPrompts !== "unlimited" && !hasReachedLimit && (
-                      <span className="text-xs text-text-low hidden sm:inline">
-                        {remainingPrompts} left
-                      </span>
-                    )}
-                    <button
-                      type="submit"
-                      className="bg-primary-500 text-white rounded-lg p-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:bg-primary-600"
-                      disabled={isPending || !input.trim() || hasReachedLimit}
-                    >
-                      <Send size={18} />
-                    </button>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <ModelDropdown
+                        selectedModel={selectedModel}
+                        onModelChange={setSelectedModel}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {remainingPrompts !== "unlimited" && !hasReachedLimit && (
+                        <span className="text-xs text-text-low hidden sm:inline">
+                          {remainingPrompts} left
+                        </span>
+                      )}
+                      {onOpenHistory && (
+                        <button
+                          type="button"
+                          onClick={onOpenHistory}
+                          className="md:hidden p-2 rounded-lg border border-primary-500/30 text-primary-300 hover:bg-primary-500/10 transition-colors"
+                          aria-label="Open chat history"
+                        >
+                          <History size={18} />
+                        </button>
+                      )}
+                      <button
+                        type="submit"
+                        className="bg-primary-500 text-white rounded-lg p-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:bg-primary-600"
+                        disabled={isPending || !input.trim() || hasReachedLimit}
+                      >
+                        <Send size={18} />
+                      </button>
+                    </div>
                   </div>
                 </form>
               </motion.div>

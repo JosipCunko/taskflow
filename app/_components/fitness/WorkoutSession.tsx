@@ -63,7 +63,8 @@ export default function WorkoutSession({
   const [manualDuration, setManualDuration] = useState<string>("");
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const isFinished = !!workout?.duration;
+  const isFinished =
+    workout?.duration !== undefined && workout?.duration !== null;
 
   // Timer for workout duration (only for live mode)
   useEffect(() => {
@@ -112,7 +113,7 @@ export default function WorkoutSession({
   }, []);
 
   const getWorkoutDuration = () => {
-    if (isFinished && workout.duration) {
+    if (isFinished && workout?.duration !== undefined) {
       return workout.duration * 60;
     }
     if (timerMode === "manual" && manualDuration) {

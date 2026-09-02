@@ -1,6 +1,97 @@
-import { startOfDay, startOfWeek, getDay, addDays } from "date-fns";
+import {
+  startOfDay,
+  startOfWeek,
+  getDay,
+  addDays,
+  addYears,
+  subYears,
+  differenceInDays,
+  isBefore,
+  isAfter,
+  isEqual,
+  isSameDay,
+} from "date-fns";
 import { DayOfWeek, Task } from "../_types/types";
 import { MONDAY_START_OF_WEEK } from "../_utils/utils";
+
+/** Calendar can be navigated at most 1 year before and 1 year after today. */
+export function getCalendarDateBounds(today: Date = new Date()) {
+  const todayStart = startOfDay(today);
+  return {
+    minDate: startOfDay(subYears(todayStart, 1)),
+    maxDate: startOfDay(addYears(todayStart, 1)),
+  };
+}
+
+export function isRepeatingTaskAvailableOnDate(
+  task: Task,
+  date: Date,
+  today: Date = new Date(),
+): boolean {
+  if (!task.isRepeating || !task.repetitionRule) return false;
+
+  const rule = task.repetitionRule;
+  const day = startOfDay(date);
+  const todayStart = startOfDay(today);
+  const { minDate, maxDate } = getCalendarDateBounds(todayStart);
+
+  if (isBefore(day, minDate) || isAfter(day, maxDate)) return false;
+
+  // startDate is the first scheduled occurrence; fall back to createdAt
+  const origin = startOfDay(task.startDate ?? task.createdAt);
+  if (isBefore(day, origin)) return false;
+
+  // ==================== INTERVAL TASKS ====================
+  if (rule.interval) {
+    if (rule.interval === 1) return true;
+    const diff = differenceInDays(day, origin);
+    return diff % rule.interval === 0;
+  }
+
+  // ==================== DAYS OF WEEK TASKS ====================
+  if (rule.daysOfWeek.length > 0) {
+    return rule.daysOfWeek.includes(getDay(day) as DayOfWeek);
+  }
+
+  // ==================== TIMES PER WEEK TASKS ====================
+  if (rule.timesPerWeek) {
+    const currentWeekStart = startOfWeek(todayStart, MONDAY_START_OF_WEEK);
+    const selectedWeekStart = startOfWeek(day, MONDAY_START_OF_WEEK);
+    const cycleWeekStart = startOfWeek(origin, MONDAY_START_OF_WEEK);
+
+    if (isBefore(selectedWeekStart, currentWeekStart)) return false;
+    if (isBefore(selectedWeekStart, cycleWeekStart)) return false;
+
+    if (isEqual(selectedWeekStart, currentWeekStart)) {
+      if (isAfter(cycleWeekStart, currentWeekStart)) return false;
+      return rule.completions < rule.timesPerWeek;
+    }
+
+    return true;
+  }
+
+  return false;
+}
+
+export function wasRepeatingTaskCompletedOnDate(
+  task: Task,
+  date: Date,
+): boolean {
+  const timestamps = task.repetitionRule?.completedAt;
+  if (!timestamps?.length) return false;
+  return timestamps.some((timestamp) => isSameDay(timestamp, date));
+}
+
+export function shouldShowRepeatingTaskOnDate(
+  task: Task,
+  date: Date,
+  today: Date = new Date(),
+): boolean {
+  return (
+    wasRepeatingTaskCompletedOnDate(task, date) ||
+    isRepeatingTaskAvailableOnDate(task, date, today)
+  );
+}
 
 export function preCreateRepeatingTask(
   interval: number | undefined,

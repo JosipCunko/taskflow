@@ -72,7 +72,7 @@ const tutorialSteps: TutorialStep[] = [
     id: "add-task",
     title: "Creating Tasks",
     description:
-      "Click the '+ New task' button in the top navigation to create new tasks. You can set due dates, priorities, customize them and even make them repeating.",
+      "Click the '+ New task' button simply create new tasks. You can set due dates, priorities, customize them and even make them repeating (really cool).",
     icon: <Plus className="w-6 h-6" />,
     route: "/webapp/tasks",
     targetSelector: '[data-tutorial="btn-add-task"]',
@@ -89,7 +89,7 @@ const tutorialSteps: TutorialStep[] = [
     id: "sidebar-view",
     title: "Many useful features",
     description:
-      "Use the sidebar to navigate to different views of your tasks - Today's tasks, all tasks, calendar, and completed tasks. You can also access your notes, health and fitness tracker, and inbox.",
+      "Use the sidebar to navigate to different views of your tasks - Today's tasks, all tasks, calendar, and completed tasks. You can also access your notes, health and fitness tracker, inbox and your ai assistant.",
     icon: <ListChecks className="w-6 h-6" />,
     route: "/webapp/tasks",
     targetSelector: '[data-tutorial="sidebar"]',
@@ -158,7 +158,7 @@ const tutorialSteps: TutorialStep[] = [
     id: "save-meal",
     title: "Save Meals",
     description:
-      "In the Health section, you can save meal templates with nutritional information that you can reuse later.",
+      "In the Health section, you can save meal templates with a scan of a barcode, get nutritional information that you can reuse later.",
     icon: <Menu className="w-6 h-6" />,
     route: "/webapp/health",
     position: {
@@ -182,7 +182,7 @@ const tutorialSteps: TutorialStep[] = [
     id: "fitness-view",
     title: "Fitness & Health",
     description:
-      "Track your workouts and monitor your fitness progress in the Fitness section. You can save your workout sessions and log your daily exercises.",
+      "Track your workouts and monitor your fitness progress in the Fitness section. You can save your workout sessions, workout templates and log your daily exercises.",
     icon: <Dumbbell className="w-6 h-6" />,
     route: "/webapp/fitness",
     targetSelector: '[data-tutorial="sidebar-fitness"]',
@@ -199,7 +199,7 @@ const tutorialSteps: TutorialStep[] = [
     id: "ai-assistant",
     title: "AI Assistant",
     description:
-      "Use AI to plan tasks, create schedule for your day, ask him anything and much more. Chats are saved.",
+      "Use AI to plan or modify tasks, create schedule for your day, ask him anything and much more. Chats are saved.",
     icon: <Bot className="w-6 h-6" />,
     route: "/webapp/ai",
     targetSelector: '[data-tutorial="sidebar-ai"]',
@@ -225,8 +225,17 @@ export default function TutorialOverlay({
 }: TutorialOverlayProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+    const updateIsMobile = () => setIsMobile(mediaQuery.matches);
+    updateIsMobile();
+    mediaQuery.addEventListener("change", updateIsMobile);
+    return () => mediaQuery.removeEventListener("change", updateIsMobile);
+  }, []);
 
   const currentStepData = tutorialSteps[currentStep];
   const isLastStep = currentStep === tutorialSteps.length - 1;
@@ -259,9 +268,8 @@ export default function TutorialOverlay({
             (element as HTMLElement).style.borderRadius = "0px";
           } else {
             // Default highlighting for other elements
-            (
-              element as HTMLElement
-            ).style.boxShadow = `0 0 0 ${padding}px #ffffff, 0 0 0 2000px rgba(0, 0, 0, 0.5)`;
+            (element as HTMLElement).style.boxShadow =
+              `0 0 0 ${padding}px #ffffff, 0 0 0 2000px rgba(0, 0, 0, 0.5)`;
             (element as HTMLElement).style.borderRadius = "8px";
           }
           highlightApplied = true;
@@ -339,8 +347,20 @@ export default function TutorialOverlay({
     }, 300);
   };
 
-  // Calculate tooltip position
-  const getTooltipStyle = () => {
+  // Calculate tooltip position (bottom sheet on mobile, per-step on desktop)
+  const getTooltipStyle = (): React.CSSProperties => {
+    if (isMobile) {
+      return {
+        position: "fixed",
+        zIndex: 1002,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        top: "auto",
+        transform: "none",
+      };
+    }
+
     const position = currentStepData.position;
     const style: React.CSSProperties = {
       position: "fixed",
@@ -360,6 +380,21 @@ export default function TutorialOverlay({
 
   return (
     <>
+      <style>{`
+        @media (max-width: 767px) {
+          .tutorial-overlay-card {
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            top: auto !important;
+            width: 100% !important;
+            max-width: none !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            transform: none !important;
+          }
+        }
+      `}</style>
       {/* Backdrop - Prevent clicking outside to close */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -374,51 +409,61 @@ export default function TutorialOverlay({
       <AnimatePresence mode="wait">
         <motion.div
           key={currentStep}
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: -20 }}
+          initial={
+            isMobile ? { opacity: 0, y: 40 } : { opacity: 0, scale: 0.9, y: 20 }
+          }
+          animate={
+            isMobile ? { opacity: 1, y: 0 } : { opacity: 1, scale: 1, y: 0 }
+          }
+          exit={
+            isMobile
+              ? { opacity: 0, y: 24 }
+              : { opacity: 0, scale: 0.9, y: -20 }
+          }
           transition={{ duration: 0.3 }}
           style={getTooltipStyle()}
-          className="bg-background-700 rounded-xl border border-background-500 p-6 max-w-lg w-full max-h-[480px] mx-4 shadow-2xl"
+          className="tutorial-overlay-card bg-background-700 border border-background-500 shadow-2xl overflow-y-auto md:rounded-xl md:p-6 md:max-w-lg md:w-full md:max-h-[480px] md:mx-4 rounded-t-2xl rounded-b-none border-x-0 border-b-0 p-4 w-full max-w-none mx-0 max-h-[50dvh]"
         >
           {/* Header */}
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary-500/20 rounded-lg text-primary-400">
+          <div className="flex items-start justify-between mb-3 md:mb-4">
+            <div className="flex items-center gap-2 md:gap-3 min-w-0">
+              <div className="p-1.5 md:p-2 bg-primary-500/20 rounded-lg text-primary-400 shrink-0 [&_svg]:w-4 [&_svg]:h-4 md:[&_svg]:w-6 md:[&_svg]:h-6">
                 {currentStepData.icon}
               </div>
-              <div>
-                <h3 className="text-lg font-semibold text-text-low">
+              <div className="min-w-0">
+                <h3 className="text-base md:text-lg font-semibold text-text-low truncate">
                   {currentStepData.title}
                 </h3>
-                <p className="text-sm text-text-gray">
+                <p className="text-xs md:text-sm text-text-gray">
                   Step {currentStep + 1} of {tutorialSteps.length}
                 </p>
               </div>
             </div>
             <button
               onClick={handleSkip}
-              className="p-1 text-text-gray hover:text-text-low transition-colors"
+              className="p-1 text-text-gray hover:text-text-low transition-colors shrink-0"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Content */}
-          <p className="text-text-low mb-4 leading-relaxed">
+          <p className="text-sm md:text-base text-text-low mb-3 md:mb-4 leading-relaxed">
             {currentStepData.description}
           </p>
 
           {/* Keyboard shortcuts hint */}
-          <div className="text-xs text-text-gray mb-6 bg-background-600 rounded-md p-2">
+          <div className="hidden md:block text-xs text-text-gray mb-6 bg-background-600 rounded-md p-2">
             💡 Tip: Use arrow keys to navigate, Enter to continue or Esc to skip
           </div>
 
           {/* Progress bar */}
-          <div className="mb-6">
+          <div className="mb-3 md:mb-6">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-text-gray">Progress</span>
-              <span className="text-sm text-text-gray">
+              <span className="text-xs md:text-sm text-text-gray">
+                Progress
+              </span>
+              <span className="text-xs md:text-sm text-text-gray">
                 {Math.round(((currentStep + 1) / tutorialSteps.length) * 100)}%
               </span>
             </div>
@@ -435,24 +480,32 @@ export default function TutorialOverlay({
           </div>
 
           {/* Navigation */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between gap-2 pb-[max(0.25rem,env(safe-area-inset-bottom))]">
+            <div className="flex items-center gap-2 min-w-0">
               {!isFirstStep && (
                 <Button
                   variant="secondary"
                   onClick={handlePrevious}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-1 md:gap-2 px-2 md:px-4 text-sm"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   Previous
                 </Button>
               )}
-              <Button variant="secondary" onClick={handleSkip}>
-                Skip Tutorial
+              <Button
+                variant="secondary"
+                onClick={handleSkip}
+                className="px-2 md:px-4 text-sm"
+              >
+                Skip
+                <span className="hidden md:inline">&nbsp;Tutorial</span>
               </Button>
             </div>
 
-            <Button onClick={handleNext} className="flex items-center gap-2">
+            <Button
+              onClick={handleNext}
+              className="flex items-center gap-1 md:gap-2 px-3 md:px-4 text-sm shrink-0"
+            >
               {isLastStep ? (
                 <>
                   <Check className="w-4 h-4" />

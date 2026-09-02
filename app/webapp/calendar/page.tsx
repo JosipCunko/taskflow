@@ -24,7 +24,10 @@ export default async function CalendarPage() {
         </p>
       </div>
 
-      <Calendar tasks={allUserTasks.filter((t) => !t.isRepeating)} />
+      <Calendar
+        tasks={allUserTasks.filter((t) => !t.isRepeating)}
+        repeatingTasks={allUserTasks.filter((t) => t.isRepeating)}
+      />
     </div>
   );
 }

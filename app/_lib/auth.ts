@@ -151,13 +151,8 @@ export async function updateUserRepeatingTasks(userId: string) {
         }
 
         if (taskIsPastDue) {
-          // Reset monthly data if entering new month
+          // Reset monthly points if entering new month; keep completion history
           if (!isSameMonth(taskDueDate, today)) {
-            setNestedIfChanged(
-              "repetitionRule.completedAt",
-              [],
-              rule.completedAt,
-            );
             setIfChanged("points", 10, task.points);
           }
 
@@ -216,11 +211,10 @@ export async function updateUserRepeatingTasks(userId: string) {
           }
         }
 
-        // Reset for new week
+        // Reset for new week; keep repetitionRule.completedAt history
         setIfChanged("status", "pending", task.status);
         setNestedIfChanged("repetitionRule.completions", 0, rule.completions);
-        setNestedIfChanged("repetitionRule.completedAt", [], rule.completedAt);
-        // Clear completedAt since we're starting a new cycle
+        // Clear the current-cycle completedAt since we're starting a new week
         if (task.completedAt !== undefined) {
           updates.completedAt = undefined;
         }
@@ -358,11 +352,10 @@ export async function updateUserRepeatingTasks(userId: string) {
           }
         }
 
-        // Reset for new week
+        // Reset for new week; keep repetitionRule.completedAt history
         setIfChanged("status", "pending", task.status);
         setNestedIfChanged("repetitionRule.completions", 0, rule.completions);
-        setNestedIfChanged("repetitionRule.completedAt", [], rule.completedAt);
-        // Clear completedAt since we're starting a new cycle
+        // Clear the current-cycle completedAt since we're starting a new week
         if (task.completedAt !== undefined) {
           updates.completedAt = undefined;
         }

@@ -9,7 +9,6 @@ import {
   MessageSquarePlus,
   MessageSquare,
   Edit,
-  ListIcon,
   X,
 } from "lucide-react";
 import { successToast, errorToast } from "@/app/_utils/utils";
@@ -22,10 +21,17 @@ interface ChatInfo {
   title: string;
 }
 
-export default function ChatSidebar() {
+interface ChatSidebarProps {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export default function ChatSidebar({
+  isOpen,
+  onOpenChange,
+}: ChatSidebarProps) {
   const [chats, setChats] = useState<ChatInfo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isOpen, setIsOpen] = useState(false);
   const [editingChatId, setEditingChatId] = useState<string | null>(null);
   const [newChatTitle, setNewChatTitle] = useState("");
   const [hasMounted, setHasMounted] = useState(false);
@@ -39,7 +45,7 @@ export default function ChatSidebar() {
   // Close sidebar on route change for mobile
   useEffect(() => {
     if (hasMounted && window.innerWidth < 768) {
-      setIsOpen(false);
+      onOpenChange(false);
     }
   }, [pathname, hasMounted]);
 
@@ -120,7 +126,7 @@ export default function ChatSidebar() {
 
   const handleNewChat = () => {
     router.push("/webapp/ai");
-    setIsOpen(false);
+    onOpenChange(false);
   };
 
   const isActiveChatRoute = (chatId: string) => {
@@ -139,12 +145,12 @@ export default function ChatSidebar() {
   };
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-background-700 w-sm rounded-2xl">
+    <div className="flex flex-col h-full w-full min-w-0 overflow-hidden bg-background-700 md:rounded-2xl">
       <div className="p-4 border-b border-background-600">
         <div className="flex items-center justify-between mb-4 md:hidden">
           <h2 className="text-lg font-semibold text-text-low">Chat History</h2>
           <button
-            onClick={() => setIsOpen(false)}
+            onClick={() => onOpenChange(false)}
             className="p-2 hover:bg-background-600 rounded-lg transition-colors"
             aria-label="Close sidebar"
           >
@@ -153,7 +159,7 @@ export default function ChatSidebar() {
         </div>
         <Button
           onClick={handleNewChat}
-          className="w-fit sm:w-full flex items-center justify-center gap-2 bg-primary-500/10 hover:bg-primary-500/20 border border-primary-500/30"
+          className="w-full flex items-center justify-center gap-2 bg-primary-500/10 hover:bg-primary-500/20 border border-primary-500/30"
         >
           <MessageSquarePlus size={18} />
           <span className="font-semibold">New Chat</span>
@@ -219,10 +225,10 @@ export default function ChatSidebar() {
               ) : (
                 <Link
                   href={`/webapp/ai/${chat.id}`}
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => onOpenChange(false)}
                   className={`
-                    flex items-center justify-between p-3 rounded-lg
-                    transition-all duration-200 group relative
+                    flex items-center gap-2 p-3 rounded-lg min-w-0
+                    transition-all duration-200 group
                     ${
                       isActiveChatRoute(chat.id)
                         ? "bg-background-600 text-primary-300"
@@ -234,21 +240,15 @@ export default function ChatSidebar() {
                     <MessageSquare size={16} className="flex-shrink-0" />
                     <span className="text-sm truncate">{chat.title}</span>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-0.5 shrink-0">
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         startEditing(chat);
                       }}
-                      className={`
-                        p-1.5 rounded hover:bg-primary-500/20 transition-all
-                        ${
-                          isActiveChatRoute(chat.id)
-                            ? "opacity-100"
-                            : "opacity-0 group-hover:opacity-100"
-                        }
-                      `}
+                      className="p-1.5 rounded hover:bg-primary-500/20 transition-all md:opacity-0 md:group-hover:opacity-100"
                       aria-label="Rename chat"
                     >
                       <Edit
@@ -257,15 +257,9 @@ export default function ChatSidebar() {
                       />
                     </button>
                     <button
+                      type="button"
                       onClick={(e) => handleDelete(e, chat.id)}
-                      className={`
-                      p-1.5 rounded hover:bg-red-500/20 transition-all
-                      ${
-                        isActiveChatRoute(chat.id)
-                          ? "opacity-100"
-                          : "opacity-0 group-hover:opacity-100"
-                      }
-                    `}
+                      className="p-1.5 rounded hover:bg-red-500/20 transition-all md:opacity-0 md:group-hover:opacity-100"
                       aria-label="Delete chat"
                     >
                       <Trash2
@@ -285,22 +279,6 @@ export default function ChatSidebar() {
 
   return (
     <>
-      <AnimatePresence>
-        {!isOpen && (
-          <motion.button
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setIsOpen(true)}
-            className="md:hidden fixed bottom-20 right-5 z-30 p-4 rounded-2xl bg-background-500 hover:bg-primary-500/20 border border-primary-500/50 text-primary-300"
-          >
-            <ListIcon size={24} />
-          </motion.button>
-        )}
-      </AnimatePresence>
-
       {/* Mobile Overlay with Animation */}
       <AnimatePresence>
         {hasMounted && isOpen && window.innerWidth < 768 && (
@@ -311,19 +289,19 @@ export default function ChatSidebar() {
             animate="open"
             exit="closed"
             variants={backdropVariants}
-            onClick={() => setIsOpen(false)}
+            onClick={() => onOpenChange(false)}
           />
         )}
       </AnimatePresence>
 
       {/* Sidebar - Desktop (Right side) */}
-      <aside className="hidden md:flex md:w-sm h-full">
+      <aside className="hidden md:flex md:w-72 h-full shrink-0">
         <SidebarContent />
       </aside>
 
       {/* Sidebar - Mobile (Right side with animations) */}
       <motion.aside
-        className="md:hidden fixed top-0 right-0 bottom-0 w-sm max-w-[80vw] z-50 bg-background-700 shadow-2xl"
+        className="md:hidden fixed top-0 right-0 bottom-0 w-[min(20rem,85vw)] z-50 bg-background-700 shadow-2xl overflow-hidden"
         initial="closed"
         variants={sidebarVariants}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}

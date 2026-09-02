@@ -3,6 +3,7 @@
 import Chat from "./Chat";
 import ChatSidebar from "./ChatSidebar";
 import { ChatMessage, SubscriptionPlan } from "@/app/_types/types";
+import { useState } from "react";
 
 export interface PromptLimitInfo {
   canPrompt: boolean;
@@ -27,6 +28,8 @@ export default function AIPageClient({
   userImage,
   promptLimitInfo,
 }: AIPageClientProps) {
+  const [historyOpen, setHistoryOpen] = useState(false);
+
   return (
     <div className="flex h-full w-full">
       <div className="flex flex-col flex-1 min-w-0">
@@ -36,10 +39,11 @@ export default function AIPageClient({
           userName={userName}
           userImage={userImage}
           promptLimitInfo={promptLimitInfo}
+          onOpenHistory={() => setHistoryOpen(true)}
         />
       </div>
 
-      <ChatSidebar />
+      <ChatSidebar isOpen={historyOpen} onOpenChange={setHistoryOpen} />
     </div>
   );
 }

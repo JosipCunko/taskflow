@@ -36,7 +36,8 @@ export interface RepetitionRule {
   interval?: number;
   daysOfWeek: DayOfWeek[];
   timesPerWeek?: number;
-  completedAt: number[]; // UNIX timestamps in milliseconds
+  /** Full history of completion timestamps; not reset each cycle. */
+  completedAt: number[];
   completions: number;
 }
 

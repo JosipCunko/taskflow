@@ -280,7 +280,6 @@ export default function ProfileTabs({
                 </h3>
                 {activityLogs && activityLogs.length > 0 ? (
                   <div className="space-y-4 max-h-96 overflow-y-auto pr-1 custom-scrollbar">
-                    {" "}
                     {/* Added custom-scrollbar */}
                     {activityLogs.map((activity) => {
                       const IconComponent = getTaskIconByName(
@@ -313,6 +312,7 @@ export default function ProfileTabs({
                                     <div className="mt-1.5">
                                       <TaskCardSmall
                                         task={activity.taskSnapshot as Task}
+                                        showDot={false}
                                       />
                                     </div>
                                   )}
