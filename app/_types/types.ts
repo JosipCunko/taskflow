@@ -115,6 +115,10 @@ export interface AnalyticsData {
 
   dailyTaskCompletions: number[];
   mostProductiveHour: number;
+  /** Completions per hour of day (0–23) in the user's timezone, last 30 days */
+  hourDistribution: number[];
+  /** Completion timestamps in the last 30 days; dashboard buckets these in the browser timezone */
+  recentCompletionTimestamps: number[];
 
   pointsGrowth: number[];
   pagesVisited: Record<string, number>;

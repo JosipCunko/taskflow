@@ -22,22 +22,26 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(
     null,
   );
+  const [hasError, setHasError] = useState(false);
   const [isLoading, startTransition] = useTransition();
 
   const fetchAnalyticsData = useCallback(async () => {
     try {
       if (!user.uid) {
-        console.log("No user UID found");
         return;
       }
 
-      console.log("Starting analytics data fetch for user:", user.uid);
-
+      setHasError(false);
       startTransition(async () => {
         try {
-          // Fetch analytics data via API route
-          console.log("Calling analytics API...");
-          const analyticsResponse = await fetch("/api/analytics");
+          const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          const analyticsResponse = await fetch(
+            `/api/analytics?tz=${encodeURIComponent(tz)}`,
+            {
+              cache: "no-store",
+              headers: { "x-timezone": tz },
+            },
+          );
           if (!analyticsResponse.ok) {
             throw new Error(
               `Analytics API failed: ${analyticsResponse.status}`,
@@ -47,10 +51,12 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
           setAnalyticsData(data);
         } catch (innerError) {
           console.error("Error in transition:", innerError);
+          setHasError(true);
         }
       });
     } catch (error) {
       console.error("Error fetching analytics data:", error);
+      setHasError(true);
     }
   }, [user.uid]);
 
@@ -58,7 +64,7 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
     fetchAnalyticsData();
   }, [fetchAnalyticsData]);
 
-  if (isLoading) {
+  if (isLoading || (!analyticsData && !hasError)) {
     return <AnalyticsLoadingSkeleton />;
   }
 
@@ -82,24 +88,30 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
     });
   }
 
+  const { hourDistribution, mostProductiveHour } = hourStatsFromTimestamps(
+    analyticsData.recentCompletionTimestamps,
+    analyticsData.hourDistribution,
+    analyticsData.mostProductiveHour,
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex items-center flex-wrap gap-3">
         <AnalyticsCard
-          title="Total Session Duration"
+          title="Avg Session Duration"
           value={formatDuration(analyticsData.sessionDuration)}
           icon={<Activity className="text-blue-400" size={24} />}
           subtitle={`${analyticsData.pageViews} page views`}
           trend={analyticsData.trends.sessionDurationTrend}
-          tooltip="Total time spent in the app over the last 30 days, including all page views and interactions."
+          tooltip="Average time from opening the app to closing it, over the last 30 days. Includes idle time in open tabs."
         />
         <AnalyticsCard
           title="Active Time"
           value={formatDuration(analyticsData.activeTime)}
           icon={<Zap className="text-teal-400" size={24} />}
-          subtitle="Focused engagement"
+          subtitle="Time in the last 30 days"
           trend={null}
-          tooltip="Time spent actively interacting with the app (excluding idle time). Measured by tracking user interactions and page focus."
+          tooltip="Time accumulated while the app was open, updated on navigation and when the session ends. Idle time in an open tab is included."
         />
         <AnalyticsCard
           title="Productivity Score"
@@ -107,7 +119,7 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
           icon={<Target className="text-green-400" size={24} />}
           subtitle="Based on completion patterns"
           trend={analyticsData.trends.productivityTrend}
-          tooltip="Calculated as: (Task Completion Rate × 60%) + (Consistency Score × 40%). Task completion rate is the ratio of completed tasks to created tasks over the last 30 days."
+          tooltip="(Task completion rate × 60%) + (Consistency Score × 40%) over the last 30 days. Completion rate is capped at 100% so repeating tasks don't inflate the score."
         />
         <AnalyticsCard
           title="Consistency Score"
@@ -115,7 +127,7 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
           icon={<Zap className="text-yellow-400" size={24} />}
           subtitle="Daily engagement level"
           trend={analyticsData.trends.consistencyTrend}
-          tooltip="Calculated as: (Days with app sessions ÷ 30 days) × 100%. Measures how regularly you engage with the app over the last 30 days."
+          tooltip="Days with at least one session ÷ the last 30 days (or days since you signed up, if fewer). Measures how regularly you open the app."
         />
       </div>
       <div className="bg-background-700 rounded-lg p-6">
@@ -255,11 +267,17 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
           />
           <InsightCard
             title="Productive Hour"
-            value={formatHour(analyticsData.mostProductiveHour)}
-            description="Best time to focus"
+            value={formatHour(mostProductiveHour)}
+            description="Hour with the most completions in the last 30 days"
             icon="💡"
           />
         </div>
+        {hourDistribution.some((count) => count > 0) && (
+          <HourDistribution
+            distribution={hourDistribution}
+            mostProductiveHour={mostProductiveHour}
+          />
+        )}
       </div>
       <div className="bg-background-700 rounded-lg p-6">
         <div className="flex items-center justify-between mb-6">
@@ -300,8 +318,45 @@ interface DayData {
   isToday: boolean;
 }
 
+function hourStatsFromTimestamps(
+  timestamps: number[] | undefined,
+  fallbackDistribution: number[] | undefined,
+  fallbackHour: number,
+): { hourDistribution: number[]; mostProductiveHour: number } {
+  if (!timestamps?.length) {
+    return {
+      hourDistribution: fallbackDistribution ?? Array.from({ length: 24 }, () => 0),
+      mostProductiveHour: fallbackHour,
+    };
+  }
+
+  const hourDistribution = Array.from({ length: 24 }, () => 0);
+  const latestByHour = Array.from({ length: 24 }, () => 0);
+  timestamps.forEach((ts) => {
+    const hour = new Date(ts).getHours();
+    if (hour < 0 || hour > 23) return;
+    hourDistribution[hour]++;
+    if (ts > latestByHour[hour]) latestByHour[hour] = ts;
+  });
+
+  let mostProductiveHour = -1;
+  let bestCount = 0;
+  let bestLatest = 0;
+  hourDistribution.forEach((count, hour) => {
+    if (
+      count > bestCount ||
+      (count === bestCount && count > 0 && latestByHour[hour] > bestLatest)
+    ) {
+      bestCount = count;
+      bestLatest = latestByHour[hour];
+      mostProductiveHour = hour;
+    }
+  });
+
+  return { hourDistribution, mostProductiveHour };
+}
+
 const WeeklyPointsGrowthChart = ({ data }: { data: number[] }) => {
-  // Filter out meaningless trailing zeros and empty data
   if (!data || data.length === 0) {
     return (
       <div className="bg-background-700 rounded-lg p-6">
@@ -316,17 +371,12 @@ const WeeklyPointsGrowthChart = ({ data }: { data: number[] }) => {
     );
   }
 
-  // Remove trailing zeros to show only meaningful data
-  const meaningfulData = [...data];
-  while (
-    meaningfulData.length > 1 &&
-    meaningfulData[meaningfulData.length - 1] === 0
-  ) {
-    meaningfulData.pop();
-  }
+  // Strip oldest empty weeks; keep the current week even if it's 0
+  const firstNonZero = data.findIndex((value) => value > 0);
+  const meaningfulData =
+    firstNonZero === -1 ? [] : data.slice(firstNonZero);
 
-  // If all data is zeros, show no data message
-  if (meaningfulData.every((value) => value === 0)) {
+  if (meaningfulData.length === 0 || meaningfulData.every((value) => value === 0)) {
     return (
       <div className="bg-background-700 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-text-high mb-4 flex items-center">
@@ -341,10 +391,16 @@ const WeeklyPointsGrowthChart = ({ data }: { data: number[] }) => {
   }
 
   // Transform data for the chart
-  const chartData = meaningfulData.map((points, index) => ({
-    week: `Week ${index + 1}`,
-    points: points,
-  }));
+  const chartData = meaningfulData.map((points, index) => {
+    const weeksFromEnd = meaningfulData.length - 1 - index;
+    const week =
+      weeksFromEnd === 0
+        ? "This week"
+        : weeksFromEnd === 1
+          ? "Last week"
+          : `${weeksFromEnd}w ago`;
+    return { week, points };
+  });
 
   return (
     <div className="bg-background-700 rounded-lg sm:p-6 py-6 px-2">
@@ -504,6 +560,68 @@ function AnalyticsCard({
         classNameArrow="tooltip-arrow"
       />
     </>
+  );
+}
+
+function HourDistribution({
+  distribution,
+  mostProductiveHour,
+}: {
+  distribution: number[];
+  mostProductiveHour: number;
+}) {
+  const max = Math.max(...distribution, 0);
+  if (max === 0) return null;
+
+  const chartHeight = 96;
+
+  return (
+    <div className="mt-6">
+      <p className="text-sm text-text-low mb-3">
+        Completions by hour (last 30 days)
+      </p>
+      <div
+        className="flex items-end gap-px"
+        style={{ height: chartHeight }}
+      >
+        {distribution.map((count, hour) => {
+          const isPeak = hour === mostProductiveHour;
+          const barHeight =
+            count > 0
+              ? Math.max(Math.round((count / max) * chartHeight), 8)
+              : 3;
+          return (
+            <div
+              key={hour}
+              className="flex-1 h-full flex flex-col justify-end min-w-0"
+              data-tooltip-id="hour-bar-tooltip"
+              data-tooltip-content={`${formatHour(hour)} · ${count} completion${
+                count !== 1 ? "s" : ""
+              }`}
+            >
+              <div
+                className={`w-full rounded-t ${
+                  isPeak ? "bg-primary-400" : "bg-background-500"
+                }`}
+                style={{ height: barHeight }}
+              />
+            </div>
+          );
+        })}
+      </div>
+      <Tooltip
+        id="hour-bar-tooltip"
+        className="tooltip-diff-arrow"
+        classNameArrow="tooltip-arrow"
+      />
+      <div className="flex justify-between text-[10px] text-text-low mt-1">
+        <span>12 AM</span>
+        <span>6 AM</span>
+        <span>12 PM</span>
+        <span>6 PM</span>
+        <span>11 PM</span>
+      </div>
+    </div>
   );
 }
 

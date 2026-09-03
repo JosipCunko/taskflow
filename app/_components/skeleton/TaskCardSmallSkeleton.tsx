@@ -1,66 +1,46 @@
-export default function TaskCardSmallSkeleton() {
+import Bone from "./Bone";
+
+export default function TaskCardSmallSkeleton({
+  repeating = false,
+}: {
+  repeating?: boolean;
+}) {
   return (
-    <li className="group relative overflow-hidden list-none animate-pulse">
-      {/* Animated gradient background overlay skeleton */}
-      <div className="absolute inset-0 bg-background-500/10 rounded-xl" />
+    <li className="group relative list-none overflow-hidden">
+      <div className="relative bg-gradient-to-br from-background-700/80 via-background-650/80 to-background-600/80 backdrop-blur-sm rounded-xl p-4 shadow-lg border border-transparent flex flex-col gap-2 justify-center">
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 rounded-lg bg-background-600/80">
+            <Bone className="w-[22px] h-[22px] rounded" />
+          </div>
+          <Bone className="h-5 w-36 max-w-[70%] rounded" />
+        </div>
 
-      {/* Main card container skeleton */}
-      <div className="relative bg-gradient-to-br from-background-700 via-background-650 to-background-600 backdrop-blur-sm border border-background-500/50 rounded-xl p-5 shadow-lg">
-        {/* Decorative top accent line skeleton */}
-        <div className="absolute top-0 left-0 right-0 h-0.5 rounded-t-xl bg-background-500" />
+        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs font-medium bg-background-800/60 border border-background-500/40 w-fit">
+          <Bone className="w-3 h-3 rounded" />
+          <Bone className="h-3 w-24 rounded" />
+        </div>
 
-        {/* Header section with time and icon */}
-        <div className="flex items-start justify-between mb-4">
-          {/* Time display skeleton */}
-          <div className="flex flex-col items-start">
-            <div className="bg-background-800/80 px-3 py-2 rounded-lg border border-background-500/50 min-w-[85px] text-center">
-              <div className="space-y-1">
-                <div className="h-4 w-12 bg-background-500 rounded mx-auto" />
-                <div className="w-4 h-px bg-background-500 mx-auto opacity-60" />
-                <div className="h-4 w-12 bg-background-500 rounded mx-auto" />
-              </div>
+        {repeating && (
+          <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs font-medium bg-background-800/60 border border-background-500/40 w-fit">
+            <Bone className="w-3 h-3 rounded" />
+            <Bone className="h-3 w-40 rounded" />
+          </div>
+        )}
+
+        <div className="flex flex-wrap gap-2 items-center">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border border-background-500/30 bg-background-600/60">
+            <Bone className="w-[13px] h-[13px] rounded" />
+            <Bone className="h-3 w-14 rounded" />
+          </div>
+          {repeating && (
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-gradient-to-r from-purple-500/15 to-violet-500/15 border border-purple-500/30">
+              <Bone className="w-[13px] h-[13px] rounded bg-purple-500/40" />
+              <Bone className="h-3 w-16 rounded bg-purple-500/40" />
             </div>
-          </div>
-
-          {/* Task icon skeleton */}
-          <div className="relative">
-            <div className="p-3 rounded-xl shadow-md border border-background-500/30 backdrop-blur-sm bg-background-600">
-              <div className="w-6 h-6 bg-background-500 rounded" />
-            </div>
-
-            {/* Floating notification dot skeleton */}
-            <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-background-500" />
-          </div>
+          )}
         </div>
 
-        {/* Task title skeleton */}
-        <div className="mb-4">
-          <div className="h-5 w-3/4 bg-background-500 rounded" />
-        </div>
-
-        {/* Status and feature badges skeleton */}
-        <div className="flex flex-wrap gap-2">
-          {/* Status badge skeleton */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-background-600 border border-background-500/30">
-            <div className="w-3.5 h-3.5 bg-success rounded" />
-            <div className="h-3 w-12 bg-success rounded" />
-          </div>
-
-          {/* Priority badge skeleton */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-500/15 border border-orange-500/30">
-            <div className="w-3.5 h-3.5 bg-orange-500/50 rounded" />
-            <div className="h-3 w-12 bg-orange-500/50 rounded" />
-          </div>
-
-          {/* Reminder badge skeleton */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-background-600 border border-background-500/30">
-            <div className="w-3.5 h-3.5 bg-purple-500 rounded" />
-            <div className="h-3 w-12 bg-purple-500 rounded" />
-          </div>
-        </div>
-
-        {/* Subtle bottom glow effect skeleton */}
-        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-3/4 h-2 opacity-50 bg-gradient-to-r from-transparent via-background-500 to-transparent" />
+        <Bone className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full" />
       </div>
     </li>
   );

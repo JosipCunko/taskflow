@@ -1,5 +1,5 @@
-import Loader from "../../_components/Loader";
+import FitnessSkeleton from "../../_components/skeleton/FitnessSkeleton";
 
 export default function LoadingFitness() {
-  return <Loader label="Loading..." />;
+  return <FitnessSkeleton includePageChrome />;
 }

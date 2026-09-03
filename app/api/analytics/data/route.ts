@@ -1,17 +1,22 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/_lib/auth";
-import { getAnalyticsData } from "@/app/_lib/analytics-admin";
+import {
+  getAnalyticsData,
+  resolveTimeZone,
+} from "@/app/_lib/analytics-admin";
 import { adminDb } from "@/app/_lib/admin";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const analyticsData = await getAnalyticsData(session.user.id);
+    const { searchParams } = new URL(request.url);
+    const timeZone = resolveTimeZone(searchParams.get("tz"));
+    const analyticsData = await getAnalyticsData(session.user.id, timeZone);
 
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
     const sessionsSnapshot = await adminDb

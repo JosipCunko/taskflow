@@ -32,7 +32,7 @@ import {
 import { handleToast } from "../../_utils/utils";
 import Button from "@/app/_components/reusable/Button";
 import CreateTemplateModal from "../../_components/fitness/CreateTemplateModal";
-import Loader from "../Loader";
+import FitnessSkeleton from "../skeleton/FitnessSkeleton";
 import Modal from "../Modal";
 
 interface FitnessDashboardProps {
@@ -167,11 +167,7 @@ export default function FitnessDashboard({
     }
   };
   if (isPending) {
-    return (
-      <div className="relative h-[10rem]">
-        <Loader label="Loading data..." />
-      </div>
-    );
+    return <FitnessSkeleton />;
   }
 
   return (

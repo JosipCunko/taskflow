@@ -1225,9 +1225,17 @@ export function formatHour(hour: number): string {
   if (hour === -1) {
     return "Not recorded yet";
   }
-  const ampm = hour >= 12 ? "PM" : "AM";
-  const formattedHour = hour % 12 || 12; // Converts 0 to 12
-  return `${formattedHour} ${ampm}`;
+  const label = (h: number) => {
+    const ampm = h >= 12 ? "PM" : "AM";
+    return `${h % 12 || 12} ${ampm}`;
+  };
+  const next = (hour + 1) % 24;
+  const start = label(hour);
+  const end = label(next);
+  if (start.slice(-2) === end.slice(-2)) {
+    return `${start.replace(/ [AP]M$/, "")}–${end}`;
+  }
+  return `${start} – ${end}`;
 }
 
 /* Health */

@@ -78,7 +78,10 @@ export default function AnalyticsTracker({
 
     const updateUserProperties = async () => {
       try {
-        const analyticsResponse = await fetch("/api/analytics/data");
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const analyticsResponse = await fetch(
+          `/api/analytics/data?tz=${encodeURIComponent(tz)}`
+        );
         let analyticsData: AnalyticsData | null = null;
         let sessionsCount = 0;
 

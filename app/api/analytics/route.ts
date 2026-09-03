@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/_lib/auth";
-import { getAnalyticsData } from "@/app/_lib/analytics-admin";
+import {
+  getAnalyticsData,
+  resolveTimeZone,
+} from "@/app/_lib/analytics-admin";
 
-export async function GET() {
+export const dynamic = "force-dynamic";
+
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
 
@@ -14,8 +19,14 @@ export async function GET() {
       );
     }
 
-    const data = await getAnalyticsData(session.user.id);
-    return NextResponse.json(data);
+    const { searchParams } = new URL(request.url);
+    const timeZone = resolveTimeZone(
+      searchParams.get("tz") ?? request.headers.get("x-timezone")
+    );
+    const data = await getAnalyticsData(session.user.id, timeZone);
+    return NextResponse.json(data, {
+      headers: { "Cache-Control": "no-store" },
+    });
   } catch (error) {
     console.error("Error fetching analytics data:", error);
     return NextResponse.json(

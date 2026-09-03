@@ -1,6 +1,7 @@
 "use client";
 import { useState, useMemo } from "react";
 import { DayPicker } from "react-day-picker";
+import "react-day-picker/dist/style.css";
 import { format, isSameDay } from "date-fns";
 import { CalendarDays, ListChecks, AlertTriangle, Repeat } from "lucide-react";
 

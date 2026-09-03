@@ -10,6 +10,44 @@ import {
 } from "../_types/types";
 import { getUserById } from "./user-admin";
 
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+export function resolveTimeZone(tz: string | null | undefined): string {
+  if (!tz) return "UTC";
+  try {
+    Intl.DateTimeFormat("en-US", { timeZone: tz }).format(new Date());
+    return tz;
+  } catch {
+    return "UTC";
+  }
+}
+
+function getZonedHour(timestamp: number, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour: "numeric",
+    hourCycle: "h23",
+  }).formatToParts(new Date(timestamp));
+  const hour = Number(parts.find((p) => p.type === "hour")?.value ?? 0);
+  return hour === 24 ? 0 : hour;
+}
+
+function getZonedDateKey(timestamp: number, timeZone: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date(timestamp));
+}
+
+function addDaysToDateKey(dateKey: string, days: number): string {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day + days))
+    .toISOString()
+    .slice(0, 10);
+}
+
 /**
   - start session to an user in userSessions, sets pageViews to 1, activeTime to 0 and pagesVisited to [pageTitle]
   @returns sessionRef.id
@@ -105,10 +143,8 @@ export const trackTaskAnalytics = async (
       ...(taskData.delayCount !== undefined && {
         delayCount: taskData.delayCount,
       }),
-      // Use completion time for hour calculation if available, otherwise use current time
-      hour: taskData.completedAt
-        ? new Date(taskData.completedAt).getHours()
-        : new Date().getHours(), // created, updated or delayed at the same time
+      // UTC hour for storage only. Dashboard derives local hour from timestamp.
+      hour: new Date(taskData.completedAt ?? Date.now()).getUTCHours(),
       points: taskData.points,
     };
 
@@ -119,7 +155,8 @@ export const trackTaskAnalytics = async (
 };
 
 export const getAnalyticsData = async (
-  userId: string
+  userId: string,
+  timeZone: string = "UTC"
 ): Promise<AnalyticsData | null> => {
   try {
     const now = Date.now();
@@ -199,75 +236,84 @@ export const getAnalyticsData = async (
       }
     );
 
-    /** Each number is the total completed tasks for a specific day.
-     * length: 14
-     */
-    const dailyTaskCompletions = Array.from({ length: 14 }, (_, i) => {
-      const date = new Date(now - i * 24 * 60 * 60 * 1000);
-      const dayStart = new Date(date.setHours(0, 0, 0, 0));
-      const dayEnd = new Date(date.setHours(23, 59, 59, 999));
-
-      return taskAnalytics.filter((task) => {
-        const taskDate = task.timestamp;
-        return (
-          task.action === "task_completed" &&
-          taskDate >= dayStart.getTime() &&
-          taskDate <= dayEnd.getTime()
-        );
-      }).length;
-    }).reverse();
-
-    /** Each number is the total completed tasks for a specific week.
-     * Dynamic length based on available data
-     */
-    const weeksWithData =
-      taskAnalytics.length > 0
-        ? Math.ceil(
-            Math.max(
-              ...taskAnalytics.map((task) =>
-                Math.ceil((now - task.timestamp) / (7 * 24 * 60 * 60 * 1000))
-              ),
-              1
-            )
-          )
-        : 1;
-
-    /** Each number is the total points earned for a specific week.
-     * Dynamic length based on available data, no fixed limit
-     */
-    const weeklyPointsGrowth = Array.from({ length: weeksWithData }, (_, i) => {
-      const weekEnd = new Date(now - i * 7 * 24 * 60 * 60 * 1000);
-      const weekStart = new Date(weekEnd.getTime() - 6 * 24 * 60 * 60 * 1000);
-      weekStart.setHours(0, 0, 0, 0);
-      weekEnd.setHours(23, 59, 59, 999);
-
-      return taskAnalytics
-        .filter((task) => {
-          const taskDate = task.timestamp;
-          return (
-            task.action === "task_completed" &&
-            taskDate >= weekStart.getTime() &&
-            taskDate <= weekEnd.getTime() &&
-            task.points > 0
-          );
-        })
-        .reduce((totalPoints, task) => totalPoints + task.points, 0);
-    }).reverse();
-
-    // Calculate most productive hour (hour when most tasks are completed)
-    const completedTasksWithHour = taskAnalytics.filter(
-      (task) => task.action === "task_completed" && task.hour !== undefined
+    const todayKey = getZonedDateKey(now, timeZone);
+    const last14DateKeys = Array.from({ length: 14 }, (_, i) =>
+      addDaysToDateKey(todayKey, -(13 - i))
     );
-    const hourCounts = Array.from({ length: 24 }, () => 0);
-    completedTasksWithHour.forEach((task) => {
-      if (task.hour !== undefined) {
-        hourCounts[task.hour]++;
+
+    const completedTasks = taskAnalytics.filter(
+      (task) => task.action === "task_completed"
+    );
+
+    const completionsByDate = new Map<string, number>();
+    completedTasks.forEach((task) => {
+      const key = getZonedDateKey(task.timestamp, timeZone);
+      completionsByDate.set(key, (completionsByDate.get(key) || 0) + 1);
+    });
+
+    const dailyTaskCompletions = last14DateKeys.map(
+      (key) => completionsByDate.get(key) || 0
+    );
+
+    const completedWithPoints = completedTasks.filter((task) => task.points > 0);
+
+    let weeklyPointsGrowth: number[] = [];
+    if (completedWithPoints.length > 0) {
+      const oldestKey = completedWithPoints.reduce((min, task) => {
+        const key = getZonedDateKey(task.timestamp, timeZone);
+        return key < min ? key : min;
+      }, todayKey);
+      const daySpan =
+        Math.round(
+          (Date.parse(todayKey) - Date.parse(oldestKey)) / MS_PER_DAY
+        ) + 1;
+      const weeksWithData = Math.max(1, Math.ceil(daySpan / 7));
+
+      weeklyPointsGrowth = Array.from({ length: weeksWithData }, (_, i) => {
+        const weeksFromEnd = weeksWithData - 1 - i;
+        const weekEndKey = addDaysToDateKey(todayKey, -weeksFromEnd * 7);
+        const weekStartKey = addDaysToDateKey(weekEndKey, -6);
+        return completedWithPoints
+          .filter((task) => {
+            const key = getZonedDateKey(task.timestamp, timeZone);
+            return key >= weekStartKey && key <= weekEndKey;
+          })
+          .reduce((totalPoints, task) => totalPoints + task.points, 0);
+      });
+
+      const firstNonZero = weeklyPointsGrowth.findIndex((value) => value > 0);
+      weeklyPointsGrowth =
+        firstNonZero === -1 ? [] : weeklyPointsGrowth.slice(firstNonZero);
+    }
+
+    const completedLast30 = completedTasks.filter(
+      (task) => task.timestamp >= thirtyDaysAgo
+    );
+    const hourDistribution = Array.from({ length: 24 }, () => 0);
+    const latestByHour = Array.from({ length: 24 }, () => 0);
+    completedLast30.forEach((task) => {
+      const hour = getZonedHour(task.timestamp, timeZone);
+      hourDistribution[hour]++;
+      if (task.timestamp > latestByHour[hour]) {
+        latestByHour[hour] = task.timestamp;
       }
     });
-    const mostProductiveHour =
-      completedTasksWithHour.length > 0
-        ? hourCounts.indexOf(Math.max(...hourCounts))
-        : -1; // no data available
+
+    let mostProductiveHour = -1;
+    if (completedLast30.length > 0) {
+      let bestCount = 0;
+      let bestLatest = 0;
+      hourDistribution.forEach((count, hour) => {
+        if (
+          count > bestCount ||
+          (count === bestCount && count > 0 && latestByHour[hour] > bestLatest)
+        ) {
+          bestCount = count;
+          bestLatest = latestByHour[hour];
+          mostProductiveHour = hour;
+        }
+      });
+    }
 
     // Derive from session pagesVisited data
     const pagesVisited = sessions.reduce((acc, session) => {
@@ -277,24 +323,39 @@ export const getAnalyticsData = async (
       return acc;
     }, {} as Record<string, number>);
 
-    // Calculate consistency score based on session frequency
     const daysWithSessions = new Set(
-      sessions.map((session) => new Date(session.sessionStart).toDateString())
+      sessions.map((session) => getZonedDateKey(session.sessionStart, timeZone))
     ).size;
-    const consistencyScore = Math.round((daysWithSessions / 30) * 100);
+    const accountAgeDays = Math.max(
+      1,
+      Math.ceil((now - (userData?.createdAt ?? now)) / MS_PER_DAY)
+    );
+    const consistencyWindowDays = Math.min(30, accountAgeDays);
+    const consistencyScore = Math.round(
+      (daysWithSessions / consistencyWindowDays) * 100
+    );
 
-    // Calculate productivity score based on completion rates and session activity
-    const totalCompletions = taskAnalytics.filter(
+    const recentTaskAnalytics = taskAnalytics.filter(
+      (task) => task.timestamp >= thirtyDaysAgo
+    );
+    const totalCompletions = recentTaskAnalytics.filter(
       (task) => task.action === "task_completed"
     ).length;
-    const totalCreations = taskAnalytics.filter(
+    const totalCreations = recentTaskAnalytics.filter(
       (task) => task.action === "task_created"
     ).length;
     const completionRate =
-      totalCreations > 0 ? totalCompletions / totalCreations : 0;
+      totalCreations > 0
+        ? Math.min(totalCompletions / totalCreations, 1)
+        : totalCompletions > 0
+          ? 1
+          : 0;
 
-    const productivityScore = Math.round(
-      (completionRate * 0.6 + (consistencyScore / 100) * 0.4) * 100
+    const productivityScore = Math.min(
+      100,
+      Math.round(
+        (completionRate * 0.6 + (consistencyScore / 100) * 0.4) * 100
+      )
     );
 
     // Get all achievements from user data (already fetched from subcollection via getUserById)
@@ -374,10 +435,14 @@ export const getAnalyticsData = async (
 
     // Calculate consistency trends
     const currentActiveDays = new Set(
-      currentPeriodSessions.map((s) => new Date(s.sessionStart).toDateString())
+      currentPeriodSessions.map((s) =>
+        getZonedDateKey(s.sessionStart, timeZone)
+      )
     ).size;
     const previousActiveDays = new Set(
-      previousPeriodSessions.map((s) => new Date(s.sessionStart).toDateString())
+      previousPeriodSessions.map((s) =>
+        getZonedDateKey(s.sessionStart, timeZone)
+      )
     ).size;
 
     const currentConsistency = (currentActiveDays / 15) * 100;
@@ -416,6 +481,8 @@ export const getAnalyticsData = async (
       activeTime: totalActiveTime,
       dailyTaskCompletions,
       mostProductiveHour,
+      hourDistribution,
+      recentCompletionTimestamps: completedLast30.map((task) => task.timestamp),
       pointsGrowth: weeklyPointsGrowth,
       pagesVisited,
       consistencyScore,
