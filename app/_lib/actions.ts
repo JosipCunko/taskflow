@@ -1,18 +1,14 @@
 "use server";
 
+import { addDays, isSameDay, isBefore } from "date-fns";
+import { formatDate, canCompleteRepeatingTaskNow } from "../_utils/utils";
 import {
-  addDays,
-  getDay,
-  isSameDay,
-  isBefore,
-  addWeeks,
-  startOfWeek,
-} from "date-fns";
-import {
-  formatDate,
-  canCompleteRepeatingTaskNow,
-  MONDAY_START_OF_WEEK,
-} from "../_utils/utils";
+  countCompletionsInWeek,
+  daysUntilNextScheduledDay,
+  getDaysOfWeekAnchorUtc,
+  getWeekStartUtc,
+  utcNoon,
+} from "./repeatingTasks";
 
 import {
   ActionResult,
@@ -46,6 +42,20 @@ import { FieldValue } from "firebase-admin/firestore";
 import { sendCampaignNotification } from "./notifications-admin";
 import { checkAndAwardAchievements } from "./achievements";
 import { trackTaskAnalytics } from "./analytics-admin";
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+function withDueClock(sourceDue: number, target: Date): Date {
+  const src = new Date(sourceDue);
+  const out = new Date(target);
+  out.setUTCHours(
+    src.getUTCHours(),
+    src.getUTCMinutes(),
+    src.getUTCSeconds(),
+    0,
+  );
+  return out;
+}
 
 /* User */
 export async function updateUserAction(
@@ -541,13 +551,15 @@ export async function completeRepeatingTaskWithInterval(
   if (!session?.user?.id) {
     return { success: false, error: "User not authenticated" };
   }
-  if (!task.isRepeating || !task.repetitionRule) {
+  const latest = await getTaskByTaskId(task.id);
+  if (!latest?.isRepeating || !latest.repetitionRule) {
     return {
       success: false,
       error: "Task is not a repeating task",
     };
   }
-  const rule = task.repetitionRule;
+  const liveTask = latest;
+  const rule = latest.repetitionRule;
   if (!rule.interval || rule.interval <= 0) {
     return {
       success: false,
@@ -555,7 +567,7 @@ export async function completeRepeatingTaskWithInterval(
     };
   }
 
-  const { canCompleteNow } = canCompleteRepeatingTaskNow(task);
+  const { canCompleteNow } = canCompleteRepeatingTaskNow(liveTask);
   if (!canCompleteNow) {
     return {
       success: false,
@@ -564,7 +576,7 @@ export async function completeRepeatingTaskWithInterval(
   }
 
   const completionDateObj = new Date(completionDate);
-  const taskDueDateObj = new Date(task.dueDate);
+  const taskDueDateObj = new Date(liveTask.dueDate);
   completionDateObj.setHours(
     taskDueDateObj.getHours(),
     taskDueDateObj.getMinutes(),
@@ -573,12 +585,13 @@ export async function completeRepeatingTaskWithInterval(
   const finalDueDateTimestamp = finalDueDate.getTime();
 
   // Increase points by 2 when completed (max 10)
-  const newPoints = Math.min(10, task.points + 2);
+  const newPoints = Math.min(10, liveTask.points + 2);
 
   const updates: Partial<Task> = {
     repetitionRule: {
       ...rule,
-      completedAt: [...rule.completedAt, completionDate],
+      daysOfWeek: rule.daysOfWeek ?? [],
+      completedAt: [...(rule.completedAt || []), completionDate],
       completions: 0, // Reset completions for interval-based tasks
     },
     status: "completed", // Previously reset to pending for the next occurrence
@@ -593,26 +606,26 @@ export async function completeRepeatingTaskWithInterval(
   );
 
   try {
-    await updateTask(task.id, safeUpdates);
-    await updateUserCompletionStats(session.user.id, task.points);
+    await updateTask(liveTask.id, safeUpdates);
+    await updateUserCompletionStats(session.user.id, liveTask.points);
 
     // Check for achievements after task completion
     await checkAndAwardAchievements(session.user.id);
 
-    await trackTaskAnalytics(session.user.id, task.id, "task_completed", {
-      dueDate: task.dueDate,
-      isReminder: task.isReminder,
-      isPriority: task.isPriority,
+    await trackTaskAnalytics(session.user.id, liveTask.id, "task_completed", {
+      dueDate: liveTask.dueDate,
+      isReminder: liveTask.isReminder,
+      isPriority: liveTask.isPriority,
       isRepeating: true,
-      createdAt: task.createdAt,
+      createdAt: liveTask.createdAt,
       completedAt: Date.now(),
-      delayCount: task.delayCount || 0,
-      points: task.points,
+      delayCount: liveTask.delayCount || 0,
+      points: liveTask.points,
       risk: false,
     });
 
     revalidateTaskData(session.user.id, {
-      taskId: task.id,
+      taskId: liveTask.id,
       includeUser: true,
     });
 
@@ -642,13 +655,14 @@ export async function completeRepeatingTaskWithTimesPerWeek(
   if (!session?.user?.id) {
     return { success: false, error: "User not authenticated" };
   }
-  if (!task.isRepeating || !task.repetitionRule) {
+  const latest = await getTaskByTaskId(task.id);
+  if (!latest?.isRepeating || !latest.repetitionRule) {
     return {
       success: false,
       error: "Task is not a repeating task",
     };
   }
-  const rule = task.repetitionRule;
+  const rule = latest.repetitionRule;
 
   if (!rule.timesPerWeek || rule.timesPerWeek <= 0) {
     return {
@@ -657,7 +671,7 @@ export async function completeRepeatingTaskWithTimesPerWeek(
     };
   }
 
-  const { canCompleteNow } = canCompleteRepeatingTaskNow(task);
+  const { canCompleteNow } = canCompleteRepeatingTaskNow(latest);
   if (!canCompleteNow) {
     return {
       success: false,
@@ -665,53 +679,38 @@ export async function completeRepeatingTaskWithTimesPerWeek(
     };
   }
 
-  const newCompletions = rule.completions + 1;
+  const newCompletions =
+    countCompletionsInWeek(rule.completedAt, completionDate) + 1;
   const isWeekComplete = newCompletions >= rule.timesPerWeek;
+  const currentWeekStart = getWeekStartUtc(completionDate);
 
-  // Calculate next due date and startDate
   let newStartDate: number;
   let nextDueDateObj: Date;
-  const taskDueDateObj = new Date(task.dueDate);
 
   if (isWeekComplete) {
-    // Week is complete, move to next Monday
-    const nextWeekStart = startOfWeek(
-      addWeeks(new Date(completionDate), 1),
-      MONDAY_START_OF_WEEK,
-    );
+    const nextWeekStart = new Date(currentWeekStart.getTime() + 7 * MS_PER_DAY);
     newStartDate = nextWeekStart.getTime();
-    nextDueDateObj = new Date(nextWeekStart);
+    nextDueDateObj = nextWeekStart;
   } else {
-    // Not complete yet, keep startDate as current Monday, dueDate becomes next day
-    newStartDate =
-      task.startDate ||
-      startOfWeek(new Date(completionDate), MONDAY_START_OF_WEEK).getTime();
-    nextDueDateObj = addDays(new Date(completionDate), 1);
+    newStartDate = currentWeekStart.getTime();
+    nextDueDateObj = new Date(utcNoon(completionDate).getTime() + MS_PER_DAY);
   }
 
-  // Preserve time from original dueDate
-  nextDueDateObj.setHours(
-    taskDueDateObj.getHours(),
-    taskDueDateObj.getMinutes(),
-  );
-  const nextDueDate = nextDueDateObj.getTime();
+  const nextDueDate = withDueClock(latest.dueDate, nextDueDateObj).getTime();
 
-  // Increase points when week is fully completed
-  let newPoints = task.points;
+  let newPoints = latest.points;
   if (isWeekComplete) {
-    newPoints = Math.min(10, task.points + 2);
+    newPoints = Math.min(10, latest.points + 2);
   }
 
   const updates: Partial<Task> = {
     startDate: newStartDate,
     repetitionRule: {
       ...rule,
-      completedAt: [...rule.completedAt, completionDate],
-      //completions: newCompletions
-      completions: isWeekComplete ? 0 : newCompletions,
+      daysOfWeek: rule.daysOfWeek ?? [],
+      completedAt: [...(rule.completedAt || []), completionDate],
+      completions: newCompletions,
     },
-    // Only set completedAt when the full week cycle is complete
-    // firestore ignores undefined values
     ...(isWeekComplete && { completedAt: completionDate }),
     dueDate: nextDueDate,
     points: newPoints,
@@ -723,26 +722,26 @@ export async function completeRepeatingTaskWithTimesPerWeek(
   );
 
   try {
-    await updateTask(task.id, safeUpdates);
-    await updateUserCompletionStats(session.user.id, task.points);
+    await updateTask(latest.id, safeUpdates);
+    await updateUserCompletionStats(session.user.id, latest.points);
 
     // Check for achievements after task completion
     await checkAndAwardAchievements(session.user.id);
 
-    await trackTaskAnalytics(session.user.id, task.id, "task_completed", {
-      dueDate: task.dueDate,
-      isReminder: task.isReminder,
-      isPriority: task.isPriority,
+    await trackTaskAnalytics(session.user.id, latest.id, "task_completed", {
+      dueDate: latest.dueDate,
+      isReminder: latest.isReminder,
+      isPriority: latest.isPriority,
       isRepeating: true,
-      createdAt: task.createdAt,
+      createdAt: latest.createdAt,
       completedAt: Date.now(),
-      delayCount: task.delayCount || 0,
-      points: task.points,
+      delayCount: latest.delayCount || 0,
+      points: latest.points,
       risk: false,
     });
 
     revalidateTaskData(session.user.id, {
-      taskId: task.id,
+      taskId: latest.id,
       includeUser: true,
     });
 
@@ -772,20 +771,21 @@ export async function completeRepeatingTaskWithDaysOfWeek(
   if (!session?.user?.id) {
     return { success: false, error: "User not authenticated" };
   }
-  if (!task.isRepeating || !task.repetitionRule) {
+  const latest = await getTaskByTaskId(task.id);
+  if (!latest?.isRepeating || !latest.repetitionRule) {
     return {
       success: false,
       error: "Task is not a repeating task",
     };
   }
-  const rule = task.repetitionRule;
+  const rule = latest.repetitionRule;
   if (rule.daysOfWeek.length === 0) {
     return {
       success: false,
       error: "Task is not configured for specific days of week",
     };
   }
-  const { canCompleteNow } = canCompleteRepeatingTaskNow(task);
+  const { canCompleteNow } = canCompleteRepeatingTaskNow(latest);
   if (!canCompleteNow) {
     return {
       success: false,
@@ -793,71 +793,54 @@ export async function completeRepeatingTaskWithDaysOfWeek(
     };
   }
 
-  const newCompletions = rule.completions + 1;
+  const newCompletions =
+    countCompletionsInWeek(rule.completedAt, completionDate) + 1;
   const isWeekComplete = newCompletions >= rule.daysOfWeek.length;
-
-  // Calculate next due date
-  const today = getDay(new Date(completionDate)) as DayOfWeek;
   const sortedDays = [...rule.daysOfWeek].sort((a, b) => a - b);
   const firstDayInWeek = sortedDays[0];
+  const todayDay = utcNoon(completionDate).getUTCDay() as DayOfWeek;
 
   let nextDueDateObj: Date;
-  let newStartDate: number = task.startDate || Date.now();
+  let newStartDate: number;
 
   if (isWeekComplete) {
-    // Week complete, move to first day of next week
-    const currentWeekStart = startOfWeek(
-      new Date(completionDate),
-      MONDAY_START_OF_WEEK,
+    const nextWeekAnchor = getDaysOfWeekAnchorUtc(
+      getWeekStartUtc(completionDate).getTime() + 7 * MS_PER_DAY,
+      firstDayInWeek,
     );
-    const nextWeekStart = addWeeks(currentWeekStart, 1);
-    const correctStartDate = addDays(
-      nextWeekStart,
-      firstDayInWeek === 0 ? 6 : firstDayInWeek - 1,
-      //firstDayInWeek === 0 ? 7 : firstDayInWeek //sunday (0) becomes day 7
-    );
-    newStartDate = correctStartDate.getTime();
-    nextDueDateObj = new Date(correctStartDate);
+    newStartDate = nextWeekAnchor.getTime();
+    nextDueDateObj = nextWeekAnchor;
   } else {
-    // Not complete yet, find next scheduled day
-    let nextDueDay = sortedDays.find((day) => day > today);
-    let daysUntilNext: number;
-
-    if (nextDueDay !== undefined) {
-      daysUntilNext = nextDueDay - today;
-    } else {
-      // Wrap to next week, use first day
-      nextDueDay = firstDayInWeek;
-      daysUntilNext = 7 - today + (nextDueDay === 0 ? 7 : nextDueDay);
-    }
-
-    nextDueDateObj = addDays(new Date(completionDate), daysUntilNext);
+    newStartDate = getDaysOfWeekAnchorUtc(
+      completionDate,
+      firstDayInWeek,
+    ).getTime();
+    const nextDueDay =
+      sortedDays.find((day) => day > todayDay) ?? firstDayInWeek;
+    const daysUntilNext = daysUntilNextScheduledDay(todayDay, nextDueDay, {
+      inclusive: false,
+    });
+    nextDueDateObj = new Date(
+      utcNoon(completionDate).getTime() + daysUntilNext * MS_PER_DAY,
+    );
   }
 
-  // Preserve time from original dueDate
-  const taskDueDateObj = new Date(task.dueDate);
-  nextDueDateObj.setHours(
-    taskDueDateObj.getHours(),
-    taskDueDateObj.getMinutes(),
-  );
-  const newDueDate = nextDueDateObj.getTime();
+  const newDueDate = withDueClock(latest.dueDate, nextDueDateObj).getTime();
 
-  // Increase points when week is fully completed
-  let newPoints = task.points;
+  let newPoints = latest.points;
   if (isWeekComplete) {
-    newPoints = Math.min(10, task.points + 2);
+    newPoints = Math.min(10, latest.points + 2);
   }
 
   const updates: Partial<Task> = {
     startDate: newStartDate,
     repetitionRule: {
       ...rule,
-      completedAt: [...rule.completedAt, completionDate],
-      completions: isWeekComplete ? 0 : newCompletions,
-      //completions: newCompletions
+      daysOfWeek: rule.daysOfWeek ?? [],
+      completedAt: [...(rule.completedAt || []), completionDate],
+      completions: newCompletions,
     },
-    // Only set completedAt when the full week cycle is complete
-    completedAt: isWeekComplete ? completionDate : undefined,
+    ...(isWeekComplete && { completedAt: completionDate }),
     dueDate: newDueDate,
     points: newPoints,
     status: isWeekComplete ? "completed" : "pending",
@@ -868,26 +851,26 @@ export async function completeRepeatingTaskWithDaysOfWeek(
   );
 
   try {
-    await updateTask(task.id, safeUpdates);
-    await updateUserCompletionStats(session.user.id, task.points);
+    await updateTask(latest.id, safeUpdates);
+    await updateUserCompletionStats(session.user.id, latest.points);
 
     // Check for achievements after task completion
     await checkAndAwardAchievements(session.user.id);
 
-    await trackTaskAnalytics(session.user.id, task.id, "task_completed", {
-      dueDate: task.dueDate,
-      isReminder: task.isReminder,
-      isPriority: task.isPriority,
+    await trackTaskAnalytics(session.user.id, latest.id, "task_completed", {
+      dueDate: latest.dueDate,
+      isReminder: latest.isReminder,
+      isPriority: latest.isPriority,
       isRepeating: true,
-      createdAt: task.createdAt,
+      createdAt: latest.createdAt,
       completedAt: Date.now(),
-      delayCount: task.delayCount || 0,
-      points: task.points,
+      delayCount: latest.delayCount || 0,
+      points: latest.points,
       risk: false,
     });
 
     revalidateTaskData(session.user.id, {
-      taskId: task.id,
+      taskId: latest.id,
       includeUser: true,
     });
 

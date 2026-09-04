@@ -62,6 +62,26 @@ export default function LoginForm() {
     }
   }, [status, handlePostAuthRedirect]);
 
+  // Surface NextAuth OAuth errors and drop ?error= from the URL so a failed
+  // GitHub attempt cannot poison a later Google/credentials sign-in.
+  useEffect(() => {
+    const authError = searchParams.get("error");
+    if (!authError) return;
+
+    if (authError === "OAuthCallback") {
+      setError("GitHub sign-in failed. Please try again, or continue with Google.");
+    } else if (authError === "OAuthAccountNotLinked") {
+      setError("This email is already used with another sign-in method.");
+    } else {
+      setError("Sign-in failed. Please try again.");
+    }
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("error");
+    const qs = params.toString();
+    router.replace(qs ? `/login?${qs}` : "/login", { scroll: false });
+  }, [searchParams, router]);
+
   if (status === "loading") return <Loader label="Loading session..." />;
   if (status === "authenticated") {
     return <Loader label="Redirecting to webapp..." />;

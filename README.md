@@ -1,31 +1,31 @@
 # TaskFlow - All-in-One Productivity & Life Management System
 
-TaskFlow is a comprehensive, modern productivity platform that goes beyond simple task management. It's your personal command center for life optimization, combining intelligent task organization, fitness tracking, nutrition monitoring, AI assistance, and gamified progress tracking—all wrapped in a beautiful, offline-capable Progressive Web App.
+TaskFlow is a comprehensive, modern productivity platform that goes beyond simple task management. It's your personal command center for boosting productivity and optimizing your life, combining intelligent task organization, fitness tracking, nutrition monitoring, and gamified progress tracking—all wrapped in a beautiful, offline-capable Progressive Web App.
 
-Whether you're planning your day, tracking your workouts, monitoring your nutrition, or getting AI-powered productivity insights, TaskFlow brings everything together in one seamless, distraction-free experience. Built with cutting-edge technologies and designed for both desktop and mobile, it adapts to your workflow and keeps you productive even without an internet connection.
+Whether you're planning your day, tracking your workouts, counting calories and macros, or getting help from AI, TaskFlow brings everything together in one seamless, distraction-free experience. Built with cutting-edge technologies and designed for both desktop and mobile, it adapts to your workflow and keeps you productive.
 
 ## ✨ What Makes TaskFlow Special
 
-- **🌐 Offline-First**: Full offline functionality with PWA support—work anywhere, anytime, even without internet
-- **🤖 AI-Powered**: Integrated AI assistant with multi-model support (GPT, Claude, Gemini) for intelligent productivity insights
+- **🔥 All in one place**: Everything you need to boost productivity and optimize every detail of your life
+- **🤖 AI-Powered**: Let the AI do the heavy lifting for you with integrated AI assistant with multi-model support (GPT, Claude, Gemini)
 - **🏋️ Holistic Approach**: Not just tasks—track workouts, nutrition, and habits all in one beautiful interface
-- **📊 Gamification**: Earn points, maintain streaks, unlock achievements, and rate your task experiences
+- **📊 Gamification**: Earn points, maintain streaks, unlock achievements, and rate your experiences
 - **⚡ Lightning Fast**: Optimistic UI updates, instant feedback, and smooth animations for delightful UX
-- **🎨 Beautiful Design**: Modern dark theme with polished animations and attention to detail
+- **🔐 Privacy First**: Only you can see your data, firebase security rules also help
 - **📱 True PWA**: Install on any device, get push notifications, and enjoy native app experience
-- **🔐 Privacy First**: Your data is yours—secure Firebase backend with granular security rules
+- **🌐 Offline-First**: Full offline functionality with PWA support—work anywhere, anytime, even without internet
 
 ## 🚀 Core Capabilities at a Glance
 
 | Feature              | Description                                                                |
 | -------------------- | -------------------------------------------------------------------------- |
-| **Smart Tasks**      | Advanced scheduling, repeating tasks, priorities, tags, and risk detection |
-| **Today View**       | Visual 24-hour timeline with time-blocking and drag-and-drop scheduling    |
+| **Smart Tasks**      | Advanced scheduling, repeating tasks, priorities, fun customization...     |
+| **Today View**       | Time grid view with scheduled tasks and whole-day tasks                    |
 | **Fitness Tracking** | Workout logging, templates, exercise library, and progress visualization   |
-| **Nutrition**        | macro tracking, meal logging, and daily goals                              |
+| **Nutrition**        | Macro tracking, food scanning, meal logging, and daily goals               |
 | **AI Assistant**     | Multi-model AI with function calling and contextual help                   |
-| **Analytics**        | Streaks, achievements, completion rates, and performance insights          |
-| **Notifications**    | Smart notification system with priority levels and inbox management        |
+| **Analytics**        | Streaks, achievements, completion statistics, and performance insights     |
+| **Notifications**    | Notification system with priority levels and inbox management      	      |
 
 ## 💰 Subscription Plans
 
@@ -223,82 +223,80 @@ TaskFlow offers flexible pricing tiers designed to scale with your productivity 
 
 ### Frontend
 
-- **Next.js 15+**: React framework with App Router for optimal performance and server-side rendering.
-- **React 19+**: Latest version for modern UI development with concurrent features.
-- **TypeScript**: Type-safe development with full type coverage.
-- **Tailwind CSS**: Utility-first CSS framework for responsive design with custom theme.
-- **Framer Motion**: Smooth animations, transitions, and micro-interactions.
-- **Lucide React**: Modern, customizable icon library with 1000+ icons.
-- **React Hot Toast**: Beautiful toast notifications with custom styling.
-- **React Tooltip**: Enhanced tooltip functionality for better UX.
-- **Recharts**: Interactive, responsive charts for fitness progress and analytics visualization.
-- **Service Workers**: Offline support, background sync, and push notifications.
+- **Next.js 15+**: React framework with App Router for optimal performance and server-side rendering
+- **React 19+**: Latest version for modern UI development with concurrent features
+- **TypeScript**: Type-safe development with full type coverage
+- **Tailwind CSS**: Utility-first CSS framework for responsive design with custom theme
+- **Framer Motion**: Smooth animations, transitions, and micro-interactions
+- **Lucide React**: Modern, customizable icon library
+- **React Hot Toast**: Beautiful toast notifications with custom styling
+- **React Tooltip**: Enhanced tooltip functionality for better UX
+- **Recharts**: Interactive, responsive charts for fitness progress and analytics visualization
+- **Service Workers**: Offline support, background sync, and push notifications
 
 ### Backend & Authentication
 
-- **Firebase**: Comprehensive Backend-as-a-Service platform
-  - **Firestore**: NoSQL real-time database for tasks, notes, health data, workouts, and AI chat history.
-  - **Firebase Authentication**: Secure user authentication with Email/Password and Google sign-in.
-  - **Firebase Cloud Messaging (FCM)**: Push notification delivery for web and mobile.
-  - **Firebase Admin SDK**: Server-side operations with elevated privileges.
-  - **Custom Tokens**: Bridge between NextAuth and Firebase for seamless authentication.
-- **NextAuth.js v5**: Modern authentication framework integrating multiple providers:
-  - **Credentials Provider**: Firebase custom tokens for Google Sign-In & Email/Password.
-  - **GitHub OAuth**: Third-party authentication integration.
-  - **Session Management**: Secure, encrypted JWT sessions.
-- **Server Actions**: Next.js server-side functions for secure data operations.
+- **Firebase**
+  - **Firestore**: NoSQL real-time database
+  - **Firebase Cloud Messaging (FCM)**: Push notification delivery for web and mobile
+  - **Firebase Admin SDK**: Server-side operations with elevated privileges
+- **NextAuth**
+  - **Credentials Provider**: Firebase custom tokens for Google Sign-In & Email/Password
+  - **GitHub OAuth**
+  - **Session Management**: Secure, encrypted JWT sessions
 
 ### APIs & External Services
 
-- **Stripe**: Payment processing and subscription management with webhooks and customer portal integration.
-- **CrayonAI**: Advanced AI model orchestration and streaming capabilities.
-- **ThesysAI**: Additional AI model provider for enhanced conversational experiences.
-- **ZXing WASM**: Barcode scanning and QR code processing for nutrition tracking.
+- **Stripe**: Payment processing and subscription management with webhooks and customer portal integration
+- **CrayonAI**: Advanced AI model orchestration and streaming capabilities
+- **ThesysAI**: Additional AI model provider for enhanced conversational experiences
+- **ZXing WASM**: Barcode scanning and QR code processing for nutrition tracking
+- **cron-jobs.org**: for cleaning up the firestore
 
 ### Development Tools & Infrastructure
 
-- **ESLint**: Code quality and style enforcement with custom rules.
-- **TypeScript**: Static type checking with strict mode.
-- **Git**: Version control with GitHub integration.
-- **Environment Variables**: Secure configuration management for API keys and secrets.
-- **Service Worker API**: Native browser API for offline functionality.
+- **ESLint**: Code quality and style enforcement with custom rules
+- **TypeScript**: Static type checking with strict mode
+- **Git**: Version control
+- **Environment Variables**: for API keys and secrets
+- **Service Worker API**: Native browser API for offline functionality
 
 ## 📱 Application Structure
 
 ### Main Routes
 
 - **`/`**: Landing page
-- **`/webapp`** (Dashboard): Overview of tasks, analytics, and performance metrics with visual charts.
-- **`/webapp/today`**: Today's view with interactive time grid and daily task planning.
-- **`/webapp/tasks`**: Comprehensive task management interface with filtering and bulk actions.
-- **`/webapp/calendar`**: Beautiful calendar view of tasks with month/week navigation.
-- **`/webapp/completed`**: Archive of completed tasks with experience ratings and statistics.
-- **`/webapp/notes`**: Personal notes management with create, edit, and delete functionality.
-- **`/webapp/health`**: Nutrition tracking with calorie counting, and macro goals.
-- **`/webapp/fitness`**: Workout logging, exercise library, templates, and progress visualization.
-- **`/webapp/ai`**: AI assistant chat interface with multi-model support and function calling.
-- **`/webapp/inbox`**: Notification center with filtering, priority indicators, and read/unread management.
-- **`/webapp/profile`**: User profile, achievements, and account settings.
-- **`/login`**: Authentication page with Email/Password, Google, and GitHub sign-in options.
-- **`/offline`**: Dedicated offline mode page shown when internet connection is lost.
+- **`/login`**
+- **`/webapp`** (Dashboard): Overview of tasks, analytics, and performance metrics with visual charts
+- **`/webapp/inbox`**: Notification center with filtering, priority indicators, and read/unread management
+- **`/webapp/today`**: Today's view with interactive time grid and daily task planning
+- **`/webapp/tasks`**: Comprehensive task management interface with filtering and bulk actions
+- **`/webapp/completed`**
+- **`/webapp/calendar`**
+- **`/webapp/notes`**
+- **`/webapp/health`**: Nutrition tracking with calorie counting, and macro goals
+- **`/webapp/fitness`**: Workout logging, exercise library, templates, and progress visualization
+- **`/webapp/ai`**: AI assistant chat interface with multi-model support and function calling
+- **`/webapp/profile`**: User profile, tutorial, settings and subscription portal
+- **`/offline`**
 
 ## 🔒 Security Features
 
-- **Secure Authentication**: Support for Google Sign-in, Email/Password, and GitHub OAuth, managed by NextAuth.js and Firebase.
-- **Custom Firebase Tokens**: Secure bridge between NextAuth sessions and Firebase authentication.
-- **Protected API Routes**: All API endpoints require authentication and validate user permissions.
-- **Server Actions Security**: Server-side operations protected by NextAuth session validation.
-- **Firestore Security Rules**: Granular security rules ensuring users can only access their own data.
-- **Row-Level Security**: Each document includes userId validation at the database level.
-- **Environment Variable Management**: Sensitive keys and configurations secured via environment variables.
-- **Secure Session Handling**: Encrypted JWT sessions managed by NextAuth.js with httpOnly cookies.
-- **Advanced Security Headers**: Comprehensive HTTP security headers including X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, and Strict-Transport-Security.
-- **Performance Monitoring**: Real-time performance tracking with request timing headers, user agent logging, and analytics integration.
-- **Feature Flag Security**: Environment-based feature toggles for controlled rollout and beta testing capabilities.
-- **XSS Protection**: Input sanitization and output encoding to prevent cross-site scripting.
-- **CSRF Protection**: Built-in CSRF token validation for all state-changing operations.
-- **Rate Limiting**: Protection against API abuse and brute force attacks.
-- **Admin Operations**: Separate admin SDK operations with elevated privileges for system tasks.
+- **Secure Authentication**: Support for Google Sign-in, Email/Password, and GitHub OAuth, managed by NextAuth and Firebase
+- **Custom Firebase Tokens**: Secure bridge between NextAuth sessions and Firebase authentication
+- **Protected API Routes**: All API endpoints require authentication and validate user permissions
+- **Server Actions Security**: Server-side operations protected by NextAuth session validation
+- **Firestore Security Rules**: Granular security rules ensuring users can only access their own data
+- **Row-Level Security**: Each document includes userId validation at the database level
+- **Environment Variable Management**: Sensitive keys and configurations secured via environment variables
+- **Secure Session Handling**: Encrypted JWT sessions managed by NextAuthjs with httpOnly cookies
+- **Advanced Security Headers**: Comprehensive HTTP security headers including X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, and Strict-Transport-Security
+- **Performance Monitoring**: Real-time performance tracking with request timing headers, user agent logging, and analytics integration
+- **Feature Flag Security**: Environment-based feature toggles for controlled rollout and beta testing capabilities
+- **XSS Protection**: Input sanitization and output encoding to prevent cross-site scripting
+- **CSRF Protection**: Built-in CSRF token validation for all state-changing operations
+- **Rate Limiting**: Protection against API abuse and brute force attacks
+- **Admin Operations**: Separate admin SDK operations with elevated privileges for system tasks
 
 ## 🚀 Getting Started
 
@@ -399,57 +397,6 @@ interface AppUser {
 }
 ```
 
-## Firebase Authentication & Firestore Security Rules
-
-#### Understanding the Authentication Issue
-
-The main reason my firebase rules are failing is almost certainly that `request.auth` is null when your client-side code tries to access Firestore.
-
-When you use NextAuth.js, it manages user authentication and creates its own session. However, this session is separate from Firebase Authentication. For `request.auth` to be populated in your Firestore security rules, the user must be explicitly signed into Firebase on the client using the Firebase SDK.
-
-The fact that changing the tasks rule to `allow read, update, delete: if true;` works is a strong indicator that the client is not authenticated with Firebase.
-
-#### The Solution: Custom Firebase Tokens
-
-To fix this, I linked the NextAuth session to a Firebase session. When a user is authenticated with NextAuth, Next.js backend generates a Firebase custom token.
-
-Client-side code fetches this custom token. The client then uses `signInWithCustomToken()` from the Firebase SDK to sign the user into Firebase.
-
-Once the user is signed in with the custom token, `request.auth` will be correctly populated in your security rules, and they will start working as you expect.
-
-A component like `AuthProvider.tsx` is the perfect place to orchestrate this client-side logic.
-
-#### Server vs Client Authentication
-
-On the server, you are authenticated with NextAuth, but you are not authenticated with Firebase.
-These are two completely separate authentication systems.
-
-Think of it like this:
-
-- **NextAuth.js** is the Front Door Security Guard for your entire application building. They check your ID (from Google, GitHub, etc.) and give you a session cookie, which is like an ID badge that proves you're allowed inside the building.
-- **Firebase** is a Secure Vault inside the building. This vault has its own separate, high-tech lock. Your building ID badge won't open the vault. You need a specific key card (a Firebase Auth token) that is only valid for the vault.
-
-#### How `getServerSession(authOptions)` Works
-
-The Front Door Security Guard (`getServerSession`) works because you carry your ID badge (the NextAuth session cookie) with you everywhere you go inside the building.
-
-- When a user logs in through a NextAuth provider, NextAuth creates a secure, encrypted, httpOnly cookie in the user's browser.
-- Every single request the browser makes to your Next.js server—whether it's to render a Server Component, call a Route Handler, or execute a Server Action—automatically includes this cookie.
-- `getServerSession(authOptions)` is a server-side function that knows how to find this cookie in the incoming request, decrypt it using your `NEXTAUTH_SECRET`, and validate it.
-
-So, on the server, you can always ask "Is this person allowed in the building?" and `getServerSession` will give you a reliable "yes" or "no" and tell you who they are, because the proof is sent with every request.
-
-#### Why Firebase Fails on the Server (Without the Admin SDK)
-
-**On the Client:** When we call `signInWithCustomToken` in the `FirebaseAuthProvider`, the Firebase client-side SDK establishes a session in the browser. It stores its own authentication token in the browser's IndexedDB. When your client-side code makes a request to Firestore, the SDK automatically attaches this token. Security rules see the token and say, "Okay, this key card is valid, open the vault."
-
-**On the Server:** Your server-side code (in a Server Component or Server Action) is a completely separate environment. It has no browser and no access to the IndexedDB where the client's Firebase token is stored. The `signInWithCustomToken` call that happened in the browser is completely invisible to it.
-
-When your server-side code tries to use the standard Firebase SDK (the one initialized in `firebase.ts`), it's like walking up to the vault with no key card at all. Firestore sees an unauthenticated request and correctly denies it, giving you the "Missing or insufficient permissions" error.
-
-#### The Solution Implemented (Bridging the Gap)
-
-**The Master Key (admin-sdk):** The Firebase Admin SDK is initialized with your service account credentials. This is the equivalent of a master key that can open any vault, bypassing the normal security rules. It's designed specifically for trusted server environments. This is why I created all the `-admin.ts` files—to ensure that any time our server needs to access the vault, it uses its master key.
 
 ## 🌐 Browser Support & Compatibility
 
@@ -471,25 +418,7 @@ TaskFlow is built with modern web standards and supports all major browsers:
 - Service Worker support for offline functionality
 - Modern CSS Grid and Flexbox support
 
-**Mobile Support:**
-
-- iOS 14+ (Safari, Chrome)
-- Android 8+ (Chrome, Firefox, Samsung Internet)
-- Responsive design adapts to all screen sizes
-- Touch-optimized interface
-
 ## 🎯 Use Cases
-
-TaskFlow is perfect for:
-
-- **Productivity Enthusiasts**: Power users who want an all-in-one solution for life management
-- **Fitness & Health Conscious**: Track workouts and nutrition alongside daily tasks
-- **Remote Workers**: Manage work tasks, habits, and personal goals in one place
-- **Students**: Organize assignments, study schedules, and personal projects
-- **Freelancers**: Track projects, deadlines, and maintain work-life balance
-- **Digital Nomads**: Offline-first design perfect for unreliable internet connections
-- **Habit Builders**: Gamification and streaks help build lasting positive habits
-- **Data-Driven Individuals**: Comprehensive analytics and insights into your productivity
 
 ## 🤝 Contributing
 

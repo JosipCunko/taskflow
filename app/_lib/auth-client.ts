@@ -17,6 +17,27 @@ import {
 import { redirect } from "next/navigation";
 
 const googleProvider = new GoogleAuthProvider();
+const POST_AUTH_CALLBACK_URL = "/webapp";
+
+/**
+ * Exchange a Firebase ID token for a NextAuth session.
+ * Always pass a clean callbackUrl — NextAuth v4 otherwise uses window.location.href,
+ * so a leftover ?error=OAuthCallback from a failed GitHub attempt is treated as a
+ * credentials failure even when authorize() succeeded.
+ */
+async function signIntoNextAuthWithIdToken(idToken: string): Promise<void> {
+  const nextAuthResult = await nextAuthSignIn("credentials", {
+    idToken,
+    redirect: false,
+    callbackUrl: POST_AUTH_CALLBACK_URL,
+  });
+
+  if (nextAuthResult?.error) {
+    console.error("NextAuth sign-in error:", nextAuthResult.error);
+    await firebaseSignOut(auth);
+    throw new Error(nextAuthResult.error);
+  }
+}
 
 /**
  * Initiates Google Sign-In using Firebase, then signs into NextAuth.
@@ -34,32 +55,12 @@ export const signInWithGoogle = async (): Promise<void> => {
     // 1. Sign in with Firebase client-side
     const result = await firebaseSignInWithPopup(auth, googleProvider);
     const firebaseUser = result.user;
-    console.log("auth", result);
 
     if (firebaseUser) {
-      // 2. Get the Firebase ID token
-      const idToken = await firebaseUser.getIdToken(true); // Pass true to force refresh
-
-      // 3. Sign into NextAuth.js using the 'credentials' provider
-      //    This will trigger the `authorize` function in
-      const nextAuthResult = await nextAuthSignIn("credentials", {
-        idToken,
-        redirect: false, // Prevent NextAuth from redirecting, handle manually if needed
-      });
-      console.log("auth", nextAuthResult);
-
-      if (nextAuthResult?.error) {
-        console.error("NextAuth sign-in error:", nextAuthResult.error);
-        // Optionally, sign out from Firebase if NextAuth sign-in fails to keep states consistent
-        await firebaseSignOut(auth);
-        throw new Error(nextAuthResult.error);
-      }
-
-      console.log("Successfully signed in with Firebase and NextAuth.");
-      // At this point, the Firestore user document creation/update is handled
-      // by the `authorize` callback in your NextAuth configuration.
-      // You can redirect or update UI state as needed.
-      redirect("/webapp");
+      const idToken = await firebaseUser.getIdToken(true);
+      // Triggers authorize function
+      await signIntoNextAuthWithIdToken(idToken);
+      redirect(POST_AUTH_CALLBACK_URL);
     } else {
       throw new Error("No user returned from Firebase sign-in.");
     }
@@ -108,27 +109,9 @@ export const signUpWithEmailAndPasswordFirebase = async (
         }
       }
 
-      // 3. Get the Firebase ID token (force refresh to include profile updates if any)
       const idToken = await firebaseUser.getIdToken(true);
-
-      // 4. Sign into NextAuth.js using the 'credentials' provider
-      const nextAuthResult = await nextAuthSignIn("credentials", {
-        idToken,
-        redirect: false,
-      });
-
-      if (nextAuthResult?.error) {
-        console.error(
-          "NextAuth sign-in error after Firebase signup:",
-          nextAuthResult.error
-        );
-        throw new Error(nextAuthResult.error);
-      }
-
-      console.log(
-        "Successfully signed up with Firebase and signed in with NextAuth."
-      );
-      redirect("/webapp");
+      await signIntoNextAuthWithIdToken(idToken);
+      redirect(POST_AUTH_CALLBACK_URL);
     } else {
       throw new Error("No user returned from Firebase user creation.");
     }
@@ -157,25 +140,8 @@ export const signInWithEmailAndPasswordFirebase = async (
     if (firebaseUser) {
       // 2. Get the Firebase ID token
       const idToken = await firebaseUser.getIdToken(true);
-
-      // 3. Sign into NextAuth.js using the 'credentials' provider
-      const nextAuthResult = await nextAuthSignIn("credentials", {
-        idToken,
-        redirect: false,
-      });
-
-      if (nextAuthResult?.error) {
-        console.error(
-          "NextAuth sign-in error after Firebase sign-in:",
-          nextAuthResult.error
-        );
-        throw new Error(nextAuthResult.error);
-      }
-
-      console.log(
-        "Successfully signed in with Firebase (email/password) and NextAuth."
-      );
-      redirect("/webapp");
+      await signIntoNextAuthWithIdToken(idToken);
+      redirect(POST_AUTH_CALLBACK_URL);
     } else {
       throw new Error("No user returned from Firebase sign-in.");
     }
@@ -196,21 +162,8 @@ export const signInAnonymously = async (): Promise<void> => {
 
     if (firebaseUser) {
       const idToken = await firebaseUser.getIdToken(true);
-
-      const nextAuthResult = await nextAuthSignIn("credentials", {
-        idToken,
-        redirect: false,
-      });
-
-      if (nextAuthResult?.error) {
-        console.error(
-          "NextAuth sign-in error after Firebase anonymous sign-in:",
-          nextAuthResult.error
-        );
-        throw new Error(nextAuthResult.error);
-      }
-
-      redirect("/webapp");
+      await signIntoNextAuthWithIdToken(idToken);
+      redirect(POST_AUTH_CALLBACK_URL);
     } else {
       throw new Error("No user returned from Firebase anonymous sign-in.");
     }

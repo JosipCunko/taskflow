@@ -85,19 +85,46 @@ const sendPushNotification = async (
 };
 
 // Enhanced notification creation with optional push notification
+// `options.id` supports the same dedupe behavior as `createNotification`
+// (e.g. one notification per task/type). When a deduped doc already exists
+// (and isn't expired/archived), we skip re-sending the push so the user
+// doesn't get spammed every time the reminder check runs.
 export const createNotificationWithPush = async (
   notificationData: Omit<
     Notification,
     "id" | "createdAt" | "isRead" | "isArchived"
   >,
-  sendPush: boolean = true
+  sendPush: boolean = true,
+  options?: { id?: string }
 ): Promise<Notification> => {
   try {
-    // Create the database notification
-    const notification = await createNotification(notificationData);
+    let isNew = true;
 
-    // Send push notification if requested
-    if (sendPush) {
+    if (options?.id) {
+      const existingDoc = await adminDb
+        .collection("notifications")
+        .doc(options.id)
+        .get();
+
+      if (existingDoc.exists) {
+        const existingNotification = fromFirestore(
+          existingDoc as admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData>
+        );
+        const expired =
+          existingNotification.expiresAt &&
+          existingNotification.expiresAt <= Date.now();
+        if (!expired && !existingNotification.isArchived) {
+          isNew = false;
+        }
+      }
+    }
+
+    // Create the database notification
+    const notification = await createNotification(notificationData, options);
+
+    // Send push notification if requested and this notification is new
+    // (avoid re-sending a push every time a deduped reminder is re-checked)
+    if (sendPush && isNew) {
       // Get FCM token from user document directly
       const userDoc = await adminDb
         .collection("users")
@@ -117,6 +144,10 @@ export const createNotificationWithPush = async (
             type: notificationData.type,
             notificationId: notification.id,
           }
+        );
+      } else {
+        console.log(
+          `User ${notificationData.userId} has no FCM token, skipping push`
         );
       }
     }
@@ -149,7 +180,7 @@ export const sendCampaignNotification = async (
           data: { campaign: true },
           expiresAt: addDays(new Date(), 7).getTime(),
         },
-        true
+        true // sendPush
       );
       sent++;
     } catch (error) {
@@ -477,7 +508,7 @@ export const generateOverdueTaskNotifications = async (
     // Add repeating task indicator to the message
     const repeatingIndicator = task.isRepeating ? " (Repeating Task)" : "";
 
-    await createNotification(
+    await createNotificationWithPush(
       {
         userId,
         type: "TASK_OVERDUE",
@@ -490,6 +521,7 @@ export const generateOverdueTaskNotifications = async (
         data: { daysOverdue, isRepeating: task.isRepeating },
         expiresAt: addDays(new Date(), 7).getTime(),
       },
+      true, // sendPush
       { id: taskNotificationDocId(task.id, "TASK_OVERDUE") }
     );
   }
@@ -525,7 +557,7 @@ export const generateDueSoonNotifications = async (
     // Add repeating task indicator to the message
     const repeatingIndicator = task.isRepeating ? " (Repeating Task)" : "";
 
-    await createNotification(
+    await createNotificationWithPush(
       {
         userId,
         type: "TASK_DUE_SOON",
@@ -540,6 +572,7 @@ export const generateDueSoonNotifications = async (
         data: { isRepeating: task.isRepeating },
         expiresAt: addDays(now, 7).getTime(),
       },
+      true, // sendPush
       { id: taskNotificationDocId(task.id, "TASK_DUE_SOON") }
     );
   }
@@ -623,7 +656,7 @@ export const generateTimeWindowNotifications = async (
     }
 
     if (notificationType) {
-      await createNotification(
+      await createNotificationWithPush(
         {
           userId,
           type: notificationType as "TASK_DUE_SOON",
@@ -640,6 +673,7 @@ export const generateTimeWindowNotifications = async (
           },
           expiresAt: addDays(new Date(), 1).getTime(),
         },
+        true, // sendPush
         { id: taskNotificationDocId(task.id, notificationType) }
       );
     }
@@ -695,7 +729,7 @@ export const generateAchievementNotification = async (
   };
 
   // Create notification regardless of user.achievements check to avoid race conditions
-  await createNotification(
+  await createNotificationWithPush(
     {
       userId,
       type: "ACHIEVEMENT_UNLOCKED",
@@ -707,6 +741,7 @@ export const generateAchievementNotification = async (
       data: { achievementId },
       expiresAt: addDays(new Date(), 30).getTime(),
     },
+    true, // sendPush
     { id: `achievement_${userId}_${achievementId}` }
   );
 };

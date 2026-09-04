@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, Timer } from "lucide-react";
+import { ChevronDown, Timer, Sparkles } from "lucide-react";
 import Button from "../reusable/Button";
 
 // OpenAI Logo SVG Component
@@ -29,6 +29,11 @@ const AnthropicIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+// Gemini icon (represented with a sparkle, matching Google's Gemini branding style)
+const GeminiIcon = ({ className }: { className?: string }) => (
+  <Sparkles className={className} aria-hidden="true" />
+);
+
 // Get icon component based on model provider
 const getModelIcon = (modelId: string) => {
   if (modelId.includes("openai")) {
@@ -36,6 +41,9 @@ const getModelIcon = (modelId: string) => {
   }
   if (modelId.includes("anthropic")) {
     return AnthropicIcon;
+  }
+  if (modelId.includes("google")) {
+    return GeminiIcon;
   }
   return OpenAIIcon; // Default fallback
 };
@@ -45,23 +53,35 @@ export interface AIModel {
   id: string;
   enabled: boolean;
   soon?: boolean;
+  /** Free to use on the Thesys free tier - no credit consumption. */
+  free?: boolean;
 }
 
+// Free models are listed first (and used as the default) to minimize
+// Thesys credit usage. 
+// Model IDs follow Thesys's currently supported/stable versions - see
+// https://docs.thesys.dev/api-reference/models-and-compatibility
 export const models: AIModel[] = [
-  { name: "GPT-4.1", id: "c1-exp/openai/gpt-4.1/v-20250709", enabled: true },
+  {
+    name: "Gemini 3.1 Flash Lite",
+    id: "c1/google/gemini-3.1-flash-lite-free/v-20260331",
+    enabled: true,
+    free: true,
+  },
+  {
+    name: "Gemini 3.1 Pro",
+    id: "c1/google/gemini-3.1-pro-free/v-20260331",
+    enabled: true,
+    free: true,
+  },
   {
     name: "GPT-5",
-    id: "c1/openai/gpt-5/v-20251130",
+    id: "c1/openai/gpt-5/v-20251230",
     enabled: true,
   },
   {
     name: "Claude Sonnet 4",
-    id: "c1/anthropic/claude-sonnet-4/v-20251130",
-    enabled: true,
-  },
-  {
-    name: "Claude 3.5 Haiku",
-    id: "c1-exp/anthropic/claude-3.5-haiku/v-20250709",
+    id: "c1/anthropic/claude-sonnet-4/v-20251230",
     enabled: true,
   },
 ];

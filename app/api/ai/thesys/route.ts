@@ -15,11 +15,13 @@ import { adminDb } from "@/app/_lib/admin";
 import { startOfDay } from "date-fns";
 import { revalidateTag } from "next/cache";
 import { CacheTags } from "@/app/_utils/serverCache";
+import { checkIpRateLimit, getClientIp } from "@/app/_lib/rateLimit";
 
 const apiKey = process.env.THESYS_API_KEY;
 
-// Default model if none specified
-const DEFAULT_MODEL = "c1-exp/openai/gpt-4.1/v-20250709";
+// Default model if none specified. Kept as one of the free Thesys models so
+// a missing/invalid modelId never silently incurs cost.
+const DEFAULT_MODEL = "c1/google/gemini-3.1-flash-lite-free/v-20260331";
 
 // Types for SSE streaming
 interface ToolCall {
@@ -468,6 +470,28 @@ function parseThesysError(errorText: string): {
 }
 
 export async function POST(request: NextRequest) {
+  // IP-based rate limiting: guards against a single client/script (or an
+  // attacker with a stolen/shared session) hammering this endpoint and
+  // burning through the Thesys credit balance or org-level usage limits.
+  const clientIp = getClientIp(request.headers);
+  const ipRateLimit = checkIpRateLimit(clientIp);
+  if (!ipRateLimit.allowed) {
+    return new Response(
+      JSON.stringify({
+        ...formatErrorResponse(
+          "Too many requests from this network. Please wait a moment and try again.",
+          "rate_limit_error",
+          "ip_rate_limited",
+        ),
+        userFriendly: true,
+      }),
+      {
+        status: 429,
+        headers: { "Retry-After": String(ipRateLimit.retryAfterSeconds) },
+      },
+    );
+  }
+
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return new Response(

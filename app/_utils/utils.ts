@@ -44,13 +44,18 @@ import {
   isEqual,
   isPast,
   startOfDay,
-  isSameWeek,
   format,
 } from "date-fns";
 import { isFuture, isToday } from "date-fns";
 import { customToast } from "./toasts";
 import { CardSpecificIcons, FoodIcons } from "./icons";
 import { Timestamp } from "firebase-admin/firestore";
+import {
+  getCurrentCycleCompletions,
+  getWeekStartUtc,
+} from "../_lib/repeatingTasks";
+
+export { MONDAY_START_OF_WEEK } from "../_lib/repeatingTasks";
 
 /* Landing Page */
 export const stats = [
@@ -793,7 +798,8 @@ export function isTaskAtRisk(task: Task): boolean {
   const currentDate = startOfDay(new Date());
   const rule = task.repetitionRule;
   if (rule?.timesPerWeek) {
-    const remainingCompletions = rule.timesPerWeek - rule.completions;
+    const remainingCompletions =
+      rule.timesPerWeek - getCurrentCycleCompletions(task);
     const currentDay = getDay(currentDate);
     const daysLeftInWeek = currentDay === 0 ? 1 : 8 - currentDay; // Sunday = 1 day left, Monday = 7 days left
     return remainingCompletions > daysLeftInWeek;
@@ -867,10 +873,11 @@ export function getRepeatingTaskInfo(task: Task) {
       repetitionSummary = `${repSum1.join(", ")} and ${repSum2}`;
     }
 
-    completionFraction = `${rule.completions}/${rule.daysOfWeek.length}`;
-    progressPercentage = (rule.completions / rule.daysOfWeek.length) * 100;
+    const weekCompletions = getCurrentCycleCompletions(task);
+    completionFraction = `${weekCompletions}/${rule.daysOfWeek.length}`;
+    progressPercentage = (weekCompletions / rule.daysOfWeek.length) * 100;
 
-    const isFullyCompleted = rule.completions >= rule.daysOfWeek.length;
+    const isFullyCompleted = weekCompletions >= rule.daysOfWeek.length;
 
     if (completedToday && !isFullyCompleted) {
       nextInstanceInfo = "Completed today ✨";
@@ -887,13 +894,14 @@ export function getRepeatingTaskInfo(task: Task) {
     repetitionSummary = `${rule.timesPerWeek} time${
       rule.timesPerWeek > 1 ? "s" : ""
     } a week${timeString}`;
-    completionFraction = `${rule.completions}/${rule.timesPerWeek}`;
-    progressPercentage = (rule.completions / rule.timesPerWeek) * 100;
+    const weekCompletions = getCurrentCycleCompletions(task);
+    completionFraction = `${weekCompletions}/${rule.timesPerWeek}`;
+    progressPercentage = (weekCompletions / rule.timesPerWeek) * 100;
 
-    const isThisWeek = isSameWeek(new Date(), task.startDate || new Date(), {
-      weekStartsOn: 1,
-    });
-    const isFullyCompleted = rule.completions >= rule.timesPerWeek;
+    const currentWeekStart = getWeekStartUtc(new Date()).getTime();
+    const startWeek = getWeekStartUtc(task.startDate || Date.now()).getTime();
+    const isThisWeek = startWeek <= currentWeekStart;
+    const isFullyCompleted = weekCompletions >= rule.timesPerWeek;
 
     if (completedToday && !isFullyCompleted) {
       nextInstanceInfo = "Completed today ✨";
@@ -1010,7 +1018,7 @@ export function getCompletionAvailabilityInfo(
       // For timesPerWeek tasks, check if fully completed
       if (task.repetitionRule?.timesPerWeek) {
         const isFullyCompleted =
-          task.repetitionRule.completions >= task.repetitionRule.timesPerWeek;
+          getCurrentCycleCompletions(task) >= task.repetitionRule.timesPerWeek;
         if (isFullyCompleted) {
           return {
             text: "Available next week",
@@ -1029,7 +1037,7 @@ export function getCompletionAvailabilityInfo(
         task.repetitionRule.daysOfWeek.length > 0
       ) {
         const isFullyCompleted =
-          task.repetitionRule.completions >=
+          getCurrentCycleCompletions(task) >=
           task.repetitionRule.daysOfWeek.length;
         if (isFullyCompleted) {
           return {
@@ -1069,8 +1077,6 @@ export function getCompletionAvailabilityInfo(
 }
 
 /*Repeating tasks */
-export const MONDAY_START_OF_WEEK = { weekStartsOn: 1 } as const;
-
 export function canCompleteRepeatingTaskNow(task: Task): {
   canCompleteNow: boolean;
   sameWeek?: boolean;
@@ -1110,11 +1116,13 @@ export function canCompleteRepeatingTaskNow(task: Task): {
   }
   // ==================== TIMES PER WEEK TASKS ====================
   else if (rule.timesPerWeek) {
-    // Check if we're in the same week as the task's startDate
-    sameWeek = isSameWeek(today, task.startDate || today, MONDAY_START_OF_WEEK);
-
-    // Can complete if in same week and haven't reached the limit
-    const isFullyCompleted = rule.completions >= rule.timesPerWeek;
+    const currentWeekStart = getWeekStartUtc(today).getTime();
+    const startWeek = getWeekStartUtc(task.startDate || today).getTime();
+    // Stale last-week startDates must not block this week's remaining completions.
+    // Next-week startDates (cycle already finished) must still lock the task.
+    sameWeek = startWeek <= currentWeekStart;
+    const isFullyCompleted =
+      getCurrentCycleCompletions(task, today) >= rule.timesPerWeek;
     isScheduledToday = sameWeek && !isFullyCompleted;
   }
   // ==================== DAYS OF WEEK TASKS ====================
