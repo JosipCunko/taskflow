@@ -25,7 +25,7 @@ export default function Footer() {
             )}
           </span>
           <div className="h-px w-12 bg-gradient-to-l from-transparent to-primary-500/50"></div>
-          &copy; {new Date().getFullYear()} TaskFlow
+          &copy; {new Date().getFullYear()} Prioritron
         </motion.div>
         <div className="text-xs text-text-gray flex items-center">
           <span>{isOnline ? "SECURE_CONNECTION" : "OFFLINE"}</span>

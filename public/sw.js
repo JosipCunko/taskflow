@@ -1,4 +1,4 @@
-// TaskFlow Service Worker - Enhanced Offline Support + Firebase Messaging
+// Prioritron Service Worker - Enhanced Offline Support + Firebase Messaging
 /*
 The service worker is caching the old JavaScript code. The cache version is currently "v2", but we need to bump it to force the browser to clear the old cached code
 */
@@ -25,10 +25,10 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-const CACHE_VERSION = "17.11.0";
-const CACHE_NAME = `taskflow-cache-${CACHE_VERSION}`;
-const RUNTIME_CACHE = `taskflow-runtime-${CACHE_VERSION}`;
-const STATIC_CACHE = `taskflow-static-${CACHE_VERSION}`;
+const CACHE_VERSION = "18.0.0";
+const CACHE_NAME = `prioritron-cache-${CACHE_VERSION}`;
+const RUNTIME_CACHE = `prioritron-runtime-${CACHE_VERSION}`;
+const STATIC_CACHE = `prioritron-static-${CACHE_VERSION}`;
 
 // Static assets only — never precache personalized App Router HTML.
 const PRECACHE_URLS = [
@@ -36,6 +36,8 @@ const PRECACHE_URLS = [
   "/manifest.json",
   "/icon-512.png",
   "/logo.png",
+  "/logo.svg",
+  "/icon.svg",
 ];
 
 // Install event - precache essential resources
@@ -203,12 +205,12 @@ messaging.onBackgroundMessage((payload) => {
   console.log("Background Message received: ", payload);
 
   const notificationTitle =
-    payload.notification?.title || "TaskFlow Notification";
+    payload.notification?.title || "Prioritron Notification";
   const notificationOptions = {
     body: payload.notification?.body || "You have a new notification",
     icon: payload.notification?.icon || "/icon-512.png",
     badge: "/icon-512.png",
-    tag: payload.data?.type || "taskflow-notification",
+    tag: payload.data?.type || "prioritron-notification",
     data: payload.data,
     actions: [
       {

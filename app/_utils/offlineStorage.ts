@@ -3,7 +3,7 @@
  * Provides local caching for Firestore data to enable offline functionality
  */
 
-const DB_NAME = "taskflow-offline-db";
+const DB_NAME = "prioritron-offline-db";
 const DB_VERSION = 1;
 
 // Store names for different data types

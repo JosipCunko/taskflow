@@ -79,7 +79,7 @@ export default function HeroSection() {
               speed={2.5}
               className="relative text-5xl sm:text-6xl md:text-8xl font-black tracking-tighter text-text-high drop-shadow-[0_0_15px_rgba(14,165,233,0.5)]"
             >
-              TASKFLOW
+              PRIORITRON
             </GlitchText>
           </h1>
           <p className="text-primary-400 font-mono mt-2 text-sm sm:text-base tracking-widest uppercase opacity-80">

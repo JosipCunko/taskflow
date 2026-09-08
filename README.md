@@ -1,10 +1,10 @@
-# TaskFlow - All-in-One Productivity & Life Management System
+# Prioritron - All-in-One Productivity & Life Management System
 
-TaskFlow is a comprehensive, modern productivity platform that goes beyond simple task management. It's your personal command center for boosting productivity and optimizing your life, combining intelligent task organization, fitness tracking, nutrition monitoring, and gamified progress tracking—all wrapped in a beautiful, offline-capable Progressive Web App.
+Prioritron is a comprehensive, modern productivity platform that goes beyond simple task management. It's your personal command center for boosting productivity and optimizing your life, combining intelligent task organization, fitness tracking, nutrition monitoring, and gamified progress tracking—all wrapped in a beautiful, offline-capable Progressive Web App.
 
-Whether you're planning your day, tracking your workouts, counting calories and macros, or getting help from AI, TaskFlow brings everything together in one seamless, distraction-free experience. Built with cutting-edge technologies and designed for both desktop and mobile, it adapts to your workflow and keeps you productive.
+Whether you're planning your day, tracking your workouts, counting calories and macros, or getting help from AI, Prioritron brings everything together in one seamless, distraction-free experience. Built with cutting-edge technologies and designed for both desktop and mobile, it adapts to your workflow and keeps you productive.
 
-## ✨ What Makes TaskFlow Special
+## ✨ What Makes Prioritron Special
 
 - **🔥 All in one place**: Everything you need to boost productivity and optimize every detail of your life
 - **🤖 AI-Powered**: Let the AI do the heavy lifting for you with integrated AI assistant with multi-model support (GPT, Claude, Gemini)
@@ -29,7 +29,7 @@ Whether you're planning your day, tracking your workouts, counting calories and 
 
 ## 💰 Subscription Plans
 
-TaskFlow offers flexible pricing tiers designed to scale with your productivity needs:
+Prioritron offers flexible pricing tiers designed to scale with your productivity needs:
 
 ### Base Plan ($0/month)
 
@@ -187,7 +187,7 @@ TaskFlow offers flexible pricing tiers designed to scale with your productivity 
 
 ### 12. Progressive Web App (PWA) & Offline Support
 
-- **Install as Native App**: Add TaskFlow to your home screen on any device (iOS, Android, desktop) for app-like experience.
+- **Install as Native App**: Add Prioritron to your home screen on any device (iOS, Android, desktop) for app-like experience.
 - **Offline Functionality**: Full offline support with service workers—access your tasks even without internet.
 - **Offline Mode Detection**: Automatic detection of network status with dedicated offline page and graceful degradation.
 - **Background Sync**: Smart synchronization when connection is restored.
@@ -303,7 +303,7 @@ TaskFlow offers flexible pricing tiers designed to scale with your productivity 
 1.  **Clone the repository**:
     ```bash
     git clone https://your-repository-url.git
-    cd taskflow
+    cd prioritron
     ```
 2.  **Install dependencies**:
     ```bash
@@ -400,7 +400,7 @@ interface AppUser {
 
 ## 🌐 Browser Support & Compatibility
 
-TaskFlow is built with modern web standards and supports all major browsers:
+Prioritron is built with modern web standards and supports all major browsers:
 
 | Browser              | Version | PWA Support | Offline Mode | Notes                           |
 | -------------------- | ------- | ----------- | ------------ | ------------------------------- |

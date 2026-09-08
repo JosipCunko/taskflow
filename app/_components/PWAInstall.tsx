@@ -108,13 +108,13 @@ export default function PWAInstall({
           <div className="flex items-center gap-3">
             <Image
               src="/pwaicons/ios/192.png"
-              alt="TaskFlow"
+              alt="Prioritron"
               width={48}
               height={48}
               className="w-12 h-12 rounded-lg"
             />
             <div>
-              <h3 className="font-semibold text-text-high">Install TaskFlow</h3>
+              <h3 className="font-semibold text-text-high">Install Prioritron</h3>
               <p className="text-sm text-text-low">
                 Add to your home screen for quick access
               </p>

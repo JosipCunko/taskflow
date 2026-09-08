@@ -1,10 +1,10 @@
-# TaskFlow Offline Support Implementation
+# Prioritron Offline Support Implementation
 
-This document explains how offline functionality is implemented in TaskFlow using Service Workers, IndexedDB, and caching strategies.
+This document explains how offline functionality is implemented in Prioritron using Service Workers, IndexedDB, and caching strategies.
 
 ## Overview
 
-TaskFlow now supports robust offline functionality, allowing users to access most features even without an internet connection. The implementation uses a combination of:
+Prioritron now supports robust offline functionality, allowing users to access most features even without an internet connection. The implementation uses a combination of:
 
 - **Service Workers** for caching static assets and network interception
 - **IndexedDB** for storing dynamic data locally
@@ -135,9 +135,9 @@ const isOnline = useOnlineStatus();
 The Service Worker maintains three cache levels:
 
 ```javascript
-const CACHE_NAME = "taskflow-cache-v2";        // Precached resources
-const RUNTIME_CACHE = "taskflow-runtime-v2";   // Runtime HTML pages
-const STATIC_CACHE = "taskflow-static-v2";     // Static assets (JS, CSS, images)
+const CACHE_NAME = "prioritron-cache-v2";        // Precached resources
+const RUNTIME_CACHE = "prioritron-runtime-v2";   // Runtime HTML pages
+const STATIC_CACHE = "prioritron-static-v2";     // Static assets (JS, CSS, images)
 ```
 
 Old caches are automatically cleaned up during the activation phase.
@@ -279,7 +279,7 @@ If a user goes offline before visiting a page:
 
 ## Conclusion
 
-TaskFlow's offline support provides a seamless experience even without internet connectivity. The combination of Service Workers and IndexedDB ensures users can access their data anytime, anywhere, with automatic synchronization when back online.
+Prioritron's offline support provides a seamless experience even without internet connectivity. The combination of Service Workers and IndexedDB ensures users can access their data anytime, anywhere, with automatic synchronization when back online.
 
 For questions or issues related to offline functionality, please open an issue on GitHub or contact support.
 
@@ -287,4 +287,4 @@ For questions or issues related to offline functionality, please open an issue o
 
 **Last Updated**: 2025-10-14  
 **Version**: 2.0  
-**Author**: TaskFlow Development Team
+**Author**: Prioritron Development Team

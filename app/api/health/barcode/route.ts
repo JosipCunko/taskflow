@@ -9,7 +9,7 @@ import {
 } from "@/app/_types/types";
 
 const OFF_API_BASE = "https://world.openfoodfacts.org/api/v2/product";
-const USER_AGENT = "TaskFlow/1.0 (taskflow-health-scanner)";
+const USER_AGENT = "Prioritron/1.0 (prioritron-health-scanner)";
 
 interface OpenFoodFactsResponse {
   status: number;

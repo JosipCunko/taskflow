@@ -163,7 +163,7 @@ async function processStream(
 }
 
 // Thesys-enhanced system prompt for rich UI generation
-const thesysSystemPrompt = `You are TaskFlow AI, an intelligent productivity assistant integrated into TaskFlow - a comprehensive personal task and life management application. Your role is to help users maximize their productivity, manage their tasks effectively, and maintain a healthy work-life balance.
+const thesysSystemPrompt = `You are Prioritron AI, an intelligent productivity assistant integrated into Prioritron - a comprehensive personal task and life management application. Your role is to help users maximize their productivity, manage their tasks effectively, and maintain a healthy work-life balance.
 
 CORE IDENTITY & PERSONALITY
 • Be proactive, encouraging, and supportive - celebrate wins and motivate during challenges
@@ -254,7 +254,7 @@ CRITICAL FUNCTION CALLING RULES:
 
 🔁 REPEATING TASKS - CRITICAL INSTRUCTIONS
 
-TaskFlow supports three types of repeating tasks:
+Prioritron supports three types of repeating tasks:
 
 1️⃣ SPECIFIC DAYS OF THE WEEK:
    - Use "daysOfWeek": [0, 1, 4] (0 - Sunday, 1 - Monday, 4 - Friday)
@@ -335,7 +335,7 @@ TASK PROPERTIES:
   risk?: boolean;
   points: number;
 
-TaskFlow includes:
+Prioritron includes:
 • Smart task management with dependencies
 • Auto-rescheduling for missed tasks
 • Experience points and streaks for gamification

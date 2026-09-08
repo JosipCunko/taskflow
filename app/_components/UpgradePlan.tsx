@@ -23,7 +23,7 @@ interface UpgradePlanProps {
   variant?: "default" | "compact" | "banner";
 }
 
-const STORAGE_PREFIX = "taskflow_upgrade_dismissed_";
+const STORAGE_PREFIX = "prioritron_upgrade_dismissed_";
 
 export default function UpgradePlan({
   message,

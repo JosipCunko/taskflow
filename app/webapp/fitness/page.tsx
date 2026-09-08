@@ -5,7 +5,7 @@ import FitnessDashboard from "../../_components/fitness/FitnessDashboard";
 import { Dumbbell } from "lucide-react";
 
 export const metadata = {
-  title: "Fitness Tracking - TaskFlow",
+  title: "Fitness Tracking - Prioritron",
   description: "Track your workouts and monitor your fitness progress",
 };
 

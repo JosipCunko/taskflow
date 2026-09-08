@@ -1,5 +1,5 @@
 🚀 Next.js Middleware: Why You Should Use It & Performance Benefits
-Next.js middleware is a powerful feature that runs before your pages and API routes. Here's why it's valuable for your TaskFlow app:
+Next.js middleware is a powerful feature that runs before your pages and API routes. Here's why it's valuable for your Prioritron app:
 🎯 What Middleware Does
 Middleware runs on every request at the Edge Runtime (closer to users), allowing you to:
 Modify requests/responses
@@ -7,7 +7,7 @@ Redirect users
 Rewrite URLs
 Add headers
 Run authentication checks
-🏆 Key Benefits for Your TaskFlow App
+🏆 Key Benefits for Your Prioritron App
 
 1. 🔐 Authentication & Authorization
    // middleware.tsimport { withAuth } from "next-auth/middleware"export default withAuth( function middleware(req) { // Additional logic here }, { callbacks: { authorized: ({ token, req }) => { // Protect /webapp routes if (req.nextUrl.pathname.startsWith('/webapp')) { return !!token } return true }, }, })export const config = { matcher: ['/webapp/:path*', '/api/protected/:path*']}
@@ -33,14 +33,14 @@ Run authentication checks
 7. 📦 Reduced Bundle Size
    Authentication logic doesn't need to be in every page
    Shared logic runs once at the edge
-   🛠️ Specific Use Cases for TaskFlow
+   🛠️ Specific Use Cases for Prioritron
 8. Task Privacy Protection
    // middleware.tsexport function middleware(request) { // Ensure users can only access their own tasks if (request.nextUrl.pathname.startsWith('/webapp/tasks/')) { const taskId = request.nextUrl.pathname.split('/').pop() // Add user context to headers for server-side validation return NextResponse.next({ headers: { 'x-task-access-check': taskId } }) }}
 9. Feature Flags & A/B Testing
    // middleware.tsexport function middleware(request) { const response = NextResponse.next() // Enable beta features for specific users const userId = request.cookies.get('user-id')?.value if (isBetaUser(userId)) { response.headers.set('x-beta-features', 'true') } return response}
 10. Offline Detection
     // middleware.tsexport function middleware(request) { // Redirect to offline page if service worker indicates offline mode if (request.headers.get('x-offline-mode') === 'true') { return NextResponse.rewrite(new URL('/offline', request.url)) }}
-    📝 Implementation Example for TaskFlow
+    📝 Implementation Example for Prioritron
     Create middleware.ts in your root directory:
     import { withAuth } from "next-auth/middleware"import { NextResponse } from "next/server"export default withAuth( function middleware(req) { const token = req.nextauth.token const isAuth = !!token const isAuthPage = req.nextUrl.pathname.startsWith('/login') const isWebApp = req.nextUrl.pathname.startsWith('/webapp') // Redirect authenticated users away from login if (isAuthPage && isAuth) { return NextResponse.redirect(new URL('/webapp/today', req.url)) } // Redirect unauthenticated users to login if (isWebApp && !isAuth) { return NextResponse.redirect(new URL('/login', req.url)) } // Add security headers const response = NextResponse.next() response.headers.set('X-Frame-Options', 'DENY') response.headers.set('X-Content-Type-Options', 'nosniff') return response }, { callbacks: { authorized: () => true, // Let middleware handle the logic }, })export const config = { matcher: [ '/webapp/:path*', '/login', '/api/protected/:path*' ]}
     🎯 Recommended Next Steps

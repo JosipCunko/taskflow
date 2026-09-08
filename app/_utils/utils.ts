@@ -1599,7 +1599,7 @@ export const safeConvertToTimestamp = (
   return new Date(dateValue as string).getTime();
 };
 
-export const taskflowTheme = {
+export const prioritronTheme = {
   mode: "dark" as const,
   theme: {
     backgroundFills: "#0b0f20",

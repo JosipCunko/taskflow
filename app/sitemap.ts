@@ -5,7 +5,7 @@ import { MetadataRoute } from "next";
  * Replaces next-sitemap for better performance and integration
  */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://optaskflow.vercel.app";
+  const baseUrl = "https://opprioritron.vercel.app";
   const currentDate = new Date();
 
   return [

@@ -17,12 +17,29 @@ export default function Sidebar() {
       className="w-64 h-full bg-background-700 flex flex-col"
       data-tutorial="sidebar"
     >
-      <div className="hidden sm:block">
+      <div className="hidden sm:block px-3 py-3">
         <div className="grid place-items-center">
-          <Image src="/logo.png" alt="Taskflow" width={150} height={150} />
+          <Image
+            src="/logo.svg"
+            alt="Prioritron"
+            width={208}
+            height={51}
+            priority
+            unoptimized
+            className="w-full h-auto"
+          />
         </div>
       </div>
-      <div className="block sm:hidden w-12 aspect-square"></div>
+      <div className="block sm:hidden w-12 aspect-square p-1">
+        <Image
+          src="/icon.svg"
+          alt="Prioritron"
+          width={48}
+          height={48}
+          unoptimized
+          className="w-full h-full"
+        />
+      </div>
       <nav className="p-2 flex-1 flex flex-col overflow-y-auto">
         {Object.entries(navItems).map(([groupName, items]) => (
           <div

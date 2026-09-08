@@ -6,7 +6,7 @@ import WorkoutSession from "../../../_components/fitness/WorkoutSession";
 import Loader from "../../../_components/Loader";
 
 export const metadata = {
-  title: "Workout Session - TaskFlow",
+  title: "Workout Session - Prioritron",
   description: "Track your active workout session",
 };
 

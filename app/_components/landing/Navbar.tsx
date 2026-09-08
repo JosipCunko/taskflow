@@ -15,18 +15,18 @@ export default function Navbar() {
       <div className="container mx-auto flex justify-between items-center">
         <Link
           href="/"
-          className="text-xl font-bold text-primary-400 flex items-center group"
+          aria-label="Prioritron"
+          className="flex items-center group shrink-0"
         >
-          <div className="w-8 h-8 mr-3 relative">
-            <div className="absolute inset-0 bg-primary-500/20 rounded-lg group-hover:animate-none transition-colors animate-pulse"></div>
-            <Image
-              src="/icon-512.png"
-              alt="Taskflow Logo"
-              fill
-              className="w-8 h-8 p-1 text-primary-300 group-hover:animate-[text-glitch_0.3s_ease-out]"
-            />
-          </div>
-          <span className="group-hover:text-glow transition-all">TaskFlow</span>
+          <Image
+            src="/logo.svg"
+            alt="Prioritron"
+            width={180}
+            height={44}
+            priority
+            unoptimized
+            className="h-9 md:h-10 w-auto group-hover:opacity-90 transition-opacity"
+          />
         </Link>
 
         {/* Desktop Navigation */}

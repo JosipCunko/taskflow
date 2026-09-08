@@ -3,7 +3,7 @@ User-agent: *
 Allow: /
 
 # Host
-Host: https://optaskflow.vercel.app
+Host: https://opprioritron.vercel.app
 
 # Sitemaps
-Sitemap: https://optaskflow.vercel.app/sitemap.xml
+Sitemap: https://opprioritron.vercel.app/sitemap.xml

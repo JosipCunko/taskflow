@@ -6,8 +6,8 @@ import { isToday } from "date-fns";
 import TutorialOverlay from "../_components/TutorialOverlay";
 import { infoToast } from "@/app/_utils/utils";
 
-const TUTORIAL_TOAST_SHOWN_KEY = "taskflow_tutorial_toast_shown";
-const TUTORIAL_COMPLETED_KEY = "taskflow_tutorial_completed";
+const TUTORIAL_TOAST_SHOWN_KEY = "prioritron_tutorial_toast_shown";
+const TUTORIAL_COMPLETED_KEY = "prioritron_tutorial_completed";
 
 interface TutorialContextType {
   shouldShowTutorial: boolean;
@@ -59,7 +59,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
       // Mark toast as shown for this session
       sessionStorage.setItem(TUTORIAL_TOAST_SHOWN_KEY, "true");
 
-      infoToast("Welcome to TaskFlow! Start the tutorial in the profile page.");
+      infoToast("Welcome to Prioritron! Start the tutorial in the profile page.");
     } catch (error) {
       console.error("Error checking tutorial status:", error);
     }

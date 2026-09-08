@@ -41,7 +41,7 @@ interface TutorialStep {
 const tutorialSteps: TutorialStep[] = [
   {
     id: "welcome",
-    title: "Welcome to TaskFlow!",
+    title: "Welcome to Prioritron!",
     description:
       "Let's take a quick tour of the key features to help you get started with managing your tasks and health.",
     icon: <Home className="w-6 h-6" />,

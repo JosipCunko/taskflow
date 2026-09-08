@@ -11,6 +11,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/api/", "/webapp/"],
     },
-    sitemap: "https://optaskflow.vercel.app/sitemap.xml",
+    sitemap: "https://opprioritron.vercel.app/sitemap.xml",
   };
 }

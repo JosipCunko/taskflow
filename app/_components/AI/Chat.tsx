@@ -9,7 +9,7 @@ import Image from "next/image";
 import Textarea from "../reusable/Textarea";
 import FunctionResults from "./FunctionResults";
 import ModelDropdown, { models, AIModel } from "./ModelDropdown";
-import { errorToast, successToast, taskflowTheme } from "@/app/_utils/utils";
+import { errorToast, successToast, prioritronTheme } from "@/app/_utils/utils";
 import dynamic from "next/dynamic";
 import "@crayonai/react-ui/styles/index.css";
 import { completeTaskAction } from "@/app/_lib/actions";
@@ -491,7 +491,7 @@ export default function Chat({
   ];
 
   return (
-    <ThemeProvider {...taskflowTheme}>
+    <ThemeProvider {...prioritronTheme}>
       <div className="flex flex-col h-full w-full relative overflow-hidden">
         {messages.length === 0 ? (
           <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8 animate-fadeIn">

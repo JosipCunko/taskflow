@@ -1,6 +1,6 @@
 {
-  "name": "TaskFlow",
-  "short_name": "TaskFlow",
+  "name": "Prioritron",
+  "short_name": "Prioritron",
   "description": "Modern task management web application with AI-powered features, health and fitness tracking, analytics, and comprehensive productivity tools",
   "start_url": "/",
   "display": "standalone",

@@ -253,7 +253,7 @@ export default function ProfileTabs({
                   Install App
                 </h3>
                 <p className="text-text-low mb-4">
-                  Install TaskFlow on your device for a better experience.
+                  Install Prioritron on your device for a better experience.
                 </p>
                 <Button
                   onClick={promptInstall}
@@ -472,7 +472,7 @@ export default function ProfileTabs({
                 <div>
                   <p className="text-sm text-text-low mb-3">
                     Need help getting started? Take the interactive tutorial to
-                    learn about TaskFlow&apos;s key features.
+                    learn about Prioritron&apos;s key features.
                   </p>
                   <Button
                     onClick={showTutorial}

@@ -116,7 +116,7 @@ export const onForegroundMessage = (
         body: payload.notification.body,
         icon: payload.notification.icon || "/icon-512.png",
         badge: "/icon-512.png",
-        tag: payload.data?.type || "taskflow-notification",
+        tag: payload.data?.type || "prioritron-notification",
         data: payload.data,
       });
     }

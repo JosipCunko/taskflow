@@ -116,7 +116,7 @@ export default function ImageSection() {
           transition={{ duration: 0.6, delay: 0.1 }}
           viewport={{ once: true }}
         >
-          See <span className="text-primary-600">Taskflow</span> in action
+          See <span className="text-primary-600">Prioritron</span> in action
         </motion.h2>
 
         <motion.p
@@ -127,7 +127,7 @@ export default function ImageSection() {
           viewport={{ once: true }}
         >
           Experience the power of intelligent task management through visual
-          examples of TaskFlow&apos;s cutting-edge interface and seamless
+          examples of Prioritron&apos;s cutting-edge interface and seamless
           workflow optimization.
         </motion.p>
 

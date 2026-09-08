@@ -726,7 +726,7 @@ input[type="range"]:focus::-moz-range-thumb {
   border-radius: 4px;
 }
 
-/* Override Thesys sidebar styles to match TaskFlow */
+/* Override Thesys sidebar styles to match Prioritron */
 .thesys-chat-wrapper [class*="sidebar"] {
   background-color: var(--color-background-700) !important;
   border-color: var(--color-divider) !important;
@@ -770,7 +770,7 @@ input[type="range"]:focus::-moz-range-thumb {
   border: 1px solid var(--color-background-500) !important;
 }
 
-/* C1Component Button Styling - Match TaskFlow primary button style */
+/* C1Component Button Styling - Match Prioritron primary button style */
 .c1-message-container button,
 .ai-response button {
   background: linear-gradient(
