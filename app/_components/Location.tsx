@@ -5,6 +5,7 @@ import Input from "./reusable/Input";
 import Button from "./reusable/Button";
 import { errorToast } from "../_utils/utils";
 import { CardSpecificIcons } from "../_utils/icons";
+import { SITE_URL } from "../_lib/site";
 
 interface LocationResult {
   display_name: string;
@@ -97,7 +98,7 @@ export default function Location({
         {
           signal: abortControllerRef.current.signal,
           headers: {
-            "User-Agent": "Prioritron App (https://opprioritron.vercel.app)",
+            "User-Agent": `Prioritron App (${SITE_URL})`,
           },
         }
       );
@@ -187,7 +188,7 @@ export default function Location({
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
             {
               headers: {
-                "User-Agent": "Prioritron App (https://opprioritron.vercel.app)",
+                "User-Agent": `Prioritron App (${SITE_URL})`,
               },
             }
           );

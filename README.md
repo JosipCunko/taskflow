@@ -11,7 +11,7 @@ Whether you're planning your day, tracking your workouts, counting calories and 
 - **🏋️ Holistic Approach**: Not just tasks—track workouts, nutrition, and habits all in one beautiful interface
 - **📊 Gamification**: Earn points, maintain streaks, unlock achievements, and rate your experiences
 - **⚡ Lightning Fast**: Optimistic UI updates, instant feedback, and smooth animations for delightful UX
-- **🔐 Privacy First**: Only you can see your data, firebase security rules also help
+- **🔐 Privacy First**: Only you can see your data — Firestore security rules restrict every read/write to its owner, and the free-text content you type (task titles/descriptions and note titles/content) is encrypted at rest with AES-256-GCM before it's ever stored
 - **📱 True PWA**: Install on any device, get push notifications, and enjoy native app experience
 - **🌐 Offline-First**: Full offline functionality with PWA support—work anywhere, anytime, even without internet
 
@@ -251,7 +251,7 @@ Prioritron offers flexible pricing tiers designed to scale with your productivit
 - **CrayonAI**: Advanced AI model orchestration and streaming capabilities
 - **ThesysAI**: Additional AI model provider for enhanced conversational experiences
 - **ZXing WASM**: Barcode scanning and QR code processing for nutrition tracking
-- **cron-jobs.org**: for cleaning up the firestore
+- **[cron-job.org](https://cron-job.org)**: free external scheduler for FCM reminder sweeps and anonymous-account cleanup (see [Scheduled jobs](#scheduled-jobs-cron-joborg) below)
 
 ### Development Tools & Infrastructure
 
@@ -279,6 +279,8 @@ Prioritron offers flexible pricing tiers designed to scale with your productivit
 - **`/webapp/ai`**: AI assistant chat interface with multi-model support and function calling
 - **`/webapp/profile`**: User profile, tutorial, settings and subscription portal
 - **`/offline`**
+- **`/terms`**: Terms of Use
+- **`/privacy`**: Privacy Policy
 
 ## 🔒 Security Features
 
@@ -288,7 +290,8 @@ Prioritron offers flexible pricing tiers designed to scale with your productivit
 - **Server Actions Security**: Server-side operations protected by NextAuth session validation
 - **Firestore Security Rules**: Granular security rules ensuring users can only access their own data
 - **Row-Level Security**: Each document includes userId validation at the database level
-- **Environment Variable Management**: Sensitive keys and configurations secured via environment variables
+- **Field-Level Encryption at Rest**: Task titles/descriptions, note titles/content, and the task-title snapshots stored in the activity log are encrypted with **AES-256-GCM** (a random IV per value + an authentication tag, so ciphertext can't be tampered with unnoticed) before being written to Firestore, and transparently decrypted on read. See [`app/_lib/encryption.ts`](./app/_lib/encryption.ts). This does **not** currently apply to workouts, nutrition logs, or other structured data.
+- **Environment Variable Management**: Sensitive keys and configurations, including the `DATA_ENCRYPTION_KEY` used for field-level encryption, secured via environment variables
 - **Secure Session Handling**: Encrypted JWT sessions managed by NextAuthjs with httpOnly cookies
 - **Advanced Security Headers**: Comprehensive HTTP security headers including X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, and Strict-Transport-Security
 - **Performance Monitoring**: Real-time performance tracking with request timing headers, user agent logging, and analytics integration
@@ -297,6 +300,15 @@ Prioritron offers flexible pricing tiers designed to scale with your productivit
 - **CSRF Protection**: Built-in CSRF token validation for all state-changing operations
 - **Rate Limiting**: Protection against API abuse and brute force attacks
 - **Admin Operations**: Separate admin SDK operations with elevated privileges for system tasks
+- **Legal Pages**: Public [`/terms`](./app/terms/page.tsx) (Terms of Use) and [`/privacy`](./app/privacy/page.tsx) (Privacy Policy) pages, linked from the landing page footer
+
+### 🔐 How Task/Note Encryption Works
+
+1. **On create/update**: `title`/`description` (tasks) and `title`/`content` (notes) are encrypted with `encryptField()` before the Firestore write. Each value gets its own random 96-bit IV, so identical text never produces identical ciphertext.
+2. **On read**: every read path (`getTasksByUserId`, `getTaskByTaskId`, `loadNotesByUserId`, and the activity log) runs the stored value through `decryptField()` before it reaches the rest of the app.
+3. **Backward compatibility**: `decryptField()` only decrypts values that carry the `enc:v1:` prefix. Any older, pre-encryption plaintext record is returned unchanged, so existing data keeps working without a manual migration — new writes are encrypted going forward.
+4. **Key management**: encryption uses a single symmetric key from the `DATA_ENCRYPTION_KEY` environment variable (a 64-char hex string, i.e. 32 bytes — generate one with `openssl rand -hex 32`). This key never leaves the server; only server-side code (Server Actions, `_lib` admin modules) can encrypt/decrypt.
+5. **Scope**: intentionally limited to free-text fields the user types. Workouts, nutrition data, and other structured records are **not** encrypted at rest today.
 
 ## 🚀 Getting Started
 
@@ -318,14 +330,16 @@ Prioritron offers flexible pricing tiers designed to scale with your productivit
       ```
     - **Required Variables**:
       - Firebase project configuration (API key, project ID, etc.)
-      - `NEXTAUTH_SECRET` and `NEXTAUTH_URL` for authentication
+      - `NEXTAUTH_SECRET` and `NEXTAUTH_URL` for authentication (production: `https://prioritron.dev`)
       - Firebase Admin SDK credentials path
+      - `DATA_ENCRYPTION_KEY`: 32-byte key (64-char hex, e.g. from `openssl rand -hex 32`) used to encrypt/decrypt task and note content at rest
       - Stripe configuration (`STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`)
     - **Optional Variables**:
-      - `GITHUB_ID` and `GITHUB_SECRET` for GitHub OAuth (callback URL: `http://localhost:3000/api/auth/callback/github`)
+      - `GITHUB_ID` and `GITHUB_SECRET` for GitHub OAuth (callback URL: `http://localhost:3000/api/auth/callback/github` locally, `https://prioritron.dev/api/auth/callback/github` in production)
       - `OPENAI_API_KEY` for OpenAI GPT models in AI assistant
       - `CRAYON_API_KEY` for CrayonAI integration
       - `THESYS_API_KEY` for ThesysAI integration
+      - `CRON_SECRET`: shared Bearer token for `/api/cron/notifications` and `/api/admin/cleanup-anonymous`. Generate with `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`. Must be set on Vercel production as well as locally. **Never put this value in the job URL or in this README.**
 
 4.  **Run the development server**:
 
@@ -335,6 +349,31 @@ Prioritron offers flexible pricing tiers designed to scale with your productivit
     ```
 
     Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Scheduled jobs (cron-job.org)
+
+Two secret-protected endpoints are pinged by [cron-job.org](https://cron-job.org) (free). Vercel Hobby cron can only run **once per day**, which is enough for a backup cleanup but useless for “task starts in 15 minutes” reminders — those must stay on the external scheduler.
+
+Both jobs send:
+
+```
+Authorization: Bearer <CRON_SECRET>
+```
+
+Do not put the secret in the URL. Production host is `https://prioritron.dev`.
+
+| Job | URL | Method | Schedule | What it does |
+| --- | --- | --- | --- | --- |
+| FCM reminders | `https://prioritron.dev/api/cron/notifications` | GET or POST | every 10 minutes | For users with `notifyReminders` and an FCM token: create overdue / due-soon / time-window notifications and push via Firebase Cloud Messaging. Also expires old inbox items. Implemented in [`app/api/cron/notifications/route.ts`](./app/api/cron/notifications/route.ts). |
+| Anonymous cleanup | `https://prioritron.dev/api/admin/cleanup-anonymous` | GET or POST | every 3 hours | Deletes guest accounts older than **3 hours**, plus their tasks, notes, notifications, workouts, and health data. Implemented in [`app/api/admin/cleanup-anonymous/route.ts`](./app/api/admin/cleanup-anonymous/route.ts) and [`app/_lib/anonymous-cleanup.ts`](./app/_lib/anonymous-cleanup.ts). |
+
+
+### Recreating the jobs on cron-job.org
+
+1. Sign in at [https://console.cron-job.org](https://console.cron-job.org) → **Create cronjob**.
+2. Set the URL from the table above. Enable the job.
+3. **Advanced**: request method GET (POST also works). Add header `Authorization` = `Bearer <CRON_SECRET>` (space after `Bearer`, no quotes).
+4. **Test / Run now**. History should show HTTP 200. Failure emails are optional; jobs auto-disable after ~25 consecutive failures.
 
 ## Some Typescript types
 

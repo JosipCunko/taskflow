@@ -17,6 +17,7 @@ import { getTasksByUserId } from "./tasks-admin";
 import { generateNotificationsForUser } from "./notifications-admin";
 import { scheduleTaskRevalidation } from "../_utils/serverCache";
 import { getRepeatingTaskDailyUpdates } from "./repeatingTasks";
+import { decryptField } from "./encryption";
 
 interface FirebaseUser {
   uid: string;
@@ -72,6 +73,8 @@ export async function updateUserRepeatingTasks(userId: string) {
     const task = {
       ...(data as Task),
       id: doc.id,
+      // title is encrypted at rest - decrypt so logging below is readable.
+      title: decryptField(data.title),
       dueDate: safeConvertToTimestamp(data.dueDate),
       createdAt: safeConvertToTimestamp(data.createdAt),
       startDate: data.startDate

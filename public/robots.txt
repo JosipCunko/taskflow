@@ -1,9 +1,0 @@
-# *
-User-agent: *
-Allow: /
-
-# Host
-Host: https://opprioritron.vercel.app
-
-# Sitemaps
-Sitemap: https://opprioritron.vercel.app/sitemap.xml

@@ -401,7 +401,7 @@ export default function LoginForm() {
 
         <div className="mb-4 text-center">
           <p className="text-xs text-amber-300/80 bg-amber-500/10 p-2 rounded border border-amber-500/30">
-            ⚠️ Guest accounts are deleted after 1 hour. Your data will be lost
+            ⚠️ Guest accounts are deleted after 3 hours. Your data will be lost
             unless you create a permanent account.
           </p>
         </div>

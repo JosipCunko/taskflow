@@ -1,11 +1,12 @@
 import { MetadataRoute } from "next";
+import { SITE_URL } from "./_lib/site";
 
 /**
  * Native Next.js 15 sitemap generator
  * Replaces next-sitemap for better performance and integration
  */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://opprioritron.vercel.app";
+  const baseUrl = SITE_URL;
   const currentDate = new Date();
 
   return [
@@ -20,6 +21,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: currentDate,
       changeFrequency: "monthly",
       priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/privacy`,
+      lastModified: currentDate,
+      changeFrequency: "yearly",
+      priority: 0.4,
+    },
+    {
+      url: `${baseUrl}/terms`,
+      lastModified: currentDate,
+      changeFrequency: "yearly",
+      priority: 0.4,
     },
     {
       url: `${baseUrl}/webapp`,

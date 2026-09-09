@@ -14,6 +14,7 @@ import {
 } from "@/app/_utils/utils";
 import { Timestamp } from "firebase-admin/firestore";
 import { cache } from "react";
+import { decryptField, encryptField } from "./encryption";
 
 const fromFirestore = (
   snapshot: admin.firestore.QueryDocumentSnapshot<admin.firestore.DocumentData>
@@ -22,8 +23,9 @@ const fromFirestore = (
   const task = {
     id: snapshot.id,
     userId: data.userId,
-    title: data.title,
-    description: data.description,
+    // title/description are encrypted at rest; decrypt for use in the app.
+    title: decryptField(data.title),
+    description: decryptField(data.description),
     icon: data.icon,
     color: data.color,
     isPriority: data.isPriority,
@@ -168,8 +170,10 @@ export const createTask = async (taskData: TaskToCreateData): Promise<Task> => {
     const now = Date.now();
     const taskToCreateFirebase: TaskFirestoreData = {
       userId: taskData.userId,
-      title: taskData.title,
-      description: taskData.description,
+      // title/description are free-text user content, so they're encrypted
+      // at rest (see app/_lib/encryption.ts) and decrypted in fromFirestore.
+      title: encryptField(taskData.title) as string,
+      description: encryptField(taskData.description),
       icon: taskData.icon,
       color: taskData.color,
       isPriority: taskData.isPriority,
@@ -235,6 +239,15 @@ export const updateTask = async (
       ...updates,
       updatedAt: Date.now(),
     };
+
+    // title/description are encrypted at rest - re-encrypt whenever they're
+    // part of this update.
+    if (updates.title !== undefined) {
+      updateData.title = encryptField(updates.title);
+    }
+    if (updates.description !== undefined) {
+      updateData.description = encryptField(updates.description);
+    }
 
     // All date fields are already UNIX timestamps (numbers) in the updates object
     // No need to convert them anymore

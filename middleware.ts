@@ -149,8 +149,14 @@ export default withAuth(
     // Authentication and route protection logic
     const isAuthPage = pathname.startsWith("/login");
     const isWebApp = pathname.startsWith("/webapp");
+    // Cron endpoints authenticate with CRON_SECRET, not a NextAuth session.
+    // If they stay under /api/admin, withAuth would 307 them to /login.
+    const isCronRoute =
+      pathname === "/api/admin/cleanup-anonymous" ||
+      pathname.startsWith("/api/cron/");
     const isApiProtected =
-      pathname.startsWith("/api/admin") || pathname.startsWith("/api/user");
+      !isCronRoute &&
+      (pathname.startsWith("/api/admin") || pathname.startsWith("/api/user"));
 
     // Redirect authenticated users away from login page
     if (isAuthPage && isAuthenticated) {
@@ -223,9 +229,11 @@ export const config = {
      * - _next/static, _next/image, favicon, public
      * - api/auth (NextAuth session/csrf/callback — withAuth here causes
      *   CLIENT_FETCH_ERROR / Failed to fetch)
+     * - api/cron and api/admin/cleanup-anonymous (Bearer CRON_SECRET, not a
+     *   user session — otherwise cron-job.org gets a 307 to /login)
      */
     //previosly /api/:path
-    "/((?!_next/static|_next/image|favicon.ico|public/|api/auth).*)",
+    "/((?!_next/static|_next/image|favicon.ico|public/|api/auth|api/cron|api/admin/cleanup-anonymous).*)",
     "/webapp/:path*",
     // Include auth pages
     "/login",

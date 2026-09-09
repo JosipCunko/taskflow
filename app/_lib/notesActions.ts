@@ -4,6 +4,7 @@ import { adminDb } from "@/app/_lib/admin";
 import { ActionResult } from "@/app/_types/types";
 import { revalidatePath, revalidateTag } from "next/cache";
 import { CacheTags } from "../_utils/serverCache";
+import { encryptField } from "./encryption";
 
 export async function addNoteAction(
   userId: string,
@@ -18,8 +19,9 @@ export async function addNoteAction(
     const newNoteRef = adminDb.collection("notes").doc();
     const newNoteData = {
       userId,
-      title: initialTitle,
-      content: initialContent,
+      // title/content are free-text user content, encrypted at rest.
+      title: encryptField(initialTitle),
+      content: encryptField(initialContent),
       updatedAt: Date.now(),
     };
     await newNoteRef.set(newNoteData);
@@ -62,8 +64,8 @@ export async function updateNoteAction(
     }
 
     await noteRef.update({
-      title,
-      content,
+      title: encryptField(title),
+      content: encryptField(content),
       updatedAt: Date.now(),
     });
 

@@ -4,6 +4,7 @@ import "./globals.css";
 import AuthProvider from "./_components/auth/AuthProvider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
+import { SITE_URL } from "./_lib/site";
 
 const plexMono = IBM_Plex_Mono({
   variable: "--font-plex-mono",
@@ -28,14 +29,14 @@ export const metadata: Metadata = {
   authors: [{ name: "Josip Čunko" }],
   creator: "Prioritron",
   manifest: "/manifest.json",
-  metadataBase: new URL("https://opprioritron.vercel.app"),
+  metadataBase: new URL(SITE_URL),
   alternates: {
     canonical: "/",
   },
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://opprioritron.vercel.app",
+    url: SITE_URL,
     title: "Prioritron - Master Your Productivity",
     description:
       "Modern task management with AI-powered features, analytics, and comprehensive productivity tools",

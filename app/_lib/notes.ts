@@ -3,6 +3,7 @@ import { adminDb } from "@/app/_lib/admin";
 import { Note } from "@/app/_types/types";
 import { unstable_cache } from "next/cache";
 import { CacheTags, CacheDuration } from "../_utils/serverCache";
+import { decryptField } from "./encryption";
 
 async function loadNotesByUserIdInternal(userId: string): Promise<Note[]> {
   if (!userId) {
@@ -26,8 +27,9 @@ async function loadNotesByUserIdInternal(userId: string): Promise<Note[]> {
       return {
         id: doc.id,
         userId: data.userId as string,
-        title: (data.title as string) || "",
-        content: (data.content as string) || "",
+        // title/content are encrypted at rest; decrypt for use in the app.
+        title: decryptField((data.title as string) || ""),
+        content: decryptField((data.content as string) || ""),
         updatedAt: data.updatedAt,
       };
     });

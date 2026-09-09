@@ -3,6 +3,7 @@ import { adminDb } from "./admin";
 import type { ActivityLog } from "@/app/_types/types";
 import { unstable_cache } from "next/cache";
 import { CacheTags, CacheDuration } from "@/app/_utils/serverCache";
+import { decryptField, encryptField } from "./encryption";
 
 async function getRecentUserActivityInternal(
   userId: string,
@@ -30,6 +31,8 @@ async function getRecentUserActivityInternal(
       const taskSnapshot = data.taskSnapshot
         ? {
             ...data.taskSnapshot,
+            // title is encrypted at rest, decrypt for display.
+            title: decryptField(data.taskSnapshot.title),
             dueDate: data.taskSnapshot.dueDate?.toDate
               ? data.taskSnapshot.dueDate.toDate()
               : data.taskSnapshot.dueDate
@@ -92,6 +95,8 @@ async function getUserActivityForPeriodInternal(
       const taskSnapshot = data.taskSnapshot
         ? {
             ...data.taskSnapshot,
+            // title is encrypted at rest, decrypt for display.
+            title: decryptField(data.taskSnapshot.title),
             dueDate: data.taskSnapshot.dueDate,
           }
         : undefined;
@@ -131,10 +136,21 @@ export async function logUserActivity(
   activityData: Omit<ActivityLog, "id" | "timestamp" | "userId">
 ): Promise<void> {
   try {
+    // taskSnapshot.title is free-text user content - encrypt it at rest, same as the task it was copied from.
+    const safeActivityData = activityData.taskSnapshot
+      ? {
+          ...activityData,
+          taskSnapshot: {
+            ...activityData.taskSnapshot,
+            title: encryptField(activityData.taskSnapshot.title),
+          },
+        }
+      : activityData;
+
     await adminDb.collection("userActivityLogs").add({
       userId,
       timestamp: Date.now(),
-      ...activityData,
+      ...safeActivityData,
     });
     console.log(`Activity logged for user ${userId}: ${activityData.type}`);
   } catch (error) {

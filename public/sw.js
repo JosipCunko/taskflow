@@ -25,7 +25,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-const CACHE_VERSION = "18.0.0";
+const CACHE_VERSION = "18.1.0";
 const CACHE_NAME = `prioritron-cache-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `prioritron-runtime-${CACHE_VERSION}`;
 const STATIC_CACHE = `prioritron-static-${CACHE_VERSION}`;

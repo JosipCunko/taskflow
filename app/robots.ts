@@ -1,4 +1,5 @@
 import { MetadataRoute } from "next";
+import { SITE_URL } from "./_lib/site";
 
 /**
  * Native Next.js 15 robots.txt generator
@@ -11,6 +12,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/api/", "/webapp/"],
     },
-    sitemap: "https://opprioritron.vercel.app/sitemap.xml",
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }
