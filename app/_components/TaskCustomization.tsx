@@ -25,7 +25,7 @@ const TaskCustomization = ({
   };
 
   return (
-    <div className="flex flex-col gap-5 justify-between items-center">
+    <div className="flex flex-col gap-5 justify-between items-stretch w-full">
       <ColorPicker selectedColor={state.selectedColor} dispatch={dispatch} />
       <IconPicker selectedIcon={state.selectedIcon} dispatch={dispatch} />
 

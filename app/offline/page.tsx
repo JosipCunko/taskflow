@@ -1,17 +1,32 @@
 "use client";
 import { useOnlineStatus } from "@/app/_hooks/useOnlineStatus";
 import { WifiOff } from "lucide-react";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import Button from "@/app/_components/reusable/Button";
 
+/**
+ * Cold-start fallback: the service worker serves this when a navigation fails
+ * and there is no cached document for it (app opened from the home screen or a
+ * new tab with no connection). Navigations that happen inside a running
+ * /webapp session are handled by OfflineShell instead, so reaching this page
+ * means there is no app shell to fall back to.
+ */
 export default function OfflinePage() {
   const isOnline = useOnlineStatus();
-  const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
-    if (isOnline) {
-      router.push("/webapp");
-    }
-  }, [isOnline]);
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    // Only leave once the browser really reports a connection. Waiting for
+    // mount avoids acting on the "online" value the server render assumes.
+    if (!mounted || !isOnline) return;
+    // A full navigation, not router.push: this document was served by the
+    // service worker, so the App Router cache here does not match the server.
+    window.location.replace("/webapp");
+  }, [mounted, isOnline]);
 
   return (
     <div className="h-screen w-full grid place-items-center bg-background-700">
@@ -25,9 +40,12 @@ export default function OfflinePage() {
           You&apos;re Offline
         </h1>
         <p className="text-text-low ">
-          It looks like you&apos;ve lost your internet connection. Some features
-          may be limited until you&apos;re back online.
+          Prioritron needs a connection to load your tasks for the first time.
+          This page will reopen the app as soon as you&apos;re back online.
         </p>
+        <Button onClick={() => window.location.replace("/webapp")}>
+          Try again
+        </Button>
       </div>
     </div>
   );

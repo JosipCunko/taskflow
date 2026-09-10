@@ -194,15 +194,12 @@ export const getAnalyticsData = async (
       };
     });
 
-    const totalSessionDuration = sessions.reduce((acc, session) => {
-      const start = session.sessionStart;
-      const end = session.sessionEnd || Date.now();
-      return acc + Math.floor((end - start) / 1000);
-    }, 0);
-
     const avgSessionDuration =
       sessions.length > 0
-        ? Math.floor(totalSessionDuration / sessions.length)
+        ? Math.floor(
+            sessions.reduce((acc, session) => acc + (session.activeTime || 0), 0) /
+              sessions.length
+          )
         : 0;
 
     const totalPageViews = sessions.reduce(
@@ -388,22 +385,18 @@ export const getAnalyticsData = async (
     // Calculate current and previous period metrics
     const currentAvgSessionDuration =
       currentPeriodSessions.length > 0
-        ? currentPeriodSessions.reduce((acc, s) => {
-            const duration = s.sessionEnd
-              ? Math.floor((s.sessionEnd - s.sessionStart) / 1000)
-              : Math.floor((Date.now() - s.sessionStart) / 1000);
-            return acc + duration;
-          }, 0) / currentPeriodSessions.length
+        ? currentPeriodSessions.reduce(
+            (acc, s) => acc + (s.activeTime || 0),
+            0
+          ) / currentPeriodSessions.length
         : 0;
 
     const previousAvgSessionDuration =
       previousPeriodSessions.length > 0
-        ? previousPeriodSessions.reduce((acc, s) => {
-            const duration = s.sessionEnd
-              ? Math.floor((s.sessionEnd - s.sessionStart) / 1000)
-              : Math.floor((Date.now() - s.sessionStart) / 1000);
-            return acc + duration;
-          }, 0) / previousPeriodSessions.length
+        ? previousPeriodSessions.reduce(
+            (acc, s) => acc + (s.activeTime || 0),
+            0
+          ) / previousPeriodSessions.length
         : 0;
 
     // Calculate productivity trends

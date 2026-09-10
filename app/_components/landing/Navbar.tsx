@@ -1,7 +1,7 @@
 "use client";
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import BrandMark from "../BrandMark";
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -18,34 +18,26 @@ export default function Navbar() {
           aria-label="Prioritron"
           className="flex items-center group shrink-0"
         >
-          <Image
-            src="/logo.svg"
-            alt="Prioritron"
-            width={180}
-            height={44}
-            priority
-            unoptimized
-            className="h-9 md:h-10 w-auto group-hover:opacity-90 transition-opacity"
-          />
+          <BrandMark className="group-hover:opacity-90 transition-opacity" />
         </Link>
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex space-x-6 items-center">
           <Link
-            href="#images"
+            href="https://prioritron.dev#images"
             className="text-text-low hover:text-primary-300 hover:text-glow transition-all duration-200 text-base font-medium"
           >
             _Preview
           </Link>
 
           <Link
-            href="#features"
+            href="https://prioritron.dev#features"
             className="text-text-low hover:text-primary-300 hover:text-glow transition-all duration-200 text-base font-medium"
           >
             _Features
           </Link>
           <Link
-            href="#pricing"
+            href="https://prioritron.dev#pricing"
             className="text-text-low hover:text-primary-300 hover:text-glow transition-all duration-200 text-base font-medium"
           >
             _Pricing
@@ -96,7 +88,7 @@ export default function Navbar() {
       >
         <div className="pt-4 pb-2 space-y-3 border-t border-primary-500/20 mt-4">
           <Link
-            href="#images"
+            href="/#images"
             className="block text-text-low hover:text-primary-300 hover:text-glow transition-all duration-200 text-base font-medium py-2"
             onClick={() => setIsMenuOpen(false)}
           >
@@ -104,14 +96,14 @@ export default function Navbar() {
           </Link>
 
           <Link
-            href="#features"
+            href="/#features"
             className="block text-text-low hover:text-primary-300 hover:text-glow transition-all duration-200 text-base font-medium py-2"
             onClick={() => setIsMenuOpen(false)}
           >
             _Features
           </Link>
           <Link
-            href="#pricing"
+            href="/#pricing"
             className="block text-text-low hover:text-primary-300 hover:text-glow transition-all duration-200 text-base font-medium py-2"
             onClick={() => setIsMenuOpen(false)}
           >
@@ -122,7 +114,7 @@ export default function Navbar() {
             className="block text-text-low hover:text-primary-300 hover:text-glow transition-all duration-200 text-base font-medium py-2"
             onClick={() => setIsMenuOpen(false)}
           >
-            _Contact_Us
+            _Contact
           </Link>
           <Link
             href="/login"

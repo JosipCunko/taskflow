@@ -228,6 +228,18 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
+          // ----- EMAIL VERIFICATION GATE (email/password users only) -----
+          // Google and GitHub already attest the email address, and anonymous users have none. Only email/password sign-ins need this check — without it, anyone could mint a NextAuth session for an account whose inbox was never confirmed.
+          const isEmailPasswordProvider =
+            decodedToken.firebase?.sign_in_provider === "password";
+          if (isEmailPasswordProvider && !decodedToken.email_verified) {
+            console.error(
+              "Blocked sign-in for unverified email/password user:",
+              decodedToken.uid,
+            );
+            return null;
+          }
+
           // ----- USER DATA EXTRACTION -----
           // Extract user information from the verified Firebase token
           // Firebase tokens contain standard OpenID Connect claims

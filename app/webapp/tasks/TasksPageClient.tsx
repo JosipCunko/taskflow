@@ -27,6 +27,7 @@ import { TASK_ICONS } from "@/app/_utils/icons";
 import { colorsColorPicker, getDayName } from "@/app/_utils/utils";
 import { DayOfWeek } from "@/app/_types/types";
 import AddTask from "@/app/_components/AddTask";
+import { useHydratedTasks } from "@/app/_store/taskStore";
 
 interface TaskFilters {
   dueBefore: number | null;
@@ -56,7 +57,7 @@ const initialFilters: TaskFilters = {
 };
 
 export default function TasksPageClient({
-  tasks,
+  tasks: serverTasks,
 }: {
   tasks: Task[];
 }) {
@@ -71,6 +72,7 @@ export default function TasksPageClient({
   const [selectedColorFilter, setSelectedColorFilter] = useState<string | null>(
     null,
   );
+  const tasks = useHydratedTasks(serverTasks);
 
   // Check if any filters are active
   const hasActiveFilters = useMemo(() => {
@@ -814,7 +816,7 @@ function IconColorFilterModal({
   onCloseModal?: () => void;
 }) {
   return (
-    <div className="p-6 max-w-2xl max-h-[80vh] overflow-y-auto">
+    <div className="p-4 sm:p-6 w-full sm:w-[32rem] h-full sm:h-auto sm:max-h-[80vh] overflow-y-auto">
       <h2 className="text-2xl font-bold text-text-high mb-6">
         Filter by Icon & Color
       </h2>
@@ -824,14 +826,14 @@ function IconColorFilterModal({
         <label className="block text-sm font-medium text-text-low mb-3">
           Select Icon
         </label>
-        <div className="grid grid-cols-8 sm:grid-cols-10 gap-2 mb-4">
+        <div className="grid w-full grid-cols-[repeat(auto-fill,minmax(2.5rem,1fr))] gap-2 mb-4">
           {TASK_ICONS.map((icon) => (
             <button
               key={icon.id}
               onClick={() =>
                 setSelectedIcon(selectedIcon === icon.id ? null : icon.id)
               }
-              className={`w-10 h-10 cursor-pointer rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white transition-all hover:scale-110 grid place-items-center ${
+              className={`aspect-square w-full cursor-pointer rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white transition-all hover:scale-110 grid place-items-center ${
                 selectedIcon === icon.id
                   ? "ring-2 ring-primary-500 bg-primary-500/20"
                   : "bg-background-500 hover:bg-background-400"
@@ -854,14 +856,14 @@ function IconColorFilterModal({
         <label className="block text-sm font-medium text-text-low mb-3">
           Select Color
         </label>
-        <div className="grid grid-cols-8 sm:grid-cols-10 gap-2 mb-4">
+        <div className="grid w-full grid-cols-[repeat(auto-fill,minmax(2.5rem,1fr))] gap-2 mb-4">
           {colorsColorPicker.map((color) => (
             <button
               key={color}
               onClick={() =>
                 setSelectedColor(selectedColor === color ? null : color)
               }
-              className={`w-10 h-10 cursor-pointer rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white transition-all hover:scale-110 ${
+              className={`aspect-square w-full cursor-pointer rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white transition-all hover:scale-110 ${
                 selectedColor === color
                   ? "ring-2 ring-white ring-offset-2 ring-offset-gray-800"
                   : ""

@@ -196,13 +196,22 @@ export default function ChatSidebar({
           chats.map((chat) => (
             <div key={chat.id}>
               {editingChatId === chat.id ? (
-                <div className="p-2">
+                <div
+                  className="p-2"
+                  onKeyDown={(e) => {
+                    // Tab / mobile "next" would otherwise jump to the prompt textarea, which is hidden behind the history sidebar.
+                    if (e.key === "Tab") {
+                      e.preventDefault();
+                    }
+                  }}
+                >
                   <Input
                     name="chatTitle"
                     type="text"
                     value={newChatTitle}
                     onChange={(e) => setNewChatTitle(e.target.value)}
                     onKeyDown={(e) => {
+                      if (e.key === "Tab") e.preventDefault();
                       if (e.key === "Enter") handleRename();
                       if (e.key === "Escape") cancelEditing();
                     }}

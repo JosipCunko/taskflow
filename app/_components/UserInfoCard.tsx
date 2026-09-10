@@ -5,6 +5,7 @@ import StreakBar from "./StreakBar";
 import { formatDate } from "../_utils/utils";
 import LogoutButton from "./auth/LogoutButton";
 import Link from "next/link";
+import ChangePasswordCard from "./ChangePasswordCard";
 
 export default function UserInfoCard({ user }: { user: AppUser }) {
   return (
@@ -35,7 +36,11 @@ export default function UserInfoCard({ user }: { user: AppUser }) {
                 <span>Member Since</span>
               </div>
               <span className="font-semibold">
-                {formatDate(user.createdAt)}
+                {formatDate(
+                  user.createdAt,
+                  { month: "long", day: "numeric", year: "numeric" },
+                  false,
+                )}
               </span>
             </div>
 
@@ -43,6 +48,7 @@ export default function UserInfoCard({ user }: { user: AppUser }) {
           </div>
         </div>
       </div>
+      <ChangePasswordCard />
       <Link
         href="https://mail.google.com/mail/u/0/#inbox?
       compose=CllgCJZbjrwqZhdlnFdSGkCDrWzqCMDPVlffTKZHKVLxQZMgcDQKGsDlMZLDDlpj

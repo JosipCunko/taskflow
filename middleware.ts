@@ -92,20 +92,6 @@ function addTaskPrivacyHeaders(
   return response;
 }
 
-// Offline detection
-function handleOfflineDetection(request: NextRequest): NextResponse | null {
-  // Check for offline mode indicator (could come from service worker or client)
-  const offlineMode =
-    request.headers.get("x-offline-mode") === "true" ||
-    request.nextUrl.searchParams.get("offline") === "true";
-
-  if (offlineMode && request.nextUrl.pathname.startsWith("/webapp")) {
-    return NextResponse.rewrite(new URL("/offline", request.url));
-  }
-
-  return null;
-}
-
 // Request filtering and optimization
 function optimizeRequest(request: NextRequest): NextResponse | null {
   const pathname = request.nextUrl.pathname;
@@ -137,10 +123,6 @@ export default withAuth(
     const token = nextauth?.token;
     const isAuthenticated = !!token;
     const pathname = nextUrl.pathname;
-
-    // Handle offline detection first
-    const offlineResponse = handleOfflineDetection(request);
-    if (offlineResponse) return offlineResponse;
 
     // Request optimization and filtering
     const optimizedResponse = optimizeRequest(request);
@@ -233,7 +215,7 @@ export const config = {
      *   user session — otherwise cron-job.org gets a 307 to /login)
      */
     //previosly /api/:path
-    "/((?!_next/static|_next/image|favicon.ico|public/|api/auth|api/cron|api/admin/cleanup-anonymous).*)",
+    "/((?!_next/static|_next/image|favicon.ico|public/|api/auth|api/cron|api/admin/cleanup-anonymous|robots\\.txt|sitemap\\.xml).*)",
     "/webapp/:path*",
     // Include auth pages
     "/login",

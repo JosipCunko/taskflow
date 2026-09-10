@@ -166,6 +166,7 @@ export default function Chat({
         let functionResults: FunctionResult[] | undefined;
         let duration = 0;
         let newChatId = chatId;
+        let streamError: string | null = null;
 
         while (true) {
           const { done, value } = await reader.read();
@@ -182,17 +183,26 @@ export default function Chat({
                 if (parsed.type === "content") {
                   accumulatedContent += parsed.content;
                   setStreamingContent(accumulatedContent);
+                } else if (parsed.type === "content_reset") {
+                  accumulatedContent = "";
+                  setStreamingContent("");
                 } else if (parsed.type === "tool_results") {
                   functionResults = parsed.results;
                 } else if (parsed.type === "done") {
                   duration = parsed.duration;
                   newChatId = parsed.chatId;
+                } else if (parsed.type === "error") {
+                  streamError = parsed.error;
                 }
               } catch {
                 // Ignore parse errors
               }
             }
           }
+        }
+
+        if (streamError) {
+          throw new Error(streamError);
         }
 
         const assistantMessage: ChatMessage = {
@@ -388,6 +398,7 @@ export default function Chat({
       let functionResults: FunctionResult[] | undefined;
       let duration = 0;
       let newChatId = chatId;
+      let streamError: string | null = null;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -404,20 +415,17 @@ export default function Chat({
 
               if (parsed.type === "content") {
                 accumulatedContent += parsed.content;
-                // Store raw content for C1Component rendering
                 setStreamingContent(accumulatedContent);
-              } else if (parsed.type === "tool_start") {
-                // Tool execution started - append indicator to content
-                setStreamingContent(
-                  accumulatedContent + "\n\n*Executing actions...*",
-                );
+              } else if (parsed.type === "content_reset") {
+                accumulatedContent = "";
+                setStreamingContent("");
               } else if (parsed.type === "tool_results") {
                 functionResults = parsed.results;
               } else if (parsed.type === "done") {
                 duration = parsed.duration;
                 newChatId = parsed.chatId;
               } else if (parsed.type === "error") {
-                throw new Error(parsed.error);
+                streamError = parsed.error;
               }
             } catch (e) {
               // Only log if it's not a JSON parse error from incomplete chunks
@@ -427,6 +435,10 @@ export default function Chat({
             }
           }
         }
+      }
+
+      if (streamError) {
+        throw new Error(streamError);
       }
 
       // Store raw content for C1Component - it handles its own rendering
@@ -524,6 +536,11 @@ export default function Chat({
                   ctaText="Upgrade Now"
                   icon="zap"
                   showCloseButton={false}
+                  checkoutPlan={
+                    promptLimitInfo.plan === "base" ? "pro" : "ultra"
+                  }
+                  useBillingPortal={promptLimitInfo.plan === "pro"}
+                  cancelPath="/webapp/ai"
                 />
               )}
 
@@ -534,13 +551,13 @@ export default function Chat({
                 }`}
               >
                 {/* Animated rotating border gradient */}
-                <div className="chat-animated-border"></div>
+                <div className="chat-animated-border rounded-2xl"></div>
 
                 {/* Content container */}
                 <div className="relative rounded-2xl bg-background-600 border border-primary-500/20 group-hover:border-primary-500/40 transition-all duration-300">
                   <form
                     onSubmit={handleSubmit}
-                    className="flex flex-col gap-2 p-2"
+                    className="flex flex-col gap-2 p-2 rounded-2xl"
                   >
                     <Textarea
                       name="message"
@@ -721,7 +738,7 @@ export default function Chat({
                         </span>
                       </div>
                       {streamingContent ? (
-                        <div className="rounded-lg p-4 bg-background-600 border border-background-500">
+                        <div className="rounded-lg p-4 bg-background-600 border border-background-500 sm:ml-0 -ml-14 sm:mt-0 mt-4">
                           <div className="text-sm leading-relaxed ai-response prose prose-invert max-w-none c1-message-container">
                             <C1Component
                               c1Response={streamingContent}
@@ -757,6 +774,11 @@ export default function Chat({
                     variant="compact"
                     icon="zap"
                     showCloseButton={false}
+                    checkoutPlan={
+                      promptLimitInfo.plan === "base" ? "pro" : "ultra"
+                    }
+                    useBillingPortal={promptLimitInfo.plan === "pro"}
+                    cancelPath="/webapp/ai"
                   />
                 )}
 

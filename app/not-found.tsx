@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import GridAndDotsBackground from "./_components/animations/GridAndDotsBackground";
 import GlitchText from "./_components/animations/GlitchText";
+import BrandMark from "./_components/BrandMark";
 import { SITE_HOST } from "./_lib/site";
 
 export const metadata: Metadata = {
-  title: "404 — Signal Lost | Prioritron",
+  title: "404 — Signal Lost",
   description:
     "This route does not exist. Return to Prioritron's command center.",
   robots: { index: false, follow: false },
@@ -47,15 +47,7 @@ export default function NotFound() {
           aria-label="Prioritron home"
           className="mb-8 group shrink-0"
         >
-          <Image
-            src="/logo.svg"
-            alt="Prioritron"
-            width={180}
-            height={44}
-            priority
-            unoptimized
-            className="h-8 md:h-9 w-auto group-hover:opacity-90 transition-opacity"
-          />
+          <BrandMark className="group-hover:opacity-90 transition-opacity" />
         </Link>
 
         <div className="inline-block px-3 py-1 rounded-full border border-error/40 bg-error/10 text-error text-xs font-mono mb-6 uppercase tracking-widest">

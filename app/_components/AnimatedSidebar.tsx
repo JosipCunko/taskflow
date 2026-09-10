@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { useAppPathname } from "../_hooks/useAppPathname";
 import Sidebar from "./Sidebar";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
@@ -9,7 +9,7 @@ import { Menu, X } from "lucide-react";
 export default function AnimatedSidebar() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
-  const pathname = usePathname();
+  const pathname = useAppPathname();
 
   useEffect(() => {
     setHasMounted(true);

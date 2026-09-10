@@ -53,6 +53,9 @@ import { Timestamp } from "firebase-admin/firestore";
 import {
   getCurrentCycleCompletions,
   getWeekStartUtc,
+  hasMissedRepeatingOccurrences,
+  wasRepeatingCompletionOnTime,
+  findScheduledOccurrenceForCompletion,
 } from "../_lib/repeatingTasks";
 
 export { MONDAY_START_OF_WEEK } from "../_lib/repeatingTasks";
@@ -626,16 +629,40 @@ export const calculateTaskPoints = (task: Task) => {
   return Math.max(0, points);
 };
 
-export function calculateTimeManagementStats(
-  regularTasks: Task[],
-): TimeManagementStats {
+export function calculateTimeManagementStats(tasks: Task[]): TimeManagementStats {
   let onTimeTasksCount = 0;
   let totalDelayDays = 0;
   let delayedAndCompletedCount = 0;
   let totalRelevantTasksForTiming = 0;
 
-  regularTasks.forEach((task) => {
-    // For regular tasks that are completed
+  tasks.forEach((task) => {
+    if (task.isRepeating && task.repetitionRule) {
+      const completions = task.repetitionRule.completedAt ?? [];
+      completions.forEach((completedTimestamp) => {
+        totalRelevantTasksForTiming++;
+        if (wasRepeatingCompletionOnTime(task, completedTimestamp)) {
+          onTimeTasksCount++;
+          return;
+        }
+
+        const occurrence = findScheduledOccurrenceForCompletion(
+          task,
+          completedTimestamp,
+        );
+        if (!occurrence) return;
+
+        const delay = differenceInDays(
+          startOfDay(completedTimestamp),
+          startOfDay(occurrence),
+        );
+        if (delay > 0) {
+          totalDelayDays += delay;
+          delayedAndCompletedCount++;
+        }
+      });
+      return;
+    }
+
     if (task.status === "completed" && task.completedAt) {
       totalRelevantTasksForTiming++;
       const dueDateStart = startOfDay(task.dueDate);
@@ -709,6 +736,10 @@ export function generateTaskTypes(allTasks: Task[]) {
         )
           completedTodayRepeatingTasks.push(task);
         else incompleteRepeatingTodayTasks.push(task);
+      }
+
+      if (hasMissedRepeatingOccurrences(task)) {
+        missedTasks.push(task);
       }
     } else {
       regularTasks.push(task);

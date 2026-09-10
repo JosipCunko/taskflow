@@ -9,7 +9,7 @@ import Link from "next/link";
 import Button from "@/app/_components/reusable/Button";
 
 export const metadata = {
-  title: "Progress Tracking - Prioritron",
+  title: "Progress",
   description: "Visualize your fitness progress and track personal records",
 };
 

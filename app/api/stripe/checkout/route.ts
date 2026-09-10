@@ -14,14 +14,20 @@ import { SubscriptionPlan } from "@/app/_types/types";
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user?.id || !session.user.email) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: "You must be logged in to subscribe" },
         { status: 401 }
       );
     }
+    if (!session.user.email) {
+      return NextResponse.json(
+        { error: "An email address is required to subscribe. Create an account to upgrade." },
+        { status: 401 }
+      );
+    }
 
-    const { plan } = await request.json();
+    const { plan, cancelPath } = await request.json();
 
     if (!plan || !["pro", "ultra"].includes(plan)) {
       return NextResponse.json(
@@ -96,7 +102,10 @@ export async function POST(request: NextRequest) {
         },
       },
       success_url: `${process.env.NEXTAUTH_URL}/webapp?subscription=success`,
-      cancel_url: `${process.env.NEXTAUTH_URL}/#pricing`,
+      cancel_url:
+        typeof cancelPath === "string" && cancelPath.startsWith("/")
+          ? `${process.env.NEXTAUTH_URL}${cancelPath}`
+          : `${process.env.NEXTAUTH_URL}/#pricing`,
       metadata: {
         userId: session.user.id,
         plan: selectedPlan,

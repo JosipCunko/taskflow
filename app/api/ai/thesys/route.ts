@@ -120,20 +120,71 @@ function parseSSELine(
 
 // Helper to finalize and save a tool call
 function finalizeToolCall(state: StreamState): void {
-  if (
-    state.currentToolCall?.id &&
-    state.currentToolCall.function?.name &&
-    state.currentToolCall.function?.arguments
-  ) {
+  if (state.currentToolCall?.id && state.currentToolCall.function?.name) {
     state.toolCalls.push({
       id: state.currentToolCall.id,
       type: "function",
       function: {
         name: state.currentToolCall.function.name,
-        arguments: state.currentToolCall.function.arguments,
+        arguments: state.currentToolCall.function.arguments || "{}",
       },
     });
   }
+}
+
+function parseToolArguments(raw: string): Record<string, unknown> {
+  if (!raw || !raw.trim()) return {};
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+    return {};
+  } catch {
+    return {};
+  }
+}
+
+function wrapC1Markdown(markdown: string): string {
+  const escaped = markdown
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  return `<custommarkdown>${escaped}</custommarkdown>`;
+}
+
+function isLikelyC1Payload(content: string): boolean {
+  const trimmed = content.trim();
+  if (!trimmed) return false;
+  return (
+    trimmed.startsWith("{") ||
+    trimmed.startsWith("<") ||
+    trimmed.includes("<content") ||
+    trimmed.includes("<custommarkdown")
+  );
+}
+
+function fallbackFromToolResults(
+  results: Awaited<ReturnType<typeof executeFunctions>>,
+): string {
+  const parts = results.map((result) => {
+    if (result.result.error) {
+      return `I couldn't complete that action: ${result.result.error}`;
+    }
+    if (result.name === "show_tasks") {
+      const count =
+        typeof result.result.count === "number" ? result.result.count : 0;
+      if (count === 0) {
+        return "You don't have any tasks matching that request yet. Create one from Tasks, or ask me to add something.";
+      }
+      return `I found ${count} task${count === 1 ? "" : "s"}.`;
+    }
+    if (typeof result.result.message === "string" && result.result.message) {
+      return result.result.message;
+    }
+    return `Finished ${result.name.replace(/_/g, " ")}.`;
+  });
+  return wrapC1Markdown(parts.join("\n\n"));
 }
 
 // Helper to process a stream and extract content/tool calls
@@ -672,96 +723,114 @@ export async function POST(request: NextRequest) {
         };
 
         // Store function results for saving to database
-        let executedFunctionResults: Awaited<
+        const executedFunctionResults: Awaited<
           ReturnType<typeof executeFunctions>
-        > | null = null;
+        > = [];
 
         try {
           const reader = response.body?.getReader();
           if (!reader) throw new Error("No reader available");
 
-          // Process initial stream
+          // Process initial stream. If the model also requested tools, this
+          // preamble is discarded — concatenating it with the follow-up C1 DSL
+          // makes C1Component show "Error while generating response".
           await processStream(reader, decoder, state, (content) => {
             controller.enqueue(sse.encodeContent(content));
           });
 
-          // Execute tool calls if any
           if (state.toolCalls.length > 0) {
+            controller.enqueue(sse.encode("content_reset", {}));
             controller.enqueue(sse.encode("tool_start", {}));
 
-            const functionCalls = state.toolCalls.map((call) => ({
-              name: call.function.name,
-              arguments: JSON.parse(call.function.arguments),
-            }));
-
-            executedFunctionResults = await executeFunctions(functionCalls);
-
-            // Make follow-up request with tool results
-            const followUpMessages = [
+            const conversation: Array<Record<string, unknown>> = [
               { role: "system", content: thesysSystemPrompt },
               ...(Array.isArray(messages) ? messages : []),
-              {
-                role: "assistant",
-                content: state.fullContent || null,
-                tool_calls: state.toolCalls,
-              },
-              ...executedFunctionResults.map((result, i) => ({
-                role: "tool" as const,
-                tool_call_id: state.toolCalls[i].id,
-                name: result.name,
-                content: JSON.stringify(result.result),
-              })),
             ];
 
-            const followUpResponse = await fetch(
-              "https://api.thesys.dev/v1/embed/chat/completions",
-              {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${apiKey}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  model,
-                  messages: followUpMessages,
-                  temperature: 0.7,
-                  stream: true,
-                }),
-              },
-            );
+            const maxToolRounds = 3;
+            for (
+              let round = 0;
+              round < maxToolRounds && state.toolCalls.length > 0;
+              round++
+            ) {
+              const pendingCalls = state.toolCalls;
+              const functionCalls = pendingCalls.map((call) => ({
+                name: call.function.name,
+                arguments: parseToolArguments(call.function.arguments),
+              }));
 
-            if (followUpResponse.ok) {
-              const followUpReader = followUpResponse.body?.getReader();
-              if (followUpReader) {
-                // Reset content for follow-up response
-                const followUpState: StreamState = {
-                  fullContent: "",
-                  toolCalls: [],
-                  currentToolCall: null,
-                };
+              const roundResults = await executeFunctions(functionCalls);
+              executedFunctionResults.push(...roundResults);
 
-                await processStream(
-                  followUpReader,
-                  decoder,
-                  followUpState,
-                  (content) => {
-                    controller.enqueue(sse.encodeContent(content));
-                  },
-                );
-
-                state.fullContent = followUpState.fullContent;
+              conversation.push({
+                role: "assistant",
+                content: state.fullContent || "",
+                tool_calls: pendingCalls,
+              });
+              for (let i = 0; i < roundResults.length; i++) {
+                conversation.push({
+                  role: "tool",
+                  tool_call_id: pendingCalls[i].id,
+                  content: JSON.stringify(roundResults[i].result),
+                });
               }
-            } else {
-              const followUpError = await followUpResponse.text();
-              console.error("Follow-up request error:", followUpError);
-              controller.enqueue(
-                sse.encodeContent(
-                  "\n\n*Note: There was an issue processing the results. Please try again.*",
-                ),
+
+              const followUpResponse = await fetch(
+                "https://api.thesys.dev/v1/embed/chat/completions",
+                {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${apiKey}`,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    model,
+                    messages: conversation,
+                    tools,
+                    tool_choice: "auto",
+                    temperature: 0.7,
+                    stream: true,
+                  }),
+                },
               );
+
+              if (!followUpResponse.ok) {
+                const followUpError = await followUpResponse.text();
+                console.error("Follow-up request error:", followUpError);
+                state.fullContent = "";
+                state.toolCalls = [];
+                break;
+              }
+
+              const followUpReader = followUpResponse.body?.getReader();
+              if (!followUpReader) {
+                state.fullContent = "";
+                state.toolCalls = [];
+                break;
+              }
+
+              const followUpState: StreamState = {
+                fullContent: "",
+                toolCalls: [],
+                currentToolCall: null,
+              };
+              await processStream(followUpReader, decoder, followUpState);
+              state.fullContent = followUpState.fullContent;
+              state.toolCalls = followUpState.toolCalls;
+              state.currentToolCall = null;
             }
 
-            // Send function results to client
+            // C1Component cannot render raw markdown / empty payloads. If the
+            // model returned nothing usable after tools, wrap a fallback.
+            if (!state.fullContent.trim()) {
+              state.fullContent = fallbackFromToolResults(
+                executedFunctionResults,
+              );
+            } else if (!isLikelyC1Payload(state.fullContent)) {
+              state.fullContent = wrapC1Markdown(state.fullContent);
+            }
+
+            controller.enqueue(sse.encodeContent(state.fullContent));
             controller.enqueue(
               sse.encode("tool_results", { results: executedFunctionResults }),
             );
@@ -778,7 +847,7 @@ export async function POST(request: NextRequest) {
             role: "assistant",
             content: state.fullContent,
             duration,
-            ...(executedFunctionResults && executedFunctionResults.length > 0
+            ...(executedFunctionResults.length > 0
               ? { functionResults: executedFunctionResults }
               : {}),
             modelId: model,

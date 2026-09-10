@@ -6,7 +6,7 @@ export const dynamic = "force-static";
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | Prioritron",
+  title: "Privacy Policy",
   description:
     "Learn how Prioritron collects, uses, encrypts, and protects your data, including task/note encryption at rest and your privacy rights.",
   alternates: { canonical: "/privacy" },

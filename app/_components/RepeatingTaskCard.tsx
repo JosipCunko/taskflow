@@ -15,6 +15,7 @@ import {
   getStatusStyles,
   handleToast,
 } from "../_utils/utils";
+import { isNetworkError } from "../_lib/offlineTaskQueue";
 import { CardSpecificIcons, getTaskIconByName } from "../_utils/icons";
 import { getExperienceIcon } from "./TaskCard";
 import {
@@ -64,7 +65,11 @@ export default function RepeatingTaskCard({ task }: { task: Task }) {
       });
     } catch (err) {
       errorToast(
-        err instanceof Error ? err.message : "Failed to complete task",
+        isNetworkError(err)
+          ? "Repeating tasks need a connection to complete."
+          : err instanceof Error
+            ? err.message
+            : "Failed to complete task",
       );
     }
   };

@@ -237,7 +237,7 @@ export default function Location({
   };
 
   return (
-    <div className="w-[22rem] sm:w-[26rem] bg-background-700 rounded-2xl py-2 px-4 shadow h-[75vh] overflow-y-auto overflow-x-hidden ">
+    <div className="w-full sm:w-[26rem] bg-background-700 rounded-none sm:rounded-2xl py-2 px-4 shadow h-full sm:h-[75vh] overflow-y-auto overflow-x-hidden ">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-white">Select Location</h2>
         <Button

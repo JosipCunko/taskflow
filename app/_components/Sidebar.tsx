@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import Image from "next/image";
+import AppLink from "./offline/AppLink";
+import { useAppPathname } from "../_hooks/useAppPathname";
+import BrandMark from "./BrandMark";
 import { navItems } from "../_utils/utils";
 
 function isNavItemActive(pathname: string, href: string) {
@@ -11,7 +11,7 @@ function isNavItemActive(pathname: string, href: string) {
 }
 
 export default function Sidebar() {
-  const pathname = usePathname();
+  const pathname = useAppPathname();
   return (
     <aside
       className="w-64 h-full bg-background-700 flex flex-col"
@@ -19,26 +19,11 @@ export default function Sidebar() {
     >
       <div className="hidden sm:block px-3 py-3">
         <div className="grid place-items-center">
-          <Image
-            src="/logo.svg"
-            alt="Prioritron"
-            width={208}
-            height={51}
-            priority
-            unoptimized
-            className="w-full h-auto"
-          />
+          <BrandMark size="md" />
         </div>
       </div>
       <div className="block sm:hidden w-12 aspect-square p-1">
-        <Image
-          src="/icon.svg"
-          alt="Prioritron"
-          width={48}
-          height={48}
-          unoptimized
-          className="w-full h-full"
-        />
+        <BrandMark size="sm" showWordmark={false} />
       </div>
       <nav className="p-2 flex-1 flex flex-col overflow-y-auto">
         {Object.entries(navItems).map(([groupName, items]) => (
@@ -77,7 +62,7 @@ export default function Sidebar() {
 
                 return (
                   <li key={item.href}>
-                    <Link
+                    <AppLink
                       href={item.href}
                       data-tutorial={getTutorialAttribute()}
                       className={`
@@ -104,7 +89,7 @@ export default function Sidebar() {
                           {item.badge.label}
                         </span>
                       )}
-                    </Link>
+                    </AppLink>
                   </li>
                 );
               })}

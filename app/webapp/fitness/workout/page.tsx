@@ -6,7 +6,7 @@ import WorkoutSession from "../../../_components/fitness/WorkoutSession";
 import Loader from "../../../_components/Loader";
 
 export const metadata = {
-  title: "Workout Session - Prioritron",
+  title: "Workout",
   description: "Track your active workout session",
 };
 

@@ -6,7 +6,7 @@ export const dynamic = "force-static";
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "Terms of Use | Prioritron",
+  title: "Terms of Use",
   description:
     "Read the Terms of Use governing your access to and use of Prioritron's productivity, fitness, nutrition, and AI assistant features.",
   alternates: { canonical: "/terms" },

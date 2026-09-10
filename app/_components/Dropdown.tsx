@@ -11,17 +11,16 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Task } from "@/app/_types/types";
 import { isSameDay } from "date-fns";
 import {
-  delayTaskAction,
-  completeTaskAction,
-  toggleReminderAction,
-  togglePriorityAction,
-  updateTaskExperienceAction,
-  deleteTaskAction,
-} from "@/app/_lib/actions";
-import EmojiExperience from "./EmojiExperience";
+  completeTaskOfflineFirst,
+  delayTaskOfflineFirst,
+  deleteTaskOfflineFirst,
+  togglePriorityOfflineFirst,
+  toggleReminderOfflineFirst,
+} from "@/app/_lib/offlineTaskQueue";
+import { updateTaskExperienceAction } from "@/app/_lib/actions";
 import DateInput from "./reusable/DateInput";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import EmojiExperience from "./EmojiExperience";
 
 function ActionSubmitButton({
   children,
@@ -77,7 +76,6 @@ export default function Dropdown({
 }) {
   const completionInfo = getCompletionAvailabilityInfo(task);
   const [rescheduleDate, setRescheduleDate] = useState<Date>(new Date());
-  const router = useRouter();
 
   return (
     <div className="relative shrink-0">
@@ -112,8 +110,8 @@ export default function Dropdown({
                 action={
                   completionInfo.canComplete
                     ? !task.isRepeating
-                      ? async (formData: FormData) => {
-                          const res = await completeTaskAction(formData);
+                      ? async () => {
+                          const res = await completeTaskOfflineFirst(task);
                           handleToast(res, () => setIsDropdownOpen(false));
                         }
                       : handleComplete
@@ -139,12 +137,11 @@ export default function Dropdown({
                 ) && (
                   <li>
                     <form
-                      action={async (formData: FormData) => {
-                        const res = await delayTaskAction(
-                          formData,
-                          task.dueDate,
-                          task.delayCount,
-                        );
+                      action={async () => {
+                        const res = await delayTaskOfflineFirst({
+                          task,
+                          delayOption: "tomorrow",
+                        });
                         handleToast(res, () => setIsDropdownOpen(false));
                       }}
                       onSubmit={() => setIsDropdownOpen(false)}
@@ -193,12 +190,11 @@ export default function Dropdown({
                     return (
                       <li>
                         <form
-                          action={async (formData: FormData) => {
-                            const res = await delayTaskAction(
-                              formData,
-                              task.dueDate,
-                              task.delayCount,
-                            );
+                          action={async () => {
+                            const res = await delayTaskOfflineFirst({
+                              task,
+                              delayOption: "nextWeek",
+                            });
                             handleToast(res, () => setIsDropdownOpen(false));
                           }}
                         >
@@ -227,12 +223,11 @@ export default function Dropdown({
               <li className="px-1.5 py-1.5 group">
                 <form
                   action={async (formData: FormData) => {
-                    const res = await delayTaskAction(
-                      formData,
-                      task.dueDate,
-                      task.delayCount,
-                      task.dueDate,
-                    );
+                    const res = await delayTaskOfflineFirst({
+                      task,
+                      newDueDate: formData.get("newDueDate") as string,
+                      currentTaskDueDate: task.dueDate,
+                    });
                     handleToast(res, () => setIsDropdownOpen(false));
                   }}
                   className="space-y-1.5"
@@ -276,11 +271,10 @@ export default function Dropdown({
             {task.status !== "completed" && (
               <li>
                 <form
-                  action={async (formData: FormData) => {
-                    const res = await togglePriorityAction(formData);
+                  action={async () => {
+                    const res = await togglePriorityOfflineFirst(task);
                     handleToast(res, () => {
                       setIsDropdownOpen(false);
-                      router.refresh(); //check if neccessary
                     });
                   }}
                 >
@@ -306,11 +300,10 @@ export default function Dropdown({
             {task.status !== "completed" && (
               <li>
                 <form
-                  action={async (formData: FormData) => {
-                    const res = await toggleReminderAction(formData);
+                  action={async () => {
+                    const res = await toggleReminderOfflineFirst(task);
                     handleToast(res, () => {
                       setIsDropdownOpen(false);
-                      router.refresh();
                     });
                   }}
                 >
@@ -354,8 +347,8 @@ export default function Dropdown({
             {/* ---: Action: Delete --- */}
             <li>
               <form
-                action={async (formData: FormData) => {
-                  const res = await deleteTaskAction(formData);
+                action={async () => {
+                  const res = await deleteTaskOfflineFirst(task);
                   handleToast(res, () => setIsDropdownOpen(false));
                 }}
               >

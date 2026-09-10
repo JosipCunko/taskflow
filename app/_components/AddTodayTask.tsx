@@ -13,11 +13,13 @@ import { colorsColorPicker, errorToast, handleToast } from "../_utils/utils";
 import { TASK_ICONS, CardSpecificIcons } from "../_utils/icons";
 import Button from "./reusable/Button";
 import AnimatedPlaceholderInput from "./reusable/AnimatedPlaceholderInput";
-import { createTaskAction } from "../_lib/actions";
+import { createTaskOfflineFirst } from "../_lib/offlineTaskQueue";
+import { useTaskStore } from "../_store/taskStore";
 import { TaskAnalytics } from "../_types/types";
 import TaskCustomization from "./TaskCustomization";
 import { InputGroup } from "./reusable/InputGroup";
 import { trackTaskEvent } from "../_lib/analytics";
+import { useSession } from "next-auth/react";
 import Input from "./reusable/Input";
 import type { ForwardRefExoticComponent, RefAttributes } from "react";
 import type { LucideProps } from "lucide-react";
@@ -70,6 +72,7 @@ export default function AddTodayTask({
 }: AddTodayTaskProps) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [isPending, startTransition] = useTransition();
+  const { data: session } = useSession();
 
   const [activeTab, setActiveTab] = useState<"Task" | "Customization">("Task");
   const tabs = ["Task", "Customization"];
@@ -189,22 +192,28 @@ export default function AddTodayTask({
           minute: state.startTime[1],
         };
 
-        const res = await createTaskAction(
-          formData,
-          state.isPriority,
-          false, // no reminder for today tasks
-          state.selectedColor,
-          TASK_ICONS.filter((icon) => icon.icon === state.selectedIcon)[0]
+        const userId = session?.user?.id ?? useTaskStore.getState().userId;
+        if (!userId) {
+          throw new Error("User not authenticated");
+        }
+
+        const res = await createTaskOfflineFirst(userId, {
+          title: String(formData.get("title") || ""),
+          description: String(formData.get("description") || ""),
+          location: "",
+          isPriority: state.isPriority,
+          isReminder: false,
+          color: state.selectedColor,
+          icon: TASK_ICONS.filter((icon) => icon.icon === state.selectedIcon)[0]
             .label,
-          today.getTime(), // always today
-          taskTimeObject,
-          [], // no tags for today tasks
-          durationObject,
-          false, // no repeating for today tasks
-          undefined, // no repetition rule
-          today.getTime(), // start date is today
-          state.autoDelay,
-        );
+          dueDate: today.getTime(),
+          startTime: taskTimeObject,
+          tags: [],
+          duration: durationObject,
+          isRepeating: false,
+          startDate: today.getTime(),
+          autoDelay: state.autoDelay,
+        });
 
         handleToast(res, () => {
           if (res.success && res.data) {

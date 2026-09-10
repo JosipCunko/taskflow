@@ -1,5 +1,6 @@
 "use client";
-import { Task } from "@/app/_types/types";
+import { useHydratedTasks } from "@/app/_store/taskStore";
+import type { Task } from "@/app/_types/types";
 import { Plus } from "lucide-react";
 import { useState, useMemo } from "react";
 import Modal, { ModalContext } from "./Modal";
@@ -12,9 +13,20 @@ interface TodayPlanSectionProps {
   todayTasks: Task[];
 }
 
+function relevantTodayTasks(tasks: Task[]) {
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  return tasks.filter((task) => {
+    if (task.status !== "completed") return true;
+    if (task.completedAt) return task.completedAt >= startOfToday.getTime();
+    return true;
+  });
+}
+
 export default function TodayPlanSection({
-  todayTasks,
+  todayTasks: serverTodayTasks,
 }: TodayPlanSectionProps) {
+  const todayTasks = relevantTodayTasks(useHydratedTasks(serverTodayTasks));
   const [modalOpenName, setModalOpenName] = useState<string>("");
   const openModal = (name: string) => setModalOpenName(name);
   const closeModal = () => setModalOpenName("");

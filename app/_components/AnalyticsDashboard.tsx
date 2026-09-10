@@ -103,7 +103,7 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
           icon={<Activity className="text-blue-400" size={24} />}
           subtitle={`${analyticsData.pageViews} page views`}
           trend={analyticsData.trends.sessionDurationTrend}
-          tooltip="Average time from opening the app to closing it, over the last 30 days. Includes idle time in open tabs."
+          tooltip="Average active time per session over the last 30 days. Updated on navigation and when the session ends."
         />
         <AnalyticsCard
           title="Active Time"
@@ -111,7 +111,7 @@ export default function AnalyticsDashboard({ user }: { user: AppUser }) {
           icon={<Zap className="text-teal-400" size={24} />}
           subtitle="Time in the last 30 days"
           trend={null}
-          tooltip="Time accumulated while the app was open, updated on navigation and when the session ends. Idle time in an open tab is included."
+          tooltip="Total active time across all sessions in the last 30 days. Updated on navigation and when the session ends."
         />
         <AnalyticsCard
           title="Productivity Score"

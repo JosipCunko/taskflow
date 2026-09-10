@@ -108,6 +108,36 @@ export async function saveToOfflineStorage<T>(
   });
 }
 
+/**
+ * Replaces the whole contents of a store in a single transaction.
+ * `saveToOfflineStorage` only puts, so deletions made on another device would
+ * otherwise linger in the cache forever.
+ */
+export async function replaceOfflineStore<T>(
+  storeName: string,
+  data: T[]
+): Promise<void> {
+  const db = await initDB();
+  const transaction = db.transaction([storeName], "readwrite");
+  const store = transaction.objectStore(storeName);
+
+  store.clear();
+  for (const item of data) {
+    store.put(item);
+  }
+
+  return new Promise((resolve, reject) => {
+    transaction.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    transaction.onerror = () => {
+      db.close();
+      reject(transaction.error);
+    };
+  });
+}
+
 export async function getFromOfflineStorage<T>(
   storeName: string,
   key: string
@@ -215,7 +245,7 @@ export async function hasOfflineData(storeName: string): Promise<boolean> {
 }
 
 /**
- * Sync offline changes with server (to be called when back online)
+ * Queue of writes made while offline. Flushed by `app/_lib/offlineTaskQueue.ts` once the connection returns.
  */
 export interface PendingAction {
   id: string;
@@ -253,6 +283,27 @@ export async function getPendingActions(): Promise<PendingAction[]> {
     request.onsuccess = () => {
       db.close();
       resolve(request.result || []);
+    };
+    request.onerror = () => {
+      db.close();
+      reject(request.error);
+    };
+  });
+}
+
+export async function deletePendingAction(id: string): Promise<void> {
+  return deleteFromOfflineStorage(STORES.PENDING_ACTIONS, id);
+}
+
+export async function countPendingActions(): Promise<number> {
+  const db = await initDB();
+  const transaction = db.transaction([STORES.PENDING_ACTIONS], "readonly");
+  const request = transaction.objectStore(STORES.PENDING_ACTIONS).count();
+
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => {
+      db.close();
+      resolve(request.result);
     };
     request.onerror = () => {
       db.close();

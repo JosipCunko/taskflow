@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import HeroSection from "@/app/_components/landing/HeroSection";
 import ImageSection from "@/app/_components/landing/ImageSection";
 import StatsSection from "@/app/_components/landing/StatsSection";
@@ -8,6 +9,10 @@ import Navbar from "@/app/_components/landing/Navbar";
 import ProgrammingFeatures from "./_components/landing/ProgrammingFeatures";
 import PricingSection from "./_components/landing/PricingSection";
 import LazyMotionProvider from "./_components/animations/LazyMotionProvider";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 // Route segment config for static landing page
 export const dynamic = "force-static";

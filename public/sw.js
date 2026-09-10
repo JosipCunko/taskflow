@@ -25,7 +25,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-const CACHE_VERSION = "18.1.0";
+const CACHE_VERSION = "19.0.0";
 const CACHE_NAME = `prioritron-cache-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `prioritron-runtime-${CACHE_VERSION}`;
 const STATIC_CACHE = `prioritron-static-${CACHE_VERSION}`;
@@ -57,21 +57,36 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
+// Drop personalized app HTML that older versions of this worker cached.
+// Serving it later shows another account's data or a stale task list.
+async function purgeWebappDocuments() {
+  const cache = await caches.open(RUNTIME_CACHE);
+  const requests = await cache.keys();
+  await Promise.all(
+    requests
+      .filter((request) => new URL(request.url).pathname.startsWith("/webapp"))
+      .map((request) => cache.delete(request))
+  );
+}
+
 // Activate event - clean up old caches
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames
-          .filter(
-            (name) =>
-              name !== CACHE_NAME &&
-              name !== RUNTIME_CACHE &&
-              name !== STATIC_CACHE
-          )
-          .map((name) => caches.delete(name))
-      );
-    })
+    caches
+      .keys()
+      .then((cacheNames) => {
+        return Promise.all(
+          cacheNames
+            .filter(
+              (name) =>
+                name !== CACHE_NAME &&
+                name !== RUNTIME_CACHE &&
+                name !== STATIC_CACHE
+            )
+            .map((name) => caches.delete(name))
+        );
+      })
+      .then(purgeWebappDocuments)
   );
   self.clients.claim();
 });
@@ -82,9 +97,18 @@ function isNextDataRequest(request) {
   if (request.headers.get("RSC") === "1") return true;
   if (request.headers.get("Next-Router-Prefetch")) return true;
   if (request.headers.get("Next-Router-State-Tree")) return true;
+  // Server actions. They are POSTs today, so the method check below already
+  // covers them, but a mangled action response is the hardest failure to
+  // debug ("Failed to fetch" with no useful stack) - never touch them.
+  if (request.headers.get("Next-Action")) return true;
   const accept = request.headers.get("Accept") || "";
   if (accept.includes("text/x-component")) return true;
   return false;
+}
+
+// Personalized App Router documents must never be cached. See md/caching.md.
+function isAppDocument(url) {
+  return new URL(url).pathname.startsWith("/webapp");
 }
 
 // Fetch event - serve from cache, fallback to network
@@ -98,11 +122,18 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Skip API calls and auth requests - network-first with offline fallback
-  if (
-    event.request.url.includes("/api/") ||
-    event.request.url.includes("/auth/")
-  ) {
+  const requestUrl = new URL(event.request.url);
+
+  // Authentication must reach the real network or fail as a network error.
+  // Synthesizing a 503 JSON body here made NextAuth report CLIENT_FETCH_ERROR
+  // instead of simply retrying, which looks like a broken session.
+  if (requestUrl.pathname.startsWith("/api/auth")) {
+    return;
+  }
+
+  // Other API calls: network-first with a machine-readable offline body so
+  // callers can tell "offline" apart from a real server error.
+  if (requestUrl.pathname.startsWith("/api/")) {
     event.respondWith(
       fetch(event.request).catch(() => {
         return new Response(
@@ -130,20 +161,25 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
-          // Cache the page for offline access
-          const responseClone = response.clone();
-          caches.open(RUNTIME_CACHE).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
+          // Public pages only. Caching /webapp HTML is what made the dashboard
+          // and task list show yesterday's data after a refresh.
+          if (!isAppDocument(event.request.url) && response.ok) {
+            const responseClone = response.clone();
+            caches.open(RUNTIME_CACHE).then((cache) => {
+              cache.put(event.request, responseClone);
+            });
+          }
           return response;
         })
         .catch(() => {
-          // Fallback to cached version
+          // Only public documents are cached, so an app route falls straight
+          // through to /offline. In-session navigation never gets here:
+          // OfflineShell intercepts app links while offline so the running
+          // document (and its in-memory task data) stays alive.
           return caches.match(event.request).then((cachedResponse) => {
             if (cachedResponse) {
               return cachedResponse;
             }
-            // Return offline page if available
             return caches.match("/offline").then((offlinePage) => {
               return offlinePage || caches.match("/");
             });
@@ -154,10 +190,9 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Cache-first only for hashed/static assets. Everything else goes to the network.
-  const url = new URL(event.request.url);
   const isStatic =
-    url.pathname.match(/\.(js|css|png|jpg|jpeg|svg|woff2?|ttf|eot)$/) ||
-    url.pathname.startsWith("/_next/static/");
+    requestUrl.pathname.match(/\.(js|css|png|jpg|jpeg|svg|woff2?|ttf|eot)$/) ||
+    requestUrl.pathname.startsWith("/_next/static/");
 
   if (!isStatic) {
     return;

@@ -1,6 +1,6 @@
 import { NotificationStats } from "@/app/_types/types";
 import { Bell, AlertTriangle, Clock, Trophy } from "lucide-react";
-import Link from "next/link";
+import AppLink from "@/app/_components/offline/AppLink";
 
 export default function NotificationSummary({
   notificationStats,
@@ -37,12 +37,12 @@ export default function NotificationSummary({
           <Bell className="w-5 h-5 mr-2 text-blue-400" />
           Notifications
         </h3>
-        <Link
+        <AppLink
           href="/webapp/inbox"
           className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
         >
           View All
-        </Link>
+        </AppLink>
       </div>
 
       <div className="space-y-3">
@@ -111,12 +111,12 @@ export default function NotificationSummary({
         )}
 
         <div className="pt-3">
-          <Link
+          <AppLink
             href="/webapp/inbox"
             className="block w-full text-center py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
           >
             Manage Notifications
-          </Link>
+          </AppLink>
         </div>
       </div>
     </div>

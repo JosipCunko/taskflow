@@ -12,14 +12,18 @@ import {
   getCalendarDateBounds,
   shouldShowRepeatingTaskOnDate,
 } from "@/app/_lib/repeatingTasks";
+import { useHydratedTasks } from "@/app/_store/taskStore";
 
 export default function Calendar({
-  tasks,
-  repeatingTasks,
+  tasks: serverTasks,
+  repeatingTasks: serverRepeatingTasks,
 }: {
   tasks: Task[];
   repeatingTasks: Task[];
 }) {
+  const allTasks = useHydratedTasks([...serverTasks, ...serverRepeatingTasks]);
+  const tasks = allTasks.filter((task) => !task.isRepeating);
+  const repeatingTasks = allTasks.filter((task) => task.isRepeating);
   const today = useMemo(() => new Date(), []);
   const { minDate, maxDate } = useMemo(
     () => getCalendarDateBounds(today),

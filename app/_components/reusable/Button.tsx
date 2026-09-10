@@ -35,7 +35,8 @@ export default function Button({
   return (
     <button
       type={type}
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
       className={`${
         variant === "noStyle" || variant === "tag" ? "" : baseStyles
       } ${variantStyles[variant]} ${

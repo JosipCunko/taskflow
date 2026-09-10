@@ -4,7 +4,12 @@ import "./globals.css";
 import AuthProvider from "./_components/auth/AuthProvider";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
-import { SITE_URL } from "./_lib/site";
+import {
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_TITLE,
+  SITE_URL,
+} from "./_lib/site";
 
 const plexMono = IBM_Plex_Mono({
   variable: "--font-plex-mono",
@@ -15,52 +20,53 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Prioritron",
-  description:
-    "Modern task management web application with AI-powered features, analytics, and comprehensive productivity tools. Organize, prioritize, and achieve your goals with ultimate discipline and control.",
+  title: {
+    default: SITE_TITLE,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
   keywords: [
     "task management",
     "productivity",
+    "fitness tracking",
+    "nutrition",
     "AI assistant",
+    "PWA",
+    "habit tracking",
+    "gamification",
     "goal tracking",
-    "time management",
-    "task planner",
+    "calendar",
   ],
   authors: [{ name: "Josip Čunko" }],
-  creator: "Prioritron",
+  creator: SITE_NAME,
   manifest: "/manifest.json",
   metadataBase: new URL(SITE_URL),
-  alternates: {
-    canonical: "/",
-  },
   openGraph: {
     type: "website",
     locale: "en_US",
     url: SITE_URL,
-    title: "Prioritron - Master Your Productivity",
-    description:
-      "Modern task management with AI-powered features, analytics, and comprehensive productivity tools",
-    siteName: "Prioritron",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    siteName: SITE_NAME,
     images: [
       {
         url: "/dashboard.png",
         width: 1200,
         height: 630,
-        alt: "Prioritron Dashboard",
+        alt: `${SITE_NAME} dashboard`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Prioritron - Master Your Productivity",
-    description:
-      "Modern task management with AI-powered features and comprehensive productivity tools",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
     images: ["/dashboard.png"],
   },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Prioritron",
+    title: SITE_NAME,
   },
   icons: {
     icon: [

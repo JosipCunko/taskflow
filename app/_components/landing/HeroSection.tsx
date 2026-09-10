@@ -63,7 +63,7 @@ export default function HeroSection() {
           transition={{ duration: 0.8 }}
           className="inline-block px-3 py-1 rounded-full border border-primary-500/30 bg-primary-500/10 text-primary-300 text-xs font-mono mb-4 uppercase tracking-widest"
         >
-          System Ready v2.0
+          System Ready v19.0
         </motion.div>
 
         <motion.div
@@ -93,7 +93,7 @@ export default function HeroSection() {
           transition={{ duration: 1, delay: 0.5 }}
         >
           <DecryptedText
-            text="Initialize your workflow. Organize, prioritize, and execute tasks with military-grade precision. The ultimate command center for your daily operations."
+            text="Your all-in-one productivity app. Organize, prioritize, and execute tasks with ultimate discipline and control. The ultimate command center for your daily operations."
             animateOn="view"
             sequential
             useOriginalCharsOnly
@@ -121,7 +121,7 @@ export default function HeroSection() {
             
             <span className="relative px-10 py-4 bg-background-700/50 backdrop-blur-sm text-primary-300 font-mono text-lg font-bold tracking-wider uppercase hover:text-primary-200 transition-colors flex items-center gap-3">
               <span className="w-2 h-2 bg-primary-500 animate-pulse"></span>
-              Initialize_Sequence
+              press_start
               <span className="w-2 h-2 bg-primary-500 animate-pulse"></span>
             </span>
           </Link>

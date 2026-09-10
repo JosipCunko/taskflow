@@ -24,17 +24,8 @@ export default function Features() {
             <Wrench className="w-10 h-10 sm:w-12 sm:h-12 text-primary-400 text-glow" />
           </div>
           <h2 className="text-3xl sm:text-4xl text-glow font-mono tracking-tight">
-            &lt;System_Modules /&gt;
+            &lt;Features /&gt;
           </h2>
-          <p className="text-text-low mt-4 max-w-xl mx-auto text-base sm:text-lg font-mono">
-            <DecryptedText
-              text="Core functionalities loaded. Optimizing workflow parameters..."
-              animateOn="view"
-              sequential
-              useOriginalCharsOnly
-              maxIterations={20}
-            />
-          </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
           {features.map((feature, i) => (

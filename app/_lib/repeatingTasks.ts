@@ -2,6 +2,7 @@ import {
   startOfDay,
   startOfWeek,
   getDay,
+  addDays,
   addYears,
   subYears,
   differenceInDays,
@@ -125,28 +126,38 @@ function isSameUtcDay(a: Date | number, b: Date | number): boolean {
   return utcDayIndex(a) === utcDayIndex(b);
 }
 
-function isSameUtcMonth(a: Date | number, b: Date | number): boolean {
-  const da = new Date(a);
-  const db = new Date(b);
-  return (
-    da.getUTCFullYear() === db.getUTCFullYear() &&
-    da.getUTCMonth() === db.getUTCMonth()
-  );
-}
-
 function applyWeeklyPoints(
   currentPoints: number,
   completedCount: number,
   requiredCount: number,
 ): number {
-  const missedCount = requiredCount - completedCount;
-  if (completedCount > missedCount) {
-    return Math.min(10, currentPoints + 2);
+  if (completedCount >= requiredCount) {
+    return currentPoints;
   }
-  if (completedCount < requiredCount) {
-    return Math.max(2, currentPoints - 2);
+  return Math.max(2, currentPoints - 2);
+}
+
+/** Apply miss penalties for each skipped weekly cycle, not each calendar day. */
+function pointsAfterSkippedWeeks(
+  currentPoints: number,
+  completedAt: number[] | undefined,
+  fromWeekStart: Date,
+  currentWeekStart: Date,
+  requiredCount: number,
+): number {
+  let points = currentPoints;
+  for (
+    let week = fromWeekStart.getTime();
+    week < currentWeekStart.getTime();
+    week += 7 * MS_PER_DAY
+  ) {
+    points = applyWeeklyPoints(
+      points,
+      countCompletionsInWeek(completedAt, week),
+      requiredCount,
+    );
   }
-  return currentPoints;
+  return points;
 }
 
 export type RepeatingTaskDailyUpdates = {
@@ -193,21 +204,9 @@ export function getRepeatingTaskDailyUpdates(
   if (rule.interval && rule.interval > 0) {
     const dueNoon = utcNoon(task.dueDate);
     const taskIsPastDue = dueNoon.getTime() < todayNoon.getTime();
-    const wasCompletedOnDueDate = rule.completedAt?.some((completedDate) =>
-      isSameUtcDay(completedDate, task.dueDate),
-    );
     const isCompletedToday =
       (task.completedAt != null && isSameUtcDay(task.completedAt, today)) ||
       rule.completedAt?.some((d) => isSameUtcDay(d, today));
-
-    if (taskIsPastDue && !wasCompletedOnDueDate && !isRecentlyCreated) {
-      setIfChanged(
-        updates,
-        "points",
-        Math.max(2, task.points - 2),
-        task.points,
-      );
-    }
 
     if (!isCompletedToday) {
       if (taskIsPastDue || (task.status === "completed" && !isCompletedToday)) {
@@ -221,13 +220,24 @@ export function getRepeatingTaskDailyUpdates(
       }
 
       if (taskIsPastDue) {
-        if (!isSameUtcMonth(task.dueDate, today)) {
-          setIfChanged(updates, "points", 10, task.points);
-        }
-
+        let missedOccurrences = 0;
         let nextDue = new Date(task.dueDate);
         while (utcNoon(nextDue).getTime() < todayNoon.getTime()) {
+          const completedOnThisDue = rule.completedAt?.some((d) =>
+            isSameUtcDay(d, nextDue),
+          );
+          if (!completedOnThisDue && !isRecentlyCreated) {
+            missedOccurrences += 1;
+          }
           nextDue = new Date(nextDue.getTime() + rule.interval * MS_PER_DAY);
+        }
+        if (missedOccurrences > 0) {
+          setIfChanged(
+            updates,
+            "points",
+            Math.max(2, task.points - 2 * missedOccurrences),
+            task.points,
+          );
         }
         setIfChanged(updates, "dueDate", nextDue.getTime(), task.dueDate);
       }
@@ -252,17 +262,18 @@ export function getRepeatingTaskDailyUpdates(
     const storedWeekStart = getWeekStartUtc(task.startDate ?? task.dueDate);
     if (
       storedWeekStart.getTime() < currentWeekStart.getTime() &&
-      thisWeekCompletions === 0 &&
       !isRecentlyCreated
     ) {
-      const previousWeekCompletions = countCompletionsInWeek(
-        rule.completedAt,
-        storedWeekStart,
-      );
       setIfChanged(
         updates,
         "points",
-        applyWeeklyPoints(task.points, previousWeekCompletions, required),
+        pointsAfterSkippedWeeks(
+          task.points,
+          rule.completedAt,
+          storedWeekStart,
+          currentWeekStart,
+          required,
+        ),
         task.points,
       );
     }
@@ -319,17 +330,18 @@ export function getRepeatingTaskDailyUpdates(
     const storedWeekStart = getWeekStartUtc(task.startDate ?? task.dueDate);
     if (
       storedWeekStart.getTime() < currentWeekStart.getTime() &&
-      thisWeekCompletions === 0 &&
       !isRecentlyCreated
     ) {
-      const previousWeekCompletions = countCompletionsInWeek(
-        rule.completedAt,
-        storedWeekStart,
-      );
       setIfChanged(
         updates,
         "points",
-        applyWeeklyPoints(task.points, previousWeekCompletions, required),
+        pointsAfterSkippedWeeks(
+          task.points,
+          rule.completedAt,
+          storedWeekStart,
+          currentWeekStart,
+          required,
+        ),
         task.points,
       );
     }
@@ -448,6 +460,135 @@ export function isRepeatingTaskAvailableOnDate(
   }
 
   return false;
+}
+
+function isIntervalOccurrenceDate(task: Task, date: Date): boolean {
+  const rule = task.repetitionRule;
+  if (!rule?.interval) return false;
+  const origin = startOfDay(task.startDate ?? task.createdAt);
+  const day = startOfDay(date);
+  if (isBefore(day, origin)) return false;
+  if (rule.interval === 1) return true;
+  return differenceInDays(day, origin) % rule.interval === 0;
+}
+
+/** Scheduled occurrence dates from task origin through yesterday (inclusive). */
+export function getPastRepeatingOccurrenceDates(
+  task: Task,
+  today: Date = new Date(),
+): Date[] {
+  const rule = task.repetitionRule;
+  if (!rule) return [];
+
+  const todayStart = startOfDay(today);
+  const origin = startOfDay(task.startDate ?? task.createdAt);
+  if (!isBefore(origin, todayStart)) return [];
+
+  const occurrences: Date[] = [];
+
+  if (rule.interval) {
+    let day = origin;
+    while (isBefore(day, todayStart)) {
+      if (isIntervalOccurrenceDate(task, day)) {
+        occurrences.push(day);
+      }
+      day = addDays(day, 1);
+    }
+    return occurrences;
+  }
+
+  if (rule.daysOfWeek.length > 0) {
+    let day = origin;
+    while (isBefore(day, todayStart)) {
+      if (rule.daysOfWeek.includes(getDay(day) as DayOfWeek)) {
+        occurrences.push(day);
+      }
+      day = addDays(day, 1);
+    }
+    return occurrences;
+  }
+
+  if (rule.timesPerWeek) {
+    const required = rule.timesPerWeek;
+    let weekStart = getWeekStartUtc(origin);
+    const currentWeekStart = getWeekStartUtc(today);
+    while (weekStart.getTime() < currentWeekStart.getTime()) {
+      if (countCompletionsInWeek(rule.completedAt, weekStart) < required) {
+        occurrences.push(new Date(weekStart));
+      }
+      weekStart = new Date(weekStart.getTime() + 7 * MS_PER_DAY);
+    }
+  }
+
+  return occurrences;
+}
+
+export function hasMissedRepeatingOccurrences(
+  task: Task,
+  today: Date = new Date(),
+): boolean {
+  const rule = task.repetitionRule;
+  if (!rule) return false;
+
+  if (rule.timesPerWeek) {
+    return getPastRepeatingOccurrenceDates(task, today).length > 0;
+  }
+
+  return getPastRepeatingOccurrenceDates(task, today).some(
+    (date) => !wasRepeatingTaskCompletedOnDate(task, date),
+  );
+}
+
+export function findScheduledOccurrenceForCompletion(
+  task: Task,
+  completedTimestamp: number,
+): Date | null {
+  const rule = task.repetitionRule;
+  if (!rule) return null;
+
+  const completedDay = startOfDay(completedTimestamp);
+  const origin = startOfDay(task.startDate ?? task.createdAt);
+  if (isBefore(completedDay, origin)) return null;
+
+  if (rule.interval) {
+    const diff = differenceInDays(completedDay, origin);
+    const periods = Math.floor(diff / rule.interval);
+    return addDays(origin, periods * rule.interval);
+  }
+
+  if (rule.daysOfWeek.length > 0) {
+    let day = completedDay;
+    while (!isBefore(day, origin)) {
+      if (rule.daysOfWeek.includes(getDay(day) as DayOfWeek)) return day;
+      day = addDays(day, -1);
+    }
+    return null;
+  }
+
+  if (rule.timesPerWeek) {
+    return getWeekStartUtc(completedTimestamp);
+  }
+
+  return null;
+}
+
+export function wasRepeatingCompletionOnTime(
+  task: Task,
+  completedTimestamp: number,
+): boolean {
+  const rule = task.repetitionRule;
+  if (!rule) return false;
+
+  if (rule.timesPerWeek) {
+    return true;
+  }
+
+  const occurrence = findScheduledOccurrenceForCompletion(
+    task,
+    completedTimestamp,
+  );
+  if (!occurrence) return false;
+  return isSameDay(completedTimestamp, occurrence);
 }
 
 export function wasRepeatingTaskCompletedOnDate(

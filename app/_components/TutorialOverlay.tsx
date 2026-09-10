@@ -43,7 +43,7 @@ const tutorialSteps: TutorialStep[] = [
     id: "welcome",
     title: "Welcome to Prioritron!",
     description:
-      "Let's take a quick tour of the key features to help you get started with managing your tasks and health.",
+      "Let's take a quick tour of the key features to help you boost productivity with this amazing all-in-one app.",
     icon: <Home className="w-6 h-6" />,
     route: "/webapp",
     position: {
@@ -72,7 +72,7 @@ const tutorialSteps: TutorialStep[] = [
     id: "add-task",
     title: "Creating Tasks",
     description:
-      "Click the '+ New task' button simply create new tasks. You can set due dates, priorities, customize them and even make them repeating (really cool).",
+      "Click the '+ New task' button to simply create new tasks. You can set due dates, priorities, tags, customize them and even make them repeating (really cool).",
     icon: <Plus className="w-6 h-6" />,
     route: "/webapp/tasks",
     targetSelector: '[data-tutorial="btn-add-task"]',
@@ -106,7 +106,7 @@ const tutorialSteps: TutorialStep[] = [
     id: "calendar-view",
     title: "Calendar page",
     description:
-      "Plan ahead in the Calendar to visualize upcoming tasks on a timeline.",
+      "Plan ahead in the Calendar to visualize upcoming tasks on a timeline. You can also view what repeating tasks were scheduled for a specific day.",
     icon: <Calendar className="w-6 h-6" />,
     route: "/webapp/calendar",
     targetSelector: '[data-tutorial="sidebar-calendar"]',

@@ -23,7 +23,8 @@ import Button from "./reusable/Button";
 import Input from "./reusable/Input";
 import AnimatedPlaceholderInput from "./reusable/AnimatedPlaceholderInput";
 import Modal, { ModalContext } from "./Modal";
-import { createTaskAction } from "../_lib/actions";
+import { createTaskOfflineFirst } from "../_lib/offlineTaskQueue";
+import { useTaskStore } from "../_store/taskStore";
 import TagInput from "./TagInput";
 import { DayOfWeek, RepetitionRule, TaskAnalytics } from "../_types/types";
 import SwitchComponent from "./reusable/Switch";
@@ -35,6 +36,7 @@ import { endOfWeek, startOfWeek } from "date-fns";
 import DateInput from "./reusable/DateInput";
 import Location from "./Location";
 import { trackTaskEvent } from "../_lib/analytics";
+import { useSession } from "next-auth/react";
 
 export type Action = {
   type: string;
@@ -92,6 +94,7 @@ const reducer = (state: typeof initialState, action: Action) => {
 export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [isPending, startTransition] = useTransition();
+  const { data: session } = useSession();
 
   const [activeRepetitionType, setActiveRepetitionType] = useState<
     "interval" | "daysOfWeek" | "timesPerWeek" | "none"
@@ -293,22 +296,29 @@ export default function AddTask({ onCloseModal = undefined }: AddTaskProps) {
           repetitionRule = result.repetitionRule;
         }
 
-        const res = await createTaskAction(
-          formData,
-          state.isPriority,
-          state.isReminder,
-          state.selectedColor,
-          TASK_ICONS.filter((icon) => icon.icon === state.selectedIcon)[0]
+        const userId = session?.user?.id ?? useTaskStore.getState().userId;
+        if (!userId) {
+          throw new Error("User not authenticated");
+        }
+
+        const res = await createTaskOfflineFirst(userId, {
+          title,
+          description: String(formData.get("description") || ""),
+          location: String(formData.get("location") || ""),
+          isPriority: state.isPriority,
+          isReminder: state.isReminder,
+          color: state.selectedColor,
+          icon: TASK_ICONS.filter((icon) => icon.icon === state.selectedIcon)[0]
             .label,
-          firstInstanceDueDate as number,
-          taskTimeObject,
-          state.tags,
-          durationObject,
-          state.isRepeating,
+          dueDate: firstInstanceDueDate as number,
+          startTime: taskTimeObject,
+          tags: state.tags,
+          duration: durationObject,
+          isRepeating: state.isRepeating,
           repetitionRule,
-          state.startDate,
-          state.autoDelay,
-        );
+          startDate: state.startDate,
+          autoDelay: state.autoDelay,
+        });
 
         handleToast(res, () => {
           if (res.success && res.data) {

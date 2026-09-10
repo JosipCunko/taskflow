@@ -2,103 +2,41 @@ import { MetadataRoute } from "next";
 import { SITE_URL } from "./_lib/site";
 
 /**
- * Native Next.js 15 sitemap generator
- * Replaces next-sitemap for better performance and integration
+ * Public URLs only. Next.js serves this at /sitemap.xml on every Vercel
+ * production build — no extra plugin or Search Console file upload is required.
+ *
+ * Do not list /webapp/* here: those routes require a session and are
+ * Disallow'd in robots.ts. Listing them fights robots.txt and can make Google treat the sitemap as broken.
+ *
+ * lastModified is a static date (not `new Date()`) so this file stays a
+ * static route. A fresh timestamp on every request made the production
+ * sitemap dynamic and returned HTTP 500 behind next-auth middleware.
  */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = SITE_URL;
-  const currentDate = new Date();
-
   return [
     {
-      url: baseUrl,
-      lastModified: currentDate,
+      url: SITE_URL,
+      lastModified: "2026-09-10",
       changeFrequency: "weekly",
-      priority: 1.0,
+      priority: 1,
     },
     {
-      url: `${baseUrl}/login`,
-      lastModified: currentDate,
+      url: `${SITE_URL}/login`,
+      lastModified: "2026-09-10",
       changeFrequency: "monthly",
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/privacy`,
-      lastModified: currentDate,
+      url: `${SITE_URL}/privacy`,
+      lastModified: "2026-09-09",
       changeFrequency: "yearly",
       priority: 0.4,
     },
     {
-      url: `${baseUrl}/terms`,
-      lastModified: currentDate,
+      url: `${SITE_URL}/terms`,
+      lastModified: "2026-09-09",
       changeFrequency: "yearly",
       priority: 0.4,
-    },
-    {
-      url: `${baseUrl}/webapp`,
-      lastModified: currentDate,
-      changeFrequency: "always",
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/webapp/tasks`,
-      lastModified: currentDate,
-      changeFrequency: "always",
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/webapp/today`,
-      lastModified: currentDate,
-      changeFrequency: "always",
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/webapp/notes`,
-      lastModified: currentDate,
-      changeFrequency: "daily",
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/webapp/profile`,
-      lastModified: currentDate,
-      changeFrequency: "weekly",
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/webapp/calendar`,
-      lastModified: currentDate,
-      changeFrequency: "daily",
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/webapp/completed`,
-      lastModified: currentDate,
-      changeFrequency: "daily",
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/webapp/fitness`,
-      lastModified: currentDate,
-      changeFrequency: "daily",
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/webapp/health`,
-      lastModified: currentDate,
-      changeFrequency: "daily",
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/webapp/ai`,
-      lastModified: currentDate,
-      changeFrequency: "daily",
-      priority: 0.8,
-    },
-    {
-      url: `${baseUrl}/webapp/inbox`,
-      lastModified: currentDate,
-      changeFrequency: "daily",
-      priority: 0.7,
     },
   ];
 }

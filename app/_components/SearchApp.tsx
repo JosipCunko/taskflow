@@ -11,8 +11,10 @@ import {
 } from "lucide-react";
 import { errorToast, navItemsToSearch } from "../_utils/utils";
 import { getTaskIconByName } from "../_utils/icons";
-import Link from "next/link";
+import AppLink from "./offline/AppLink";
 import { useRouter } from "next/navigation";
+import { navigateApp } from "../_lib/offlineNavigation";
+import { useHydratedTasks } from "../_store/taskStore";
 import { searchUserTasks } from "../_lib/tasks";
 import { getChats } from "../_lib/aiActions";
 import Loader from "./Loader";
@@ -60,6 +62,7 @@ export default function SearchApp({ onCloseModal, tasks }: SearchProps) {
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const router = useRouter();
   const navListRef = useRef<HTMLUListElement>(null);
+  const localTasks = useHydratedTasks(tasks);
 
   const performSearch = useCallback(
     async (query: string) => {
@@ -78,7 +81,7 @@ export default function SearchApp({ onCloseModal, tasks }: SearchProps) {
         const lowerCaseQuery = query.toLowerCase();
 
         // Search tasks
-        const taskResults = await searchUserTasks(query, tasks);
+        const taskResults = await searchUserTasks(query, localTasks);
 
         // Search notes
         let noteResults: Note[] = [];
@@ -150,7 +153,7 @@ export default function SearchApp({ onCloseModal, tasks }: SearchProps) {
         setIsLoading(false);
       }
     },
-    [tasks],
+    [localTasks],
   );
 
   const debouncedSearch = useMemo(
@@ -210,7 +213,7 @@ export default function SearchApp({ onCloseModal, tasks }: SearchProps) {
           );
         } else if (e.key === "Enter" && highlightedIndex > -1) {
           e.preventDefault();
-          router.push(navItemsToSearch[highlightedIndex].link);
+          navigateApp(router, navItemsToSearch[highlightedIndex].link);
           if (onCloseModal) onCloseModal();
         }
       }
@@ -231,13 +234,13 @@ export default function SearchApp({ onCloseModal, tasks }: SearchProps) {
     searchResults.savedMeals.length;
 
   return (
-    <div className="sm:modal-bigger modal relative">
+    <div className="modal-bigger relative px-4">
       <Search
         value={searchQuery}
         onChange={setSearchQuery}
         placeholder="Search or type a command..."
         hideInfo
-        className="sm:w-full w-[120%] sm:ml-0 -ml-4"
+        className="w-full"
       />
 
       <div className="overflow-y-auto ">
@@ -360,7 +363,7 @@ export default function SearchApp({ onCloseModal, tasks }: SearchProps) {
             <ul ref={navListRef} className="space-y-1">
               {navItemsToSearch.map((item, index) => (
                 <li key={item.label}>
-                  <Link
+                  <AppLink
                     href={item.link}
                     onClick={handleItemClick}
                     className={`flex items-center justify-between w-full p-2.5 rounded-md text-left group ${
@@ -388,7 +391,7 @@ export default function SearchApp({ onCloseModal, tasks }: SearchProps) {
                         </kbd>
                       </span>
                     )}
-                  </Link>
+                  </AppLink>
                 </li>
               ))}
             </ul>
@@ -430,7 +433,7 @@ function SearchItem({
 }) {
   return (
     <li>
-      <Link
+      <AppLink
         href={href}
         onClick={handleItemClick}
         className={`flex items-center justify-between w-full p-2.5 hover:bg-background-500 rounded-md text-left group border-l-4`}
@@ -454,7 +457,7 @@ function SearchItem({
           size={16}
           className="text-text-low group-hover:text-primary-400 opacity-0 group-hover:opacity-100 transition-opacity"
         />
-      </Link>
+      </AppLink>
     </li>
   );
 }

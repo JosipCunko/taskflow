@@ -3,7 +3,7 @@
 import { User, Search as SearchIcon } from "lucide-react";
 import { Session } from "next-auth";
 import Image from "next/image";
-import Link from "next/link";
+import AppLink from "./offline/AppLink";
 import { Tooltip } from "react-tooltip";
 import { getPhaseOfTheDay } from "../_utils/utils";
 import { useState, useEffect, memo } from "react";
@@ -116,7 +116,7 @@ export default function TopSidebar({
 
         <MemoizedNotificationBell />
 
-        <Link href="/webapp/profile">
+        <AppLink href="/webapp/profile">
           {session?.user.image ? (
             <Image
               src={session?.user.image}
@@ -135,7 +135,7 @@ export default function TopSidebar({
               data-tooltip-content="Your profile"
             />
           )}
-        </Link>
+        </AppLink>
         <Tooltip
           id="profile-link"
           className="tooltip-diff-arrow"

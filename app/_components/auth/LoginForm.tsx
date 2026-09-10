@@ -8,11 +8,14 @@ import {
   signInWithEmailAndPasswordFirebase,
   signUpWithEmailAndPasswordFirebase,
   signInAnonymously,
+  resendVerificationEmail,
+  sendPasswordResetFirebase,
 } from "@/app/_lib/auth-client";
 import { Tooltip } from "react-tooltip";
 import { motion } from "framer-motion";
 import Button from "@/app/_components/reusable/Button";
 import Input from "@/app/_components/reusable/Input";
+import Checkbox from "@/app/_components/reusable/Checkbox";
 import Loader from "@/app/_components/Loader";
 import PasswordGenerator from "@/app/_components/PasswordGenerator";
 
@@ -28,6 +31,18 @@ export default function LoginForm() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  const [pendingVerification, setPendingVerification] = useState<{
+    email: string;
+    password: string;
+  } | null>(null);
+  const [resendStatus, setResendStatus] = useState<
+    "idle" | "sending" | "sent"
+  >("idle");
+  const [forgotPasswordStatus, setForgotPasswordStatus] = useState<
+    "idle" | "sending" | "sent"
+  >("idle");
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   // Handle redirect after authentication
   const handlePostAuthRedirect = useCallback(async () => {
@@ -82,14 +97,47 @@ export default function LoginForm() {
     router.replace(qs ? `/login?${qs}` : "/login", { scroll: false });
   }, [searchParams, router]);
 
+  // Show a confirmation banner when the user lands here from the verification email link (see EMAIL_VERIFICATION_CONTINUE_URL in auth-client.ts), then
+  // strip ?verified=1 from the URL.
+  useEffect(() => {
+    if (searchParams.get("verified") !== "1") return;
+
+    setInfo("Email confirmed. Sign in below.");
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("verified");
+    const qs = params.toString();
+    router.replace(qs ? `/login?${qs}` : "/login", { scroll: false });
+  }, [searchParams, router]);
+
+  // Show a confirmation banner when the user lands here after resetting their password via the Firebase "forgot password" email link, then strip ?reset=1 from the URL.
+  useEffect(() => {
+    if (searchParams.get("reset") !== "1") return;
+
+    setInfo("Password reset successful. Sign in with your new password.");
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("reset");
+    const qs = params.toString();
+    router.replace(qs ? `/login?${qs}` : "/login", { scroll: false });
+  }, [searchParams, router]);
+
   if (status === "loading") return <Loader label="Loading session..." />;
   if (status === "authenticated") {
     return <Loader label="Redirecting to webapp..." />;
   }
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!agreedToTerms) {
+      setError("Please agree to the Terms of Use to continue.");
+      return;
+    }
     setIsLoading(true);
     setError(null);
+    setInfo(null);
+    setPendingVerification(null);
+    setResendStatus("idle");
+    setForgotPasswordStatus("idle");
 
     try {
       if (isSignUp) {
@@ -99,6 +147,11 @@ export default function LoginForm() {
           return;
         }
         await signUpWithEmailAndPasswordFirebase(email, password, displayName);
+        // Account created but not signed in yet — the user must verify their email first
+        setPendingVerification({ email, password });
+        setResendStatus("idle");
+        setInfo(`We sent a verification link to ${email}. Check your inbox to continue.`);
+        setIsSignUp(false);
       } else {
         await signInWithEmailAndPasswordFirebase(email, password);
       }
@@ -125,11 +178,22 @@ export default function LoginForm() {
             errorMessage =
               "Password is too weak. It should be at least 6 characters.";
             break;
+          case "auth/too-many-requests":
+            errorMessage =
+              "Too many attempts. Please wait a bit before trying again.";
+            break;
           default:
             if (!err.message)
               errorMessage = `Error: ${err.code || "authentication failed"}`;
             break;
         }
+      }
+      if (
+        !isSignUp &&
+        errorMessage === "Please verify your email before signing in."
+      ) {
+        setPendingVerification({ email, password });
+        setResendStatus("idle");
       }
       setError(errorMessage);
       console.error("Authentication error:", err);
@@ -138,7 +202,63 @@ export default function LoginForm() {
     }
   };
 
+  const handleResendVerification = async () => {
+    if (!pendingVerification) return;
+    setResendStatus("sending");
+    setError(null);
+    try {
+      await resendVerificationEmail(
+        pendingVerification.email,
+        pendingVerification.password
+      );
+      setResendStatus("sent");
+    } catch (errUnknown: unknown) {
+      const err = errUnknown as { code?: string; message?: string };
+      setResendStatus("idle");
+      if (err.code === "auth/too-many-requests") {
+        setError("Too many attempts. Please wait a bit before trying again.");
+      } else {
+        setError(err.message || "Failed to resend verification email.");
+      }
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      setError("Enter your email address above, then click \"Forgot password?\" again.");
+      return;
+    }
+    setForgotPasswordStatus("sending");
+    setError(null);
+    setInfo(null);
+    try {
+      await sendPasswordResetFirebase(email.trim());
+      setForgotPasswordStatus("sent");
+      setInfo(
+        `We've sent a password reset link. Check your inbox.`
+      );
+    } catch (errUnknown: unknown) {
+      const err = errUnknown as { code?: string; message?: string };
+      setForgotPasswordStatus("idle");
+      // Don't reveal whether the email exists — Firebase returns
+      // auth/user-not-found for unregistered emails.
+      if (err.code === "auth/user-not-found" || err.code === "auth/invalid-email") {
+        setInfo(
+          `We've sent a password reset link. Check your inbox.`
+        );
+      } else if (err.code === "auth/too-many-requests") {
+        setError("Too many attempts. Please wait a bit before trying again.");
+      } else {
+        setError(err.message || "Failed to send password reset email.");
+      }
+    }
+  };
+
   const handleGitHubSignIn = async () => {
+    if (!agreedToTerms) {
+      setError("Please agree to the Terms of Use to continue.");
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {
@@ -155,6 +275,10 @@ export default function LoginForm() {
   };
 
   const handleGoogleSignIn = async () => {
+    if (!agreedToTerms) {
+      setError("Please agree to the Terms of Use to continue.");
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {
@@ -183,6 +307,10 @@ export default function LoginForm() {
   };
 
   const handleAnonymousSignIn = async () => {
+    if (!agreedToTerms) {
+      setError("Please agree to the Terms of Use to continue.");
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {
@@ -293,16 +421,73 @@ export default function LoginForm() {
               classNameArrow="tooltip-arrow"
             />
           </div>
+          {!isSignUp && (
+            <div className="flex justify-end -mt-2">
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={forgotPasswordStatus === "sending"}
+                className="text-xs text-primary-500 hover:underline disabled:opacity-60"
+              >
+                {forgotPasswordStatus === "sending"
+                  ? "Sending..."
+                  : "Forgot password?"}
+              </button>
+            </div>
+          )}
+          {info && (
+            <p className="text-sm text-primary-300 bg-primary-500/10 border border-primary-500/30 p-2 rounded">
+              {info}
+            </p>
+          )}
           {error && (
             <p className="text-sm text-red-500 bg-background-600 p-2 rounded">
               {error}
             </p>
           )}
+          {pendingVerification && (
+            <div className="text-sm text-text-low px-2 flex items-center justify-between gap-2">
+              <span>Didn&apos;t get the email?</span>
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={resendStatus === "sending" || resendStatus === "sent"}
+                className="text-primary-500 hover:underline disabled:opacity-60 disabled:no-underline whitespace-nowrap"
+              >
+                {resendStatus === "sending"
+                  ? "Sending..."
+                  : resendStatus === "sent"
+                    ? "Sent!"
+                    : "Resend verification"}
+              </button>
+            </div>
+          )}
+
+          <div className="flex items-center flex-wrap gap-x-1">
+            <Checkbox
+              id="agreeToTerms"
+              name="agreeToTerms"
+              checked={agreedToTerms}
+              onChange={(e) => setAgreedToTerms(e.target.checked)}
+              disabled={isLoading}
+              label={
+                <span className="text-text-low text-sm leading-snug">
+                  I agree to the
+                </span>
+              }
+            />
+            <Link
+              href="/terms"
+              className="text-sm text-primary-500 hover:underline"
+            >
+              Terms of Use
+            </Link>
+          </div>
 
           <Button
             type="submit"
             className="w-full justify-center py-2 "
-            disabled={isLoading}
+            disabled={isLoading || !agreedToTerms}
           >
             {isLoading && !isSignUp && !error
               ? "Signing In..."
@@ -326,7 +511,7 @@ export default function LoginForm() {
           variant="secondary"
           className="flex items-center justify-center border border-background-500 rounded py-2 px-4 mb-4 text-text-high hover:bg-background-500 transition-colors w-full"
           onClick={handleGitHubSignIn}
-          disabled={isLoading}
+          disabled={isLoading || !agreedToTerms}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -345,7 +530,7 @@ export default function LoginForm() {
           variant="secondary"
           className="flex items-center justify-center border border-background-500 rounded py-2 px-4 mb-4 text-text-high hover:bg-background-500 transition-colors w-full"
           onClick={handleGoogleSignIn}
-          disabled={isLoading}
+          disabled={isLoading || !agreedToTerms}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -379,7 +564,7 @@ export default function LoginForm() {
           variant="secondary"
           className="flex items-center justify-center border border-amber-500/50 bg-amber-500/10 rounded py-2 px-4 mb-4 text-amber-200 hover:bg-amber-500/20 transition-colors w-full"
           onClick={handleAnonymousSignIn}
-          disabled={isLoading}
+          disabled={isLoading || !agreedToTerms}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -411,6 +596,10 @@ export default function LoginForm() {
             onClick={() => {
               setIsSignUp(!isSignUp);
               setError(null);
+              setInfo(null);
+              setPendingVerification(null);
+              setResendStatus("idle");
+              setForgotPasswordStatus("idle");
               setPassword("");
               setEmail("");
             }}

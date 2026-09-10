@@ -13,7 +13,7 @@ Whether you're planning your day, tracking your workouts, counting calories and 
 - **⚡ Lightning Fast**: Optimistic UI updates, instant feedback, and smooth animations for delightful UX
 - **🔐 Privacy First**: Only you can see your data — Firestore security rules restrict every read/write to its owner, and the free-text content you type (task titles/descriptions and note titles/content) is encrypted at rest with AES-256-GCM before it's ever stored
 - **📱 True PWA**: Install on any device, get push notifications, and enjoy native app experience
-- **🌐 Offline-First**: Full offline functionality with PWA support—work anywhere, anytime, even without internet
+- **🌐 Offline-capable**: Task pages keep working after the app has loaded once; writes queue until you are back online
 
 ## 🚀 Core Capabilities at a Glance
 
@@ -181,16 +181,16 @@ Prioritron offers flexible pricing tiers designed to scale with your productivit
 ### 11. User Profile & Settings
 
 - **Personalized Experience**: Customize notification preferences for reminders and achievements.
-- **Authentication Management**: Securely manage your account connected via Email/Password, Google, or GitHub.
+- **Authentication Management**: Securely manage your account connected via Email/Password (inbox must be verified before first sign-in), Google, or GitHub.
 - **Activity Log**: Comprehensive audit trail of all task interactions and system events.
 - **Achievement Showcase**: Display unlocked achievements and progress toward new milestones.
 
 ### 12. Progressive Web App (PWA) & Offline Support
 
 - **Install as Native App**: Add Prioritron to your home screen on any device (iOS, Android, desktop) for app-like experience.
-- **Offline Functionality**: Full offline support with service workers—access your tasks even without internet.
-- **Offline Mode Detection**: Automatic detection of network status with dedicated offline page and graceful degradation.
-- **Background Sync**: Smart synchronization when connection is restored.
+- **Offline Functionality**: After a successful load, view and edit tasks without a connection; changes sync when you are back online.
+- **Offline Mode Detection**: Banner while offline; `/offline` only on a cold start with no cached app shell.
+- **Queued sync**: Pending task writes flush when the connection returns (not the Background Sync API).
 - **App Shortcuts**: Quick access shortcuts in the PWA for common actions (Add Task, Today's Tasks, Fitness, Health).
 - **Push Notifications**: Receive native push notifications for task reminders and achievements (when installed as PWA).
 - **App Update Notifications**: Automatic detection and user-friendly prompts for PWA updates with seamless installation.
@@ -232,7 +232,7 @@ Prioritron offers flexible pricing tiers designed to scale with your productivit
 - **React Hot Toast**: Beautiful toast notifications with custom styling
 - **React Tooltip**: Enhanced tooltip functionality for better UX
 - **Recharts**: Interactive, responsive charts for fitness progress and analytics visualization
-- **Service Workers**: Offline support, background sync, and push notifications
+- **Service Workers**: Asset caching, push notifications, and `/offline` as a cold-start fallback
 
 ### Backend & Authentication
 
@@ -265,9 +265,9 @@ Prioritron offers flexible pricing tiers designed to scale with your productivit
 
 ### Main Routes
 
-- **`/`**: Landing page
-- **`/login`**
-- **`/webapp`** (Dashboard): Overview of tasks, analytics, and performance metrics with visual charts
+- **`/`**: Landing page (indexed)
+- **`/login`**: Sign in / create account (indexed — public conversion page)
+- **`/webapp`** (Dashboard): Overview of tasks, analytics, and performance metrics with visual charts. Not indexed; requires a session.
 - **`/webapp/inbox`**: Notification center with filtering, priority indicators, and read/unread management
 - **`/webapp/today`**: Today's view with interactive time grid and daily task planning
 - **`/webapp/tasks`**: Comprehensive task management interface with filtering and bulk actions
@@ -278,13 +278,15 @@ Prioritron offers flexible pricing tiers designed to scale with your productivit
 - **`/webapp/fitness`**: Workout logging, exercise library, templates, and progress visualization
 - **`/webapp/ai`**: AI assistant chat interface with multi-model support and function calling
 - **`/webapp/profile`**: User profile, tutorial, settings and subscription portal
-- **`/offline`**
-- **`/terms`**: Terms of Use
-- **`/privacy`**: Privacy Policy
+- **`/offline`**: Cold-start page when the app is opened with no connection and no cached shell
+- **`/terms`**: Terms of Use (indexed)
+- **`/privacy`**: Privacy Policy (indexed)
+- **`/robots.txt`** and **`/sitemap.xml`**: generated at build time from [`app/robots.ts`](./app/robots.ts) and [`app/sitemap.ts`](./app/sitemap.ts) (see [Search indexing](#search-indexing-robotstxt--sitemap))
 
 ## 🔒 Security Features
 
 - **Secure Authentication**: Support for Google Sign-in, Email/Password, and GitHub OAuth, managed by NextAuth and Firebase
+- **Email verification (email/password)**: New email/password accounts are created in Firebase, then signed out immediately. A verification link is sent to the inbox; the user cannot get a NextAuth session until that address is confirmed. Google and GitHub sign-in skip this gate because those providers already attest the email. See [Email verification](#email-verification).
 - **Custom Firebase Tokens**: Secure bridge between NextAuth sessions and Firebase authentication
 - **Protected API Routes**: All API endpoints require authentication and validate user permissions
 - **Server Actions Security**: Server-side operations protected by NextAuth session validation
@@ -309,6 +311,41 @@ Prioritron offers flexible pricing tiers designed to scale with your productivit
 3. **Backward compatibility**: `decryptField()` only decrypts values that carry the `enc:v1:` prefix. Any older, pre-encryption plaintext record is returned unchanged, so existing data keeps working without a manual migration — new writes are encrypted going forward.
 4. **Key management**: encryption uses a single symmetric key from the `DATA_ENCRYPTION_KEY` environment variable (a 64-char hex string, i.e. 32 bytes — generate one with `openssl rand -hex 32`). This key never leaves the server; only server-side code (Server Actions, `_lib` admin modules) can encrypt/decrypt.
 5. **Scope**: intentionally limited to free-text fields the user types. Workouts, nutrition data, and other structured records are **not** encrypted at rest today.
+
+### Email verification
+
+Email/password sign-up does not create a usable session until the user confirms their inbox. Google and GitHub OAuth are unchanged (those providers already verify the address). Guest/anonymous sign-in is also unchanged.
+
+1. **Sign-up** ([`signUpWithEmailAndPasswordFirebase`](./app/_lib/auth-client.ts)): Firebase creates the user, `sendEmailVerification` fires with continue URL `https://prioritron.dev/login?verified=1` (or `http://localhost:3000/login?verified=1` in development), then the client signs out of Firebase. LoginForm shows “check your inbox” and a resend control.
+2. **Client sign-in gate**: `signInWithEmailAndPasswordFirebase` reloads the Firebase user and refuses NextAuth sign-in if `emailVerified` is false. It resends the verification email, then signs out.
+3. **Server gate**: `authorize()` in [`app/_lib/auth.ts`](./app/_lib/auth.ts) inspects the Firebase ID token. If `sign_in_provider === "password"` and `email_verified` is not set, it returns `null` — no JWT, even if the client is bypassed.
+4. **Resend**: `resendVerificationEmail` briefly signs in with the given credentials only to call `sendEmailVerification`, then signs out again.
+5. **After the link**: Firebase’s action URL lands on `/login?verified=1`. LoginForm shows “Email confirmed. Sign in below.” and strips the query param.
+
+### Password reset
+
+Forgot-password is email/password only (Google, GitHub, and guest accounts have no Firebase password). From `/login` in sign-in mode, the user types their email and clicks **Forgot password?**; [`sendPasswordResetFirebase`](./app/_lib/auth-client.ts) calls Firebase `sendPasswordResetEmail` with continue URL `https://prioritron.dev/login?reset=1` (localhost in development). Firebase’s hosted reset page handles the oobCode; LoginForm then shows “Password reset successful” and strips `?reset=1`. The message never confirms whether the address is registered. Signed-in password users can also **Change Password** on `/webapp/profile` (card is hidden unless Firebase `providerData` includes `"password"`): [`changePasswordFirebase`](./app/_lib/auth-client.ts) reauthenticates with the current password, then `updatePassword`.
+
+### Branding (OAuth consent + site identity)
+
+Google’s OAuth brand verification compares the consent-screen **app name**, **logo**, and **homepage** to the live site.
+
+- **Homepage** for the consent screen is `https://prioritron.dev`. It must be public, describe the product, and link the **same** Privacy Policy URL as the consent screen ([`/privacy`](./app/privacy/page.tsx)). Ownership of `prioritron.dev` is verified in [Google Search Console](https://search.google.com/search-console) with a **DNS TXT** record at the registrar (Spaceship), using the same Google account as the Cloud project. Leave that TXT record in place.
+- **Logo** files: [`public/icon.svg`](./public/icon.svg) (vector) and [`app/icon.png`](./app/icon.png) (raster). Served sizes live in `public/icon-192.png`, `public/icon-512.png`, and `public/favicon-32.png`. The OAuth upload should be a **square PNG**, ideally 120×120, **the same hex-P mark** used on the homepage. Do not use Google icons or trademarks. Refer to Google in **plain text** only (“Sign in with Google”, “integrates with Google sign-in”).
+- After a logo or homepage change, cancel any in-progress brand verification, then resubmit **once** both the unique logo and domain verification are in place.
+
+## Search indexing (`robots.txt` + sitemap)
+
+These two App Router files are how Google (and other crawlers) learn what they may fetch and which public URLs exist. They are **not** uploaded by hand.
+
+| File | Served at | Role |
+| --- | --- | --- |
+| [`app/robots.ts`](./app/robots.ts) | `https://prioritron.dev/robots.txt` | Allows `/`, `/login`, `/privacy`, `/terms`. Disallows `/api/` and `/webapp/` (session-only). Points crawlers at the sitemap. |
+| [`app/sitemap.ts`](./app/sitemap.ts) | `https://prioritron.dev/sitemap.xml` | Lists only those public URLs, including `/login`. Does **not** list `/webapp/*`. |
+
+**How they deploy (Vercel):** there is no extra job. On `git push`, Vercel runs `next build`. Next.js compiles `app/robots.ts` → `/robots.txt` and `app/sitemap.ts` → `/sitemap.xml` and ships them with the rest of the app. After a production deploy, confirm both URLs return HTTP 200, then in Search Console: **Sitemaps → add `sitemap.xml`**, and **URL Inspection → Request indexing** on `https://prioritron.dev/` (and `/login` if you want). Crawl stats stay empty until Googlebot actually visits; that can take days. The Search Console **API** is not required.
+
+`robots.txt` and `sitemap.xml` are excluded from NextAuth middleware so a session lookup cannot 500 those crawler endpoints.
 
 ## 🚀 Getting Started
 

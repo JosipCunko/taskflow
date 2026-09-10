@@ -107,7 +107,7 @@ export default function PWAInstall({
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-3">
             <Image
-              src="/pwaicons/ios/192.png"
+              src="/icon-192.png"
               alt="Prioritron"
               width={48}
               height={48}

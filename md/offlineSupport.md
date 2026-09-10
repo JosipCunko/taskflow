@@ -1,290 +1,113 @@
-# Prioritron Offline Support Implementation
+# Prioritron Offline Support
 
-This document explains how offline functionality is implemented in Prioritron using Service Workers, IndexedDB, and caching strategies.
+How offline actually works: a service worker for assets and cold start, IndexedDB plus a Zustand store for task data, and a write queue that flushes when the connection returns.
 
-## Overview
+## What works offline
 
-Prioritron now supports robust offline functionality, allowing users to access most features even without an internet connection. The implementation uses a combination of:
+After the app has loaded once while online:
 
-- **Service Workers** for caching static assets and network interception
-- **IndexedDB** for storing dynamic data locally
-- **Cache-First & Network-First strategies** for optimal performance
-- **Offline indicators** for clear user feedback
+- **View** dashboard, tasks, calendar, today, and completed from the tasks cached on this device
+- **Navigate** between those pages without leaving the live document
+- **Create, complete, delay, delete, toggle priority/reminder** on regular tasks — applied locally, synced later
+
+Still needs a network:
+
+- Notes, health, fitness, AI, inbox, profile, analytics, auth, USDA search
+- Completing a repeating task (the cycle math lives on the server)
+- Opening the PWA from a cold start with no cached tasks — that is what `/offline` is for
 
 ## Architecture
 
-### 1. Service Worker (`public/sw.js`)
-
-The Service Worker acts as a network proxy, intercepting all network requests and implementing intelligent caching strategies:
+### In-session (the app is already open)
 
-#### Caching Strategy:
-
-- **Static Assets (Cache-First)**: JavaScript, CSS, images, and fonts are cached aggressively
-  - Falls back to network if not in cache
-  - Automatically caches new static assets
-  
-- **HTML Pages (Network-First)**: App pages try network first, fall back to cache
-  - Ensures fresh content when online
-  - Serves cached version when offline
-  
-- **API Calls (Network-First with Graceful Degradation)**: 
-  - Attempts network request first
-  - Returns offline error response when network fails
-  - Allows app to handle offline state gracefully
-
-#### Precached Resources:
+1. The webapp layout fetches tasks and seeds `useTaskStore` plus IndexedDB (`TaskStoreHydrator`).
+2. Going offline shows a banner. The current page stays as-is.
+3. Sidebar and search links call `navigateOffline` (`history.pushState`) instead of a Next.js RSC navigation. `OfflineShell` renders the matching client view from the store.
+4. Writes go through `app/_lib/offlineTaskQueue.ts`. If `navigator.onLine` is false, or the server action throws a network error (`Failed to fetch`, etc.), the change is stored in the `pending-actions` IndexedDB store and applied to the Zustand list immediately.
+5. On `online`, `OfflineIndicator` flushes the queue in order, then `router.refresh()`.
 
-The following pages are cached during Service Worker installation:
-- `/` (Landing page)
-- `/webapp` (Dashboard)
-- `/webapp/tasks`, `/webapp/today`, `/webapp/notes`
-- `/webapp/profile`, `/webapp/calendar`, `/webapp/completed`
-- `/webapp/fitness`, `/webapp/health`
-- `/login`, `/offline`
-- Essential assets (manifest, icons)
+This is why Calendar no longer flashes `/offline` and hangs on a spinner: that path was a failed RSC fetch falling through to a full document load, which the service worker could only answer with `/offline`.
 
-### 2. IndexedDB Storage (`app/_utils/offlineStorage.ts`)
+### Cold start (new tab / PWA icon, no document)
 
-IndexedDB provides persistent, structured storage for application data:
+The service worker does **not** cache `/webapp` HTML or RSC payloads. Caching those is what made the dashboard show yesterday's tasks (see `md/caching.md`).
 
-#### Object Stores:
+If a navigation fails and there is no cached public page, the worker serves `/offline`. That page waits until `navigator.onLine` is actually true, then does a full load of `/webapp`. It does not `router.push` on the first paint (that used to bounce you into a layout that cannot render without Firestore).
 
-- **tasks**: User tasks with indexes on `userId`, `status`, and `dueDate`
-- **notes**: Personal notes indexed by `userId`
-- **user**: User profile data
-- **meals**: Nutrition logs indexed by `userId` and `date`
-- **workouts**: Fitness sessions indexed by `userId`
-- **analytics**: Analytics data with timestamp index
+### Service worker (`public/sw.js`)
 
-#### Key Functions:
+- Precache: `/offline`, manifest, icons — not personalized app HTML
+- Navigate: network-first for public pages; never cache `/webapp` documents
+- Never intercept: RSC (`_rsc`, `RSC`, `text/x-component`), `Next-Action`, non-GET, `/api/auth`
+- Other `/api/*` GETs: network, then a JSON 503 `{ error: "offline" }` if the network fails
+- Cache-first only for hashed `/_next/static/` assets
 
-```typescript
-// Save data to offline storage
-await saveToOfflineStorage(STORES.TASKS, taskData);
+The worker registers in production only (`PWAInstall`, `fcm.ts`). DevTools "Offline" on `next dev` will not exercise it.
 
-// Retrieve data from storage
-const tasks = await getAllFromOfflineStorage(STORES.TASKS, 'userId', userId);
+## Files changed to enable this
 
-// Get single item
-const task = await getFromOfflineStorage(STORES.TASKS, taskId);
+Grouped by what they do, not by folder. Unrelated dirty files in the working tree (auth, landing, fitness, etc.) are not part of offline support.
 
-// Delete from storage
-await deleteFromOfflineStorage(STORES.TASKS, taskId);
-```
+### New
 
-### 3. Offline Data Hook (`app/_hooks/useOfflineData.ts`)
+- [`app/_store/taskStore.ts`](../app/_store/taskStore.ts) — Zustand store for the live task list, where the data came from (server vs cache), pending-write count, and syncing flag. `useHydratedTasks` lets pages prefer this list over server props after the first hydrate.
+- [`app/_lib/offlineTaskQueue.ts`](../app/_lib/offlineTaskQueue.ts) — Client wrappers around task server actions. Online: call the action. Offline or `Failed to fetch`: optimistic store update + IndexedDB queue. `flushPendingActions` replays oldest-first on reconnect and remaps temp ids after a queued create.
+- [`app/_lib/offlineNavigation.ts`](../app/_lib/offlineNavigation.ts) — `navigateOffline` uses `history.pushState` so Next.js never starts an RSC fetch. `navigateApp` is the same helper for `router.push` call sites.
+- [`app/_hooks/useAppPathname.ts`](../app/_hooks/useAppPathname.ts) — Pathname that includes those `pushState` navigations, so the sidebar highlight stays in sync while offline.
+- [`app/_components/offline/AppLink.tsx`](../app/_components/offline/AppLink.tsx) — `Link` that `preventDefault`s and calls `navigateOffline` when there is no connection.
+- [`app/_components/offline/OfflineShell.tsx`](../app/_components/offline/OfflineShell.tsx) — Wraps webapp page children. While offline after an in-app nav, renders `OfflineRouteView` instead of waiting on RSC. Handles Back via `popstate` and `router.replace`s the real page when you come back online.
+- [`app/_components/offline/OfflineRouteView.tsx`](../app/_components/offline/OfflineRouteView.tsx) — Maps `/webapp`, `/tasks`, `/calendar`, `/today`, `/completed` onto the existing client UIs plus a slim dashboard. Other routes get `OfflineUnavailable`.
+- [`app/_components/offline/OfflineDashboard.tsx`](../app/_components/offline/OfflineDashboard.tsx) — Task-only dashboard (no points, streaks, or analytics — those are not cached).
+- [`app/_components/offline/OfflineUnavailable.tsx`](../app/_components/offline/OfflineUnavailable.tsx) — Copy for notes / health / fitness / AI / inbox / profile while offline, instead of a spinner.
+- [`app/_components/offline/TaskStoreHydrator.tsx`](../app/_components/offline/TaskStoreHydrator.tsx) — On layout render, copies the server task list into the store and IndexedDB.
+- [`app/webapp/completed/CompletedTasksClient.tsx`](../app/webapp/completed/CompletedTasksClient.tsx) — Completed page extracted to a client component so it can read the store (needed both online after an optimistic write and offline).
 
-A custom React hook that automatically manages data fetching with offline support:
+### Core plumbing (modified)
 
-```typescript
-const { data, loading, error, isFromCache, isOnline } = useOfflineData({
-  storeName: STORES.TASKS,
-  onlineDataFetcher: fetchTasksFromAPI,
-  indexName: 'userId',
-  indexValue: userId,
-  enabled: true
-});
-```
+- [`public/sw.js`](../public/sw.js) — Do not cache `/webapp` HTML. Do not intercept RSC, `Next-Action`, non-GET, or `/api/auth`. Stop wrapping auth in a fake 503. `/offline` is only the fallback for a failed navigation with no cached public page. Purge any previously cached webapp documents on activate.
+- [`app/offline/page.tsx`](../app/offline/page.tsx) — Wait until the client has read `navigator.onLine` before leaving. Use `location.replace("/webapp")` instead of `router.push`, so a SW-served document does not bounce into a stuck layout.
+- [`app/_hooks/useOnlineStatus.ts`](../app/_hooks/useOnlineStatus.ts) — `useSyncExternalStore` instead of `useState(true)` + `useEffect`. The old hook reported online for a frame, which is what made `/offline` redirect immediately.
+- [`app/_utils/offlineStorage.ts`](../app/_utils/offlineStorage.ts) — `replaceOfflineStore` (clear + write, so deletions do not linger), `deletePendingAction`, `countPendingActions`. The pending-action helpers were unused before.
+- [`app/_components/OfflineIndicator.tsx`](../app/_components/OfflineIndicator.tsx) — Banner copy depends on whether cached tasks exist and how many writes are queued. “Syncing…” only while `flushPendingActions` is running.
+- [`app/webapp/layout.tsx`](../app/webapp/layout.tsx) — Mounts `TaskStoreHydrator` and wraps `{children}` in `OfflineShell`.
+- [`middleware.ts`](../middleware.ts) — Removed the dead `x-offline-mode` rewrite to `/offline` (nothing ever set that header).
 
-**Features:**
-- Automatically fetches from network when online
-- Falls back to cached data when offline
-- Caches fresh data for future offline use
-- Provides loading and error states
-- Indicates when data is from cache
+### Navigation (stop the Calendar spinner)
 
-### 4. Offline Indicator (`app/_components/OfflineIndicator.tsx`)
+- [`app/_components/Sidebar.tsx`](../app/_components/Sidebar.tsx) — `Link` → `AppLink`; active state from `useAppPathname`.
+- [`app/_components/AnimatedSidebar.tsx`](../app/_components/AnimatedSidebar.tsx) — Close-on-navigate uses `useAppPathname` so mobile still closes after an offline `pushState`.
+- [`app/_components/SearchApp.tsx`](../app/_components/SearchApp.tsx) — Search and keyboard nav go through `AppLink` / `navigateApp`. Task search reads the hydrated store.
+- [`app/_hooks/useKeyboardNavigation.ts`](../app/_hooks/useKeyboardNavigation.ts) — Ctrl shortcuts call `navigateApp` instead of `router.push`.
+- [`app/_components/TopSidebar.tsx`](../app/_components/TopSidebar.tsx) — Profile avatar uses `AppLink`.
+- [`app/_components/inbox/NotificationBell.tsx`](../app/_components/inbox/NotificationBell.tsx) — Inbox icon uses `AppLink` (shows “needs a connection”, not a spinner).
+- [`app/_components/inbox/NotificationSummary.tsx`](../app/_components/inbox/NotificationSummary.tsx) — Dashboard “View all” / “Manage notifications” use `AppLink`.
 
-Visual feedback component that shows:
-- Yellow banner when offline with message about limited features
-- Green banner when reconnecting with sync notification
-- Automatically dismisses after 3 seconds when back online
+### Reads (pages use the store after hydrate)
 
-### 5. Online Status Hook (`app/_hooks/useOnlineStatus.ts`)
+- [`app/webapp/tasks/TasksPageClient.tsx`](../app/webapp/tasks/TasksPageClient.tsx) — Renders `useHydratedTasks(serverTasks)` so optimistic creates/edits show without waiting on RSC.
+- [`app/webapp/calendar/Calendar.tsx`](../app/webapp/calendar/Calendar.tsx) — Same: merge regular + repeating from the store when it is hydrated.
+- [`app/_components/TodayPlanSection.tsx`](../app/_components/TodayPlanSection.tsx) — Re-filters “relevant today” from the hydrated list.
+- [`app/webapp/completed/page.tsx`](../app/webapp/completed/page.tsx) — Thin server wrapper; UI moved to `CompletedTasksClient`.
 
-Simple hook that monitors browser online/offline events:
+### Writes (queue instead of “Failed to fetch”)
 
-```typescript
-const isOnline = useOnlineStatus();
-```
+- [`app/_components/AddTask.tsx`](../app/_components/AddTask.tsx) — `createTaskAction` → `createTaskOfflineFirst`.
+- [`app/_components/AddTodayTask.tsx`](../app/_components/AddTodayTask.tsx) — Same for the Today modal.
+- [`app/_components/Dropdown.tsx`](../app/_components/Dropdown.tsx) — Complete / delay / delete / toggle priority / toggle reminder go through the queue helpers. Experience rating is still a live server action.
+- [`app/_components/RepeatingTaskCard.tsx`](../app/_components/RepeatingTaskCard.tsx) — Completing a repeating task still needs the server; a network error now says so instead of a generic `Failed to fetch`.
 
-## What Works Offline
+### Removed / docs
 
-### ✅ Fully Functional Offline:
-- **Viewing cached data**: Tasks, notes, workout history, meal logs
-- **Navigation**: Between all main app pages
-- **UI interactions**: All interface elements remain functional
-- **Reading data**: Access to previously loaded data
+- [`app/_hooks/useOfflineData.ts`](../app/_hooks/useOfflineData.ts) — Deleted. Never imported; would have been a second unused cache path.
+- [`README.md`](../README.md) — Dropped “full offline / Background Sync API” claims; described queued sync and `/offline` as cold-start only.
+- [`md/middleware.md`](./middleware.md) — Offline rewrite example removed; points here instead.
+- [`md/offlineSupport.md`](./offlineSupport.md) — This file: behavior as implemented, plus this changelog.
 
-### ⚠️ Limited Offline:
-- **Creating new items**: Can be implemented with pending actions queue (future enhancement)
-- **Updating data**: Local changes not synced until online
-- **Deleting items**: Local deletions not synced until online
+## Testing
 
-### ❌ Not Available Offline:
-- **AI Assistant**: Requires API calls to AI providers
-- **Real-time sync**: Changes from other devices won't appear
-- **Authentication**: Login/signup requires network connection
-- **USDA Food Search**: External API dependency
-- **Analytics generation**: Requires server-side processing
+Use a production build (`npm run build && npm start`) or the deployed site so the service worker is registered. Load `/webapp` and `/webapp/tasks` while online, then set DevTools Network to Offline.
 
-## Implementation Details
-
-### Cache Management
-
-The Service Worker maintains three cache levels:
-
-```javascript
-const CACHE_NAME = "prioritron-cache-v2";        // Precached resources
-const RUNTIME_CACHE = "prioritron-runtime-v2";   // Runtime HTML pages
-const STATIC_CACHE = "prioritron-static-v2";     // Static assets (JS, CSS, images)
-```
-
-Old caches are automatically cleaned up during the activation phase.
-
-### Cache Version Updates
-
-To force cache refresh after updates:
-1. Increment version number in `sw.js` (e.g., `v2` → `v3`)
-2. Service Worker will automatically clean old caches
-3. Users will be prompted to reload for the new version
-
-### Network Resilience
-
-The implementation handles various offline scenarios:
-
-```javascript
-// API calls return structured error when offline
-{
-  error: "offline",
-  message: "You are currently offline"
-}
-```
-
-This allows components to gracefully handle offline state and display appropriate messages.
-
-## User Experience
-
-### Offline Flow:
-
-1. User goes offline
-2. Yellow banner appears: "You're offline. Some features may be limited. Cached data is being used."
-3. App continues to function with cached data
-4. Features requiring network show appropriate messages
-5. User comes back online
-6. Green banner appears: "Back online! Syncing your data..."
-7. Fresh data is fetched and cached
-
-### First-Time Offline:
-
-If a user goes offline before visiting a page:
-- Precached pages are available immediately
-- Other pages will show the offline page
-- Previously visited pages are available from runtime cache
-
-## Testing Offline Mode
-
-### Chrome DevTools:
-
-1. Open DevTools (F12)
-2. Go to **Network** tab
-3. Select **Offline** from throttling dropdown
-4. Test app functionality
-
-### Service Worker DevTools:
-
-1. Go to **Application** tab → **Service Workers**
-2. View active service worker
-3. Test "Offline" checkbox
-4. Clear storage if needed
-
-### Cache Inspection:
-
-1. Go to **Application** tab → **Cache Storage**
-2. Inspect cached resources
-3. View what's available offline
-
-## Future Enhancements
-
-### Planned Features:
-
-- **Background Sync**: Queue actions when offline, sync when online
-- **Push Notifications**: Offline notification queuing
-- **Conflict Resolution**: Handle data conflicts from multiple devices
-- **Selective Sync**: Let users choose what to cache
-- **Storage Management**: Monitor and manage cache size
-- **Offline Analytics**: Track offline usage patterns
-
-## Troubleshooting
-
-### Service Worker Not Registering:
-
-- Check browser console for errors
-- Ensure `sw.js` is in `/public` directory
-- Verify HTTPS (required for Service Workers in production)
-- Try unregistering and re-registering
-
-### Cached Data Not Loading:
-
-- Check IndexedDB in DevTools → Application → IndexedDB
-- Verify data was cached when online
-- Check for quota exceeded errors
-- Try clearing storage and recaching
-
-### Old Version Persisting:
-
-- Clear all cache storage in DevTools
-- Unregister service worker
-- Hard refresh (Ctrl+Shift+R / Cmd+Shift+R)
-- Increment service worker version
-
-## Best Practices
-
-### For Developers:
-
-1. **Always cache read operations**: When fetching data, save to IndexedDB
-2. **Handle offline gracefully**: Show appropriate messages, don't crash
-3. **Test offline thoroughly**: Use DevTools offline mode
-4. **Keep cache small**: Only cache essential data
-5. **Version your caches**: Increment on breaking changes
-
-### For Users:
-
-1. **Visit pages online first**: Ensures they're cached
-2. **Don't clear browser data**: Removes offline cache
-3. **Update regularly**: Get latest offline improvements
-4. **Report issues**: Help us improve offline support
-
-## Technical Considerations
-
-### Storage Limits:
-
-- **IndexedDB**: Usually 50% of available disk space per origin
-- **Cache Storage**: Similar to IndexedDB limits
-- **Combined**: Browsers manage total storage quota
-
-### Performance:
-
-- Cache lookups are fast (< 1ms typically)
-- IndexedDB operations are asynchronous
-- Service Worker runs in separate thread
-- Minimal performance overhead
-
-### Browser Support:
-
-- **Chrome/Edge**: Full support ✅
-- **Firefox**: Full support ✅
-- **Safari**: Full support ✅ (iOS 11.3+)
-- **Opera**: Full support ✅
-
-## Conclusion
-
-Prioritron's offline support provides a seamless experience even without internet connectivity. The combination of Service Workers and IndexedDB ensures users can access their data anytime, anywhere, with automatic synchronization when back online.
-
-For questions or issues related to offline functionality, please open an issue on GitHub or contact support.
-
----
-
-**Last Updated**: 2025-10-14  
-**Version**: 2.0  
-**Author**: Prioritron Development Team
+1. Banner appears; Calendar / Tasks / Today switch without a spinner or `/offline` flash.
+2. Create or complete a regular task — it shows locally; reconnect flushes to Firestore.
+3. New tab while still offline — `/offline` stays until you are actually online.
+4. Online task create — Network tab shows the Server Action POST succeeding (the worker must not intercept `Next-Action`).

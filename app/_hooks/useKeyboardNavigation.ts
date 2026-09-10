@@ -1,6 +1,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { navItemsToSearch } from "../_utils/utils";
+import { navigateApp } from "../_lib/offlineNavigation";
 
 export function useKeyboardNavigation() {
   const router = useRouter();
@@ -12,12 +13,12 @@ export function useKeyboardNavigation() {
         const key = event.key.toUpperCase();
 
         const matchingItem = navItemsToSearch.find(
-          (item) => item?.command?.[1] === key
+          (item) => item?.command?.[1] === key,
         );
 
         if (matchingItem) {
-          event.preventDefault(); // Prevent default browser shortcuts
-          router.push(matchingItem.link);
+          event.preventDefault();
+          navigateApp(router, matchingItem.link);
         }
       }
     }

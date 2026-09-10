@@ -32,7 +32,10 @@ export default function AIPageClient({
 
   return (
     <div className="flex h-full w-full">
-      <div className="flex flex-col flex-1 min-w-0">
+      <div
+        className="flex flex-col flex-1 min-w-0"
+        inert={historyOpen || undefined}
+      >
         <Chat
           initialMessages={initialMessages}
           chatId={chatId}

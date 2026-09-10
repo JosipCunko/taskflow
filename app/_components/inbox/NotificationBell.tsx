@@ -8,7 +8,7 @@ import { NotificationStats } from "@/app/_types/types";
 import { getNotificationStats } from "@/app/_lib/notifications";
 import { auth } from "@/app/_lib/firebase";
 import { formatNotificationCount } from "@/app/_utils/utils";
-import Link from "next/link";
+import AppLink from "@/app/_components/offline/AppLink";
 import { Tooltip } from "react-tooltip";
 
 export default function NotificationBell() {
@@ -77,12 +77,12 @@ export default function NotificationBell() {
 
   if (!session?.user?.id || isLoading) {
     return (
-      <Link
+      <AppLink
         href="/webapp/inbox"
         className="relative p-2 rounded-lg hover:bg-background-600 transition-colors"
       >
         <Bell size={20} className="text-text-low" />
-      </Link>
+      </AppLink>
     );
   }
 
@@ -92,7 +92,7 @@ export default function NotificationBell() {
   const priorityCount = urgentCount + highCount;
 
   return (
-    <Link
+    <AppLink
       href="/webapp/inbox"
       className="relative p-2 rounded-lg hover:bg-background-600 transition-colors group tooltip-container"
     >
@@ -135,6 +135,6 @@ export default function NotificationBell() {
           {formatNotificationCount(stats.totalUnread)}
         </div>
       )}
-    </Link>
+    </AppLink>
   );
 }

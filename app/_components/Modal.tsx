@@ -58,10 +58,13 @@ function Window({ children, name, showButton = undefined }: WindowProps) {
   const context = useContext(ModalContext);
   if (!context) throw new Error("Window must be used within Modal Provider");
   const { openName, close } = context;
+  const isOpen = name === openName;
 
   // DONT USE useOutsideClick BECAUSE IT CLOSES THE MODAL, ANOTHER MODAL WILL BE OPENED AND THAT WILL CLOSE THIS MODAL
   useEffect(
     function () {
+      if (!isOpen) return;
+
       function handleEscapeKey(e: KeyboardEvent) {
         if (e.key === "Escape") {
           close();
@@ -69,10 +72,15 @@ function Window({ children, name, showButton = undefined }: WindowProps) {
       }
 
       document.addEventListener("keydown", handleEscapeKey);
+      const previousOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
 
-      return () => document.removeEventListener("keydown", handleEscapeKey);
+      return () => {
+        document.removeEventListener("keydown", handleEscapeKey);
+        document.body.style.overflow = previousOverflow;
+      };
     },
-    [close]
+    [isOpen, close]
   );
 
   if (typeof window === "undefined") {
@@ -81,28 +89,30 @@ function Window({ children, name, showButton = undefined }: WindowProps) {
 
   return createPortal(
     <AnimatePresence>
-      {name === openName && (
+      {isOpen && (
         <motion.div
-          className="fixed inset-0 rounded-xl z-[999] overflow-y-auto flex items-center justify-center backdrop-blur-md"
+          className="fixed inset-0 z-[999] flex items-stretch justify-center sm:items-center sm:p-4 backdrop-blur-md"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
         >
           <motion.div
-            className="fixed top-[50%] left-[50%] rounded-2xl shadow-lg translate-x-[-50%] translate-y-[-50%] bg-background-700 border border-primary-500/20"
-            initial={{ opacity: 0, x: 50, y: 50, scale: 0.9 }}
-            animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
-            exit={{ opacity: 0, x: 50, y: 50, scale: 0.9 }}
+            className="flex h-full w-full min-w-0 flex-col overflow-y-auto rounded-none border-0 bg-background-700 shadow-lg sm:h-auto sm:max-h-[calc(100dvh-2rem)] sm:w-auto sm:max-w-[calc(100vw-2rem)] sm:rounded-2xl sm:border sm:border-primary-500/20"
+            initial={{ opacity: 0, y: 16, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.98 }}
             transition={{
               duration: 0.3,
               ease: [0.25, 0.46, 0.45, 0.94] as const,
             }}
           >
-            <div>{cloneElement(children, { onCloseModal: close })}</div>
+            <div className="min-h-0 min-w-0 flex-1">
+              {cloneElement(children, { onCloseModal: close })}
+            </div>
 
             {showButton && (
-              <div className="px-6 pb-4 pt-2 flex justify-start">
+              <div className="px-4 pb-4 pt-2 sm:px-6 flex justify-start">
                 <Button variant="secondary" onClick={close}>
                   Cancel
                 </Button>

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { X, Sparkles, Crown, Zap } from "lucide-react";
+import { useState, useEffect, ReactNode } from "react";
+import { X, Sparkles, Crown, Zap, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { errorToast } from "@/app/_utils/utils";
 
 interface UpgradePlanProps {
   /** The reason displayed to the user why they need to upgrade */
@@ -13,6 +14,15 @@ interface UpgradePlanProps {
   ctaText?: string;
   /** Optional: Custom link for the CTA button */
   ctaLink?: string;
+  /**
+   * Start Stripe Checkout for this plan instead of navigating to ctaLink.
+   * Use for in-app upgrade prompts where the user is already signed in.
+   */
+  checkoutPlan?: "pro" | "ultra";
+  /** Open the Stripe billing portal instead of Checkout (active subscribers). */
+  useBillingPortal?: boolean;
+  /** Path to return to if Checkout is cancelled (must start with /). */
+  cancelPath?: string;
   /** Unique key to store dismiss state in localStorage (different prompts can have different dismiss states) */
   storageKey: string;
   /** Optional: Whether to show the close button (default: true) */
@@ -30,12 +40,17 @@ export default function UpgradePlan({
   title = "Upgrade Your Plan",
   ctaText = "Upgrade Now",
   ctaLink = "/#pricing",
+  checkoutPlan,
+  useBillingPortal = false,
+  cancelPath,
   storageKey,
   showCloseButton = true,
   icon = "sparkles",
   variant = "default",
 }: UpgradePlanProps) {
   const [isDismissed, setIsDismissed] = useState(true); // Start hidden to prevent flash
+  const [isCheckoutLoading, setIsCheckoutLoading] = useState(false);
+  const startsStripeFlow = Boolean(checkoutPlan || useBillingPortal);
 
   useEffect(() => {
     // Check localStorage on mount
@@ -56,11 +71,53 @@ export default function UpgradePlan({
     }
   }, [storageKey]);
 
+  const startStripeFlow = async () => {
+    if (isCheckoutLoading) return;
+    setIsCheckoutLoading(true);
+    try {
+      const res = await fetch(
+        useBillingPortal ? "/api/stripe/portal" : "/api/stripe/checkout",
+        useBillingPortal
+          ? { method: "POST" }
+          : {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                plan: checkoutPlan,
+                ...(cancelPath ? { cancelPath } : {}),
+              }),
+            },
+      );
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+        return;
+      }
+
+      const errorMessage =
+        typeof data.error === "string"
+          ? data.error
+          : "Failed to start checkout";
+
+      if (res.status === 401 || errorMessage.toLowerCase().includes("email")) {
+        errorToast("Create an account to upgrade your plan.");
+        window.location.href = `/login?plan=${checkoutPlan || "pro"}`;
+        return;
+      }
+
+      errorToast(errorMessage);
+    } catch {
+      errorToast("Failed to start checkout");
+    } finally {
+      setIsCheckoutLoading(false);
+    }
+  };
+
   const handleDismiss = () => {
     setIsDismissed(true);
     localStorage.setItem(
       `${STORAGE_PREFIX}${storageKey}`,
-      Date.now().toString()
+      Date.now().toString(),
     );
   };
 
@@ -72,18 +129,48 @@ export default function UpgradePlan({
     zap: Zap,
   }[icon];
 
+  const ctaLabel = (
+    <>
+      {isCheckoutLoading ? (
+        <Loader2 className="w-4 h-4 animate-spin" />
+      ) : (
+        variant !== "compact" && <Sparkles className="w-4 h-4" />
+      )}
+      {isCheckoutLoading ? "Redirecting..." : ctaText}
+    </>
+  );
+
+  const renderCta = (className: string, children: ReactNode) => {
+    if (startsStripeFlow) {
+      return (
+        <button
+          type="button"
+          onClick={() => void startStripeFlow()}
+          disabled={isCheckoutLoading}
+          className={className}
+        >
+          {children}
+        </button>
+      );
+    }
+
+    return (
+      <Link href={ctaLink} className={className}>
+        {children}
+      </Link>
+    );
+  };
+
   // Compact variant - minimal inline banner
   if (variant === "compact") {
     return (
       <div className="relative flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-primary-500/10 to-primary-600/5 border border-primary-500/20 animate-fadeIn">
         <IconComponent className="w-5 h-5 text-primary-400 flex-shrink-0" />
         <p className="text-sm text-text-low flex-1">{message}</p>
-        <Link
-          href={ctaLink}
-          className="text-sm font-medium text-primary-400 hover:text-primary-300 transition-colors whitespace-nowrap"
-        >
-          {ctaText}
-        </Link>
+        {renderCta(
+          "text-sm font-medium text-primary-400 hover:text-primary-300 transition-colors whitespace-nowrap inline-flex items-center gap-1.5 disabled:opacity-50",
+          ctaLabel,
+        )}
         {showCloseButton && (
           <button
             onClick={handleDismiss}
@@ -111,12 +198,10 @@ export default function UpgradePlan({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Link
-            href={ctaLink}
-            className="px-4 py-1.5 text-sm font-medium bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors whitespace-nowrap"
-          >
-            {ctaText}
-          </Link>
+          {renderCta(
+            "px-4 py-1.5 text-sm font-medium bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors whitespace-nowrap inline-flex items-center gap-2 disabled:opacity-50",
+            ctaLabel,
+          )}
           {showCloseButton && (
             <button
               onClick={handleDismiss}
@@ -163,13 +248,10 @@ export default function UpgradePlan({
         </div>
 
         <div className="flex flex-col xs:flex-row gap-3 items-start xs:items-center">
-          <Link
-            href={ctaLink}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-primary-500/30 hover:shadow-primary-500/40 text-sm"
-          >
-            <Sparkles className="w-4 h-4" />
-            {ctaText}
-          </Link>
+          {renderCta(
+            "inline-flex items-center gap-2 px-5 py-2.5 bg-primary-500 hover:bg-primary-600 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-primary-500/30 hover:shadow-primary-500/40 text-sm disabled:opacity-50",
+            ctaLabel,
+          )}
           <p className="text-text-low text-xs">
             Starting at{" "}
             <span className="text-primary-400 font-semibold">$4.99/month</span>{" "}
